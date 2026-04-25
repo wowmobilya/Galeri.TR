@@ -1,7 +1,7 @@
 /* ============================================================
    PWA — نظام التحديث الفوري
 ============================================================ */
-const APP_VERSION = 'v3';   // ← نفس رقم VERSION في sw.js
+const APP_VERSION = 'v4';   // ← نفس رقم VERSION في sw.js
 
 let deferredPrompt    = null;
 let swRegistration    = null;
