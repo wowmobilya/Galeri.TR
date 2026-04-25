@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wow-mobilya-v1';
+const CACHE_NAME = 'wow-mobilya-v2';
 const ASSETS = [
   './',
   './index.html',
