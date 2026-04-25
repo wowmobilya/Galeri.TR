@@ -1,0 +1,35 @@
+{
+  "name": "WOW MOBİLYA",
+  "short_name": "WOW MOBİLYA",
+  "description": "TV Ünitesi · Orta Sehpa · Dresuar — Lüks ve kaliteli mobilya modelleri",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#c9a84c",
+  "orientation": "portrait-primary",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "https://up6.cc/2026/04/177712738518231.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://up6.cc/2026/04/177712738518231.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://up6.cc/2026/04/177712738518231.png",
+      "sizes": "1200x630",
+      "type": "image/png",
+      "form_factor": "wide"
+    }
+  ],
+  "categories": ["shopping", "lifestyle"],
+  "scope": "./"
+}
