@@ -4,6 +4,17 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 
+<!-- =====================================================
+     PWA — تثبيت كتطبيق
+===================================================== -->
+<link rel="manifest" href="./manifest.json" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="WOW MOBİLYA" />
+<meta name="msapplication-TileColor" content="#c9a84c" />
+<meta name="theme-color" content="#c9a84c" />
+<link rel="apple-touch-icon" href="https://up6.cc/2026/04/177712738518231.png" />
 
 <!-- =====================================================
      Open Graph — معاينة المشاركة (واتساب، تيليغرام، إلخ)
@@ -1839,7 +1850,105 @@ const images = [
   },
 
 ];
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   PWA — تسجيل Service Worker
+============================================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.warn('SW failed:', err));
+  });
+}
+
+/* ============================================================
+   PWA — زر التثبيت المخصص (اختياري)
+============================================================ */
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+
+  // إظهار زر التثبيت في الهيدر
+  showInstallBtn();
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  hideInstallBtn();
+  console.log('PWA installed!');
+});
+
+function showInstallBtn() {
+  // إضافة زر التثبيت ديناميكياً إن لم يكن موجوداً
+  if (document.getElementById('installPwaBtn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'installPwaBtn';
+  btn.className = 'nav-icon-btn';
+  btn.setAttribute('data-tip', 'Uygulamayı Yükle');
+  btn.innerHTML = '<i class="fas fa-download"></i>';
+  btn.style.cssText = `
+    background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.06));
+    border-color: rgba(201,168,76,0.4);
+    color: var(--gold);
+    animation: iconPulse 2.2s infinite;
+  `;
+  btn.onclick = triggerInstall;
+
+  // إضافته في nav-tools
+  const navTools = document.querySelector('.nav-tools');
+  if (navTools) navTools.prepend(btn);
+
+  // نسخة موبايل في القائمة
+  const mobMenu = document.querySelector('.mobile-menu-inner');
+  if (mobMenu) {
+    const mobBtn = document.createElement('button');
+    mobBtn.id = 'installPwaMobBtn';
+    mobBtn.className = 'mob-home-btn';
+    mobBtn.style.cssText = `
+      background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05));
+      border-color: rgba(201,168,76,0.35);
+      animation: iconPulse 2.2s infinite;
+    `;
+    mobBtn.innerHTML = '<i class="fas fa-download"></i> UYGULAMAYI YÜKLE';
+    mobBtn.onclick = () => { triggerInstall(); closeMobileMenu(); };
+    mobMenu.insertBefore(mobBtn, mobMenu.firstChild);
+  }
+}
+
+function hideInstallBtn() {
+  ['installPwaBtn', 'installPwaMobBtn'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  });
+}
+
+function triggerInstall() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(choice => {
+    if (choice.outcome === 'accepted') {
+      console.log('User accepted install');
+    }
+    deferredPrompt = null;
+    hideInstallBtn();
+  });
+}
+
+
+
+
 </script>
 </body>
 </html>
-
