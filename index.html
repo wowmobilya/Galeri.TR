@@ -1850,10 +1850,9 @@ const images = [
 
 /* ============================================================
    PWA — نظام التحديث الفوري + نافذة Progress العصرية
-   النسخة المحسّنة — متجاوبة لجميع الشاشات
    ⚠️ غيّر APP_VERSION عند كل تحديث لـ index.html
 ============================================================ */
-const APP_VERSION = 'v11'; // ← نفس VERSION في sw.js
+const APP_VERSION = 'v13';
 
 let deferredPrompt  = null;
 let swRegistration  = null;
@@ -1877,7 +1876,7 @@ if ('serviceWorker' in navigator) {
       console.log('[PWA] SW registered:', swRegistration.scope);
 
       if (swRegistration.installing) trackWorker(swRegistration.installing);
-      if (swRegistration.waiting)    showUpdateToast();
+      if (swRegistration.waiting)    showUpdateModal();
 
       swRegistration.addEventListener('updatefound', () => {
         trackWorker(swRegistration.installing);
@@ -1902,84 +1901,63 @@ function trackWorker(worker) {
   if (!worker) return;
   worker.addEventListener('statechange', () => {
     if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-      showUpdateToast();
+      showUpdateModal();
     }
   });
 }
 
 /* ============================================================
-   نافذة التحديث العصرية — متجاوبة لجميع الشاشات
+   نافذة التحديث
 ============================================================ */
-function showUpdateToast() {
+function showUpdateModal() {
   if (updateAvailable) return;
   updateAvailable = true;
-  document.getElementById('updateToast')?.remove();
 
-  const toast = document.createElement('div');
-  toast.id = 'updateToast';
+  document.getElementById('updModal')?.remove();
 
-  toast.innerHTML = `
+  const el = document.createElement('div');
+  el.id = 'updModal';
+
+  el.innerHTML = `
     <style>
-      #updateToast *, #updateToast *::before, #updateToast *::after {
+      #updModal *, #updModal *::before, #updModal *::after {
         box-sizing: border-box;
-        font-family: 'Montserrat', sans-serif;
         margin: 0; padding: 0;
+        font-family: 'Montserrat', sans-serif;
       }
 
       /* ── Keyframes ── */
-      @keyframes updGlowPulse {
-        0%,100% { box-shadow: 0 24px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(201,168,76,0.18), 0 0 50px rgba(201,168,76,0.05); }
-        50%      { box-shadow: 0 24px 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(201,168,76,0.38), 0 0 70px rgba(201,168,76,0.10); }
+      @keyframes updBgIn   { from{opacity:0} to{opacity:1} }
+      @keyframes updBoxIn  {
+        from { opacity:0; transform:translate(-50%,-48%) scale(0.92); }
+        to   { opacity:1; transform:translate(-50%,-50%) scale(1);    }
       }
-      @keyframes updSpin {
-        to { transform: rotate(360deg); }
+      @keyframes updSpin   { to { transform:rotate(360deg) } }
+      @keyframes updShine  { 0%{left:-80%} 100%{left:120%} }
+      @keyframes updPulse  {
+        0%,100% { box-shadow:0 0 0 0   rgba(201,168,76,0.35) }
+        50%     { box-shadow:0 0 0 10px rgba(201,168,76,0)    }
       }
-      @keyframes updShine {
-        0%   { left: -100%; }
-        100% { left:  200%; }
+      @keyframes updCheckIn {
+        0%  { transform:scale(0) rotate(-90deg); opacity:0 }
+        70% { transform:scale(1.15) rotate(5deg); opacity:1 }
+        100%{ transform:scale(1)   rotate(0deg);  opacity:1 }
       }
-      @keyframes updOverlayIn {
-        from { opacity: 0; }
-        to   { opacity: 1; }
+      @keyframes updRingOut {
+        to { transform:scale(2.5); opacity:0 }
       }
-      @keyframes updBoxIn {
-        from { opacity: 0; transform: translate(-50%,-50%) scale(0.88) translateY(20px); }
-        to   { opacity: 1; transform: translate(-50%,-50%) scale(1)    translateY(0);    }
-      }
-      @keyframes updBoxOut {
-        from { opacity: 1; transform: translate(-50%,-50%) scale(1)    translateY(0);    }
-        to   { opacity: 0; transform: translate(-50%,-50%) scale(0.92) translateY(16px); }
-      }
-      @keyframes updSuccessPop {
-        0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
-        65%  { transform: scale(1.25) rotate(12deg); opacity: 1; }
-        100% { transform: scale(1)   rotate(0deg);  opacity: 1; }
-      }
-      @keyframes updRingExpand {
-        0%   { transform: scale(0.85); opacity: 1; }
-        100% { transform: scale(2.4);  opacity: 0; }
-      }
-      @keyframes updDotBounce {
-        0%,100% { transform: scale(1); }
-        50%     { transform: scale(1.5); }
-      }
-      @keyframes updCounterPop {
-        0%   { transform: scale(1.2); }
-        100% { transform: scale(1);   }
-      }
-      @keyframes updBtnReady {
-        from { opacity: 0; transform: translateY(10px); }
-        to   { opacity: 1; transform: translateY(0);    }
+      @keyframes updTextFade {
+        from { opacity:0; transform:translateY(5px) }
+        to   { opacity:1; transform:translateY(0)   }
       }
 
       /* ── Overlay ── */
       #updOverlay {
-        position: fixed; inset: 0;
+        position: fixed; inset: 0; z-index: 999990;
         background: rgba(0,0,0,0.72);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        z-index: 999990;
-        animation: updOverlayIn 0.4s ease forwards;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        animation: updBgIn 0.35s ease forwards;
       }
 
       /* ── Box ── */
@@ -1987,597 +1965,391 @@ function showUpdateToast() {
         position: fixed;
         top: 50%; left: 50%;
         transform: translate(-50%,-50%);
-        width: min(460px, 92vw);
-        max-height: 92vh;
-        overflow-y: auto;
-        overflow-x: hidden;
-        background: linear-gradient(158deg, #0e0e0e 0%, #181818 45%, #0e0e0e 100%);
-        border: 1px solid rgba(201,168,76,0.22);
-        border-radius: clamp(16px, 3vw, 26px);
         z-index: 999999;
-        animation: updBoxIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards,
-                   updGlowPulse 3.5s ease 0.5s infinite;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
+        width: min(380px, 88vw);
+        background: #0f0f0f;
+        border-radius: clamp(18px, 4vw, 26px);
+        overflow: hidden;
+        border: 1px solid rgba(201,168,76,0.22);
+        box-shadow:
+          0 32px 80px rgba(0,0,0,0.9),
+          0 0 0 1px rgba(201,168,76,0.08),
+          0 0 60px rgba(201,168,76,0.06);
+        animation: updBoxIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
       }
-      #updBox::-webkit-scrollbar { display: none; }
 
-      /* ── Top line ── */
-      .upd-topline {
+      /* ── خط ذهبي علوي ── */
+      #updTopLine {
         height: 3px;
-        background: linear-gradient(90deg, transparent, #c9a84c 28%, #f0d080 50%, #c9a84c 72%, transparent);
-        flex-shrink: 0;
+        background: linear-gradient(90deg,
+          transparent 0%, #c9a84c 30%, #f0d080 50%, #c9a84c 70%, transparent 100%);
+        transition: background 0.6s ease;
+      }
+      #updTopLine.done {
+        background: linear-gradient(90deg,
+          transparent 0%, #4ade80 30%, #86efac 50%, #4ade80 70%, transparent 100%);
       }
 
-      /* ── Inner padding ── */
-      .upd-inner {
-        padding: clamp(20px, 4vw, 32px) clamp(18px, 4vw, 30px) clamp(18px, 3vw, 28px);
+      /* ── Body ── */
+      #updBody {
+        padding: clamp(22px, 5vw, 32px) clamp(20px, 5vw, 30px) clamp(20px, 4vw, 28px);
         display: flex;
         flex-direction: column;
+        align-items: center;
         gap: clamp(16px, 3vw, 22px);
       }
 
-      /* ── Header row ── */
-      .upd-header {
-        display: flex;
-        align-items: center;
-        gap: clamp(12px, 2.5vw, 20px);
-      }
-
-      /* ── Icon ── */
-      .upd-icon-wrap {
+      /* ── أيقونة دائرية ── */
+      #updIconWrap {
         position: relative;
-        width: clamp(48px, 8vw, 60px);
-        height: clamp(48px, 8vw, 60px);
+        width: clamp(64px, 14vw, 80px);
+        height: clamp(64px, 14vw, 80px);
         flex-shrink: 0;
       }
-      .upd-icon-ring-base {
+      #updRingBg {
         position: absolute; inset: 0;
         border-radius: 50%;
         border: 2px solid rgba(201,168,76,0.12);
       }
-      .upd-icon-ring-spin {
+      #updRingAnim {
         position: absolute; inset: 0;
         border-radius: 50%;
-        border: 2px solid transparent;
+        border: 2.5px solid transparent;
         border-top-color: #c9a84c;
         border-right-color: rgba(201,168,76,0.35);
-        animation: updSpin 1s linear infinite;
+        animation: updSpin 1.1s linear infinite;
         transition: opacity 0.4s;
       }
-      .upd-icon-core {
+      #updIconCircle {
         position: absolute;
-        inset: clamp(5px, 1vw, 7px);
-        background: linear-gradient(135deg, rgba(201,168,76,0.16), rgba(201,168,76,0.03));
-        border: 1px solid rgba(201,168,76,0.28);
+        inset: clamp(7px,1.5vw,10px);
         border-radius: 50%;
+        background: linear-gradient(135deg, rgba(201,168,76,0.14), rgba(201,168,76,0.03));
+        border: 1px solid rgba(201,168,76,0.28);
         display: flex; align-items: center; justify-content: center;
         color: #c9a84c;
-        font-size: clamp(16px, 3vw, 22px);
+        font-size: clamp(18px, 4vw, 24px);
         transition: all 0.45s ease;
+        animation: updPulse 2.2s ease infinite;
       }
-      .upd-icon-core.success {
-        background: linear-gradient(135deg, rgba(74,222,128,0.22), rgba(34,197,94,0.05));
-        border-color: rgba(74,222,128,0.42);
+      #updIconCircle.done {
+        background: linear-gradient(135deg, rgba(74,222,128,0.18), rgba(34,197,94,0.04));
+        border-color: rgba(74,222,128,0.4);
         color: #4ade80;
-        animation: updSuccessPop 0.55s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        animation: updCheckIn 0.55s cubic-bezier(0.34,1.56,0.64,1) forwards;
       }
-      .upd-icon-core.success::before {
-        content: '';
-        position: absolute; inset: -10px;
+      #updRingSuccess {
+        position: absolute; inset: 0;
         border-radius: 50%;
-        border: 2px solid rgba(74,222,128,0.28);
-        animation: updRingExpand 0.9s ease forwards;
+        border: 2px solid rgba(74,222,128,0.4);
+        opacity: 0;
+        pointer-events: none;
+      }
+      #updRingSuccess.pop {
+        animation: updRingOut 0.7s ease forwards;
       }
 
-      /* ── Title block ── */
-      .upd-title-block { flex: 1; min-width: 0; }
-      .upd-brand {
-        font-size: clamp(8px, 1.5vw, 10px);
-        letter-spacing: clamp(2px, 0.6vw, 4px);
-        color: rgba(201,168,76,0.52);
-        text-transform: uppercase;
-        font-weight: 700;
-        margin-bottom: 5px;
-      }
-      .upd-title {
-        font-size: clamp(14px, 3vw, 18px);
+      /* ── نصوص ── */
+      #updTexts { text-align: center; width: 100%; }
+      #updTitle {
+        font-size: clamp(15px, 3.5vw, 18px);
         font-weight: 900;
         color: #fff;
         letter-spacing: 0.3px;
         line-height: 1.25;
+        margin-bottom: clamp(5px, 1.2vw, 8px);
         transition: all 0.35s ease;
+        animation: updTextFade 0.4s ease;
       }
-      .upd-subtitle {
-        font-size: clamp(9px, 1.8vw, 11px);
-        color: rgba(255,255,255,0.24);
-        margin-top: 4px;
-        letter-spacing: 0.8px;
+      #updSub {
+        font-size: clamp(10px, 2.2vw, 12px);
+        color: rgba(255,255,255,0.32);
+        letter-spacing: 1px;
+        line-height: 1.5;
         transition: all 0.35s ease;
       }
 
-      /* ── Percent ── */
-      .upd-percent-wrap { text-align: right; flex-shrink: 0; }
-      .upd-percent {
-        font-size: clamp(26px, 5vw, 36px);
+      /* ── شريط التقدم ── */
+      #updTrackWrap { width: 100%; }
+      #updTrackTop {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      #updStatusTxt {
+        font-size: clamp(9px, 2vw, 10px);
+        color: rgba(255,255,255,0.28);
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        font-weight: 600;
+        transition: all 0.3s;
+      }
+      #updPct {
+        font-size: clamp(13px, 3vw, 16px);
         font-weight: 900;
-        letter-spacing: -1.5px;
+        letter-spacing: -0.5px;
         background: linear-gradient(135deg, #c9a84c, #f0d080);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        line-height: 1;
-        transition: all 0.35s ease;
-        display: block;
+        transition: all 0.3s;
+        min-width: 42px;
+        text-align: right;
       }
-      .upd-percent.done {
-        background: linear-gradient(135deg, #4ade80, #22c55e);
+      #updPct.done {
+        background: linear-gradient(135deg, #4ade80, #86efac);
         -webkit-background-clip: text;
         background-clip: text;
-        animation: updCounterPop 0.3s ease;
       }
-      .upd-pct-label {
-        font-size: clamp(7px, 1.4vw, 9px);
-        color: rgba(255,255,255,0.18);
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        margin-top: 3px;
-        display: block;
-      }
-
-      /* ── Progress track ── */
-      .upd-track {
-        width: 100%;
-        height: clamp(5px, 1vw, 7px);
-        background: rgba(255,255,255,0.055);
-        border-radius: 20px;
+      #updTrack {
+        width: 100%; height: 5px;
+        background: rgba(255,255,255,0.06);
+        border-radius: 10px;
         overflow: hidden;
         position: relative;
       }
-      .upd-fill {
+      #updFill {
         height: 100%; width: 0%;
-        background: linear-gradient(90deg, #b8943e, #c9a84c, #f0d080, #c9a84c);
-        background-size: 300% 100%;
-        border-radius: 20px;
-        transition: width 0.38s cubic-bezier(0.4,0,0.2,1);
+        background: linear-gradient(90deg, #c9a84c, #f0d080);
+        border-radius: 10px;
+        transition: width 0.35s cubic-bezier(0.4,0,0.2,1);
         position: relative; overflow: hidden;
       }
-      .upd-fill::after {
+      #updFill::after {
         content: '';
         position: absolute; top: 0; bottom: 0; width: 55%;
         background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
         animation: updShine 1.3s ease infinite;
+        left: -80%;
       }
-      .upd-fill.done {
-        background: linear-gradient(90deg, #16a34a, #4ade80, #22c55e);
-        transition: background 0.5s ease, width 0.38s ease;
+      #updFill.done {
+        background: linear-gradient(90deg, #4ade80, #86efac);
+        transition: background 0.5s ease, width 0.35s ease;
       }
-      .upd-fill.done::after { display: none; }
+      #updFill.done::after { display: none; }
 
-      /* ── Status row ── */
-      .upd-status-row {
-        display: flex;
+      /* ── نقاط المراحل ── */
+      #updDots {
+        display: flex; gap: clamp(5px,1.5vw,8px);
         align-items: center;
-        justify-content: space-between;
-        gap: 10px;
+        margin-top: clamp(8px,2vw,12px);
+        justify-content: center;
       }
-      .upd-status-text {
-        font-size: clamp(9px, 1.8vw, 11px);
-        color: rgba(255,255,255,0.32);
-        letter-spacing: 1.2px;
-        text-transform: uppercase;
-        font-weight: 600;
-        min-height: 14px;
-        transition: all 0.3s ease;
-        flex: 1;
-        min-width: 0;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .upd-dots {
-        display: flex; gap: clamp(4px, 0.8vw, 6px);
-        align-items: center; flex-shrink: 0;
-      }
-      .upd-dot {
-        width: clamp(5px, 1vw, 7px);
-        height: clamp(5px, 1vw, 7px);
+      .upd-d {
+        width: clamp(5px,1.2vw,7px);
+        height: clamp(5px,1.2vw,7px);
         border-radius: 50%;
-        background: rgba(255,255,255,0.09);
-        transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        background: rgba(255,255,255,0.1);
+        transition: all 0.35s ease;
       }
-      .upd-dot.active {
+      .upd-d.cur {
         background: #c9a84c;
-        box-shadow: 0 0 8px rgba(201,168,76,0.65);
-        transform: scale(1.35);
-        animation: updDotBounce 1s ease infinite;
+        box-shadow: 0 0 7px rgba(201,168,76,0.65);
+        transform: scale(1.4);
       }
-      .upd-dot.done-dot {
+      .upd-d.past {
         background: #4ade80;
-        box-shadow: 0 0 7px rgba(74,222,128,0.55);
-        animation: none;
-        transform: scale(1);
+        box-shadow: 0 0 6px rgba(74,222,128,0.5);
       }
 
-      /* ── Divider ── */
-      .upd-divider {
-        height: 1px;
-        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-      }
-
-      /* ── Info cards ── */
-      .upd-cards {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: clamp(7px, 1.5vw, 11px);
-      }
-      .upd-card {
-        padding: clamp(9px, 1.8vw, 13px) clamp(8px, 1.5vw, 13px);
-        background: rgba(255,255,255,0.022);
-        border: 1px solid rgba(255,255,255,0.048);
-        border-radius: clamp(10px, 2vw, 14px);
-        display: flex; align-items: center;
-        gap: clamp(6px, 1.2vw, 10px);
-        transition: border-color 0.3s ease, background 0.3s ease;
-      }
-      .upd-card:hover {
-        background: rgba(201,168,76,0.04);
-        border-color: rgba(201,168,76,0.12);
-      }
-      .upd-card-icon {
-        color: rgba(201,168,76,0.48);
-        font-size: clamp(11px, 2vw, 14px);
-        flex-shrink: 0;
-      }
-      .upd-card-label {
-        font-size: clamp(7px, 1.3vw, 9px);
-        color: rgba(255,255,255,0.18);
-        letter-spacing: 1.2px;
-        text-transform: uppercase;
-        font-weight: 600;
-      }
-      .upd-card-val {
-        font-size: clamp(10px, 2vw, 13px);
-        font-weight: 700;
-        color: rgba(255,255,255,0.68);
-        margin-top: 2px;
-        transition: color 0.3s ease;
-      }
-      .upd-card-val.highlight { color: #4ade80; }
-
-      /* ── Tamam button ── */
-      .upd-btn-wrap {
-        display: none;
-        animation: updBtnReady 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      }
-      .upd-btn-wrap.visible { display: block; }
-      .upd-ok-btn {
+      /* ── سطر الحالة السفلي ── */
+      #updFooter {
         width: 100%;
-        padding: clamp(12px, 2.5vw, 16px);
-        background: linear-gradient(135deg, #c9a84c, #f0d080, #c9a84c);
-        background-size: 200% 100%;
-        border: none;
-        border-radius: clamp(10px, 2vw, 14px);
-        color: #0a0a0a;
-        font-family: 'Montserrat', sans-serif;
-        font-size: clamp(12px, 2.2vw, 14px);
-        font-weight: 800;
-        letter-spacing: clamp(2px, 0.5vw, 4px);
+        padding: clamp(10px,2.5vw,14px) clamp(20px,5vw,30px);
+        background: rgba(255,255,255,0.025);
+        border-top: 1px solid rgba(255,255,255,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      #updFooterDot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: #c9a84c;
+        animation: updPulse 1.5s ease infinite;
+        flex-shrink: 0;
+        transition: background 0.4s;
+      }
+      #updFooterTxt {
+        font-size: clamp(9px, 2vw, 11px);
+        color: rgba(255,255,255,0.3);
+        letter-spacing: clamp(1px, 0.5vw, 2px);
+        font-weight: 600;
         text-transform: uppercase;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: all 0.3s ease;
-        box-shadow: 0 6px 24px rgba(201,168,76,0.38),
-                    0 2px 8px rgba(0,0,0,0.4);
-        position: relative;
-        overflow: hidden;
-      }
-      .upd-ok-btn::before {
-        content: '';
-        position: absolute; inset: 0;
-        background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-        opacity: 0;
-        transition: opacity 0.3s;
-      }
-      .upd-ok-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 32px rgba(201,168,76,0.5),
-                    0 4px 12px rgba(0,0,0,0.4);
-      }
-      .upd-ok-btn:hover::before { opacity: 1; }
-      .upd-ok-btn:active {
-        transform: translateY(0);
-        box-shadow: 0 4px 16px rgba(201,168,76,0.35);
-      }
-      .upd-ok-btn i { font-size: clamp(13px, 2.2vw, 16px); }
-
-      /* ── Footer note ── */
-      .upd-note {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        font-size: clamp(8px, 1.5vw, 10px);
-        color: rgba(255,255,255,0.14);
-        letter-spacing: 1px;
-        text-align: center;
-      }
-      .upd-note i { color: rgba(201,168,76,0.3); font-size: clamp(9px, 1.6vw, 11px); }
-
-      /* ── Mobile: bottom sheet on small screens ── */
-      @media (max-width: 480px) {
-        #updBox {
-          top: auto !important;
-          bottom: 0 !important;
-          left: 0 !important;
-          right: 0 !important;
-          transform: none !important;
-          width: 100% !important;
-          max-height: 88vh;
-          border-radius: 22px 22px 0 0 !important;
-          animation: updSheetIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards,
-                     updGlowPulse 3.5s ease 0.5s infinite !important;
-        }
-        @keyframes updSheetIn {
-          from { opacity: 0; transform: translateY(100%); }
-          to   { opacity: 1; transform: translateY(0);    }
-        }
-        .upd-inner {
-          padding-bottom: calc(clamp(18px,3vw,28px) + env(safe-area-inset-bottom, 0px));
-        }
-      }
-
-      /* ── Tablet ── */
-      @media (min-width: 481px) and (max-width: 1024px) {
-        #updBox { width: min(440px, 88vw); }
-      }
-
-      /* ── Desktop large ── */
-      @media (min-width: 1400px) {
-        #updBox { width: 480px; }
+        transition: all 0.35s;
       }
     </style>
 
-    <!-- خلفية داكنة -->
     <div id="updOverlay"></div>
 
-    <!-- النافذة -->
     <div id="updBox">
-      <div class="upd-topline"></div>
-      <div class="upd-inner">
+      <div id="updTopLine"></div>
 
-        <!-- الرأس -->
-        <div class="upd-header">
-          <div class="upd-icon-wrap">
-            <div class="upd-icon-ring-base"></div>
-            <div class="upd-icon-ring-spin" id="updRingSpin"></div>
-            <div class="upd-icon-core" id="updIconCore">
-              <i class="fas fa-sync-alt" id="updIconI"></i>
-            </div>
-          </div>
-          <div class="upd-title-block">
-            <div class="upd-brand">WOW MOBİLYA</div>
-            <div class="upd-title"    id="updTitle">Güncelleme Yükleniyor</div>
-            <div class="upd-subtitle" id="updSubtitle">Lütfen bekleyin...</div>
-          </div>
-          <div class="upd-percent-wrap">
-            <span class="upd-percent" id="updPercent">0%</span>
-            <span class="upd-pct-label">TAMAMLANDI</span>
-          </div>
+      <div id="updBody">
+
+        <!-- أيقونة -->
+        <div id="updIconWrap">
+          <div id="updRingBg"></div>
+          <div id="updRingAnim"></div>
+          <div id="updIconCircle"><i class="fas fa-sync-alt" id="updIconI"></i></div>
+          <div id="updRingSuccess"></div>
+        </div>
+
+        <!-- نصوص -->
+        <div id="updTexts">
+          <div id="updTitle">Güncelleme Yükleniyor</div>
+          <div id="updSub">Yeni sürüm hazırlanıyor,<br>lütfen bekleyin...</div>
         </div>
 
         <!-- شريط التقدم -->
-        <div class="upd-track">
-          <div class="upd-fill" id="updFill"></div>
-        </div>
-
-        <!-- الحالة + النقاط -->
-        <div class="upd-status-row">
-          <div class="upd-status-text" id="updStatus">Yeni sürüm kontrol ediliyor...</div>
-          <div class="upd-dots">
-            <div class="upd-dot active" id="updDot1"></div>
-            <div class="upd-dot"        id="updDot2"></div>
-            <div class="upd-dot"        id="updDot3"></div>
-            <div class="upd-dot"        id="updDot4"></div>
+        <div id="updTrackWrap">
+          <div id="updTrackTop">
+            <span id="updStatusTxt">Başlatılıyor...</span>
+            <span id="updPct">0%</span>
+          </div>
+          <div id="updTrack">
+            <div id="updFill"></div>
+          </div>
+          <div id="updDots">
+            <div class="upd-d cur" id="d1"></div>
+            <div class="upd-d"     id="d2"></div>
+            <div class="upd-d"     id="d3"></div>
+            <div class="upd-d"     id="d4"></div>
+            <div class="upd-d"     id="d5"></div>
           </div>
         </div>
 
-        <div class="upd-divider"></div>
+      </div>
 
-        <!-- بطاقات المعلومات -->
-        <div class="upd-cards">
-          <div class="upd-card">
-            <i class="fas fa-shield-alt upd-card-icon"></i>
-            <div>
-              <div class="upd-card-label">VERSİYON</div>
-              <div class="upd-card-val" id="updVerVal">${APP_VERSION}</div>
-            </div>
-          </div>
-          <div class="upd-card">
-            <i class="fas fa-clock upd-card-icon"></i>
-            <div>
-              <div class="upd-card-label">SÜRE</div>
-              <div class="upd-card-val" id="updTimer">0s</div>
-            </div>
-          </div>
-          <div class="upd-card">
-            <i class="fas fa-bolt upd-card-icon"></i>
-            <div>
-              <div class="upd-card-label">DURUM</div>
-              <div class="upd-card-val" id="updState">Hazır</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="upd-divider"></div>
-
-        <!-- زر تمام (يظهر عند الاكتمال) -->
-        <div class="upd-btn-wrap" id="updBtnWrap">
-          <button class="upd-ok-btn" onclick="applyUpdateAndReload()">
-            <i class="fas fa-check-circle"></i>
-            TAMAM — YENİLE
-          </button>
-        </div>
-
-        <!-- ملاحظة -->
-        <div class="upd-note" id="updNote">
-          <i class="fas fa-info-circle"></i>
-          Güncelleme tamamlandığında sayfa otomatik yenilenir
-        </div>
-
+      <!-- Footer -->
+      <div id="updFooter">
+        <div id="updFooterDot"></div>
+        <div id="updFooterTxt">WOW MOBİLYA — ${APP_VERSION}</div>
       </div>
     </div>
   `;
 
-  document.body.appendChild(toast);
-  requestAnimationFrame(() => requestAnimationFrame(() => startUpdateAnimation()));
+  document.body.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => runUpdateAnim()));
 }
 
 /* ============================================================
-   أنيميشن شريط التقدم
+   أنيميشن التقدم
 ============================================================ */
-function startUpdateAnimation() {
-  const fill      = document.getElementById('updFill');
-  const percent   = document.getElementById('updPercent');
-  const status    = document.getElementById('updStatus');
-  const title     = document.getElementById('updTitle');
-  const subtitle  = document.getElementById('updSubtitle');
-  const stateEl   = document.getElementById('updState');
-  const timer     = document.getElementById('updTimer');
-  const ringSpin  = document.getElementById('updRingSpin');
-  const iconCore  = document.getElementById('updIconCore');
-  const iconI     = document.getElementById('updIconI');
-  const note      = document.getElementById('updNote');
-  const btnWrap   = document.getElementById('updBtnWrap');
-  const stateCard = document.getElementById('updState');
-  const dots      = [1,2,3,4].map(i => document.getElementById('updDot'+i));
+function runUpdateAnim() {
+  const fill       = document.getElementById('updFill');
+  const pct        = document.getElementById('updPct');
+  const statusTxt  = document.getElementById('updStatusTxt');
+  const title      = document.getElementById('updTitle');
+  const sub        = document.getElementById('updSub');
+  const footerTxt  = document.getElementById('updFooterTxt');
+  const footerDot  = document.getElementById('updFooterDot');
+  const topLine    = document.getElementById('updTopLine');
+  const iconCircle = document.getElementById('updIconCircle');
+  const iconI      = document.getElementById('updIconI');
+  const ringAnim   = document.getElementById('updRingAnim');
+  const ringSucc   = document.getElementById('updRingSuccess');
+  const dots       = [1,2,3,4,5].map(i => document.getElementById('d'+i));
 
   if (!fill) return;
 
   const steps = [
-    { pct:0,   label:'Yeni sürüm kontrol ediliyor...', state:'Kontrol',  dot:0, dur:420, delay:0   },
-    { pct:18,  label:'Önbellek temizleniyor...',        state:'Temizlik', dot:0, dur:520, delay:280 },
-    { pct:38,  label:'Yeni dosyalar indiriliyor...',    state:'İndirme',  dot:1, dur:680, delay:200 },
-    { pct:58,  label:'İçerik güncelleniyor...',         state:'Yükleme',  dot:2, dur:580, delay:280 },
-    { pct:76,  label:'Uygulama hazırlanıyor...',        state:'Hazırlık', dot:2, dur:480, delay:240 },
-    { pct:91,  label:'Son dokunuşlar yapılıyor...',     state:'Bitiş',    dot:3, dur:380, delay:180 },
-    { pct:100, label:'Güncelleme tamamlandı! ✓',        state:'Tamam ✓',  dot:3, dur:280, delay:100 },
+    { to:0,   status:'Başlatılıyor...',              dot:0, dur:300,  wait:0   },
+    { to:18,  status:'Önbellek temizleniyor...',     dot:0, dur:480,  wait:280 },
+    { to:38,  status:'Yeni dosyalar indiriliyor...', dot:1, dur:600,  wait:200 },
+    { to:58,  status:'İçerik güncelleniyor...',      dot:2, dur:550,  wait:250 },
+    { to:76,  status:'Uygulama hazırlanıyor...',     dot:3, dur:480,  wait:220 },
+    { to:90,  status:'Son dokunuşlar...',            dot:3, dur:380,  wait:180 },
+    { to:100, status:'Tamamlandı!',                  dot:4, dur:320,  wait:120 },
   ];
 
-  let currentPct = 0;
-  let elapsed    = 0;
-
-  const timerInterval = setInterval(() => {
-    elapsed++;
-    if (timer) timer.textContent = elapsed + 's';
-  }, 1000);
-
-  function animateTo(targetPct, duration, onDone) {
-    const startPct  = currentPct;
-    const startTime = performance.now();
-    (function frame(now) {
-      const t     = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - t, 3);
-      const val   = Math.round(startPct + (targetPct - startPct) * eased);
-      currentPct  = val;
-      if (fill)    fill.style.width    = val + '%';
-      if (percent) percent.textContent = val + '%';
-      t < 1 ? requestAnimationFrame(frame) : (currentPct = targetPct, onDone?.());
-    })(performance.now());
-  }
+  let cur = 0;
 
   function setDots(activeDot) {
-    dots.forEach((d, idx) => {
+    dots.forEach((d, i) => {
       if (!d) return;
-      if      (idx < activeDot)  d.className = 'upd-dot done-dot';
-      else if (idx === activeDot) d.className = 'upd-dot active';
-      else                        d.className = 'upd-dot';
+      if      (i < activeDot)  d.className = 'upd-d past';
+      else if (i === activeDot) d.className = 'upd-d cur';
+      else                      d.className = 'upd-d';
     });
+  }
+
+  function animTo(target, duration, cb) {
+    const from  = cur;
+    const t0    = performance.now();
+    (function tick(now) {
+      const p = Math.min((now - t0) / duration, 1);
+      const e = 1 - Math.pow(1 - p, 3);
+      const v = Math.round(from + (target - from) * e);
+      cur = v;
+      if (fill) fill.style.width  = v + '%';
+      if (pct)  pct.textContent   = v + '%';
+      p < 1 ? requestAnimationFrame(tick) : (cur = target, cb && cb());
+    })(performance.now());
   }
 
   function runStep(i) {
     if (i >= steps.length) return;
     const s = steps[i];
-    if (status)   status.textContent  = s.label;
-    if (stateEl)  stateEl.textContent = s.state;
+    if (statusTxt) statusTxt.textContent = s.status;
     setDots(s.dot);
     setTimeout(() => {
-      animateTo(s.pct, s.dur, () => {
-        i < steps.length - 1 ? runStep(i + 1) : onComplete();
+      animTo(s.to, s.dur, () => {
+        i < steps.length - 1 ? runStep(i + 1) : onDone();
       });
-    }, s.delay);
+    }, s.wait);
   }
 
-  function onComplete() {
-    clearInterval(timerInterval);
-
+  function onDone() {
     /* أيقونة ✓ */
-    if (ringSpin) { ringSpin.style.animation = 'none'; ringSpin.style.opacity = '0'; }
-    if (iconCore) iconCore.className = 'upd-icon-core success';
-    if (iconI)    iconI.className    = 'fas fa-check';
+    if (ringAnim)   { ringAnim.style.opacity = '0'; }
+    if (iconCircle) { iconCircle.className = 'done'; }
+    if (iconI)      { iconI.className = 'fas fa-check'; }
+    if (ringSucc)   { ringSucc.classList.add('pop'); }
 
     /* شريط أخضر */
     if (fill)    fill.classList.add('done');
-    if (percent) percent.classList.add('done');
+    if (pct)     pct.classList.add('done');
+    if (topLine) topLine.classList.add('done');
+
+    /* نقاط كلها خضراء */
+    dots.forEach(d => { if (d) d.className = 'upd-d past'; });
 
     /* نصوص */
-    if (title)    title.textContent    = 'Güncelleme Tamamlandı!';
-    if (subtitle) subtitle.textContent = 'Hazır — devam edebilirsiniz';
-
-    /* بطاقة الحالة خضراء */
-    if (stateCard) stateCard.classList.add('highlight');
-
-    /* كل النقاط خضراء */
-    dots.forEach(d => { if (d) d.className = 'upd-dot done-dot'; });
-
-    /* إخفاء الملاحظة + إظهار زر تمام */
-    if (note)    note.style.display = 'none';
-    if (btnWrap) btnWrap.classList.add('visible');
-
-    /* إعادة تحميل تلقائية بعد 4 ثوانٍ إن لم يضغط المستخدم */
-    window._updAutoReload = setTimeout(() => applyUpdateAndReload(), 4000);
-  }
-
-  setTimeout(() => runStep(0), 350);
-}
-
-/* ── تطبيق التحديث وإعادة التحميل ── */
-function applyUpdateAndReload() {
-  clearTimeout(window._updAutoReload);
-
-  /* تغيير زر تمام إلى حالة تحميل */
-  const btn = document.querySelector('.upd-ok-btn');
-  if (btn) {
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yenileniyor...';
-    btn.style.opacity = '0.75';
-    btn.disabled = true;
-  }
-
-  setTimeout(() => {
-    if (swRegistration?.waiting) {
-      swRegistration.waiting.postMessage('SKIP_WAITING');
-    } else {
-      caches.keys()
-        .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-        .then(() => window.location.reload());
+    if (title) {
+      title.style.animation = 'updTextFade 0.4s ease';
+      title.textContent = 'Güncelleme Tamamlandı!';
     }
-  }, 400);
+    if (sub) {
+      sub.style.animation = 'updTextFade 0.4s ease';
+      sub.innerHTML = 'Program yeniden başlatılıyor...';
+    }
+
+    /* Footer */
+    if (footerDot) footerDot.style.background = '#4ade80';
+    if (footerTxt) footerTxt.textContent = 'Lütfen bekleyin...';
+
+    /* تطبيق التحديث */
+    setTimeout(() => {
+      if (swRegistration?.waiting) {
+        swRegistration.waiting.postMessage('SKIP_WAITING');
+      } else {
+        caches.keys()
+          .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+          .then(() => window.location.reload());
+      }
+    }, 1000);
+  }
+
+  setTimeout(() => runStep(0), 250);
 }
 
-/* دوال مساعدة */
+/* ── دوال مساعدة ── */
 function dismissUpdateToast() {
-  const toast = document.getElementById('updateToast');
-  if (!toast) return;
-  const box     = document.getElementById('updBox');
-  const overlay = document.getElementById('updOverlay');
-  if (overlay) overlay.style.opacity = '0';
-  if (box) { box.style.transition = 'opacity 0.4s, transform 0.4s'; box.style.opacity = '0'; }
-  setTimeout(() => toast.remove(), 450);
+  document.getElementById('updModal')?.remove();
 }
-function applyUpdate() { applyUpdateAndReload(); }
+function applyUpdate() {}
 
 /* ============================================================
    زر التثبيت
