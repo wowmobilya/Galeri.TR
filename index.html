@@ -1852,7 +1852,7 @@ const images = [
    PWA — نظام التحديث الفوري + نافذة Progress العصرية
    ⚠️ غيّر APP_VERSION عند كل تحديث لـ index.html
 ============================================================ */
-const APP_VERSION = 'v13';
+const APP_VERSION = 'v2';
 
 let deferredPrompt  = null;
 let swRegistration  = null;
@@ -1926,7 +1926,6 @@ function showUpdateModal() {
         font-family: 'Montserrat', sans-serif;
       }
 
-      /* ── Keyframes ── */
       @keyframes updBgIn   { from{opacity:0} to{opacity:1} }
       @keyframes updBoxIn  {
         from { opacity:0; transform:translate(-50%,-48%) scale(0.92); }
@@ -1950,8 +1949,11 @@ function showUpdateModal() {
         from { opacity:0; transform:translateY(5px) }
         to   { opacity:1; transform:translateY(0)   }
       }
+      @keyframes svgSpin {
+        from { transform: rotate(0deg);   }
+        to   { transform: rotate(360deg); }
+      }
 
-      /* ── Overlay ── */
       #updOverlay {
         position: fixed; inset: 0; z-index: 999990;
         background: rgba(0,0,0,0.72);
@@ -1960,7 +1962,6 @@ function showUpdateModal() {
         animation: updBgIn 0.35s ease forwards;
       }
 
-      /* ── Box ── */
       #updBox {
         position: fixed;
         top: 50%; left: 50%;
@@ -1978,7 +1979,6 @@ function showUpdateModal() {
         animation: updBoxIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
       }
 
-      /* ── خط ذهبي علوي ── */
       #updTopLine {
         height: 3px;
         background: linear-gradient(90deg,
@@ -1990,7 +1990,6 @@ function showUpdateModal() {
           transparent 0%, #4ade80 30%, #86efac 50%, #4ade80 70%, transparent 100%);
       }
 
-      /* ── Body ── */
       #updBody {
         padding: clamp(22px, 5vw, 32px) clamp(20px, 5vw, 30px) clamp(20px, 4vw, 28px);
         display: flex;
@@ -1999,7 +1998,6 @@ function showUpdateModal() {
         gap: clamp(16px, 3vw, 22px);
       }
 
-      /* ── أيقونة دائرية ── */
       #updIconWrap {
         position: relative;
         width: clamp(64px, 14vw, 80px);
@@ -2049,7 +2047,6 @@ function showUpdateModal() {
         animation: updRingOut 0.7s ease forwards;
       }
 
-      /* ── نصوص ── */
       #updTexts { text-align: center; width: 100%; }
       #updTitle {
         font-size: clamp(15px, 3.5vw, 18px);
@@ -2069,7 +2066,6 @@ function showUpdateModal() {
         transition: all 0.35s ease;
       }
 
-      /* ── شريط التقدم ── */
       #updTrackWrap { width: 100%; }
       #updTrackTop {
         display: flex;
@@ -2129,7 +2125,6 @@ function showUpdateModal() {
       }
       #updFill.done::after { display: none; }
 
-      /* ── نقاط المراحل ── */
       #updDots {
         display: flex; gap: clamp(5px,1.5vw,8px);
         align-items: center;
@@ -2153,7 +2148,6 @@ function showUpdateModal() {
         box-shadow: 0 0 6px rgba(74,222,128,0.5);
       }
 
-      /* ── سطر الحالة السفلي ── */
       #updFooter {
         width: 100%;
         padding: clamp(10px,2.5vw,14px) clamp(20px,5vw,30px);
@@ -2192,7 +2186,17 @@ function showUpdateModal() {
         <div id="updIconWrap">
           <div id="updRingBg"></div>
           <div id="updRingAnim"></div>
-          <div id="updIconCircle"><i class="fas fa-sync-alt" id="updIconI"></i></div>
+          <div id="updIconCircle">
+            <svg id="updIconI" viewBox="0 0 24 24" fill="none"
+              style="width:52%;height:52%;transition:all 0.45s ease;"
+              stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 2v6h-6"/>
+              <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+              <path d="M3 22v-6h6"/>
+              <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+            </svg>
+          </div>
           <div id="updRingSuccess"></div>
         </div>
 
@@ -2222,7 +2226,6 @@ function showUpdateModal() {
 
       </div>
 
-      <!-- Footer -->
       <div id="updFooter">
         <div id="updFooterDot"></div>
         <div id="updFooterTxt">WOW MOBİLYA — ${APP_VERSION}</div>
@@ -2247,7 +2250,6 @@ function runUpdateAnim() {
   const footerDot  = document.getElementById('updFooterDot');
   const topLine    = document.getElementById('updTopLine');
   const iconCircle = document.getElementById('updIconCircle');
-  const iconI      = document.getElementById('updIconI');
   const ringAnim   = document.getElementById('updRingAnim');
   const ringSucc   = document.getElementById('updRingSuccess');
   const dots       = [1,2,3,4,5].map(i => document.getElementById('d'+i));
@@ -2269,22 +2271,22 @@ function runUpdateAnim() {
   function setDots(activeDot) {
     dots.forEach((d, i) => {
       if (!d) return;
-      if      (i < activeDot)  d.className = 'upd-d past';
+      if      (i < activeDot)   d.className = 'upd-d past';
       else if (i === activeDot) d.className = 'upd-d cur';
       else                      d.className = 'upd-d';
     });
   }
 
   function animTo(target, duration, cb) {
-    const from  = cur;
-    const t0    = performance.now();
+    const from = cur;
+    const t0   = performance.now();
     (function tick(now) {
       const p = Math.min((now - t0) / duration, 1);
       const e = 1 - Math.pow(1 - p, 3);
       const v = Math.round(from + (target - from) * e);
       cur = v;
-      if (fill) fill.style.width  = v + '%';
-      if (pct)  pct.textContent   = v + '%';
+      if (fill) fill.style.width = v + '%';
+      if (pct)  pct.textContent  = v + '%';
       p < 1 ? requestAnimationFrame(tick) : (cur = target, cb && cb());
     })(performance.now());
   }
@@ -2303,12 +2305,23 @@ function runUpdateAnim() {
 
   function onDone() {
     /* أيقونة ✓ */
-    if (ringAnim)   { ringAnim.style.opacity = '0'; }
-    if (iconCircle) { iconCircle.className = 'done'; }
-    if (iconI)      { iconI.className = 'fas fa-check'; }
-    if (ringSucc)   { ringSucc.classList.add('pop'); }
+    if (ringAnim) ringAnim.style.opacity = '0';
+    if (iconCircle) iconCircle.className = 'done';
 
-    /* شريط أخضر */
+    const iconI = document.getElementById('updIconI');
+    if (iconI) {
+      iconI.outerHTML = `
+        <svg id="updIconI" viewBox="0 0 24 24" fill="none"
+          style="width:52%;height:52%;transition:all 0.45s ease;"
+          stroke="#4ade80" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>`;
+    }
+
+    if (ringSucc) ringSucc.classList.add('pop');
+
+    /* شريط + خط أخضر */
     if (fill)    fill.classList.add('done');
     if (pct)     pct.classList.add('done');
     if (topLine) topLine.classList.add('done');
@@ -2318,10 +2331,14 @@ function runUpdateAnim() {
 
     /* نصوص */
     if (title) {
+      title.style.animation = 'none';
+      void title.offsetWidth;
       title.style.animation = 'updTextFade 0.4s ease';
       title.textContent = 'Güncelleme Tamamlandı!';
     }
     if (sub) {
+      sub.style.animation = 'none';
+      void sub.offsetWidth;
       sub.style.animation = 'updTextFade 0.4s ease';
       sub.innerHTML = 'Program yeniden başlatılıyor...';
     }
@@ -2410,6 +2427,7 @@ function triggerInstall() {
     hideInstallBtn();
   });
 }
+
 
 
 
