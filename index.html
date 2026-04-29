@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ا<!DOCTYPE html>
 <html lang="tr" dir="ltr" translate="no">
 <head>
   <meta charset="UTF-8"/>
@@ -161,6 +161,31 @@
     .nav-icon-btn:hover{background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.3);color:var(--gold);}
     .nav-icon-btn.playing{background:rgba(201,168,76,0.12);border-color:rgba(201,168,76,0.35);color:var(--gold);animation:iconPulse 2.2s infinite;}
     @keyframes iconPulse{0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.3);}50%{box-shadow:0 0 0 5px rgba(201,168,76,0);}}
+/* ── سلة التذكير ── */
+.cart-reminder-btn {
+  position: relative;
+}
+.cart-reminder-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  background: #e53935;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  font-family: 'Montserrat', sans-serif;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid rgba(8,8,8,0.96);
+  pointer-events: none;
+  line-height: 1;
+}
+
     .nav-icon-btn[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:-32px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:rgba(255,255,255,0.8);font-size:10px;font-weight:600;letter-spacing:0.5px;padding:4px 9px;border-radius:6px;white-space:nowrap;pointer-events:none;z-index:999;}
     .nav-icon-btn.logout-btn{background:rgba(255,70,70,0.06);border-color:rgba(255,70,70,0.14);color:rgba(255,130,130,0.6);}
     .nav-icon-btn.logout-btn:hover{background:rgba(255,70,70,0.14);border-color:rgba(255,70,70,0.3);color:#ff9999;}
@@ -522,6 +547,648 @@
     }
     .page-transition{animation:pageIn 0.36s ease forwards;}
     @keyframes pageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+
+
+
+
+
+
+/* =====================================================
+   ORDER SECTION — قسم الطلبيات
+===================================================== */
+
+/* بطاقة الطلبيات في الهوم */
+.home-card:nth-child(4) { animation: cardSlideIn 0.7s ease 0.95s both; }
+
+/* ── شبكة الموديلات ── */
+.order-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 18px 22px;
+}
+@media(max-width:1024px){ .order-grid{ grid-template-columns:repeat(3,1fr); } }
+@media(max-width:768px) { .order-grid{ grid-template-columns:repeat(2,1fr); } }
+@media(max-width:480px) { .order-grid{ grid-template-columns:repeat(2,1fr); gap:9px; padding:10px; } }
+
+/* ── بطاقة الموديل الواحد ── */
+.order-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--dark3);
+  border: 2px solid rgba(255,255,255,0.05);
+  cursor: pointer;
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  animation: cardIn 0.5s ease forwards;
+  opacity: 0;
+  display: flex;
+  flex-direction: column;
+}
+.order-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(201,168,76,0.35);
+  box-shadow: 0 14px 44px rgba(0,0,0,0.5);
+}
+.order-card.in-cart {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 0 2px var(--gold), 0 10px 34px rgba(201,168,76,0.2) !important;
+}
+.order-card-img-wrap { position: relative; overflow: hidden; }
+.order-card-img-wrap img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.order-card:hover .order-card-img-wrap img { transform: scale(1.05); }
+
+/* شارة "في السلة" */
+.order-in-cart-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--gold);
+  color: var(--dark);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  padding: 4px 10px;
+  border-radius: 50px;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  z-index: 10;
+}
+.order-card.in-cart .order-in-cart-badge { display: flex; }
+
+/* معلومات البطاقة */
+.order-card-info {
+  padding: 10px 11px 8px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.order-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.5px;
+}
+.order-card-cat {
+  font-size: 9px;
+  color: var(--gold);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.order-card-price {
+  font-size: 12px;
+  font-weight: 900;
+  background: linear-gradient(135deg,#c9a84c,#f0d080);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-top: 2px;
+}
+
+/* ── عداد الكمية ── */
+.order-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 11px 10px;
+  background: rgba(0,0,0,0.3);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  gap: 8px;
+}
+.order-qty-label {
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 3px 6px;
+}
+.qty-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(201,168,76,0.25);
+  background: rgba(201,168,76,0.08);
+  color: var(--gold);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  font-family: 'Montserrat', sans-serif;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.qty-btn:hover {
+  background: rgba(201,168,76,0.2);
+  border-color: var(--gold);
+}
+.qty-val {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--white);
+  min-width: 22px;
+  text-align: center;
+}
+
+/* ── شريط الطلب السفلي ── */
+.order-bottom-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 200;
+  background: rgba(9,9,9,0.97);
+  border-top: 1px solid rgba(201,168,76,0.2);
+  backdrop-filter: blur(20px);
+  padding: 12px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.order-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.order-bar-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 1px;
+}
+.order-bar-total {
+  font-size: 13px;
+  font-weight: 900;
+  background: linear-gradient(135deg,#c9a84c,#f0d080);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.order-bar-actions { display: flex; gap: 8px; }
+.order-clear-btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,100,100,0.2);
+  background: rgba(255,100,100,0.07);
+  color: #ff9999;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.order-clear-btn:hover { background: rgba(255,100,100,0.14); }
+.order-send-btn {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(135deg,#c9a84c,#f0d080);
+  color: var(--dark);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  transition: all 0.25s;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.order-send-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(201,168,76,0.35);
+}
+.order-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── حقل الملاحظة ── */
+.order-note-wrap {
+  padding: 0 22px 16px;
+  background: var(--dark4);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.order-note-label {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.order-note-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 10px;
+  color: var(--white);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  padding: 12px 14px;
+  resize: vertical;
+  min-height: 80px;
+  max-height: 180px;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  user-select: text;
+}
+.order-note-input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(201,168,76,0.1);
+}
+.order-note-input::placeholder { color: rgba(255,255,255,0.2); }
+
+/* ── نافذة تأكيد الإرسال ── */
+/* ══════════════════════════════════════════════════════
+   نافذة تأكيد الطلب — متجاوبة مع جميع الأجهزة
+══════════════════════════════════════════════════════ */
+
+/* ── الخلفية المعتمة ── */
+#orderConfirmModal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: none;
+  align-items: flex-end;       /* ← Sheet من الأسفل على الموبايل */
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  padding: 0;
+  /* دعم لوحة المفاتيح على iOS/Android */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+#orderConfirmModal.active {
+  display: flex;
+}
+
+/* ── الصندوق الرئيسي ── */
+.order-confirm-box {
+  position: relative;
+  width: 100%;
+  max-width: 100%;          /* موبايل: عرض كامل */
+  /* الارتفاع الديناميكي: يأخذ ما يحتاجه بحد أقصى 92% */
+  max-height: 92dvh;        /* dvh يتكيف مع لوحة المفاتيح */
+  max-height: 92vh;         /* fallback للمتصفحات القديمة */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 22px 22px 0 0;   /* ← Sheet style */
+  background: linear-gradient(145deg, #0f0f0f, #161616);
+  border: 1px solid rgba(201, 168, 76, 0.25);
+  border-bottom: none;
+  box-shadow:
+    0 -10px 60px rgba(0, 0, 0, 0.7),
+    0 0 60px rgba(201, 168, 76, 0.06);
+  animation: ocmSheetIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  /* مسافة أمان أسفل iPhone */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Scrollbar أنيق ── */
+.order-confirm-box::-webkit-scrollbar { width: 3px; }
+.order-confirm-box::-webkit-scrollbar-track { background: transparent; }
+.order-confirm-box::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.3);
+  border-radius: 4px;
+}
+
+/* ── Animation: Sheet من الأسفل ── */
+@keyframes ocmSheetIn {
+  from { opacity: 0; transform: translateY(60px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── مقبض السحب (Drag Handle) — موبايل فقط ── */
+.ocm-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 0 4px;
+  flex-shrink: 0;
+  cursor: grab;
+}
+.ocm-drag-handle::before {
+  content: '';
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+/* ══════════════════════════════════════════════════════
+   تابلت وديسكتوب: نافذة مركزية بدلاً من Sheet
+══════════════════════════════════════════════════════ */
+@media (min-width: 600px) {
+  #orderConfirmModal {
+    align-items: center;
+    padding: 16px;
+    padding-bottom: 16px;
+  }
+  .order-confirm-box {
+    max-width: 520px;
+    max-height: 88vh;
+    border-radius: 22px;
+    border-bottom: 1px solid rgba(201, 168, 76, 0.25);
+    animation: ocmModalIn 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    padding-bottom: 0;
+  }
+  .ocm-drag-handle { display: none; }
+
+  @keyframes ocmModalIn {
+    from { opacity: 0; transform: scale(0.88) translateY(24px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+}
+
+/* ── الخط العلوي الذهبي ── */
+.ocm-topline {
+  height: 2px;
+  background: linear-gradient(
+    90deg, transparent, #c9a84c 30%, #f0d080 50%, #c9a84c 70%, transparent
+  );
+  flex-shrink: 0;
+}
+
+/* ── الهيدر ── */
+.ocm-header {
+  padding: 16px 18px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(145deg, #0f0f0f, #161616);
+  z-index: 2;
+}
+.ocm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.ocm-icon {
+  width: 42px;
+  height: 42px;
+  background: linear-gradient(
+    135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.04)
+  );
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-size: 17px;
+  flex-shrink: 0;
+}
+.ocm-tag {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: rgba(201, 168, 76, 0.55);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+.ocm-title {
+  font-size: clamp(14px, 4vw, 17px);
+  font-weight: 900;
+  color: var(--white);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ocm-close {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s;
+  margin-left: 8px;
+}
+.ocm-close:hover {
+  background: rgba(255, 70, 70, 0.1);
+  border-color: rgba(255, 70, 70, 0.25);
+  color: #ff6b6b;
+  transform: rotate(90deg);
+}
+
+/* ── جسم النافذة ── */
+.ocm-body {
+  padding: 14px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── قائمة العناصر ── */
+.ocm-items-list {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  overflow: hidden;
+  /* حد أقصى للارتفاع مع scroll داخلي */
+  max-height: 38vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.ocm-items-list::-webkit-scrollbar { width: 3px; }
+.ocm-items-list::-webkit-scrollbar-thumb {
+  background: rgba(201, 168, 76, 0.2);
+  border-radius: 4px;
+}
+
+/* ── عنصر واحد في القائمة ── */
+.ocm-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 0.2s;
+}
+.ocm-item:last-child { border-bottom: none; }
+.ocm-item:hover      { background: rgba(201, 168, 76, 0.04); }
+
+/* ── صورة العنصر ── */
+.ocm-item-img {
+  width: 48px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 7px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+/* شاشات صغيرة جداً */
+@media (max-width: 360px) {
+  .ocm-item-img { width: 40px; height: 32px; }
+}
+
+.ocm-item-name {
+  font-size: clamp(11px, 3vw, 13px);
+  font-weight: 700;
+  color: var(--white);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ocm-item-cat {
+  font-size: 9px;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ocm-item-qty {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  background: rgba(201, 168, 76, 0.1);
+  border: 1px solid rgba(201, 168, 76, 0.2);
+  border-radius: 6px;
+  padding: 3px 9px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── معاينة الملاحظة ── */
+.ocm-note-preview {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.6;
+  display: none;
+  word-break: break-word;
+}
+.ocm-note-preview.has-note { display: block; }
+.ocm-note-preview strong {
+  display: block;
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+/* ── زر الإجراء الرئيسي ── */
+.ocm-wa-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: clamp(12px, 3vw, 16px);
+  background: linear-gradient(
+    135deg, rgba(18,60,35,0.95), rgba(22,70,40,0.95)
+  );
+  border: 1px solid rgba(37, 211, 102, 0.25);
+  border-radius: 14px;
+  color: #2ecc71;
+  cursor: pointer;
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(11px, 3vw, 13px);
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  transition: all 0.3s;
+  width: 100%;
+  text-transform: uppercase;
+  /* منع الضغط المزدوج */
+  -webkit-tap-highlight-color: transparent;
+}
+.ocm-wa-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(37, 211, 102, 0.15);
+  border-color: rgba(37, 211, 102, 0.4);
+}
+.ocm-wa-btn:active { transform: translateY(0); }
+.ocm-wa-btn i      { font-size: clamp(16px, 4vw, 20px); }
+.ocm-wa-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── ملاحظة التذييل ── */
+.ocm-footer-note {
+  font-size: clamp(9px, 2.5vw, 10px);
+  color: rgba(255, 255, 255, 0.18);
+  text-align: center;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-bottom: 4px;
+}
+.ocm-footer-note i { color: rgba(201, 168, 76, 0.35); }
+
+/* ══════════════════════════════════════════════════════
+   شاشات صغيرة جداً ≤ 380px
+══════════════════════════════════════════════════════ */
+@media (max-width: 380px) {
+  .ocm-body       { padding: 10px 12px 12px; gap: 10px; }
+  .ocm-header     { padding: 12px 14px 10px; }
+  .ocm-item       { padding: 8px 10px; gap: 8px; }
+  .ocm-item-qty   { padding: 2px 7px; font-size: 10px; }
+  .ocm-wa-btn     { padding: 12px; letter-spacing: 0.5px; }
+  .ocm-items-list { max-height: 32vh; }
+}
+
+
+
+
+
+
+
   </style>
 </head>
 <body>
@@ -598,7 +1265,7 @@
       <div class="home-card" onclick="enterSection('orta')">
         <img class="home-card-img" src="https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg" alt="Orta" loading="lazy" draggable="false"/>
         <div class="home-card-overlay"></div><div class="home-card-shine"></div>
-        <div class="home-card-count">19 MODEL</div>
+        <div class="home-card-count">20 MODEL</div>
         <div class="home-card-content">
           <div class="home-card-num">02 — KOLEKSİYON</div>
           <div class="home-card-title">ORTA<span>SEHPA</span></div>
@@ -615,6 +1282,21 @@
           <div class="home-card-title">DRESUAR<span>MODELLERİ</span></div>
           <div class="home-card-desc">Lüks & Kaliteli</div>
           <div class="home-card-btn">Koleksiyonu Gör <i class="fas fa-arrow-right"></i></div>
+        </div>
+      </div>
+      <!-- بطاقة الطلبيات -->
+      <div class="home-card" onclick="enterSection('orders')">
+        <img class="home-card-img"
+             src="https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg"
+             alt="Sipariş" loading="lazy" draggable="false"/>
+        <div class="home-card-overlay"></div>
+        <div class="home-card-shine"></div>
+        <div class="home-card-count">YENİ</div>
+        <div class="home-card-content">
+          <div class="home-card-num">04 — SİPARİŞ</div>
+          <div class="home-card-title">SİPARİŞ<span>VER</span></div>
+          <div class="home-card-desc">Model Seç & Gönder</div>
+          <div class="home-card-btn">Sipariş Ver <i class="fas fa-shopping-cart"></i></div>
         </div>
       </div>
     </div>
@@ -635,22 +1317,39 @@
       <a class="nav-link active" id="nav-orta"   href="#" onclick="showPage('orta');return false;">ORTA SEHPA</a>
       <a class="nav-link"        id="nav-tv"      href="#" onclick="showPage('tv');return false;">TV ÜNİTESİ</a>
       <a class="nav-link"        id="nav-dresuar" href="#" onclick="showPage('dresuar');return false;">DRESUAR</a>
+      <a class="nav-link" id="nav-orders" href="#" onclick="showPage('orders');return false;">SİPARİŞ</a>
+
     </div>
     <div class="nav-tools">
       <button class="nav-icon-btn" onclick="openDevModal()" data-tip="Yazılım & Tasarım"><i class="fas fa-code"></i></button>
       <div class="nav-sep"></div>
+<button class="nav-icon-btn cart-reminder-btn" id="cartReminderBtn"
+        onclick="showPage('orders')" data-tip="Onaylanmamış Sipariş"
+        style="display:none;">
+  <i class="fas fa-shopping-cart"></i>
+  <span class="cart-reminder-badge" id="cartReminderBadge">0</span>
+</button>
+<div class="nav-sep" id="cartReminderSep" style="display:none;"></div>
+
       <button class="nav-icon-btn" id="audioNavBtn" onclick="toggleAudio()" data-tip="Müzik Aç/Kapat"><i class="fas fa-volume-mute" id="audioNavIcon"></i></button>
       <div class="nav-sep"></div>
       <button class="nav-icon-btn logout-btn" onclick="doLogout()" data-tip="Çıkış Yap"><i class="fas fa-sign-out-alt"></i></button>
     </div>
     <div class="header-right-group">
-      <button class="mobile-audio-btn" id="mobileHeaderAudioBtn" onclick="toggleAudio()">
-        <i class="fas fa-volume-mute" id="mobileHeaderAudioIcon"></i>
-      </button>
-      <div class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
-        <span></span><span></span><span></span>
-      </div>
-    </div>
+  <button class="mobile-audio-btn cart-reminder-btn" id="mobileCartReminderBtn"
+          onclick="showPage('orders')"
+          style="display:none;">
+    <i class="fas fa-shopping-cart"></i>
+    <span class="cart-reminder-badge" id="mobileCartReminderBadge">0</span>
+  </button>
+  <button class="mobile-audio-btn" id="mobileHeaderAudioBtn" onclick="toggleAudio()">
+    <i class="fas fa-volume-mute" id="mobileHeaderAudioIcon"></i>
+  </button>
+  <div class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</div>
+
   </header>
 
   <div class="mobile-menu" id="mobileMenu">
@@ -663,6 +1362,8 @@
       <a href="#" id="mob-orta"    onclick="showPage('orta');closeMobileMenu();return false;"><i class="fas fa-table"></i> ORTA SEHPA</a>
       <a href="#" id="mob-tv"      onclick="showPage('tv');closeMobileMenu();return false;"><i class="fas fa-tv"></i> TV ÜNİTESİ</a>
       <a href="#" id="mob-dresuar" onclick="showPage('dresuar');closeMobileMenu();return false;"><i class="fas fa-border-all"></i> DRESUAR</a>
+      <a href="#" id="mob-orders" onclick="showPage('orders');closeMobileMenu();return false;"><i class="fas fa-shopping-cart"></i> SİPARİŞ VER</a>
+
       <div class="mob-divider"></div>
       <div class="mob-tools-row">
         <button class="mob-tool-btn mob-tool-dev" onclick="openDevModal();closeMobileMenu();">
@@ -796,6 +1497,52 @@
       </div>
     </div>
   </div>
+
+
+
+  <!-- =====================================================
+       نافذة تأكيد الطلب
+  ===================================================== -->
+  <div id="orderConfirmModal" onclick="handleOrderModalBg(event)">
+    <div class="order-confirm-box" id="ocmBox">
+  <div class="ocm-topline"></div>
+  <div class="ocm-drag-handle" id="ocmDragHandle"></div>
+  <div class="ocm-header">
+
+        <div class="ocm-header-left">
+          <div class="ocm-icon"><i class="fas fa-shopping-cart"></i></div>
+          <div>
+            <div class="ocm-tag">WOW MOBİLYA — SİPARİŞ</div>
+            <div class="ocm-title">Siparişi Onayla</div>
+          </div>
+        </div>
+        <div class="ocm-close" onclick="closeOrderConfirmModal()"><i class="fas fa-times"></i></div>
+      </div>
+      <div class="ocm-body">
+        <!-- قائمة العناصر -->
+        <div class="ocm-items-list" id="ocmItemsList"></div>
+        <!-- معاينة الملاحظة -->
+        <div class="ocm-note-preview" id="ocmNotePreview">
+          <strong><i class="fas fa-sticky-note"></i> &nbsp; NOT</strong>
+          <span id="ocmNoteText"></span>
+        </div>
+       <button class="ocm-wa-btn" id="ocmSendBtn" onclick="sendOrderViaWhatsApp()"
+  style="background:linear-gradient(135deg,rgba(30,80,30,0.0),rgba(30,80,30,0.0));
+         border-color:rgba(201,168,76,0.4);color:var(--gold);">
+  <i class="fas fa-file-excel" style="color:#1D6F42;font-size:22px;"></i>
+  SİPARİŞ DOSYASINI İNDİR (EXCEL)
+</button>
+<div class="ocm-footer-note">
+  <i class="fas fa-info-circle"></i>
+  Sipariş Excel dosyası cihazınıza indirilecek
+</div>
+
+      </div>
+    </div>
+  </div>
+
+
+
 
 </div><!-- /mainSite -->
 
@@ -951,7 +1698,7 @@ function togglePassVisibility(){
 ============================================================ */
 const USERS={"EYMENSEEV":"EYMENSEEV","BEYAZIT":"BEYAZIT","WOW2026":"1010","WOW":"WOW"};
 let currentPage='orta',currentView='grid-3',selectedIds=new Set(),currentLbIdx=0,filteredImages=[],audioPlaying=false,selectMode=false;
-const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRESUAR'};
+const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRESUAR',orders:'WOW MOBILYA SIPARIS'};
 
 /* جسيمات + تهيئة */
 (function(){
@@ -980,7 +1727,15 @@ function doLogin(){
     if(remember)saveCredentials(user,pass);else clearSavedCredentials();
     const ov=document.getElementById('loginOverlay');
     ov.style.transition='opacity 0.7s';ov.style.opacity='0';
-    setTimeout(()=>{ov.style.display='none';showHomeScreen();setTimeout(tryPlayAudio,600);},700);
+setTimeout(()=>{
+  ov.style.display='none';
+  loadCartFromStorage();
+  updateCartReminder(
+    Object.values(orderCart).reduce((a,b)=>a+b,0)
+  );
+  showHomeScreen();
+  setTimeout(tryPlayAudio,600);
+},700);
     err.style.display='none';
   }else{
     err.style.display='block';
@@ -1025,6 +1780,8 @@ function doLogoutFromBack(){
   document.body.classList.remove('select-mode');updateBulkBar();pauseAudio();appState='login';replaceState('login');
 }
 function doLogout(){
+  localStorage.removeItem('wow_order_cart'); /* ← أضف هذا */
+  Object.keys(orderCart).forEach(k => delete orderCart[k]);
   document.getElementById('mainSite').style.display='none';
   document.getElementById('homeScreen').style.display='none';
   const ov=document.getElementById('loginOverlay');
@@ -1049,7 +1806,17 @@ function showPage(cat){
   const navEl=document.getElementById('nav-'+cat);if(navEl)navEl.classList.add('active');
   document.querySelectorAll('.mobile-menu a').forEach(a=>a.classList.remove('active'));
   const mobEl=document.getElementById('mob-'+cat);if(mobEl)mobEl.classList.add('active');
-  filteredImages=images.filter(i=>i.cat===cat);
+  /* إذا كانت الصفحة هي الطلبيات نبني صفحة خاصة */
+  if (cat === 'orders') {
+    filteredImages = [];
+    buildOrderPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    appState = 'section';
+    pushState('section', { cat });
+    return;
+  }
+  filteredImages = images.filter(i => i.cat === cat);
+  buildPage(cat);
   buildPage(cat);window.scrollTo({top:0,behavior:'smooth'});
   appState='section';pushState('section',{cat});
 }
@@ -1465,7 +2232,7 @@ const images = [
 
   {
     id: 2,
-    src: "https://static.wixstatic.com/media/42e4ec_3e4084e325db4361bff3174dc2130099~mv2.png/v1/fill/w_942,h_706,al_c,q_90,usm_0.66_1.00_0.01,enc_avif,quality_auto/Copilot_20260424_185836.png",
+    src: "https://static.wixstatic.com/media/42e4ec_42b7e304bef34d19828650471c17de0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-20%20%D9%81%D9%8A%2017_12_edited.jpg",
     title: "W 512",
     cat: "orta",
     catLabel: "SET 1+1",
@@ -1490,7 +2257,7 @@ const images = [
   },
 
   {
-    id: 4,
+    id: 14,
     src: "https://static.wixstatic.com/media/42e4ec_ac140a43aa754b4e9a67965d84c96eb0~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2014_17_09_fe525743.jpg",
     title: "W 473",
     cat: "orta",
@@ -1503,7 +2270,7 @@ const images = [
   },
 
   {
-    id: 5,
+    id: 16,
     src: "https://static.wixstatic.com/media/42e4ec_9a21abf2d5b84514a3af4b8f6c2d144c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-22%20%D9%81%D9%8A%2011_58_edited.jpg",
     title: "W 400",
     cat: "orta",
@@ -1516,7 +2283,7 @@ const images = [
   },
 
   {
-    id: 6,
+    id: 21,
     src: "https://static.wixstatic.com/media/42e4ec_f75c19132e5b4bcd9959734eb7134269~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-1c258fbe-7a1e-426a-91b8-a74fe1c1ca2b_edited.jpg",
     title: "W 433",
     cat: "orta",
@@ -1529,7 +2296,7 @@ const images = [
   },
 
   {
-    id: 7,
+    id: 27,
     src: "https://static.wixstatic.com/media/42e4ec_9bea4ea2c7d34810a276c9d2ce58b3c1~mv2.jpg/v1/crop/x_82,y_0,w_937,h_702/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-741b1128-21c9-4b8d-a822-215df4dd9c0a_edited_edited.jpg",
     title: "W 509",
     cat: "orta",
@@ -1542,7 +2309,7 @@ const images = [
   },
 
   {
-    id: 8,
+    id: 22,
     src: "https://static.wixstatic.com/media/42e4ec_0f83635cfdad45a2a77060b9f43e8032~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-47fac1de-ebfd-45a1-85aa-a73deeffb49b.jpg",
     title: "W 472",
     cat: "orta",
@@ -1555,7 +2322,7 @@ const images = [
   },
 
   {
-    id: 9,
+    id: 25,
     src: "https://static.wixstatic.com/media/42e4ec_3685f80c5728497284dd255bba7e4da3~mv2.jpg/v1/fill/w_801,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-34d466ec-5df7-4427-827f-76460fabefa9_edited.jpg",
     title: "W 414",
     cat: "orta",
@@ -1568,7 +2335,7 @@ const images = [
   },
 
   {
-    id: 10,
+    id: 29,
     src: "https://static.wixstatic.com/media/42e4ec_ccc3ae584c824bdbb49bd494db38dee2~mv2.png/v1/crop/x_69,y_0,w_1110,h_832/fill/w_824,h_618,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/1000023387.png",
     title: "W 417",
     cat: "orta",
@@ -1580,9 +2347,23 @@ const images = [
     ],
   },
 
-  
   {
-    id: 11,
+    id: 18,
+    src: "https://static.wixstatic.com/media/42e4ec_f209429eb10b4cc89dcf20445de75392~mv2.jpg/v1/crop/x_278,y_0,w_2218,h_1664/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Product%20Staging-ffd30dda-90a7-4c31-887e-428983de187b%20(Product%20Staging)(1).jpg",
+    title: "W 520",
+    cat: "orta",
+    catLabel: "SET 1+1",
+    price: 12000,
+    dims: [
+      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 100, w: 100, h: 40, kg: 20 },
+      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 55,  w: 55, h: 50, kg: 10 },
+    ],
+  },
+
+  // ── SET 2+1 ──────────────────────────────
+
+  {
+    id: 5,
     src: "https://static.wixstatic.com/media/42e4ec_5c9a9e2cfa1c40a99a51178c0a381466~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-f9a6db0e-9a5e-4673-b22f-ba9a19587b37_edited.jpg",
     title: "W 506",
     cat: "orta",
@@ -1596,7 +2377,7 @@ const images = [
   },
 
   {
-    id: 12,
+    id: 6,
     src: "https://static.wixstatic.com/media/42e4ec_7a0e9f68ed2b4502a52dc9abe72181fd~mv2.jpg/v1/crop/x_96,y_0,w_1057,h_792/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-24365ac3-15b9-4d32-8d99-2fe078e107ac%20(1)_edited.jpg",
     title: "W 490C",
     cat: "orta",
@@ -1609,7 +2390,7 @@ const images = [
   },
 
   {
-    id: 13,
+    id: 9,
     src: "https://static.wixstatic.com/media/42e4ec_669691ffa52543f39da6168c08b1f0a3~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-f5a29568-d15d-4cb8-846d-3cff26d7c84f_edited.jpg",
     title: "W 490",
     cat: "orta",
@@ -1622,7 +2403,7 @@ const images = [
   },
 
   {
-    id: 14,
+    id: 11,
     src: "https://static.wixstatic.com/media/42e4ec_cbebccf1d4c9459a90941a26041ca999~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-20%20%D9%81%D9%8A%2017_13_01_00338eb7.jpg",
     title: "W 481",
     cat: "orta",
@@ -1649,7 +2430,7 @@ const images = [
   },
 
   {
-    id: 16,
+    id: 20,
     src: "https://static.wixstatic.com/media/42e4ec_8a3215eb43ce413db059d8a6a223d48a~mv2.jpg/v1/crop/x_190,y_0,w_745,h_558/fill/w_745,h_558,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/lifestyle-shot-75a29c85-7d9f-4cb3-be0c-431126f428c4_edited.jpg",
     title: "W 515",
     cat: "orta",
@@ -1662,7 +2443,7 @@ const images = [
   },
 
   {
-    id: 17,
+    id: 23,
     src: "https://static.wixstatic.com/media/42e4ec_1fc3e6ff35e94c218192a4c1e9a53c8a~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-f71dffbf-78b1-4428-a284-685aeecb726e_edited.jpg",
     title: "W 444",
     cat: "orta",
@@ -1676,7 +2457,7 @@ const images = [
   },
 
   {
-    id: 18,
+    id: 24,
     src: "https://static.wixstatic.com/media/42e4ec_9a30d1b3be60444f8a254489e2bd4aa8~mv2.jpg/v1/crop/x_69,y_0,w_1110,h_832/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_155519137.jpg",
     title: "W 516",
     cat: "orta",
@@ -1689,7 +2470,7 @@ const images = [
   },
 
   {
-    id: 19,
+    id: 26,
     src: "https://static.wixstatic.com/media/42e4ec_45e7b4f313884de4973c2a034d7bd61e~mv2.jpg/v1/crop/x_4,y_0,w_1041,h_780/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20251113_161351847-Photoroom%20(1)_edited.jpg",
     title: "W 475",
     cat: "orta",
@@ -1706,7 +2487,7 @@ const images = [
   ────────────────────────────────────────── */
 
   {
-    id: 20,
+    id: 33,
     src: "https://static.wixstatic.com/media/42e4ec_7557d3da2f9e4a2a8816339de74659b2~mv2.jpg/v1/fill/w_750,h_562,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2016_52_edited.jpg",
     title: "T 415",
     cat: "tv",
@@ -1719,7 +2500,7 @@ const images = [
   },
 
   {
-    id: 21,
+    id: 35,
     src: "https://static.wixstatic.com/media/42e4ec_400f83b2c3a143fbb37453458dfdac9b~mv2.jpg/v1/crop/x_60,y_0,w_1003,h_740/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2017_39_edited.jpg",
     title: "T 419",
     cat: "tv",
@@ -1731,7 +2512,7 @@ const images = [
   },
 
   {
-    id: 22,
+    id: 36,
     src: "https://static.wixstatic.com/media/42e4ec_4d397d7f184d43699b93123bf0264c64~mv2.jpg/v1/crop/x_69,y_0,w_1110,h_832/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Product%20Staging-6459cfc6-92e7-41fd-ab81-f7a9d12ae1ab%20(1).jpg",
     title: "T 521",
     cat: "tv",
@@ -1747,7 +2528,7 @@ const images = [
   ────────────────────────────────────────── */
 
   {
-    id: 23,
+    id: 37,
     src: "https://static.wixstatic.com/media/42e4ec_497547faea6641019e1ece74652f9f0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_160720150_edited.jpg",
     title: "K 518",
     cat: "dresuar",
@@ -1760,7 +2541,7 @@ const images = [
   },
 
   {
-    id: 24,
+    id: 40,
     src: "https://static.wixstatic.com/media/42e4ec_9eab263591f34df9bad9aac1da89cdf0~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-e110fd04-b2a6-40eb-b710-eeee44b2187f_edited.jpg",
     title: "K 502",
     cat: "dresuar",
@@ -1773,33 +2554,32 @@ const images = [
   },
 
   {
-    id: 25,
+    id: 41,
     src: "https://static.wixstatic.com/media/42e4ec_ae41071ab5c144ed8b32482d253fdc32~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_120658163_edited_edited.jpg",
     title: "K 446",
     cat: "dresuar",
     catLabel: "SET (PUF SİZ)",
     price: 9000,
     dims: [
- { name: "Dresuar Ayna", icon: "fa-border-all", l: 130, w: 35, h: 180,  kg: 35 },
-
+      { name: "Dresuar", icon: "fa-border-all", l: 115, w: 43, h: 76,  kg: 50 },
+      { name: "Ayna",    icon: "fa-gem",        l: 85,  w: 4,  h: 105, kg: 16 },
     ],
   },
 
   {
-    id: 26,
+    id: 42,
     src: "https://static.wixstatic.com/media/42e4ec_f9604b7e81d64a79b2cfee7a9e97765e~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-20%20%D9%81%D9%8A%2017_12_58_289aa5f6.jpg",
     title: "K 452",
     cat: "dresuar",
     catLabel: "SET",
     price: 9000,
     dims: [
-      { name: "Dresuar", icon: "fa-border-all", l: 145, w: 40, h: 85,  kg: 25 },
-      { name: "Ayna",    icon: "fa-gem",        l: 80,  w: 80,  h: 5, kg: 10 },
+      { name: "Dresuar Ayna", icon: "fa-border-all", l: 130, w: 35, h: 180,  kg: 35 },
     ],
   },
 
   {
-    id: 27,
+    id: 44,
     src: "https://static.wixstatic.com/media/42e4ec_560c8dbeb1e34b40ab2e31dd291cb20f~mv2.jpg/v1/crop/x_0,y_8,w_1089,h_816/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-23%20%D9%81%D9%8A%2010_30_edited.jpg",
     title: "K 451",
     cat: "dresuar",
@@ -1812,12 +2592,12 @@ const images = [
   },
 
   {
-    id: 28,
+    id: 45,
     src: "https://static.wixstatic.com/media/42e4ec_cc23db88236343c4a729c00f3be23b27~mv2.jpg/v1/crop/x_40,y_0,w_2103,h_1576/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Product%20Staging-72dc2b90-e68f-496e-8c50-0373a5ca835b(1)_edited_edited.jpg",
     title: "K 523",
     cat: "dresuar",
     catLabel: "SET",
-    price: 9000,
+    price: 9500,
     dims: [
       { name: "Dresuar", icon: "fa-border-all", l: 125, w: 30, h: 25,  kg: 20 },
       { name: "Ayna",    icon: "fa-gem",        l: 105,  w: 100,  h: 5, kg: 15 },
@@ -1825,6 +2605,925 @@ const images = [
   },
 
 ];
+
+
+
+
+/* ── Swipe لأسفل لإغلاق نافذة التأكيد (موبايل) ── */
+(function () {
+  let startY = 0, isDragging = false;
+
+  function onTouchStart(e) {
+    /* فقط إذا كان السحب من المقبض أو الهيدر */
+    const handle = document.getElementById('ocmDragHandle');
+    const header = document.querySelector('.ocm-header');
+    if (!handle || !header) return;
+    if (handle.contains(e.target) || header.contains(e.target)) {
+      startY = e.touches[0].clientY;
+      isDragging = true;
+    }
+  }
+
+  function onTouchMove(e) {
+    if (!isDragging) return;
+    const box = document.getElementById('ocmBox');
+    if (!box) return;
+    const diff = e.touches[0].clientY - startY;
+    if (diff > 0) {
+      box.style.transform = `translateY(${diff}px)`;
+      box.style.transition = 'none';
+    }
+  }
+
+  function onTouchEnd(e) {
+    if (!isDragging) return;
+    isDragging = false;
+    const box = document.getElementById('ocmBox');
+    if (!box) return;
+    const diff = e.changedTouches[0].clientY - startY;
+    box.style.transition = '';
+    if (diff > 120) {
+      /* سحب كافٍ → إغلاق */
+      box.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        box.style.transform = '';
+        closeOrderConfirmModal();
+      }, 300);
+    } else {
+      /* رجوع للوضع الطبيعي */
+      box.style.transform = '';
+    }
+  }
+
+  document.addEventListener('touchstart', onTouchStart, { passive: true });
+  document.addEventListener('touchmove',  onTouchMove,  { passive: true });
+  document.addEventListener('touchend',   onTouchEnd,   { passive: true });
+})();
+
+
+
+
+
+/* ============================================================
+   ★ قسم الطلبيات — ORDER SECTION ★
+============================================================ */
+
+const orderCart = {};
+
+/* ── حفظ السلة في localStorage ── */
+function saveCartToStorage() {
+  try {
+    const data = {};
+    Object.keys(orderCart).forEach(id => {
+      if (orderCart[id] > 0) data[id] = orderCart[id];
+    });
+    localStorage.setItem('wow_order_cart', JSON.stringify(data));
+  } catch(e) {}
+}
+
+/* ── تحميل السلة من localStorage ── */
+function loadCartFromStorage() {
+  try {
+    const raw = localStorage.getItem('wow_order_cart');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    Object.keys(data).forEach(id => {
+      orderCart[Number(id)] = data[id];
+    });
+  } catch(e) {}
+}
+
+/* ── إضافة labels و catFolderName للطلبيات ── */
+labels['orders'] = {
+  tag: 'SİPARİŞ KOLEKSİYONU',
+  title: 'SİPARİŞ',
+  accent: 'VER'
+};
+catFolderName['orders'] = 'WOW MOBILYA SIPARIS';
+
+/* ── بناء صفحة الطلبيات ── */
+function buildOrderPage() {
+  const L = labels['orders'];
+  const allImages = images; /* جميع الموديلات */
+
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <!-- بانر الصفحة -->
+      <div class="section-banner">
+        <div>
+          <div class="section-banner-tag">✦ ${L.tag}</div>
+          <div class="section-banner-title">
+            ${L.title} <span class="accent">${L.accent}</span>
+          </div>
+          <div class="section-banner-count">
+            ${allImages.length} model mevcut — Adet seçin ve gönderin
+          </div>
+          <div class="section-banner-line"></div>
+        </div>
+      </div>
+
+      <!-- شبكة الموديلات -->
+      <div class="order-grid" id="orderGrid">
+        ${allImages.map((img, idx) => buildOrderCard(img, idx)).join('')}
+      </div>
+
+      <!-- حقل الملاحظة -->
+      <div class="order-note-wrap">
+        <div class="order-note-label">
+          <i class="fas fa-sticky-note"></i> SİPARİŞ NOTU (İsteğe Bağlı)
+        </div>
+        <textarea
+          class="order-note-input"
+          id="orderNoteInput"
+          placeholder="Renk tercihi, özel istek veya herhangi bir not ekleyebilirsiniz..."
+          maxlength="500"
+        ></textarea>
+      </div>
+
+      <!-- شريط الإجراءات السفلي -->
+      <div class="order-bottom-bar" id="orderBottomBar">
+        <div class="order-bar-info">
+          <span class="order-bar-count" id="orderBarCount">0 ürün seçildi</span>
+          <span class="order-bar-total" id="orderBarTotal"></span>
+        </div>
+        <div class="order-bar-actions">
+          <button class="order-clear-btn" onclick="clearOrderCart()">
+            <i class="fas fa-trash"></i> Temizle
+          </button>
+          <button class="order-send-btn" id="orderSendBtn"
+                  onclick="openOrderConfirmModal()" disabled>
+            <i class="fas fa-paper-plane"></i> SİPARİŞ VER
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  /* استعادة الكميات المحفوظة */
+  Object.keys(orderCart).forEach(id => {
+    const qty = orderCart[id];
+    if (qty > 0) {
+      const card = document.getElementById('ocard-' + id);
+      if (card) {
+        card.classList.add('in-cart');
+        const valEl = document.getElementById('oqty-' + id);
+        if (valEl) valEl.textContent = qty;
+      }
+    }
+  });
+  updateOrderBar();
+}
+
+/* ── بناء بطاقة موديل واحد ── */
+function buildOrderCard(img, idx) {
+  const delay = (idx * 0.04).toFixed(2);
+  const qty   = orderCart[img.id] || 0;
+  const inCart = qty > 0 ? 'in-cart' : '';
+  const f = formatPrice(img.price);
+
+  return `
+    <div class="order-card ${inCart}" id="ocard-${img.id}"
+         style="animation-delay:${delay}s">
+      <div class="order-card-img-wrap">
+        <img src="${img.src}" alt="${img.title}" loading="lazy" draggable="false"
+             onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW'"/>
+        <div class="order-in-cart-badge">
+          <i class="fas fa-check"></i> SEPETTE
+        </div>
+      </div>
+      <div class="order-card-info">
+        <div class="order-card-title">${img.title}</div>
+        <div class="order-card-cat">${img.catLabel}</div>
+        ${f ? `<div class="order-card-price">${f} ₺</div>` : ''}
+      </div>
+      <div class="order-qty-row">
+        <span class="order-qty-label">ADET</span>
+        <div class="qty-control">
+          <button class="qty-btn"
+                  onclick="changeQty(event,${img.id},-1)">−</button>
+          <span class="qty-val" id="oqty-${img.id}">${qty}</span>
+          <button class="qty-btn"
+                  onclick="changeQty(event,${img.id},+1)">+</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── تغيير الكمية ── */
+function changeQty(e, id, delta) {
+  e.stopPropagation();
+  const current = orderCart[id] || 0;
+  const newQty  = Math.max(0, current + delta);
+  orderCart[id] = newQty;
+  saveCartToStorage();
+
+
+  /* تحديث العرض */
+  const valEl = document.getElementById('oqty-' + id);
+  if (valEl) valEl.textContent = newQty;
+
+  const card = document.getElementById('ocard-' + id);
+  if (card) {
+    newQty > 0
+      ? card.classList.add('in-cart')
+      : card.classList.remove('in-cart');
+  }
+  updateOrderBar();
+}
+
+/* ── تحديث شريط الطلب ── */
+function updateOrderBar() {
+  let totalItems = 0;
+  let totalPrice = 0;
+  let hasPrice   = false;
+
+  images.forEach(img => {
+    const qty = orderCart[img.id] || 0;
+    if (qty > 0) {
+      totalItems += qty;
+      if (img.price) {
+        totalPrice += img.price * qty;
+        hasPrice = true;
+      }
+    }
+  });
+
+  const countEl = document.getElementById('orderBarCount');
+  const totalEl = document.getElementById('orderBarTotal');
+  const sendBtn = document.getElementById('orderSendBtn');
+
+  if (countEl) countEl.textContent = totalItems + ' ürün seçildi';
+  if (totalEl) {
+    totalEl.textContent = hasPrice
+      ? 'Toplam: ' + Number(totalPrice).toLocaleString('tr-TR') + ' ₺'
+      : '';
+  }
+  if (sendBtn) sendBtn.disabled = (totalItems === 0);
+
+  /* ── تحديث زر التذكير ── */
+  updateCartReminder(totalItems);
+}
+
+function updateCartReminder(count) {
+  const btn      = document.getElementById('cartReminderBtn');
+  const badge    = document.getElementById('cartReminderBadge');
+  const sep      = document.getElementById('cartReminderSep');
+  const mobBtn   = document.getElementById('mobileCartReminderBtn');
+  const mobBadge = document.getElementById('mobileCartReminderBadge');
+
+  const isMobile = window.innerWidth <= 900;
+
+  if (count > 0) {
+    /* ── ديسكتوب ── */
+    if (btn)  { badge.textContent = count; btn.style.display = isMobile ? 'none' : 'flex'; }
+    if (sep)    sep.style.display = isMobile ? 'none' : 'block';
+
+    /* ── موبايل: نحذف inline style ونترك CSS يتحكم ── */
+    if (mobBtn) {
+      mobBadge.textContent = count;
+      mobBtn.style.removeProperty('display'); /* ← CSS سيظهره تلقائياً في الموبايل */
+    }
+
+  } else {
+    if (btn)    btn.style.display    = 'none';
+    if (sep)    sep.style.display    = 'none';
+    if (mobBtn) mobBtn.style.display = 'none'; /* ← نخفيه صراحةً */
+  }
+}
+
+/* ── تفريغ السلة ── */
+function clearOrderCart() {
+  images.forEach(img => {
+    orderCart[img.id] = 0;
+    const card  = document.getElementById('ocard-' + img.id);
+    const valEl = document.getElementById('oqty-' + img.id);
+    if (card)  card.classList.remove('in-cart');
+    if (valEl) valEl.textContent = '0';
+  });
+  saveCartToStorage();
+  updateOrderBar();
+}
+
+/* ── فتح نافذة التأكيد ── */
+function openOrderConfirmModal() {
+  const selected = images.filter(img => (orderCart[img.id] || 0) > 0);
+  if (!selected.length) return;
+
+  /* بناء قائمة العناصر */
+  document.getElementById('ocmItemsList').innerHTML = selected.map(img => `
+    <div class="ocm-item">
+      <img class="ocm-item-img" src="${img.src}" alt="${img.title}" draggable="false"
+           onerror="this.src='https://placehold.co/52x40/1a1a1a/c9a84c?text=W'"/>
+      <div style="flex:1;min-width:0;">
+        <div class="ocm-item-name">${img.title}</div>
+        <div class="ocm-item-cat">${img.catLabel}</div>
+      </div>
+      <div class="ocm-item-qty">× ${orderCart[img.id]}</div>
+    </div>`).join('');
+
+  /* معاينة الملاحظة */
+  const note    = (document.getElementById('orderNoteInput')?.value || '').trim();
+  const noteDiv = document.getElementById('ocmNotePreview');
+  const noteTxt = document.getElementById('ocmNoteText');
+  if (note) {
+    noteTxt.textContent = note;
+    noteDiv.classList.add('has-note');
+  } else {
+    noteDiv.classList.remove('has-note');
+  }
+
+  document.getElementById('orderConfirmModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+/* ── إغلاق نافذة التأكيد ── */
+function closeOrderConfirmModal() {
+  document.getElementById('orderConfirmModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+function handleOrderModalBg(e) {
+  if (e.target === document.getElementById('orderConfirmModal'))
+    closeOrderConfirmModal();
+}
+
+
+
+/* ============================================================
+   ★ Excel فضي أنيق — قائمة علوية منتصف + قفل السعر فقط ★
+============================================================ */
+async function sendOrderViaWhatsApp() {
+  const btn    = document.getElementById('ocmSendBtn');
+  const setBtn = (html, off=true) => {
+    if (!btn) return;
+    btn.disabled  = off;
+    btn.innerHTML = html;
+  };
+
+  setBtn('<i class="fas fa-spinner fa-spin"></i> Hazırlanıyor...');
+
+  const selected = images.filter(img => (orderCart[img.id]||0) > 0);
+  const note     = (document.getElementById('orderNoteInput')?.value||'').trim();
+
+  /* ── 1. تحميل ExcelJS ── */
+  if (typeof ExcelJS === 'undefined') {
+    await loadScript(
+      'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'
+    );
+  }
+
+  /* ── 2. معلومات الطلب ── */
+  const now      = new Date();
+  const dateStr  = now.toLocaleDateString('tr-TR');
+  const timeStr  = now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  const orderNum = 'WOW-' + Date.now().toString().slice(-6);
+
+  /* ── 3. تحويل URL → Base64 ── */
+  async function toBase64(url) {
+    try {
+      const res = await fetch(getHighQualityUrl(url),{mode:'cors'});
+      if (!res.ok) throw 0;
+      const blob = await res.blob();
+      return await new Promise((ok,no)=>{
+        const rd = new FileReader();
+        rd.onload  = ()=>ok(rd.result);
+        rd.onerror = no;
+        rd.readAsDataURL(blob);
+      });
+    } catch { return null; }
+  }
+
+  /* ── 4. جلب صور الموديلات ── */
+  setBtn('<i class="fas fa-spinner fa-spin"></i> Görseller yükleniyor...');
+  const imgMap = {};
+  await Promise.all(selected.map(async img => {
+    const b64 = await toBase64(img.src);
+    if (b64) imgMap[img.id] = b64;
+  }));
+
+  /* ── 5. إنشاء Workbook ── */
+  setBtn('<i class="fas fa-spinner fa-spin"></i> Excel oluşturuluyor...');
+
+  const wb   = new ExcelJS.Workbook();
+  wb.creator = 'WOW MOBİLYA';
+  wb.created = now;
+
+  const ws = wb.addWorksheet('Sipariş', {
+    pageSetup: {
+      paperSize   : 9,
+      orientation : 'portrait',
+      fitToPage   : true,
+      fitToWidth  : 1,
+      fitToHeight : 0,
+      margins     : { left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.3, footer:0.3 },
+    },
+    properties: { tabColor:{ argb:'FF9E9E9E' } },
+  });
+
+  /* ── 6. الأعمدة
+     A  رقم         4
+     B  صورة       26
+     C  اسم         22
+     D  فئة         16
+     E  كمية         8
+     F  سعر         14   ← مقفل
+     G  إجمالي      14
+  ── */
+  ws.columns = [
+    { key:'no',    width:4  },
+    { key:'img',   width:26 },
+    { key:'model', width:22 },
+    { key:'cat',   width:16 },
+    { key:'qty',   width:8  },
+    { key:'price', width:14 },
+    { key:'total', width:14 },
+  ];
+
+   /* ── 7. ثوابت الألوان الذهبية ── */
+  const C = {
+    /* ذهبي */
+    silver1  : 'FFFFFDF5',   /* أبيض مائل للذهبي خفيف جداً — صفوف زوجية */
+    silver2  : 'FFFFF8E7',   /* ذهبي فاتح جداً — صفوف فردية */
+    silver3  : 'FFE8D5A0',   /* حدود ذهبية فاتحة */
+    silver4  : 'FFC9A84C',   /* ذهبي أساسي — نصوص ثانوية */
+    silver5  : 'FF8B6914',   /* ذهبي داكن — نصوص ثالثية */
+    silverHdr: 'FF1A1A1A',   /* رأس الجدول — أسود */
+    silverHT : 'FFC9A84C',   /* نص رأس الجدول — ذهبي */
+
+    /* رأس الصفحة وتذييلها */
+    topBg    : 'FF0F0F0F',   /* أسود عميق */
+    topLine  : 'FFC9A84C',   /* شريط ذهبي */
+
+    /* تذييل */
+    footBg   : 'FF0F0F0F',
+
+    /* عام */
+    white    : 'FFFFFFFF',
+    black    : 'FF111111',
+    darkText : 'FF1A1A1A',
+    midText  : 'FF5A4A1A',   /* بني ذهبي داكن */
+    green    : 'FF2E7D32',
+    greenPale: 'FFF1F8F2',
+
+    /* قفل السعر */
+    lockBg   : 'FFFFFBF0',   /* ذهبي شاحب جداً */
+    lockBdr  : 'FFD4A843',   /* حدود ذهبية */
+  };
+
+
+  /* ── 8. دوال مساعدة ── */
+  const sf = a => ({ type:'pattern', pattern:'solid', fgColor:{argb:a} });
+
+  const mf = (o={}) => ({
+    name  : o.name   || 'Calibri',
+    bold  : o.bold   || false,
+    italic: o.italic || false,
+    size  : o.size   || 11,
+    color : { argb: o.color || C.darkText },
+  });
+
+  const ma = (h='left', v='middle', wrap=false) => ({
+    horizontal:h, vertical:v, wrapText:wrap,
+  });
+
+   /* حدود رفيعة سوداء */
+  const bdrSilver = {
+    top   :{style:'thin',  color:{argb:C.black}},
+    left  :{style:'thin',  color:{argb:C.black}},
+    bottom:{style:'thin',  color:{argb:C.black}},
+    right :{style:'thin',  color:{argb:C.black}},
+  };
+
+
+  /* حدود متوسطة داكنة لرأس الجدول */
+  const bdrDark = {
+    top   :{style:'medium',color:{argb:'FF444444'}},
+    left  :{style:'medium',color:{argb:'FF444444'}},
+    bottom:{style:'medium',color:{argb:'FF444444'}},
+    right :{style:'medium',color:{argb:'FF444444'}},
+  };
+
+   /* حدود خلية السعر — سوداء */
+  const bdrLock = {
+    top   :{style:'thin',  color:{argb:C.black}},
+    left  :{style:'thin',  color:{argb:C.black}},
+    bottom:{style:'thin',  color:{argb:C.black}},
+    right :{style:'thin',  color:{argb:C.black}},
+  };
+
+
+  function ac(cell, o={}) {
+    if (o.value  !== undefined) cell.value      = o.value;
+    if (o.font)                 cell.font        = o.font;
+    if (o.fill)                 cell.fill        = o.fill;
+    if (o.align)                cell.alignment   = o.align;
+    if (o.border)               cell.border      = o.border;
+    if (o.protection)           cell.protection  = o.protection;
+    if (o.numFmt)               cell.numFmt      = o.numFmt;
+  }
+
+  function mc(range, o={}) {
+    ws.mergeCells(range);
+    ac(ws.getCell(range.split(':')[0]), o);
+  }
+
+  /* ── 9. حساب الإجمالي ── */
+  let grandTotal=0, hasPrice=false;
+  selected.forEach(img => {
+    const q = orderCart[img.id];
+    if (img.price) { grandTotal += img.price*q; hasPrice=true; }
+  });
+
+  /* ══════════════════════════════════════════════════════
+     ★ هيكل الورقة
+
+     صف 1  — شريط فضي رفيع (3pt)
+     صف 2  — خلفية داكنة (3pt)
+     صف 3  — قائمة علوية منتصف (52pt) ← اسم الشركة + معلومات
+     صف 4  — خلفية داكنة (3pt)
+     صف 5  — شريط فضي رفيع (3pt)
+     صف 6  — فراغ أبيض (10pt)
+     صف 7  — رأس الجدول (30pt)
+     صفوف 8+ — بيانات (90pt)
+     صف إجمالي — (34pt)
+     + ملاحظة
+     صف قبل أخير — شريط فضي (3pt)
+     صف أخير     — تذييل داكن (20pt)
+     صف أخير+1   — شريط فضي (3pt)
+  ══════════════════════════════════════════════════════ */
+
+  /* ── صف 1: شريط فضي ── */
+  ws.getRow(1).height = 3;
+  mc('A1:G1', { fill:sf(C.topLine) });
+
+  /* ── صف 2: خلفية داكنة ── */
+  ws.getRow(2).height = 3;
+  mc('A2:G2', { fill:sf(C.topBg) });
+
+  /* ── صف 3: القائمة العلوية ── */
+  ws.getRow(3).height = 52;
+
+  /* خلفية داكنة لكل خلايا الصف 3 */
+  for (let c=1; c<=7; c++) {
+    ws.getRow(3).getCell(c).fill = sf(C.topBg);
+  }
+
+  /*
+    القائمة العلوية في المنتصف:
+    ندمج كل A3:G3 ونضع النص في المنتصف
+  */
+    /* ── صف 3: نرفع ارتفاعه لاستيعاب سطرين ── */
+  ws.getRow(3).height = 64;
+
+  ws.mergeCells('A3:G3');
+  const topCell = ws.getCell('A3');
+  topCell.value = {
+    richText: [
+      /* ── السطر الأول: اسم الشركة ── */
+      {
+        text : 'WOW MOBİLYA',
+        font : {
+          name : 'Calibri',
+          bold : true,
+          size : 22,
+          color: { argb: C.topLine },
+        },
+      },
+      /* ── فاصل سطر ── */
+      {
+        text : '\n',
+        font : { name:'Calibri', size:8, color:{ argb:C.topBg } },
+      },
+      /* ── السطر الثاني: المعلومات مع رموز ── */
+      {
+        text : `📋 ${orderNum}     📅 ${dateStr}     🕐 ${timeStr}`,
+        font : {
+          name  : 'Calibri',
+          bold  : false,
+          size  : 10,
+          italic: false,
+          color : { argb: 'FFFFFFFF' },
+        },
+      },
+    ],
+  };
+  topCell.alignment = {
+    horizontal : 'center',
+    vertical   : 'middle',
+    wrapText   : true,
+  };
+  topCell.fill = sf(C.topBg);
+
+
+  /* ── صف 4: خلفية داكنة ── */
+  ws.getRow(4).height = 3;
+  mc('A4:G4', { fill:sf(C.topBg) });
+
+  /* ── صف 5: شريط فضي ── */
+  ws.getRow(5).height = 3;
+  mc('A5:G5', { fill:sf(C.topLine) });
+
+  /* ── صف 6: فراغ أبيض ── */
+  ws.getRow(6).height = 10;
+  mc('A6:G6', { fill:sf(C.white) });
+
+  /* ── صف 7: رأس الجدول ── */
+  ws.getRow(7).height = 30;
+  const headers = [
+    { t:'#',            a:'center' },
+    { t:'GÖRSEL',       a:'center' },
+    { t:'MODEL ADI',    a:'center' },
+    { t:'DETAYLARI',     a:'center' },
+    { t:'ADET',         a:'center' },
+    { t:'BİRİM FİYAT',  a:'center' },
+    { t:'TOPLAM',       a:'center' },
+  ];
+  headers.forEach((h,ci) => {
+    ac(ws.getRow(7).getCell(ci+1), {
+      value  : h.t,
+      font   : mf({ bold:true, size:10, color:C.silverHT }),
+      fill   : sf(C.silverHdr),
+      align  : ma(h.a,'middle'),
+      border : bdrDark,
+      /* رأس الجدول غير مقفول */
+      protection: { locked:false },
+    });
+  });
+
+  /* ══════════════════════════════════════════════════════
+     ★ صفوف البيانات — تبدأ من صف 8
+  ══════════════════════════════════════════════════════ */
+  const DATA_START = 8;
+  const ROW_H_PT   = 90;
+  const ROW_H_EMU  = ROW_H_PT * 12700;
+  const COL_B_EMU  = Math.round(26 * 7 * 9525);
+  const MARGIN_EMU = Math.round(ROW_H_EMU * 0.05);
+  const IMG_H_EMU  = ROW_H_EMU - MARGIN_EMU * 2;
+  const IMG_W_EMU  = COL_B_EMU - MARGIN_EMU * 2;
+
+  for (let i=0; i<selected.length; i++) {
+    const img    = selected[i];
+    const qty    = orderCart[img.id];
+    const price  = img.price || 0;
+    const total  = price * qty;
+    const rowNum = DATA_START + i;
+    const row    = ws.getRow(rowNum);
+    row.height   = ROW_H_PT;
+
+    /* تبادل خفيف بين أبيض وفضي فاتح جداً */
+    /* جميع الصفوف أبيض نظيف */
+    const rowBg = C.white;
+
+    /* A — رقم (غير مقفول) */
+    ac(row.getCell(1), {
+      value     : i+1,
+      font      : mf({ bold:true, size:11, color:C.silver4 }),
+      fill      : sf(rowBg),
+      align     : ma('center','middle'),
+      border    : bdrSilver,
+      protection: { locked:false },
+    });
+
+    /* B — خلية الصورة (غير مقفولة) */
+    ac(row.getCell(2), {
+      fill      : sf(C.white),
+      border    : bdrSilver,
+      protection: { locked:false },
+    });
+
+  /* C — اسم الموديل ← مقفول لمنع التعديل */
+ac(row.getCell(3), {
+  value     : '  ' + img.title,
+  font      : mf({ bold:true, size:12, color:C.darkText }),
+  fill      : sf(C.white),
+  align     : ma('center','middle'),
+  border    : bdrLock,
+  protection: { locked:true, hidden:false },
+});
+
+
+    /* D — الفئة (غير مقفولة) */
+    ac(row.getCell(4), {
+      value     : img.catLabel,
+      font      : mf({ size:10, color:C.midText }),
+      fill      : sf(rowBg),
+      align     : ma('center','middle'),
+      border    : bdrSilver,
+      protection: { locked:false },
+    });
+
+    /* E — الكمية (غير مقفولة — قابلة للتعديل) */
+    ac(row.getCell(5), {
+      value     : qty,
+      font      : mf({ bold:true, size:15, color:C.darkText }),
+      fill      : sf(rowBg),
+      align     : ma('center','middle'),
+      border    : bdrSilver,
+      protection: { locked:false },
+    });
+
+    /* ══════════════════════════════════════════
+       F — السعر ← مقفول لمنع التعديل
+       نضع رمز قفل 🔒 أمام القيمة
+    ══════════════════════════════════════════ */
+    const priceDisplay = price > 0
+      ? '  ' + Number(price).toLocaleString('tr-TR') + ' ₺'
+      : '  Fiyat için arayın';
+
+       ac(row.getCell(6), {
+      value     : priceDisplay,
+      font      : mf({
+        size  : 10,
+        italic: true,
+        color : price > 0 ? C.midText : C.silver5,
+      }),
+      fill      : sf(C.white),
+
+      align     : ma('center','middle'),
+      border    : bdrLock,
+      /* ★ هذه الخلية مقفولة ★ */
+      protection: { locked:true, hidden:false },
+    });
+
+       /* G — TOPLAM ← رقم حقيقي + تنسيق + مقفول */
+    const gCell = row.getCell(7);
+
+    if (price > 0) {
+      gCell.value  = { formula: `E${rowNum}*${price}` };
+      gCell.numFmt = '#,##0 "₺"';
+    } else {
+      gCell.value  = '—';
+    }
+
+    ac(gCell, {
+      font      : mf({ bold:true, size:12,
+                       color: price>0 ? C.green : C.silver5 }),
+      fill      : sf(C.white),
+      align     : ma('center','middle'),
+      border    : bdrSilver,
+      protection: { locked:true, hidden:false },
+    });
+
+
+    /* ── إدراج صورة الموديل ── */
+    const b64 = imgMap[img.id];
+    if (b64) {
+      const mime = b64.match(/^data:(image\/\w+);base64,/)?.[1]||'image/jpeg';
+      const ext  = mime.includes('png')?'png':'jpeg';
+      const data = b64.replace(/^data:image\/\w+;base64,/,'');
+      const id   = wb.addImage({ base64:data, extension:ext });
+
+      ws.addImage(id, {
+        tl: {
+          nativeCol    : 1,
+          nativeColOff : MARGIN_EMU,
+          nativeRow    : DATA_START - 1 + i,
+          nativeRowOff : MARGIN_EMU,
+        },
+        ext: {
+          width  : Math.round(IMG_W_EMU / 9525),
+          height : Math.round(IMG_H_EMU / 9525),
+        },
+      });
+    }
+  }
+
+  /* ── صف الإجمالي ── */
+  const totR = DATA_START + selected.length;
+  ws.getRow(totR).height = 34;
+
+  mc(`A${totR}:F${totR}`, {
+    value     : '💰 GENEL TOPLAM',
+    font      : mf({ bold:true, size:11, color:C.silverHT }),
+    fill      : sf(C.silverHdr),
+    align     : ma('right','middle'),
+    border    : bdrDark,
+    protection: { locked:false },
+  });
+
+    /* GENEL TOPLAM ← SUM بسيط على أرقام حقيقية + مقفول */
+  const gFirst = DATA_START;
+  const gLast  = DATA_START + selected.length - 1;
+
+  const totCell = ws.getRow(totR).getCell(7);
+  totCell.value  = { formula: `SUM(G${gFirst}:G${gLast})` };
+  totCell.numFmt = '#,##0 "₺"';
+
+  ac(totCell, {
+    font      : mf({ bold:true, size:13, color:C.green }),
+    fill      : sf(C.white),
+    align     : ma('center','middle'),
+    border    : bdrDark,
+    protection: { locked:true, hidden:false },
+  });
+
+
+  /* ── الملاحظة ── */
+  let nR = totR + 1;
+  if (note) {
+    ws.getRow(nR).height = 8;
+    mc(`A${nR}:G${nR}`, { fill:sf(C.white) });
+    nR++;
+
+    ws.getRow(nR).height = 30;
+    ac(ws.getRow(nR).getCell(1), {
+      value     : 'NOT',
+      font      : mf({ bold:true, size:9, color:C.silverHT }),
+      fill      : sf(C.silverHdr),
+      align     : ma('center','middle'),
+      border    : bdrDark,
+      protection: { locked:false },
+    });
+    ws.mergeCells(`B${nR}:G${nR}`);
+    ac(ws.getRow(nR).getCell(2), {
+      value     : note,
+      font      : mf({ size:11, color:C.darkText }),
+      fill      : sf(C.white),
+      align     : ma('left','middle',true),
+      border    : bdrSilver,
+      protection: { locked:false },
+    });
+    nR++;
+  }
+
+  /* ── فراغ ── */
+  ws.getRow(nR).height = 10;
+  mc(`A${nR}:G${nR}`, { fill:sf(C.white) });
+  nR++;
+
+  /* ── شريط فضي ── */
+  ws.getRow(nR).height = 3;
+  mc(`A${nR}:G${nR}`, { fill:sf(C.topLine) });
+  nR++;
+
+  /* ── تذييل داكن ── */
+  ws.getRow(nR).height = 20;
+  mc(`A${nR}:G${nR}`, {
+    value     : '© 2026 WOW MOBİLYA  —  Tüm Hakları Saklıdır  |  +90 538 626 37 00',
+    font      : mf({ size:8, italic:true, color:C.silver4 }),
+    fill      : sf(C.topBg),
+    align     : ma('center','middle'),
+    protection: { locked:false },
+  });
+  nR++;
+
+  /* ── شريط فضي سفلي ── */
+  ws.getRow(nR).height = 3;
+  mc(`A${nR}:G${nR}`, { fill:sf(C.topLine) });
+
+  /* ══════════════════════════════════════════════════════
+     ★ تفعيل الحماية على الورقة — مع السماح بتحرير
+       الخلايا غير المقفولة (locked:false)
+     كلمة المرور فارغة = يمكن لأي شخص إلغاء الحماية
+     لكن لا يمكن تعديل خلايا السعر مباشرةً
+  ══════════════════════════════════════════════════════ */
+  ws.protect('', {
+    /* ما يُسمح به للمستخدم */
+    selectLockedCells  : true,
+    selectUnlockedCells: true,
+    formatCells        : false,
+    formatColumns      : false,
+    formatRows         : false,
+    insertColumns      : false,
+    insertRows         : false,
+    deleteColumns      : false,
+    deleteRows         : false,
+    sort               : false,
+    autoFilter         : false,
+  });
+
+  /* ── إعدادات العرض ── */
+  ws.views = [{
+    state        : 'frozen',
+    ySplit       : 7,
+    showGridLines: false,
+  }];
+
+  /* ── تصدير ── */
+  setBtn('<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...');
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob   = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  const fn  = `WOW_Siparis_${orderNum}.xlsx`;
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href=url; a.download=fn;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+
+  /* ── إغلاق + رسالة نجاح ── */
+  setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
+
+  setTimeout(()=>{
+    setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
+    closeOrderConfirmModal();
+    clearOrderCart();
+    showOrderSuccessToast(orderNum);
+  }, 2000);
+}
+
+
+
 
 
 
@@ -2413,10 +4112,6 @@ function triggerInstall() {
     hideInstallBtn();
   });
 }
-
-
-
-
 
 
 
