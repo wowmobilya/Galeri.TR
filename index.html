@@ -114,9 +114,30 @@
     .home-welcome{text-align:center;margin-bottom:50px;animation:homeWelcomeIn 0.9s ease 0.2s forwards;opacity:0;}
     @keyframes homeWelcomeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
     .home-welcome-title{font-size:clamp(11px,2vw,13px);letter-spacing:6px;color:rgba(255,255,255,0.2);text-transform:uppercase;font-weight:600;}
-    .home-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;width:100%;max-width:1000px;animation:homeCardsIn 0.9s ease 0.35s forwards;opacity:0;}
+.home-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+  width: 100%;
+  max-width: 900px;       /* ← عرض الشبكة الكلي */
+  animation: homeCardsIn 0.9s ease 0.35s forwards;
+  opacity: 0;
+}
     @keyframes homeCardsIn{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
-    .home-card{position:relative;border-radius:20px;overflow:hidden;cursor:pointer;border:1px solid rgba(201,168,76,0.12);background:var(--dark3);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),border-color 0.3s ease,box-shadow 0.4s ease;aspect-ratio:3/4;}
+.home-card {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(201,168,76,0.12);
+  background: var(--dark3);
+  transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1),border-color 0.3s ease,box-shadow 0.4s ease;
+
+  /* ✅ تحكم كامل بالأبعاد */
+  width: 100%;
+  height: 200px;        /* ← غيّر هذا لتحكم بالطول */
+  aspect-ratio: unset;  /* ← إلغاء النسبة التلقائية */
+}
     .home-card:hover{transform:translateY(-10px) scale(1.02);border-color:rgba(201,168,76,0.5);box-shadow:0 30px 60px rgba(0,0,0,0.6),0 0 0 1px rgba(201,168,76,0.2),0 0 40px rgba(201,168,76,0.08);}
     .home-card:active{transform:translateY(-5px) scale(1.01);}
     .home-card-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform 0.6s ease,filter 0.4s ease;filter:brightness(0.65) saturate(0.9);pointer-events:none;-webkit-user-drag:none;}
@@ -1526,20 +1547,109 @@
           <strong><i class="fas fa-sticky-note"></i> &nbsp; NOT</strong>
           <span id="ocmNoteText"></span>
         </div>
-       <button class="ocm-wa-btn" id="ocmSendBtn" onclick="sendOrderViaWhatsApp()"
+      <!-- زر Excel -->
+<button class="ocm-wa-btn" id="ocmSendBtn" onclick="sendOrderViaWhatsApp()"
   style="background:linear-gradient(135deg,rgba(30,80,30,0.0),rgba(30,80,30,0.0));
          border-color:rgba(201,168,76,0.4);color:var(--gold);">
   <i class="fas fa-file-excel" style="color:#1D6F42;font-size:22px;"></i>
   SİPARİŞ DOSYASINI İNDİR (EXCEL)
 </button>
+
+<!-- زر PDF -->
+<button class="ocm-wa-btn" id="ocmPdfBtn" onclick="openOrderPdfModal()"
+  style="background:linear-gradient(135deg,rgba(180,30,30,0.0),rgba(180,30,30,0.0));
+         border-color:rgba(220,80,80,0.45);color:#ff8a80;margin-top:0;">
+  <i class="fas fa-file-pdf" style="color:#e53935;font-size:22px;"></i>
+  SİPARİŞ PDF — GÖRÜNTÜLE / YAZDIR / İNDİR
+</button>
+
 <div class="ocm-footer-note">
   <i class="fas fa-info-circle"></i>
-  Sipariş Excel dosyası cihazınıza indirilecek
+  Excel veya PDF olarak kaydedin — PDF önizleme ile yazdırabilirsiniz
 </div>
-
       </div>
     </div>
   </div>
+
+
+
+
+
+
+
+<!-- =====================================================
+     نافذة PDF Preview
+===================================================== -->
+<div id="pdfPreviewModal" style="
+  display:none;
+  position:fixed;inset:0;z-index:6000;
+  background:rgba(0,0,0,0.95);
+  flex-direction:column;
+  align-items:stretch;
+">
+  <!-- شريط الأدوات -->
+  <div style="
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 16px;
+    background:#111;
+    border-bottom:1px solid rgba(201,168,76,0.2);
+    flex-shrink:0;gap:8px;flex-wrap:wrap;
+  ">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <i class="fas fa-file-pdf" style="color:#e53935;font-size:20px;"></i>
+      <span style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:#fff;letter-spacing:1px;">
+        SİPARİŞ ÖNİZLEME
+      </span>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="printOrderPdf()" style="
+        padding:8px 16px;border-radius:8px;border:none;
+        background:linear-gradient(135deg,#1565c0,#1976d2);
+        color:#fff;font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1px;
+        cursor:pointer;display:flex;align-items:center;gap:6px;
+        transition:all 0.25s;
+      ">
+        <i class="fas fa-print"></i> YAZDIR
+      </button>
+      <button onclick="downloadOrderPdf()" style="
+        padding:8px 16px;border-radius:8px;border:none;
+        background:linear-gradient(135deg,#b71c1c,#e53935);
+        color:#fff;font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1px;
+        cursor:pointer;display:flex;align-items:center;gap:6px;
+        transition:all 0.25s;
+      ">
+        <i class="fas fa-download"></i> PDF İNDİR
+      </button>
+      <button onclick="closeOrderPdfModal()" style="
+        padding:8px 14px;border-radius:8px;
+        border:1px solid rgba(255,255,255,0.15);
+        background:rgba(255,255,255,0.06);
+        color:rgba(255,255,255,0.6);font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1px;
+        cursor:pointer;display:flex;align-items:center;gap:6px;
+        transition:all 0.25s;
+      ">
+        <i class="fas fa-times"></i> KAPAT
+      </button>
+    </div>
+  </div>
+
+  <!-- منطقة المعاينة -->
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;justify-content:center;background:#1a1a1a;">
+    <div id="pdfPreviewContent" style="
+      width:100%;max-width:794px;
+      background:#fff;
+      border-radius:4px;
+      box-shadow:0 8px 40px rgba(0,0,0,0.6);
+      min-height:400px;
+    "></div>
+  </div>
+</div>
+
+
+
 
 
 
@@ -3535,6 +3645,600 @@ ac(row.getCell(3), {
 
 
 
+
+
+
+
+
+
+/* ============================================================
+   ★ نظام PDF — عرض + طباعة + تنزيل ★
+============================================================ */
+
+let _pdfOrderNum = '';
+let _pdfNote     = '';
+let _pdfSelected = [];
+
+/* ── فتح نافذة PDF ── */
+function openOrderPdfModal() {
+  _pdfSelected = images.filter(img => (orderCart[img.id] || 0) > 0);
+  if (!_pdfSelected.length) return;
+
+  _pdfNote     = (document.getElementById('orderNoteInput')?.value || '').trim();
+  _pdfOrderNum = 'WOW-' + Date.now().toString().slice(-6);
+
+  /* بناء محتوى HTML للـ PDF */
+  document.getElementById('pdfPreviewContent').innerHTML = buildPdfHtml(
+    _pdfSelected, _pdfNote, _pdfOrderNum
+  );
+
+  /* إغلاق نافذة التأكيد وفتح نافذة PDF */
+  closeOrderConfirmModal();
+  const modal = document.getElementById('pdfPreviewModal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+/* ── إغلاق نافذة PDF ── */
+function closeOrderPdfModal() {
+  document.getElementById('pdfPreviewModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+/* ── طباعة ── */
+function printOrderPdf() {
+  const content = document.getElementById('pdfPreviewContent').innerHTML;
+  const win = window.open('', '_blank', 'width=900,height=700');
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <title>WOW MOBİLYA — Sipariş</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap');
+    * { margin:0;padding:0;box-sizing:border-box; }
+    body { font-family:'Montserrat',sans-serif; background:#fff; }
+    @page { size:A4; margin:15mm 12mm; }
+    @media print {
+      body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    }
+  </style>
+</head>
+<body>${content}</body>
+</html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); }, 600);
+}
+
+/* ── تنزيل PDF ── */
+/* ============================================================
+   ★ تنزيل PDF — نسخة مصححة بالكامل ★
+============================================================ */
+async function downloadOrderPdf() {
+  const btn = document.getElementById('ocmPdfBtn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PDF hazırlanıyor...';
+  }
+
+  /* ── تحميل المكتبات ── */
+  if (typeof html2canvas === 'undefined') {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  }
+  if (typeof jspdf === 'undefined' && typeof window.jspdf === 'undefined') {
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }
+
+  /* ── تحويل صور الموديلات إلى base64 ── */
+  const imgMap = {};
+  await Promise.all(_pdfSelected.map(async img => {
+    try {
+      const res  = await fetch(getHighQualityUrl(img.src), { mode: 'cors' });
+      if (!res.ok) throw 0;
+      const blob = await res.blob();
+      imgMap[img.id] = await new Promise((ok, no) => {
+        const rd = new FileReader();
+        rd.onload  = () => ok(rd.result);
+        rd.onerror = no;
+        rd.readAsDataURL(blob);
+      });
+    } catch { imgMap[img.id] = null; }
+  }));
+
+  /* ── إنشاء div مخفي للرسم ── */
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = `
+    position:fixed;
+    left:-9999px;
+    top:0;
+    width:794px;
+    background:#fff;
+    z-index:-1;
+    font-family:Arial,sans-serif;
+  `;
+  wrapper.innerHTML = buildPdfHtmlBase64(_pdfSelected, _pdfNote, _pdfOrderNum, imgMap);
+  document.body.appendChild(wrapper);
+
+  /* ننتظر تحميل الصور داخل wrapper */
+  await new Promise(r => setTimeout(r, 800));
+
+  try {
+    const canvas = await html2canvas(wrapper, {
+      scale          : 2,
+      useCORS        : true,
+      allowTaint     : true,
+      backgroundColor: '#ffffff',
+      logging        : false,
+      width          : 794,
+      windowWidth    : 794,
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit       : 'mm',
+      format     : 'a4',
+    });
+
+    const pageW  = pdf.internal.pageSize.getWidth();   /* 210mm */
+    const pageH  = pdf.internal.pageSize.getHeight();  /* 297mm */
+    const margin = 8; /* mm */
+    const imgW   = pageW - margin * 2;
+
+    /* نسبة الارتفاع الكاملة */
+    const totalH_mm = (canvas.height / canvas.width) * imgW;
+
+    /* تقسيم على صفحات */
+    const pageContentH = pageH - margin * 2;
+    let   yOffset      = 0; /* بالـ mm */
+    let   pageIndex    = 0;
+
+    while (yOffset < totalH_mm) {
+      if (pageIndex > 0) pdf.addPage();
+
+      /* نحسب القطعة المقابلة من الـ canvas */
+      const sliceH_mm  = Math.min(pageContentH, totalH_mm - yOffset);
+      const sliceH_px  = Math.round((sliceH_mm / totalH_mm) * canvas.height);
+      const sliceY_px  = Math.round((yOffset   / totalH_mm) * canvas.height);
+
+      /* نرسم القطعة على canvas مؤقت */
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width  = canvas.width;
+      sliceCanvas.height = sliceH_px;
+      const ctx = sliceCanvas.getContext('2d');
+      ctx.drawImage(canvas,
+        0, sliceY_px, canvas.width, sliceH_px,
+        0, 0,         canvas.width, sliceH_px
+      );
+
+      const sliceData = sliceCanvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(sliceData, 'JPEG', margin, margin, imgW, sliceH_mm);
+
+      yOffset    += pageContentH;
+      pageIndex  += 1;
+    }
+
+    pdf.save(`WOW_Siparis_${_pdfOrderNum}.pdf`);
+// ← أضف هذا الكود
+setTimeout(() => {
+  closeOrderPdfModal();
+  clearOrderCart();
+  showOrderSuccessToast(_pdfOrderNum);
+}, 800);
+
+  } finally {
+    document.body.removeChild(wrapper);
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = origHtml;
+    }
+  }
+}
+
+
+/* ============================================================
+   ★ بناء HTML للـ PDF — يستخدم base64 للصور ★
+============================================================ */
+function buildPdfHtmlBase64(selected, note, orderNum, imgMap) {
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('tr-TR');
+  const timeStr = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+
+  const TD = `
+    padding:9px 7px;
+    border:1px solid #E8D5A0;
+    vertical-align:middle;
+    font-family:Arial,sans-serif;
+    font-size:12px;
+  `;
+
+  let grandTotal = 0;
+  let hasPrice   = false;
+  selected.forEach(img => {
+    const q = orderCart[img.id] || 0;
+    if (img.price) { grandTotal += img.price * q; hasPrice = true; }
+  });
+
+  /* ── أيقونات SVG مضمنة بدلاً من Emoji ── */
+  const svgCart = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 576 512" style="vertical-align:middle;margin-right:5px;fill:#c9a84c;"><path d="M0 24C0 10.7 10.7 0 24 0H69.5c22 0 41.5 12.8 50.6 32h411c26.3 0 45.5 25 38.6 50.4l-41 152.3c-8.5 31.4-37 53.3-69.5 53.3H170.7l5.4 28.5c2.2 11.3 12.1 19.5 23.6 19.5H488c13.3 0 24 10.7 24 24s-10.7 24-24 24H199.7c-34.6 0-64.3-24.6-70.7-58.5L77.4 54.5c-.7-3.8-4-6.5-7.9-6.5H24C10.7 48 0 37.3 0 24zM128 464a48 48 0 1 1 96 0 48 48 0 1 1 -96 0zm336-48a48 48 0 1 1 0 96 48 48 0 1 1 0-96z"/></svg>`;
+
+  const svgHash = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 448 512" style="vertical-align:middle;margin-right:4px;fill:#c9a84c;"><path d="M181.3 32.4c17.4 2.9 29.2 19.4 26.3 36.8L197.8 128h95.1l11.5-69.3c2.9-17.4 19.4-29.2 36.8-26.3s29.2 19.4 26.3 36.8L357.8 128H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H347.1L325.8 320H384c17.7 0 32 14.3 32 32s-14.3 32-32 32H315.1l-11.5 69.3c-2.9 17.4-19.4 29.2-36.8 26.3s-29.2-19.4-26.3-36.8l9.8-58.7H155.1l-11.5 69.3c-2.9 17.4-19.4 29.2-36.8 26.3s-29.2-19.4-26.3-36.8L90.2 384H32c-17.7 0-32-14.3-32-32s14.3-32 32-32h68.9l21.3-128H64c-17.7 0-32-14.3-32-32s14.3-32 32-32h68.9l11.5-69.3c2.9-17.4 19.4-29.2 36.8-26.3zM187.1 192L165.8 320h95.1l21.3-128H187.1z"/></svg>`;
+
+  const svgCal = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 448 512" style="vertical-align:middle;margin-right:4px;fill:rgba(255,255,255,0.45);"><path d="M152 24c0-13.3-10.7-24-24-24s-24 10.7-24 24V64H64C28.7 64 0 92.7 0 128v16 48V448c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V192 144 128c0-35.3-28.7-64-64-64H344V24c0-13.3-10.7-24-24-24s-24 10.7-24 24V64H152V24zM48 192H400V448c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V192z"/></svg>`;
+
+  const svgClock = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 512 512" style="vertical-align:middle;margin-right:4px;fill:rgba(255,255,255,0.45);"><path d="M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11 7.4 25.9 4.4 33.3-6.7s4.4-25.9-6.7-33.3L280 243.2V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/></svg>`;
+
+  const svgNote = `<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 448 512" style="vertical-align:middle;margin-right:5px;fill:#c9a84c;"><path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H288V368c0-26.5 21.5-48 48-48H448V96c0-35.3-28.7-64-64-64H64zM448 352H402.7 336c-8.8 0-16 7.2-16 16v66.7V480l112-128z"/></svg>`;
+
+  const svgMoney = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 512 512" style="vertical-align:middle;margin-right:5px;fill:#c9a84c;"><path d="M512 80c0 18-14.3 34.6-38.4 48c-29.1 16.1-72.5 27.5-122.3 30.9c-3.7-1.8-7.4-3.5-11.3-5C300.6 137.4 248.2 128 192 128c-8.3 0-16.4 .2-24.5 .6l-1.1-.6C142.3 114.6 128 98 128 80c0-44.2 86-80 192-80S512 35.8 512 80zM160.7 161.1c10.2-.7 20.7-1.1 31.3-1.1c62.2 0 117.4 12.3 152.5 31.4C369.3 204.9 384 221.7 384 240c0 4-.7 7.9-2.1 11.7c-4.6 13.2-17 25.3-35 35.5c0 0 0 0 0 0c-.1 .1-.3 .1-.4 .2l0 0 0 0c-32.7 17.8-83.3 28.8-140.9 28.8c-60.3 0-113.2-12.2-145.7-31C42.4 274.6 32 258.6 32 240c0-18.3 10.1-34.1 26.2-45.6c13.6-9.7 31.3-17.3 52.4-22.7c.1 0 .2 0 .3-.1l0 0c15.9-4.1 34-7.1 53.8-9.5zM192 320c56.2 0 108.2-9.6 146.8-26c13.3-5.7 25.1-12.4 35.2-20c0 0 0 0 0 0c.1-.1 .3-.1 .4-.2l0 0 0 0C409.3 258.8 416 249.1 416 240v48c0 18-14.3 34.6-38.4 48c-29.1 16.1-72.5 27.5-122.3 30.9c-3.7-1.8-7.4-3.5-11.3-5C300.6 361.4 248.2 352 192 352c-8.3 0-16.4 .2-24.5 .6l-1.1-.6C142.3 338.6 128 322 128 304v-48c0 9.1 6.7 18.8 18.8 27.8c10.1 7.6 21.9 14.3 35.2 20c3.4 1.4 6.9 2.8 10.5 4.1C198.2 320.1 195.1 320 192 320zM128 400v48c0 18 14.3 34.6 38.4 48c29.1 16.1 72.5 27.5 122.3 30.9c3.7-1.8 7.4-3.5 11.3-5C340.6 509.4 384 496 384 480v-48c0 9.1-6.7 18.8-18.8 27.8c-10.1 7.6-21.9 14.3-35.2 20c-3.4 1.4-6.9 2.8-10.5 4.1C285.8 496.1 239.2 496 192 496c-56.2 0-108.2-9.6-146.8-26c-13.3-5.7-25.1-12.4-35.2-20C-3.3 440.8 0 431.1 0 422v48c0 18 14.3 34.6 38.4 48z"/></svg>`;
+
+  const svgShield = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 512 512" style="vertical-align:middle;margin-right:4px;fill:rgba(201,168,76,0.65);"><path d="M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-41.3 280.7-213.6 363.2c-16.7 8-36.1 8-52.8 0C57.3 420.7 16.5 239.2 16 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0z"/></svg>`;
+
+  /* ── صفوف الجدول ── */
+  const rows = selected.map((img, i) => {
+    const qty    = orderCart[img.id] || 0;
+    const price  = img.price
+      ? Number(img.price).toLocaleString('tr-TR') + ' TL'
+      : '—';
+    const total  = img.price
+      ? Number(img.price * qty).toLocaleString('tr-TR') + ' TL'
+      : '—';
+    const bg     = i % 2 === 0 ? '#FFFDF5' : '#FFFFF8';
+    const imgSrc = imgMap[img.id] || '';
+    const imgTag = imgSrc
+      ? `<img src="${imgSrc}"
+              style="width:68px;height:52px;object-fit:cover;
+                     border-radius:5px;border:1px solid #e0d0a0;
+                     display:block;margin:0 auto;"/>`
+      : `<div style="width:68px;height:52px;background:#f5f0e0;
+                     border-radius:5px;border:1px solid #e0d0a0;
+                     display:flex;align-items:center;justify-content:center;
+                     margin:0 auto;font-size:9px;color:#aaa;
+                     font-family:Arial,sans-serif;">NO IMG</div>`;
+
+    return `
+      <tr style="background:${bg};">
+        <td style="${TD} text-align:center;font-weight:700;
+                         color:#c9a84c;font-size:13px;">${i+1}</td>
+        <td style="${TD} text-align:center;">${imgTag}</td>
+        <td style="${TD} font-weight:700;color:#1a1a1a;">${img.title}</td>
+        <td style="${TD} color:#8B6914;">${img.catLabel}</td>
+        <td style="${TD} text-align:center;font-weight:900;
+                         font-size:15px;color:#1a1a1a;">${qty}</td>
+        <td style="${TD} text-align:center;color:#5A4A1A;
+                         font-style:italic;">${price}</td>
+        <td style="${TD} text-align:center;font-weight:700;
+                         color:#2E7D32;">${total}</td>
+      </tr>`;
+  }).join('');
+
+  /* ── ملاحظة ── */
+  const noteHtml = note ? `
+    <tr style="background:#FFFBF0;">
+      <td colspan="7" style="${TD} color:#5A4A1A;line-height:1.7;">
+        <div style="display:flex;align-items:center;margin-bottom:5px;">
+          ${svgNote}
+          <strong style="color:#c9a84c;font-size:9px;
+                         text-transform:uppercase;letter-spacing:1.5px;
+                         font-family:Arial,sans-serif;">NOT</strong>
+        </div>
+        <span style="font-size:11px;font-family:Arial,sans-serif;">${note}</span>
+      </td>
+    </tr>` : '';
+
+  /* ── إجمالي ── */
+  const totalHtml = hasPrice ? `
+    <tr style="background:#1a1a1a;">
+      <td colspan="6" style="${TD} text-align:right;font-weight:700;
+                                   font-size:11px;color:#c9a84c;
+                                   letter-spacing:1.5px;text-transform:uppercase;
+                                   border-color:#333;font-family:Arial,sans-serif;">
+        <div style="display:inline-flex;align-items:center;">
+          ${svgMoney}
+          GENEL TOPLAM
+        </div>
+      </td>
+      <td style="${TD} text-align:center;font-weight:900;font-size:13px;
+                       color:#4ade80;border-color:#333;
+                       font-family:Arial,sans-serif;">
+        ${Number(grandTotal).toLocaleString('tr-TR')} TL
+      </td>
+    </tr>` : '';
+
+  return `
+    <div style="font-family:Arial,sans-serif;background:#fff;width:794px;">
+
+      <!-- شريط ذهبي علوي -->
+      <div style="height:5px;background:#c9a84c;"></div>
+
+      <!-- رأس الصفحة -->
+      <div style="background:#0f0f0f;padding:18px 22px;">
+        <div style="display:flex;align-items:center;
+                    justify-content:space-between;">
+
+          <!-- يسار: اسم الشركة -->
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              ${svgCart}
+              <span style="font-size:20px;font-weight:900;color:#c9a84c;
+                           letter-spacing:2px;font-family:Arial,sans-serif;">
+                WOW MOBILYA
+              </span>
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.4);
+                        letter-spacing:3px;text-transform:uppercase;
+                        padding-left:21px;font-family:Arial,sans-serif;">
+              Premium Mobilya Koleksiyonu
+            </div>
+          </div>
+
+          <!-- يمين: رقم الطلب + التاريخ -->
+          <div style="text-align:right;">
+            <div style="display:flex;align-items:center;
+                        justify-content:flex-end;margin-bottom:5px;">
+              ${svgHash}
+              <span style="font-size:13px;font-weight:700;color:#fff;
+                           letter-spacing:1px;font-family:Arial,sans-serif;">
+                ${orderNum}
+              </span>
+            </div>
+            <div style="display:flex;align-items:center;
+                        justify-content:flex-end;gap:10px;">
+              <div style="display:flex;align-items:center;">
+                ${svgCal}
+                <span style="font-size:9px;color:rgba(255,255,255,0.4);
+                             font-family:Arial,sans-serif;">${dateStr}</span>
+              </div>
+              <div style="display:flex;align-items:center;">
+                ${svgClock}
+                <span style="font-size:9px;color:rgba(255,255,255,0.4);
+                             font-family:Arial,sans-serif;">${timeStr}</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- شريط ذهبي -->
+      <div style="height:3px;background:#c9a84c;"></div>
+
+      <!-- فراغ -->
+      <div style="height:14px;background:#fff;"></div>
+
+      <!-- الجدول -->
+      <div style="padding:0 14px;">
+        <table style="width:100%;border-collapse:collapse;
+                      border:1px solid #E8D5A0;background:#fff;">
+          <thead>
+            <tr style="background:#1a1a1a;">
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:30px;border-color:#333;
+                          font-family:Arial,sans-serif;">#</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:88px;border-color:#333;
+                          font-family:Arial,sans-serif;">GORSEL</th>
+              <th style="${TD} color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;border-color:#333;
+                          font-family:Arial,sans-serif;">MODEL ADI</th>
+              <th style="${TD} color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;border-color:#333;
+                          font-family:Arial,sans-serif;">DETAYLARI</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:48px;border-color:#333;
+                          font-family:Arial,sans-serif;">ADET</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:88px;border-color:#333;
+                          font-family:Arial,sans-serif;">BIRIM FIYAT</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:88px;border-color:#333;
+                          font-family:Arial,sans-serif;">TOPLAM</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+            ${noteHtml}
+            ${totalHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- فراغ -->
+      <div style="height:18px;background:#fff;"></div>
+
+      <!-- تذييل -->
+      <div style="height:3px;background:#c9a84c;"></div>
+      <div style="background:#0f0f0f;padding:10px 22px;text-align:center;">
+        <div style="display:inline-flex;align-items:center;justify-content:center;">
+          ${svgShield}
+          <span style="font-size:9px;color:rgba(201,168,76,0.65);
+                       letter-spacing:1.5px;font-style:italic;
+                       font-family:Arial,sans-serif;">
+            2026 WOW MOBILYA - Tum Haklari Saklidir | +90 538 626 37 00
+          </span>
+        </div>
+      </div>
+      <div style="height:4px;background:#c9a84c;"></div>
+
+    </div>`;
+}
+
+
+/* ============================================================
+   ★ بناء HTML للمعاينة — يستخدم URL مباشر (للعرض فقط) ★
+============================================================ */
+function buildPdfHtml(selected, note, orderNum) {
+  const now     = new Date();
+  const dateStr = now.toLocaleDateString('tr-TR');
+  const timeStr = now.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+
+  const TD = `
+    padding:9px 7px;
+    border:1px solid #E8D5A0;
+    vertical-align:middle;
+    font-family:'Montserrat',sans-serif;
+    font-size:12px;
+  `;
+
+  let grandTotal = 0;
+  let hasPrice   = false;
+  selected.forEach(img => {
+    const q = orderCart[img.id] || 0;
+    if (img.price) { grandTotal += img.price * q; hasPrice = true; }
+  });
+
+  const rows = selected.map((img, i) => {
+    const qty   = orderCart[img.id] || 0;
+    const price = img.price
+      ? Number(img.price).toLocaleString('tr-TR') + ' ₺'
+      : '—';
+    const total = img.price
+      ? Number(img.price * qty).toLocaleString('tr-TR') + ' ₺'
+      : '—';
+    const bg = i % 2 === 0 ? '#FFFDF5' : '#FFFFF8';
+
+    return `
+      <tr style="background:${bg};">
+        <td style="${TD} text-align:center;font-weight:700;color:#c9a84c;">${i+1}</td>
+        <td style="${TD} text-align:center;">
+          <img src="${img.src}"
+               style="width:68px;height:52px;object-fit:cover;border-radius:5px;
+                      border:1px solid #e0d0a0;display:block;margin:0 auto;"
+               onerror="this.style.display='none'"/>
+        </td>
+        <td style="${TD} font-weight:700;color:#1a1a1a;">${img.title}</td>
+        <td style="${TD} color:#8B6914;">${img.catLabel}</td>
+        <td style="${TD} text-align:center;font-weight:900;font-size:15px;color:#1a1a1a;">${qty}</td>
+        <td style="${TD} text-align:center;color:#5A4A1A;font-style:italic;">${price}</td>
+        <td style="${TD} text-align:center;font-weight:700;color:#2E7D32;">${total}</td>
+      </tr>`;
+  }).join('');
+
+  const noteHtml = note ? `
+    <tr style="background:#FFFBF0;">
+      <td colspan="7" style="${TD} color:#5A4A1A;line-height:1.6;">
+        <strong style="color:#c9a84c;font-size:9px;text-transform:uppercase;
+                       display:block;margin-bottom:4px;">📝 NOT</strong>
+        ${note}
+      </td>
+    </tr>` : '';
+
+  const totalHtml = hasPrice ? `
+    <tr style="background:#1a1a1a;">
+      <td colspan="6" style="${TD} text-align:right;font-weight:700;font-size:11px;
+                                   color:#c9a84c;letter-spacing:1px;
+                                   text-transform:uppercase;border-color:#333;">
+        💰 GENEL TOPLAM
+      </td>
+      <td style="${TD} text-align:center;font-weight:900;font-size:13px;
+                       color:#4ade80;border-color:#333;">
+        ${Number(grandTotal).toLocaleString('tr-TR')} ₺
+      </td>
+    </tr>` : '';
+
+  return `
+    <div style="font-family:'Montserrat',sans-serif;background:#fff;">
+
+      <div style="height:5px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+
+      <div style="background:#0f0f0f;padding:18px 22px;
+                  display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:20px;font-weight:900;color:#c9a84c;letter-spacing:2px;">
+            WOW MOBİLYA
+          </div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.45);letter-spacing:3px;
+                      text-transform:uppercase;margin-top:3px;">
+            Premium Mobilya Koleksiyonu
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px;font-weight:700;color:#fff;">
+            📋 ${orderNum}
+          </div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.4);margin-top:3px;">
+            📅 ${dateStr} &nbsp;|&nbsp; 🕐 ${timeStr}
+          </div>
+        </div>
+      </div>
+
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+      <div style="height:14px;background:#fff;"></div>
+
+      <div style="padding:0 14px;">
+        <table style="width:100%;border-collapse:collapse;border:1px solid #E8D5A0;">
+          <thead>
+            <tr style="background:#1a1a1a;">
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:30px;border-color:#333;">#</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:88px;border-color:#333;">GÖRSEL</th>
+              <th style="${TD} color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;border-color:#333;">MODEL ADI</th>
+              <th style="${TD} color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;border-color:#333;">DETAYLARI</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:48px;border-color:#333;">ADET</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:88px;border-color:#333;">BİRİM FİYAT</th>
+              <th style="${TD} text-align:center;color:#c9a84c;font-size:9px;
+                          letter-spacing:1.5px;width:88px;border-color:#333;">TOPLAM</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+            ${noteHtml}
+            ${totalHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="height:18px;background:#fff;"></div>
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+      <div style="background:#0f0f0f;padding:10px 22px;text-align:center;">
+        <div style="font-size:9px;color:rgba(201,168,76,0.65);letter-spacing:1.5px;font-style:italic;">
+          © 2026 WOW MOBİLYA — Tüm Hakları Saklıdır &nbsp;|&nbsp; +90 538 626 37 00
+        </div>
+      </div>
+      <div style="height:4px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+
+    </div>`;
+}
+
+/* ── رسالة نجاح ── */
+function showOrderSuccessToast(orderNum) {
+  let t = document.getElementById('orderSuccessToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'orderSuccessToast';
+    t.style.cssText = `
+      position:fixed;bottom:32px;left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:rgba(10,10,10,0.97);
+      border:1px solid rgba(74,222,128,0.4);
+      color:rgba(255,255,255,0.85);
+      font-family:Montserrat,sans-serif;
+      font-size:12px;font-weight:700;letter-spacing:1.5px;
+      padding:12px 22px;border-radius:50px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.5);
+      backdrop-filter:blur(20px);z-index:9999;
+      display:flex;align-items:center;gap:9px;
+      opacity:0;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      white-space:nowrap;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.innerHTML = `<i class="fas fa-check-circle" style="color:#4ade80;"></i> Sipariş başarıyla oluşturuldu! (${orderNum})`;
+  requestAnimationFrame(() => {
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 3500);
+}
 
 
 
