@@ -1,4 +1,4 @@
-ا<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr" dir="ltr" translate="no">
 <head>
   <meta charset="UTF-8"/>
@@ -1287,7 +1287,7 @@
       <!-- بطاقة الطلبيات -->
       <div class="home-card" onclick="enterSection('orders')">
         <img class="home-card-img"
-             src="https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg"
+             src="https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png"
              alt="Sipariş" loading="lazy" draggable="false"/>
         <div class="home-card-overlay"></div>
         <div class="home-card-shine"></div>
@@ -1601,6 +1601,13 @@ function replaceState(s,d={}){history.replaceState({appState:s,...d},'');}
 window.addEventListener('popstate',()=>{
   if(appState==='dims'){closeDimsModalSilent();return;}
   if(appState==='lightbox'){closeLightbox();return;}
+/* ✅ أضف هذا السطر */
+  if (appState === 'orderConfirm') {
+    document.getElementById('orderConfirmModal').classList.remove('active');
+    document.body.style.overflow = '';
+    appState = 'section';
+    return;
+  }
   if(appState==='section'){goHomeFromBack();return;}
   if(appState==='home'){
     if(backPressedOnce){clearTimeout(backToastTimer);backPressedOnce=false;hideBackToast();doLogoutFromBack();}
@@ -2933,7 +2940,11 @@ function openOrderConfirmModal() {
 
   document.getElementById('orderConfirmModal').classList.add('active');
   document.body.style.overflow = 'hidden';
+ /* ✅ أضف هذا السطر */
+  appState = 'orderConfirm';
+  pushState('orderConfirm');
 }
+
 
 /* ── إغلاق نافذة التأكيد ── */
 function closeOrderConfirmModal() {
