@@ -4855,11 +4855,16 @@ async function saveAllInventory() {
   }
 
   try {
-    const rows = changes.map(([id, stock]) => ({
-      id         : Number(id),
-      stock      : Number(stock),
-      updated_at : new Date().toISOString(),
-    }));
+   const rows = changes.map(([id, stock]) => {
+  const img = images.find(i => i.id === Number(id));
+  return {
+    id         : Number(id),
+    title      : img ? img.title : String(id),
+    stock      : Number(stock),
+    updated_at : new Date().toISOString(),
+  };
+});
+
 
     console.log('[Supabase] upsert rows:', rows);
 
