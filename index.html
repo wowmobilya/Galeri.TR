@@ -4625,9 +4625,13 @@ const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let inventoryData = {};   /* { id: stock } */
 let invRealtimeSub = null;
 
-/* ── تهيئة: جلب + الاشتراك في Realtime ── */
+/* ============================================================
+   ★ SUPABASE — المخزون مع Realtime دائم في الخلفية ★
+============================================================ */
+
 async function initInventory() {
   try {
+    /* ── 1. جلب كل المخزون أول مرة ── */
     const { data, error } = await _supa
       .from('inventory')
       .select('id, title, stock, is_active');
@@ -4642,42 +4646,167 @@ async function initInventory() {
       };
     });
 
-    /* تحديث شارات المخزون في الصفحة الحالية */
+    /* تحديث الشارات في الصفحة الحالية */
     refreshStockBadges();
 
-    /* ── Realtime: يستمع للتغييرات ── */
-    if (invRealtimeSub) _supa.removeChannel(invRealtimeSub);
-
-    invRealtimeSub = _supa
-      .channel('inventory-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'inventory' },
-        payload => {
-          const row = payload.new || payload.old;
-          if (!row?.id) return;
-
-          if (payload.eventType === 'DELETE') {
-            delete inventoryData[row.id];
-          } else {
-            inventoryData[row.id] = {
-              stock    : row.stock     ?? 0,
-              is_active: row.is_active ?? true,
-              title    : row.title,
-            };
-          }
-
-          /* تحديث فوري لكل العناصر المرئية */
-          refreshStockBadges();
-          refreshInvListItem(row.id);
-        }
-      )
-      .subscribe();
+    /* ── 2. Realtime دائم — يعمل في الخلفية طوال الجلسة ── */
+    startRealtimeListener();
 
   } catch (err) {
     console.warn('[Inventory] init error:', err);
   }
 }
+
+/* ── الاستماع الدائم للتغييرات ── */
+function startRealtimeListener() {
+  /* إلغاء أي اشتراك سابق */
+  if (invRealtimeSub) {
+    _supa.removeChannel(invRealtimeSub);
+    invRealtimeSub = null;
+  }
+
+  invRealtimeSub = _supa
+    .channel('inventory-global')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'inventory' },
+      payload => {
+        const row = payload.new || payload.old;
+        if (!row?.id) return;
+
+        /* ── تحديث البيانات المحلية ── */
+        if (payload.eventType === 'DELETE') {
+          delete inventoryData[row.id];
+        } else {
+          inventoryData[row.id] = {
+            stock    : row.stock     ?? 0,
+            is_active: row.is_active ?? true,
+            title    : row.title     || inventoryData[row.id]?.title || '',
+          };
+        }
+
+        /* ── تحديث فوري لكل الشارات في الصفحة ── */
+        refreshStockBadges();
+
+        /* ── تحديث قائمة نافذة المخزون إن كانت مفتوحة ── */
+        refreshInvListItem(row.id);
+
+        /* ── إشعار مرئي خفيف ── */
+        showStockUpdateToast(row.id, row.stock ?? 0);
+      }
+    )
+    .subscribe(status => {
+      console.log('[Realtime] status:', status);
+
+      /* إعادة الاتصال تلقائياً إن انقطع ── */
+      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+        setTimeout(() => startRealtimeListener(), 3000);
+      }
+    });
+}
+
+
+
+
+/* ── إشعار صغير عند تحديث مخزون أي موديل ── */
+function showStockUpdateToast(id, newStock) {
+  const img = images.find(i => i.id === id);
+  if (!img) return;
+
+  const { status, label } = getStock(id);
+
+  /* إزالة أي إشعار سابق */
+  document.getElementById('stockToast')?.remove();
+
+  const t = document.createElement('div');
+  t.id = 'stockToast';
+
+  const colorMap = {
+    available : { bg:'rgba(74,222,128,0.12)',  border:'rgba(74,222,128,0.35)',  color:'#4ade80',  icon:'fa-boxes' },
+    low       : { bg:'rgba(251,191,36,0.12)',  border:'rgba(251,191,36,0.35)',  color:'#fbbf24',  icon:'fa-exclamation-triangle' },
+    out       : { bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.35)',   color:'#ef4444',  icon:'fa-times-circle' },
+  };
+  const c = colorMap[status] || colorMap.available;
+
+  t.style.cssText = `
+    position: fixed;
+    bottom: 28px;
+    right: 20px;
+    z-index: 9998;
+    background: rgba(10,10,10,0.97);
+    border: 1px solid ${c.border};
+    border-radius: 14px;
+    padding: 11px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    backdrop-filter: blur(20px);
+    opacity: 0;
+    transform: translateX(30px);
+    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+    max-width: 260px;
+  `;
+
+  t.innerHTML = `
+    <div style="
+      width:32px; height:32px; flex-shrink:0;
+      background:${c.bg};
+      border:1px solid ${c.border};
+      border-radius:9px;
+      display:flex; align-items:center; justify-content:center;
+      color:${c.color}; font-size:13px;
+    ">
+      <i class="fas ${c.icon}"></i>
+    </div>
+    <div style="min-width:0;">
+      <div style="
+        font-size:11px; font-weight:700; color:#fff;
+        letter-spacing:0.3px; white-space:nowrap;
+        overflow:hidden; text-overflow:ellipsis;
+        font-family:'Montserrat',sans-serif;
+      ">${img.title}</div>
+      <div style="
+        font-size:10px; color:${c.color};
+        letter-spacing:1px; margin-top:2px;
+        font-family:'Montserrat',sans-serif;
+        font-weight:700;
+      ">${label}</div>
+    </div>
+    <div style="
+      width:5px; height:5px; border-radius:50%;
+      background:${c.color};
+      box-shadow:0 0 6px ${c.color};
+      flex-shrink:0;
+      animation:iconPulse 1.5s ease infinite;
+    "></div>
+  `;
+
+  document.body.appendChild(t);
+
+  /* ظهور */
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      t.style.opacity   = '1';
+      t.style.transform = 'translateX(0)';
+    });
+  });
+
+  /* اختفاء بعد 3 ثواني */
+  setTimeout(() => {
+    t.style.opacity   = '0';
+    t.style.transform = 'translateX(30px)';
+    setTimeout(() => t.remove(), 400);
+  }, 3000);
+}
+
+
+
+
+
+
+
 
 /* ── حفظ تغيير مخزون موديل واحد ── */
 async function saveStock(id, newStock) {
