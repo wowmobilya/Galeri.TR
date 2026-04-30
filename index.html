@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <!-- =====================================================
      PWA — تثبيت كتطبيق
@@ -62,7 +63,7 @@
       -ms-user-select:none;
       user-select:none;
     }
-    html{scroll-behavior:smooth;}
+html { scroll-behavior: auto; }
     body{
       font-family:'Montserrat',sans-serif;
       background:var(--dark);color:var(--white);
@@ -163,7 +164,7 @@
     .home-card:nth-child(3){animation:cardSlideIn 0.7s ease 0.8s both;}
     @keyframes cardSlideIn{from{opacity:0;transform:translateY(50px) scale(0.95);}to{opacity:1;transform:translateY(0) scale(1);}}
     .home-footer{margin-top:40px;text-align:center;animation:homeWelcomeIn 0.9s ease 0.9s forwards;opacity:0;}
-    .home-footer-text{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,0.12);text-transform:uppercase;}
+.home-footer-text{font-size:10px;letter-spacing:3px;color:rgba(255,255,255,0.55);text-transform:uppercase;}
 
     /* =====================================================
        HEADER
@@ -483,7 +484,7 @@
     .footer-logo-img{width:clamp(120px,20vw,220px);height:auto;object-fit:contain;opacity:0.85;transition:opacity 0.3s ease;filter:brightness(1.1);pointer-events:none;-webkit-user-drag:none;}
     .footer-logo-img:hover{opacity:1;}
     .footer-divider{width:44px;height:1px;background:rgba(201,168,76,0.22);}
-    .footer-copy{font-size:11px;color:rgba(255,255,255,0.16);letter-spacing:2px;text-align:center;}
+.footer-copy{font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:2px;text-align:center;}
     .empty-state{text-align:center;padding:65px 20px;color:var(--gray);}
     .empty-state i{font-size:44px;color:rgba(201,168,76,0.16);margin-bottom:13px;display:block;}
     .empty-state p{font-size:13px;letter-spacing:2px;}
@@ -580,7 +581,7 @@
 ===================================================== */
 
 /* بطاقة الطلبيات في الهوم */
-.home-card:nth-child(4) { animation: cardSlideIn 0.7s ease 0.95s both; }
+.home-card:nth-child(4) { animation: cardSlideIn 0.7s ease 0.8s both; }
 
 /* ── شبكة الموديلات ── */
 .order-grid {
@@ -1210,6 +1211,299 @@
 
 
 
+
+
+
+
+
+/* =====================================================
+   INVENTORY MODAL — نافذة إدارة المخزون
+===================================================== */
+#inventoryModal {
+  position: fixed; inset: 0; z-index: 7000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  padding: 16px;
+}
+#inventoryModal.active { display: flex; }
+
+.inv-box {
+  position: relative;
+  width: 100%; max-width: 680px;
+  max-height: 90vh;
+  display: flex; flex-direction: column;
+  border-radius: 22px; overflow: hidden;
+  background: linear-gradient(145deg,#0f0f0f,#161616);
+  border: 1px solid rgba(201,168,76,0.25);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.85),
+              0 0 60px rgba(201,168,76,0.06);
+  animation: invBoxIn 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+@keyframes invBoxIn {
+  from { opacity:0; transform:scale(0.88) translateY(24px); }
+  to   { opacity:1; transform:scale(1) translateY(0); }
+}
+
+.inv-topline {
+  height: 2px;
+  background: linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+  flex-shrink: 0;
+}
+
+.inv-header {
+  padding: 16px 20px 14px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.3);
+}
+.inv-header-left { display:flex; align-items:center; gap:12px; }
+.inv-header-icon {
+  width:42px; height:42px;
+  background: linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 12px;
+  display:flex; align-items:center; justify-content:center;
+  color: var(--gold); font-size:17px; flex-shrink:0;
+}
+.inv-header-tag {
+  font-size:8px; letter-spacing:3px;
+  color:rgba(201,168,76,0.55); text-transform:uppercase; margin-bottom:3px;
+}
+.inv-header-title {
+  font-size:16px; font-weight:900; color:#fff; letter-spacing:0.3px;
+}
+.inv-close {
+  width:32px; height:32px; flex-shrink:0;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:8px; color:rgba(255,255,255,0.3);
+  font-size:14px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.25s;
+}
+.inv-close:hover {
+  background:rgba(255,70,70,0.1);
+  border-color:rgba(255,70,70,0.25);
+  color:#ff6b6b; transform:rotate(90deg);
+}
+
+/* شريط البحث */
+.inv-search-wrap {
+  padding: 12px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.2);
+}
+.inv-search {
+  width:100%; padding:10px 14px 10px 38px;
+  background:rgba(255,255,255,0.05);
+  border:1px solid rgba(201,168,76,0.2);
+  border-radius:10px; color:#fff;
+  font-family:'Montserrat',sans-serif; font-size:13px;
+  outline:none; transition:all 0.3s;
+  -webkit-user-select:text; user-select:text;
+}
+.inv-search:focus {
+  border-color:var(--gold);
+  box-shadow:0 0 20px rgba(201,168,76,0.1);
+}
+.inv-search-wrap { position:relative; }
+.inv-search-icon {
+  position:absolute; left:33px; top:50%;
+  transform:translateY(-50%);
+  color:rgba(201,168,76,0.45); font-size:13px;
+  pointer-events:none;
+}
+
+/* قائمة المخزون */
+.inv-list {
+  flex:1; overflow-y:auto;
+  padding:10px 14px 14px;
+  -webkit-overflow-scrolling:touch;
+}
+.inv-list::-webkit-scrollbar { width:4px; }
+.inv-list::-webkit-scrollbar-track { background:transparent; }
+.inv-list::-webkit-scrollbar-thumb {
+  background:rgba(201,168,76,0.25); border-radius:4px;
+}
+
+/* بطاقة موديل واحد في المخزون */
+.inv-item {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 12px;
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:12px; margin-bottom:7px;
+  transition:all 0.25s;
+}
+.inv-item:hover {
+  background:rgba(201,168,76,0.05);
+  border-color:rgba(201,168,76,0.15);
+}
+.inv-item-img {
+  width:52px; height:42px; object-fit:cover;
+  border-radius:7px; flex-shrink:0;
+  border:1px solid rgba(255,255,255,0.07);
+  pointer-events:none;
+}
+.inv-item-info { flex:1; min-width:0; }
+.inv-item-title {
+  font-size:13px; font-weight:700; color:#fff;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.inv-item-cat {
+  font-size:9px; color:var(--gold);
+  letter-spacing:1.5px; margin-top:2px;
+}
+
+/* عداد المخزون */
+.inv-stock-ctrl {
+  display:flex; align-items:center; gap:8px; flex-shrink:0;
+}
+.inv-stock-badge {
+  font-size:11px; font-weight:700;
+  padding:3px 10px; border-radius:50px;
+  min-width:52px; text-align:center;
+  transition:all 0.3s;
+}
+.inv-stock-badge.available {
+  background:rgba(74,222,128,0.12);
+  border:1px solid rgba(74,222,128,0.3);
+  color:#4ade80;
+}
+.inv-stock-badge.low {
+  background:rgba(251,191,36,0.12);
+  border:1px solid rgba(251,191,36,0.3);
+  color:#fbbf24;
+}
+.inv-stock-badge.out {
+  background:rgba(239,68,68,0.12);
+  border:1px solid rgba(239,68,68,0.3);
+  color:#ef4444;
+}
+
+/* حقل إدخال الكمية */
+.inv-qty-input {
+  width:58px; padding:6px 8px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(201,168,76,0.25);
+  border-radius:8px; color:#fff;
+  font-family:'Montserrat',sans-serif;
+  font-size:13px; font-weight:700;
+  text-align:center; outline:none;
+  transition:all 0.25s;
+  -webkit-user-select:text; user-select:text;
+}
+.inv-qty-input:focus {
+  border-color:var(--gold);
+  box-shadow:0 0 12px rgba(201,168,76,0.15);
+}
+
+/* زر الحفظ */
+.inv-save-btn {
+  width:32px; height:32px;
+  background:rgba(201,168,76,0.1);
+  border:1px solid rgba(201,168,76,0.25);
+  border-radius:8px; color:var(--gold);
+  font-size:13px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.25s; flex-shrink:0;
+}
+.inv-save-btn:hover {
+  background:rgba(201,168,76,0.22);
+  border-color:var(--gold);
+  transform:scale(1.08);
+}
+.inv-save-btn.saving {
+  animation:iconPulse 0.8s ease infinite;
+}
+.inv-save-btn.saved {
+  background:rgba(74,222,128,0.15);
+  border-color:rgba(74,222,128,0.4);
+  color:#4ade80;
+}
+
+/* تذييل النافذة */
+.inv-footer {
+  padding:10px 20px 14px;
+  border-top:1px solid rgba(255,255,255,0.04);
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0; background:rgba(0,0,0,0.2);
+  flex-wrap:wrap; gap:8px;
+}
+.inv-footer-stat {
+  font-size:10px; color:rgba(255,255,255,0.25);
+  letter-spacing:1px;
+  display:flex; align-items:center; gap:6px;
+}
+.inv-footer-stat i { color:rgba(201,168,76,0.4); }
+.inv-realtime-dot {
+  width:7px; height:7px; border-radius:50%;
+  background:#4ade80;
+  box-shadow:0 0 6px rgba(74,222,128,0.7);
+  animation:iconPulse 1.5s ease infinite;
+  flex-shrink:0;
+}
+.inv-realtime-txt {
+  font-size:9px; color:rgba(74,222,128,0.7);
+  letter-spacing:1.5px; font-weight:700;
+}
+
+/* شارة المخزون على بطاقة الموديل */
+.stock-badge {
+  position:absolute; top:8px; left:8px; z-index:10;
+  font-size:9px; font-weight:700; letter-spacing:1px;
+  padding:3px 9px; border-radius:50px;
+  backdrop-filter:blur(8px);
+  pointer-events:none;
+}
+.stock-badge.available {
+  background:rgba(74,222,128,0.18);
+  border:1px solid rgba(74,222,128,0.4);
+  color:#4ade80;
+}
+.stock-badge.low {
+  background:rgba(251,191,36,0.18);
+  border:1px solid rgba(251,191,36,0.4);
+  color:#fbbf24;
+}
+.stock-badge.out {
+  background:rgba(239,68,68,0.18);
+  border:1px solid rgba(239,68,68,0.4);
+  color:#ef4444;
+}
+
+/* على بطاقة الطلبيات */
+.order-stock-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:9px; font-weight:700; letter-spacing:1px;
+  padding:2px 8px; border-radius:50px; margin-top:4px;
+}
+.order-stock-badge.available {
+  background:rgba(74,222,128,0.1);
+  border:1px solid rgba(74,222,128,0.25);
+  color:#4ade80;
+}
+.order-stock-badge.low {
+  background:rgba(251,191,36,0.1);
+  border:1px solid rgba(251,191,36,0.25);
+  color:#fbbf24;
+}
+.order-stock-badge.out {
+  background:rgba(239,68,68,0.1);
+  border:1px solid rgba(239,68,68,0.25);
+  color:#ef4444;
+}
+
+
+
+
+
+
+
   </style>
 </head>
 <body>
@@ -1343,6 +1637,11 @@
     </div>
     <div class="nav-tools">
       <button class="nav-icon-btn" onclick="openDevModal()" data-tip="Yazılım & Tasarım"><i class="fas fa-code"></i></button>
+
+  <button class="nav-icon-btn" onclick="openInventoryModal()" data-tip="Stok Yönetimi">
+    <i class="fas fa-boxes"></i>
+  </button>
+
       <div class="nav-sep"></div>
 <button class="nav-icon-btn cart-reminder-btn" id="cartReminderBtn"
         onclick="showPage('orders')" data-tip="Onaylanmamış Sipariş"
@@ -1654,6 +1953,63 @@
 
 
 
+
+
+
+
+
+
+<!-- =====================================================
+     نافذة إدارة المخزون
+===================================================== -->
+<div id="inventoryModal" onclick="handleInvModalBg(event)">
+  <div class="inv-box">
+    <div class="inv-topline"></div>
+    <div class="inv-header">
+      <div class="inv-header-left">
+        <div class="inv-header-icon"><i class="fas fa-boxes"></i></div>
+        <div>
+          <div class="inv-header-tag">WOW MOBİLYA — STOK</div>
+          <div class="inv-header-title">Stok Yönetimi</div>
+        </div>
+      </div>
+      <div class="inv-close" onclick="closeInventoryModal()">
+        <i class="fas fa-times"></i>
+      </div>
+    </div>
+
+    <!-- بحث -->
+    <div class="inv-search-wrap">
+      <i class="fas fa-search inv-search-icon"></i>
+      <input class="inv-search" id="invSearchInput"
+             type="text" placeholder="Model ara... (W 514, T 415...)"
+             oninput="renderInvList()"
+             autocomplete="off"/>
+    </div>
+
+    <!-- القائمة -->
+    <div class="inv-list" id="invList">
+      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
+        <i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--gold);"></i>
+        <p style="margin-top:10px;font-size:12px;letter-spacing:2px;">Yükleniyor...</p>
+      </div>
+    </div>
+
+    <!-- تذييل -->
+    <div class="inv-footer">
+      <div class="inv-footer-stat">
+        <i class="fas fa-database"></i>
+        <span id="invFooterStat">— model</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;">
+        <div class="inv-realtime-dot"></div>
+        <span class="inv-realtime-txt">CANLI GÜNCELLEME</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 </div><!-- /mainSite -->
 
 <script>
@@ -1847,6 +2203,8 @@ function doLogin(){
 setTimeout(()=>{
   ov.style.display='none';
   loadCartFromStorage();
+initInventory();
+
   updateCartReminder(
     Object.values(orderCart).reduce((a,b)=>a+b,0)
   );
@@ -1927,13 +2285,13 @@ function showPage(cat){
   if (cat === 'orders') {
     filteredImages = [];
     buildOrderPage();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+// وفي showPage() استخدم:
+window.scrollTo({ top: 0, behavior: 'smooth' }); // ← هذا يكفي
     appState = 'section';
     pushState('section', { cat });
     return;
   }
   filteredImages = images.filter(i => i.cat === cat);
-  buildPage(cat);
   buildPage(cat);window.scrollTo({top:0,behavior:'smooth'});
   appState='section';pushState('section',{cat});
 }
@@ -1995,7 +2353,7 @@ function buildListPrice(img){
 
 function buildCard(img,idx){
   const sel=selectedIds.has(img.id)?'selected':'';
-  const delay=(idx*0.055).toFixed(2);
+  const delay = (Math.min(idx, 8) * 0.04).toFixed(2);
   const hasDims=img.dims&&img.dims.length>0;
   return `
     <div class="gallery-item ${sel}" id="card-${img.id}" data-id="${img.id}" style="animation-delay:${delay}s" onclick="handleCardClick(event,${img.id},${idx})">
@@ -4239,6 +4597,294 @@ function showOrderSuccessToast(orderNum) {
     t.style.transform = 'translateX(-50%) translateY(20px)';
   }, 3500);
 }
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ SUPABASE — إدارة المخزون مع Realtime ★
+   ⚠️ غيّر القيم أدناه بمعلومات مشروعك
+============================================================ */
+const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';       // ← غيّر هذا
+const SUPABASE_KEY = 'sb_publishable_BqXtDNL9XXdRaMDh6t_JPA_wzVJRtH_'; // ← غيّر هذا
+
+const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ── جدول المخزون المحلي (يُحدَّث من Supabase) ── */
+let inventoryData = {};   /* { id: stock } */
+let invRealtimeSub = null;
+
+/* ── تهيئة: جلب + الاشتراك في Realtime ── */
+async function initInventory() {
+  try {
+    const { data, error } = await _supa
+      .from('inventory')
+      .select('id, title, stock, is_active');
+
+    if (error) throw error;
+
+    data.forEach(row => {
+      inventoryData[row.id] = {
+        stock    : row.stock     ?? 0,
+        is_active: row.is_active ?? true,
+        title    : row.title,
+      };
+    });
+
+    /* تحديث شارات المخزون في الصفحة الحالية */
+    refreshStockBadges();
+
+    /* ── Realtime: يستمع للتغييرات ── */
+    if (invRealtimeSub) _supa.removeChannel(invRealtimeSub);
+
+    invRealtimeSub = _supa
+      .channel('inventory-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'inventory' },
+        payload => {
+          const row = payload.new || payload.old;
+          if (!row?.id) return;
+
+          if (payload.eventType === 'DELETE') {
+            delete inventoryData[row.id];
+          } else {
+            inventoryData[row.id] = {
+              stock    : row.stock     ?? 0,
+              is_active: row.is_active ?? true,
+              title    : row.title,
+            };
+          }
+
+          /* تحديث فوري لكل العناصر المرئية */
+          refreshStockBadges();
+          refreshInvListItem(row.id);
+        }
+      )
+      .subscribe();
+
+  } catch (err) {
+    console.warn('[Inventory] init error:', err);
+  }
+}
+
+/* ── حفظ تغيير مخزون موديل واحد ── */
+async function saveStock(id, newStock) {
+  const stock = Math.max(0, parseInt(newStock) || 0);
+
+  /* تحديث محلي فوري */
+  if (inventoryData[id]) inventoryData[id].stock = stock;
+  else inventoryData[id] = { stock, is_active: true, title: '' };
+
+  refreshStockBadges();
+
+  /* حفظ في Supabase */
+  const { error } = await _supa
+    .from('inventory')
+    .upsert({ id, stock, updated_at: new Date().toISOString() });
+
+  if (error) {
+    console.warn('[Inventory] save error:', error);
+    return false;
+  }
+  return true;
+}
+
+/* ── الحصول على بيانات مخزون موديل ── */
+function getStock(id) {
+  const d = inventoryData[id];
+  if (!d) return { stock: 0, status: 'unknown' };
+  const s = d.stock;
+  return {
+    stock : s,
+    status: s <= 0 ? 'out' : s <= 3 ? 'low' : 'available',
+    label : s <= 0 ? 'TÜKENDİ' : s <= 3 ? `Son ${s} adet` : `${s} adet`,
+  };
+}
+
+/* ── تحديث شارات المخزون في الصفحة ── */
+function refreshStockBadges() {
+  /* بطاقات المعرض */
+  images.forEach(img => {
+    const card = document.getElementById('card-' + img.id);
+    if (!card) return;
+    updateCardStockBadge(card, img.id);
+  });
+
+  /* بطاقات الطلبيات */
+  images.forEach(img => {
+    const card = document.getElementById('ocard-' + img.id);
+    if (!card) return;
+    updateOrderCardStock(card, img.id);
+  });
+}
+
+/* ── شارة مخزون على بطاقة المعرض ── */
+function updateCardStockBadge(card, id) {
+  const { status, label } = getStock(id);
+  let badge = card.querySelector('.stock-badge');
+
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.className = 'stock-badge';
+    const imgWrap = card.querySelector('.card-img-wrap');
+    if (imgWrap) imgWrap.appendChild(badge);
+  }
+
+  badge.className = `stock-badge ${status}`;
+  badge.textContent = label;
+}
+
+/* ── شارة مخزون على بطاقة الطلبيات ── */
+function updateOrderCardStock(card, id) {
+  const { status, label } = getStock(id);
+  let badge = card.querySelector('.order-stock-badge');
+
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.className = 'order-stock-badge';
+    const info = card.querySelector('.order-card-info');
+    if (info) info.appendChild(badge);
+  }
+
+  badge.className = `order-stock-badge ${status}`;
+  badge.innerHTML = `<i class="fas fa-${status === 'available' ? 'check' : status === 'low' ? 'exclamation' : 'times'}-circle"></i> ${label}`;
+}
+
+/* ── تحديث عنصر واحد في قائمة نافذة المخزون ── */
+function refreshInvListItem(id) {
+  const item = document.getElementById('inv-item-' + id);
+  if (!item) return;
+
+  const { stock, status, label } = getStock(id);
+
+  const badge = item.querySelector('.inv-stock-badge');
+  if (badge) {
+    badge.className = `inv-stock-badge ${status}`;
+    badge.textContent = label;
+  }
+
+  const input = item.querySelector('.inv-qty-input');
+  if (input && document.activeElement !== input) {
+    input.value = stock;
+  }
+}
+
+/* ============================================================
+   ★ نافذة إدارة المخزون ★
+============================================================ */
+function openInventoryModal() {
+  renderInvList();
+  document.getElementById('inventoryModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeInventoryModal() {
+  document.getElementById('inventoryModal').classList.remove('active');
+  document.body.style.overflow = '';
+  document.getElementById('invSearchInput').value = '';
+}
+
+function handleInvModalBg(e) {
+  if (e.target === document.getElementById('inventoryModal'))
+    closeInventoryModal();
+}
+
+/* ── رسم قائمة المخزون ── */
+function renderInvList() {
+  const q     = (document.getElementById('invSearchInput')?.value || '').toLowerCase().trim();
+  const list  = document.getElementById('invList');
+  const stat  = document.getElementById('invFooterStat');
+  if (!list) return;
+
+  const filtered = images.filter(img =>
+    !q || img.title.toLowerCase().includes(q) || img.catLabel.toLowerCase().includes(q)
+  );
+
+  if (!filtered.length) {
+    list.innerHTML = `
+      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
+        <i class="fas fa-search" style="font-size:28px;color:rgba(201,168,76,0.2);"></i>
+        <p style="margin-top:10px;font-size:12px;letter-spacing:2px;">Sonuç bulunamadı</p>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(img => {
+    const { stock, status, label } = getStock(img.id);
+    return `
+      <div class="inv-item" id="inv-item-${img.id}">
+        <img class="inv-item-img" src="${img.src}" alt="${img.title}"
+             draggable="false"
+             onerror="this.src='https://placehold.co/52x42/1a1a1a/c9a84c?text=W'"/>
+        <div class="inv-item-info">
+          <div class="inv-item-title">${img.title}</div>
+          <div class="inv-item-cat">${img.catLabel}</div>
+        </div>
+        <div class="inv-stock-ctrl">
+          <div class="inv-stock-badge ${status}">${label}</div>
+          <input class="inv-qty-input" type="number" min="0" max="999"
+                 value="${stock}"
+                 id="inv-input-${img.id}"
+                 onkeydown="if(event.key==='Enter')invSaveOne(${img.id})"
+                 onchange="invSaveOne(${img.id})"/>
+          <button class="inv-save-btn" id="inv-btn-${img.id}"
+                  onclick="invSaveOne(${img.id})"
+                  title="Kaydet">
+            <i class="fas fa-check"></i>
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (stat) stat.textContent = `${filtered.length} model`;
+}
+
+/* ── حفظ مخزون موديل واحد من النافذة ── */
+async function invSaveOne(id) {
+  const input = document.getElementById('inv-input-' + id);
+  const btn   = document.getElementById('inv-btn-'   + id);
+  if (!input || !btn) return;
+
+  const newStock = parseInt(input.value) || 0;
+  input.value = newStock;
+
+  /* حالة "جاري الحفظ" */
+  btn.className = 'inv-save-btn saving';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  const ok = await saveStock(id, newStock);
+
+  if (ok) {
+    btn.className = 'inv-save-btn saved';
+    btn.innerHTML = '<i class="fas fa-check"></i>';
+    setTimeout(() => {
+      btn.className = 'inv-save-btn';
+      btn.innerHTML = '<i class="fas fa-check"></i>';
+    }, 1800);
+  } else {
+    btn.className = 'inv-save-btn';
+    btn.innerHTML = '<i class="fas fa-exclamation"></i>';
+    btn.style.color = '#ef4444';
+    setTimeout(() => {
+      btn.style.color = '';
+      btn.innerHTML = '<i class="fas fa-check"></i>';
+    }, 2000);
+  }
+}
+
+/* ============================================================
+   تهيئة المخزون عند تسجيل الدخول
+   — أضف هذا السطر داخل دالة doLogin() بعد loadCartFromStorage()
+============================================================ */
+// initInventory();   ← انظر التعليمات أدناه
+
+
+
 
 
 
