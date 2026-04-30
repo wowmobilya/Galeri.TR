@@ -2281,26 +2281,41 @@ const labels={
   dresuar:{tag:'DRESUAR KOLEKSİYONU',title:'DRESUAR',accent:'MODELLERİ'}
 };
 
-function showPage(cat){
-  currentPage=cat;selectedIds.clear();selectMode=false;
-  document.body.classList.remove('select-mode');updateBulkBar();
-  document.querySelectorAll('.nav-link').forEach(a=>a.classList.remove('active'));
-  const navEl=document.getElementById('nav-'+cat);if(navEl)navEl.classList.add('active');
-  document.querySelectorAll('.mobile-menu a').forEach(a=>a.classList.remove('active'));
-  const mobEl=document.getElementById('mob-'+cat);if(mobEl)mobEl.classList.add('active');
-  /* إذا كانت الصفحة هي الطلبيات نبني صفحة خاصة */
+function showPage(cat) {
+  currentPage = cat;
+  selectedIds.clear();
+  selectMode  = false;
+  document.body.classList.remove('select-mode');
+  updateBulkBar();
+
+  document.querySelectorAll('.nav-link')
+    .forEach(a => a.classList.remove('active'));
+  const navEl = document.getElementById('nav-' + cat);
+  if (navEl) navEl.classList.add('active');
+
+  document.querySelectorAll('.mobile-menu a')
+    .forEach(a => a.classList.remove('active'));
+  const mobEl = document.getElementById('mob-' + cat);
+  if (mobEl) mobEl.classList.add('active');
+
   if (cat === 'orders') {
     filteredImages = [];
     buildOrderPage();
-// وفي showPage() استخدم:
-window.scrollTo({ top: 0, behavior: 'smooth' }); // ← هذا يكفي
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     appState = 'section';
     pushState('section', { cat });
     return;
   }
+
   filteredImages = images.filter(i => i.cat === cat);
-  buildPage(cat);window.scrollTo({top:0,behavior:'smooth'});
-  appState='section';pushState('section',{cat});
+  buildPage(cat);
+
+  /* ✅ تحديث الشارات بعد بناء الصفحة */
+  requestAnimationFrame(() => refreshStockBadges());
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  appState = 'section';
+  pushState('section', { cat });
 }
 
 function buildPage(cat){
@@ -2358,24 +2373,50 @@ function buildListPrice(img){
     :`<div class="card-list-price"><i class="card-list-price-icon">₺</i><span class="card-list-price-text" style="font-size:11px;background:none;-webkit-text-fill-color:rgba(201,168,76,0.6);color:rgba(201,168,76,0.6);">Fiyat için arayın</span></div>`;
 }
 
-function buildCard(img,idx){
-  const sel=selectedIds.has(img.id)?'selected':'';
+function buildCard(img, idx) {
+  const sel   = selectedIds.has(img.id) ? 'selected' : '';
   const delay = (Math.min(idx, 8) * 0.04).toFixed(2);
-  const hasDims=img.dims&&img.dims.length>0;
+  const hasDims = img.dims && img.dims.length > 0;
+
+  /* ── شارة المخزون ── */
+  const { status, label } = getStock(img.id);
+  const stockBadgeHtml = `
+    <div class="stock-badge ${status}" id="sbadge-${img.id}">
+      ${label}
+    </div>`;
+
   return `
-    <div class="gallery-item ${sel}" id="card-${img.id}" data-id="${img.id}" style="animation-delay:${delay}s" onclick="handleCardClick(event,${img.id},${idx})">
-      <div class="select-badge" id="badge-${img.id}" onclick="handleBadgeClick(event,${img.id})"><i class="fas fa-check"></i></div>
-      ${hasDims?`<button class="dims-btn" onclick="openDimsModal(event,${img.id})"><i class="fas fa-ruler-combined"></i> ÖLÇÜLER</button>`:''}
+    <div class="gallery-item ${sel}" id="card-${img.id}"
+         data-id="${img.id}"
+         style="animation-delay:${delay}s"
+         onclick="handleCardClick(event,${img.id},${idx})">
+      <div class="select-badge" id="badge-${img.id}"
+           onclick="handleBadgeClick(event,${img.id})">
+        <i class="fas fa-check"></i>
+      </div>
+      ${hasDims
+        ? `<button class="dims-btn"
+                   onclick="openDimsModal(event,${img.id})">
+             <i class="fas fa-ruler-combined"></i> ÖLÇÜLER
+           </button>`
+        : ''}
       <div class="card-img-wrap">
         <img src="${img.src}" alt="${img.title}" loading="lazy" draggable="false"
              onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW+MOBİLYA'"/>
+        ${stockBadgeHtml}
         <div class="card-label">
           <div class="card-label-title">${img.title}</div>
           <div class="card-label-cat">${img.catLabel}</div>
         </div>
         <div class="card-actions">
-          <button class="card-btn card-btn-view" onclick="openLightbox(${idx},event)"><i class="fas fa-eye"></i> Görüntüle</button>
-          <button class="card-btn card-btn-dl"   onclick="downloadOne(${idx},event)"><i class="fas fa-download"></i> İndir</button>
+          <button class="card-btn card-btn-view"
+                  onclick="openLightbox(${idx},event)">
+            <i class="fas fa-eye"></i> Görüntüle
+          </button>
+          <button class="card-btn card-btn-dl"
+                  onclick="downloadOne(${idx},event)">
+            <i class="fas fa-download"></i> İndir
+          </button>
         </div>
       </div>
       ${buildPriceBar(img)}
@@ -2384,8 +2425,14 @@ function buildCard(img,idx){
         <div class="card-list-cat">${img.catLabel}</div>
         ${buildListPrice(img)}
         <div class="card-list-actions">
-          <button class="card-btn card-btn-view" style="flex:1" onclick="openLightbox(${idx},event)"><i class="fas fa-eye"></i> Görüntüle</button>
-          <button class="card-btn card-btn-dl"   style="flex:1" onclick="downloadOne(${idx},event)"><i class="fas fa-download"></i> İndir</button>
+          <button class="card-btn card-btn-view" style="flex:1"
+                  onclick="openLightbox(${idx},event)">
+            <i class="fas fa-eye"></i> Görüntüle
+          </button>
+          <button class="card-btn card-btn-dl" style="flex:1"
+                  onclick="downloadOne(${idx},event)">
+            <i class="fas fa-download"></i> İndir
+          </button>
         </div>
       </div>
     </div>`;
@@ -3241,6 +3288,7 @@ function buildOrderPage() {
     </div>`;
 
   /* استعادة الكميات المحفوظة */
+  /* استعادة الكميات المحفوظة */
   Object.keys(orderCart).forEach(id => {
     const qty = orderCart[id];
     if (qty > 0) {
@@ -3252,15 +3300,31 @@ function buildOrderPage() {
       }
     }
   });
+
+  /* ✅ تحديث شارات المخزون بعد بناء الصفحة */
+  requestAnimationFrame(() => refreshStockBadges());
+
   updateOrderBar();
 }
 
 /* ── بناء بطاقة موديل واحد ── */
 function buildOrderCard(img, idx) {
-  const delay = (idx * 0.04).toFixed(2);
-  const qty   = orderCart[img.id] || 0;
+  const delay  = (idx * 0.04).toFixed(2);
+  const qty    = orderCart[img.id] || 0;
   const inCart = qty > 0 ? 'in-cart' : '';
-  const f = formatPrice(img.price);
+  const f      = formatPrice(img.price);
+
+  /* ── شارة المخزون ── */
+  const { status, label } = getStock(img.id);
+  const stockBadgeHtml = `
+    <div class="order-stock-badge ${status}" id="osbadge-${img.id}">
+      <i class="fas fa-${status === 'available'
+        ? 'check-circle'
+        : status === 'low'
+          ? 'exclamation-circle'
+          : 'times-circle'}"></i>
+      ${label}
+    </div>`;
 
   return `
     <div class="order-card ${inCart}" id="ocard-${img.id}"
@@ -3276,6 +3340,7 @@ function buildOrderCard(img, idx) {
         <div class="order-card-title">${img.title}</div>
         <div class="order-card-cat">${img.catLabel}</div>
         ${f ? `<div class="order-card-price">${f} ₺</div>` : ''}
+        ${stockBadgeHtml}
       </div>
       <div class="order-qty-row">
         <span class="order-qty-label">ADET</span>
@@ -4659,14 +4724,14 @@ async function initInventory() {
 
 /* ── الاستماع الدائم للتغييرات ── */
 function startRealtimeListener() {
-  /* إلغاء أي اشتراك سابق */
+  /* إلغاء أي قناة سابقة */
   if (invRealtimeSub) {
-    _supa.removeChannel(invRealtimeSub);
+    try { _supa.removeChannel(invRealtimeSub); } catch(e) {}
     invRealtimeSub = null;
   }
 
   invRealtimeSub = _supa
-    .channel('inventory-global')
+    .channel('inventory-global-' + Date.now())
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'inventory' },
@@ -4674,33 +4739,36 @@ function startRealtimeListener() {
         const row = payload.new || payload.old;
         if (!row?.id) return;
 
-        /* ── تحديث البيانات المحلية ── */
+        /* تحديث البيانات المحلية */
         if (payload.eventType === 'DELETE') {
           delete inventoryData[row.id];
         } else {
           inventoryData[row.id] = {
             stock    : row.stock     ?? 0,
             is_active: row.is_active ?? true,
-            title    : row.title     || inventoryData[row.id]?.title || '',
+            title    : row.title
+                       || inventoryData[row.id]?.title
+                       || '',
           };
         }
 
-        /* ── تحديث فوري لكل الشارات في الصفحة ── */
+        /* تحديث الواجهة فوراً */
         refreshStockBadges();
-
-        /* ── تحديث قائمة نافذة المخزون إن كانت مفتوحة ── */
         refreshInvListItem(row.id);
-
-        /* ── إشعار مرئي خفيف ── */
         showStockUpdateToast(row.id, row.stock ?? 0);
       }
     )
     .subscribe(status => {
-      console.log('[Realtime] status:', status);
+      console.log('[Realtime]', status);
 
-      /* إعادة الاتصال تلقائياً إن انقطع ── */
+      if (status === 'SUBSCRIBED') {
+        console.log('[Realtime] ✅ متصل ويستمع');
+      }
+
+      /* إعادة الاتصال تلقائياً عند الانقطاع */
       if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        setTimeout(() => startRealtimeListener(), 3000);
+        console.warn('[Realtime] ⚠️ انقطع — إعادة الاتصال بعد 4 ثوان');
+        setTimeout(() => startRealtimeListener(), 4000);
       }
     });
 }
@@ -4844,18 +4912,28 @@ function getStock(id) {
 
 /* ── تحديث شارات المخزون في الصفحة ── */
 function refreshStockBadges() {
-  /* بطاقات المعرض */
   images.forEach(img => {
-    const card = document.getElementById('card-' + img.id);
-    if (!card) return;
-    updateCardStockBadge(card, img.id);
-  });
+    const { status, label } = getStock(img.id);
 
-  /* بطاقات الطلبيات */
-  images.forEach(img => {
-    const card = document.getElementById('ocard-' + img.id);
-    if (!card) return;
-    updateOrderCardStock(card, img.id);
+    /* ── شارة المعرض ── */
+    const sb = document.getElementById('sbadge-' + img.id);
+    if (sb) {
+      sb.className   = `stock-badge ${status}`;
+      sb.textContent = label;
+    }
+
+    /* ── شارة الطلبيات ── */
+    const ob = document.getElementById('osbadge-' + img.id);
+    if (ob) {
+      ob.className = `order-stock-badge ${status}`;
+      ob.innerHTML = `
+        <i class="fas fa-${status === 'available'
+          ? 'check-circle'
+          : status === 'low'
+            ? 'exclamation-circle'
+            : 'times-circle'}"></i>
+        ${label}`;
+    }
   });
 }
 
@@ -4891,8 +4969,8 @@ function updateOrderCardStock(card, id) {
   badge.innerHTML = `<i class="fas fa-${status === 'available' ? 'check' : status === 'low' ? 'exclamation' : 'times'}-circle"></i> ${label}`;
 }
 
-/* ── تحديث عنصر واحد في قائمة نافذة المخزون ── */
 function refreshInvListItem(id) {
+  /* تحديث نافذة المخزون إن كانت مفتوحة */
   const item = document.getElementById('inv-item-' + id);
   if (!item) return;
 
@@ -4900,7 +4978,7 @@ function refreshInvListItem(id) {
 
   const badge = item.querySelector('.inv-stock-badge');
   if (badge) {
-    badge.className = `inv-stock-badge ${status}`;
+    badge.className   = `inv-stock-badge ${status}`;
     badge.textContent = label;
   }
 
