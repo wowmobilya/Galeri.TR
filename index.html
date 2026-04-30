@@ -4562,91 +4562,165 @@ function showOrderSuccessToast(orderNum) {
 
 
 /* ============================================================
-   ★ SUPABASE — إدارة المخزون الحي ★
+   ★ SUPABASE — إدارة المخزون الحي (نسخة مُصحَّحة) ★
 ============================================================ */
 
-/* ── إعدادات Supabase — ضع مفاتيحك هنا ── */
-const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co/rest/v1/';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
+/* ── ضع مفاتيحك هنا بدقة — بدون مسافات ── */
+const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co/rest/v1/';   // ← غيّر هذا
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc'; // ← غيّر هذا
+const INV_TABLE    = 'inventory';   /* اسم الجدول بالضبط */
 
-let _sb = null;
-let inventoryData = {};       /* { id: stock } */
-let invPendingChanges = {};   /* تغييرات لم تُحفظ بعد */
+let _sb                = null;
+let inventoryData      = {};
+let invPendingChanges  = {};
 let invRealtimeChannel = null;
+let _sbReady           = false;
 
-/* ── تهيئة Supabase ── */
-function initSupabase() {
-  if (_sb) return _sb;
-  try {
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  } catch(e) {
-    console.warn('[Supabase] init error:', e);
-  }
-  return _sb;
+/* ── تحميل مكتبة Supabase إذا لم تكن موجودة ── */
+async function ensureSupabaseLib() {
+  if (typeof supabase !== 'undefined') return true;
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+    s.onload  = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.head.appendChild(s);
+  });
 }
 
-/* ── تحميل المخزون من Supabase ── */
+/* ── تهيئة Supabase ── */
+async function initSupabase() {
+  if (_sb && _sbReady) return _sb;
+  const loaded = await ensureSupabaseLib();
+  if (!loaded) { console.error('[Supabase] مكتبة supabase-js فشلت في التحميل'); return null; }
+  try {
+    /* تنظيف URL من أي مسافات أو / زائدة في النهاية */
+    const cleanUrl = SUPABASE_URL.trim().replace(/\/+$/, '');
+    const cleanKey = SUPABASE_KEY.trim();
+    _sb      = supabase.createClient(cleanUrl, cleanKey);
+    _sbReady = true;
+    console.log('[Supabase] ✅ متصل بـ', cleanUrl);
+    return _sb;
+  } catch(e) {
+    console.error('[Supabase] createClient error:', e);
+    return null;
+  }
+}
+
+/* ── اختبار الاتصال ── */
+async function testSupabaseConnection() {
+  const sb = await initSupabase();
+  if (!sb) return false;
+  try {
+    const { data, error } = await sb
+      .from(INV_TABLE)
+      .select('id')
+      .limit(1);
+    if (error) {
+      console.error('[Supabase] اختبار فشل:', error.message, error.hint || '');
+      return false;
+    }
+    console.log('[Supabase] ✅ الجدول موجود، بيانات:', data);
+    return true;
+  } catch(e) {
+    console.error('[Supabase] خطأ في الاختبار:', e);
+    return false;
+  }
+}
+
+/* ── تحميل المخزون ── */
 async function loadInventory() {
-  const sb = initSupabase();
+  const sb = await initSupabase();
   if (!sb) return;
   try {
     const { data, error } = await sb
-      .from('inventory')
+      .from(INV_TABLE)
       .select('id, stock, is_active');
-    if (error) throw error;
+
+    if (error) {
+      console.error('[Supabase] loadInventory error:', error.message);
+      console.error('[Supabase] hint:', error.hint);
+      console.error('[Supabase] details:', error.details);
+      return;
+    }
+
+    if (!data || !data.length) {
+      console.warn('[Supabase] الجدول فارغ — تأكد من تشغيل SQL الإدراج');
+      return;
+    }
+
     data.forEach(row => {
-      inventoryData[row.id] = row.stock ?? 0;
+      inventoryData[Number(row.id)] = row.stock ?? 0;
     });
-    /* تحديث الواجهة إذا كان قسم الطلبيات مفتوحاً */
+
+    console.log('[Supabase] ✅ تم تحميل', data.length, 'سجل');
     refreshStockBadges();
+
   } catch(e) {
-    console.warn('[Supabase] loadInventory error:', e);
+    console.error('[Supabase] loadInventory exception:', e);
   }
 }
 
 /* ── الاشتراك في التحديثات الحية ── */
-function subscribeInventory() {
-  const sb = initSupabase();
+async function subscribeInventory() {
+  const sb = await initSupabase();
   if (!sb || invRealtimeChannel) return;
 
   invRealtimeChannel = sb
-    .channel('inventory-changes')
+    .channel('inventory-live')
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'inventory' },
+      { event: '*', schema: 'public', table: INV_TABLE },
       payload => {
         const row = payload.new || payload.old;
         if (row && row.id !== undefined) {
-          inventoryData[row.id] = row.stock ?? 0;
-          /* تحديث فوري للشارة المرئية */
-          updateSingleStockBadge(row.id, row.stock ?? 0);
+          const id    = Number(row.id);
+          const stock = row.stock ?? 0;
+          inventoryData[id] = stock;
+          updateSingleStockBadge(id, stock);
+          /* تحديث نافذة التعديل إذا كانت مفتوحة */
+          const valEl = document.getElementById('invqty-' + id);
+          const dotEl = document.getElementById('invdot-' + id);
+          if (valEl) valEl.textContent = stock;
+          if (dotEl) dotEl.className = 'inv-status-dot ' + getStockStatus(stock).dotCls;
         }
       }
     )
     .subscribe(status => {
       const dot = document.getElementById('invSyncDot');
       const txt = document.getElementById('invSyncTxt');
+      console.log('[Supabase Realtime] status:', status);
       if (status === 'SUBSCRIBED') {
-        if (dot) { dot.className = 'inv-sync-dot'; }
+        if (dot) dot.className = 'inv-sync-dot';
         if (txt) txt.textContent = 'Canlı bağlantı';
       } else {
-        if (dot) { dot.className = 'inv-sync-dot syncing'; }
-        if (txt) txt.textContent = 'Bağlanıyor...';
+        if (dot) dot.className = 'inv-sync-dot syncing';
+        if (txt) txt.textContent = status === 'CHANNEL_ERROR' ? 'Bağlantı hatası' : 'Bağlanıyor...';
       }
     });
 }
 
-/* ── حساب حالة المخزون ── */
+/* ── حالة المخزون ── */
 function getStockStatus(stock) {
-  if (stock <= 0)  return { cls: 'out-stock', dotCls: 'out', icon: 'fa-times-circle',   label: 'TÜKENDİ' };
-  if (stock <= 3)  return { cls: 'low-stock', dotCls: 'low', icon: 'fa-exclamation-circle', label: stock + ' ADET' };
-  return            { cls: 'in-stock',  dotCls: 'in',  icon: 'fa-check-circle',  label: stock + ' ADET' };
+  const n = Number(stock);
+  if (n <= 0) return { cls:'out-stock', dotCls:'out', icon:'fa-times-circle',      label:'TÜKENDİ'    };
+  if (n <= 3) return { cls:'low-stock', dotCls:'low', icon:'fa-exclamation-circle', label: n + ' ADET' };
+  return              { cls:'in-stock',  dotCls:'in',  icon:'fa-check-circle',       label: n + ' ADET' };
 }
 
-/* ── بناء شارة المخزون HTML ── */
+/* ── شارة المخزون HTML ── */
 function buildStockBadgeHtml(imgId) {
-  const stock = inventoryData[imgId] ?? null;
-  if (stock === null) return '';   /* لم يُحمَّل بعد */
+  const stock = inventoryData[imgId];
+  if (stock === undefined) {
+    return `<div class="stock-badge" id="sbadge-${imgId}">
+      <span class="stock-badge-label">STOK</span>
+      <span class="stock-pill" style="background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.1);color:rgba(255,255,255,0.3);
+        padding:3px 10px;border-radius:50px;font-size:10px;font-weight:700;">
+        <i class="fas fa-spinner fa-spin" style="font-size:9px;"></i> Yükleniyor
+      </span>
+    </div>`;
+  }
   const s = getStockStatus(stock);
   return `
     <div class="stock-badge" id="sbadge-${imgId}">
@@ -4657,7 +4731,7 @@ function buildStockBadgeHtml(imgId) {
     </div>`;
 }
 
-/* ── تحديث شارة واحدة بعد التغيير الحي ── */
+/* ── تحديث شارة واحدة ── */
 function updateSingleStockBadge(id, stock) {
   const el = document.getElementById('sbadge-' + id);
   if (!el) return;
@@ -4667,15 +4741,9 @@ function updateSingleStockBadge(id, stock) {
     <span class="stock-pill ${s.cls}">
       <i class="fas ${s.icon}"></i> ${s.label}
     </span>`;
-
-  /* تحديث قيمة في نافذة التعديل إذا كانت مفتوحة */
-  const valEl = document.getElementById('invqty-' + id);
-  if (valEl) valEl.textContent = stock;
-  const dotEl = document.getElementById('invdot-' + id);
-  if (dotEl) dotEl.className = 'inv-status-dot ' + s.dotCls;
 }
 
-/* ── تحديث كل الشارات المرئية ── */
+/* ── تحديث كل الشارات ── */
 function refreshStockBadges() {
   if (currentPage !== 'orders') return;
   images.forEach(img => {
@@ -4685,22 +4753,8 @@ function refreshStockBadges() {
 }
 
 /* ============================================================
-   تعديل buildOrderCard لإضافة شارة المخزون
-============================================================ */
-/* احتفظ بالدالة الأصلية وأضف الشارة */
-const _origBuildOrderCard = buildOrderCard;
-buildOrderCard = function(img, idx) {
-  const html = _origBuildOrderCard(img, idx);
-  const stockHtml = buildStockBadgeHtml(img.id);
-  /* أدرج الشارة قبل نهاية البطاقة */
-  return html.replace('</div>\n    </div>', stockHtml + '</div>\n    </div>');
-};
-
-/* ============================================================
    نافذة إدارة المخزون
 ============================================================ */
-let _invListCache = [];   /* نسخة مؤقتة للبحث */
-
 function openInventoryModal() {
   invPendingChanges = {};
   buildInvList('');
@@ -4721,7 +4775,7 @@ function handleInvModalBg(e) {
     closeInventoryModal();
 }
 
-/* ── بناء قائمة المخزون ── */
+/* ── بناء القائمة ── */
 function buildInvList(filter) {
   const list = document.getElementById('invList');
   if (!list) return;
@@ -4729,11 +4783,11 @@ function buildInvList(filter) {
   const filtered = images.filter(img =>
     !filter || img.title.toLowerCase().includes(filter.toLowerCase())
   );
-  _invListCache = filtered;
 
   if (!filtered.length) {
-    list.innerHTML = `<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.2);
-      font-size:12px;letter-spacing:2px;">Sonuç bulunamadı</div>`;
+    list.innerHTML = `<div style="text-align:center;padding:24px;
+      color:rgba(255,255,255,0.2);font-size:12px;letter-spacing:2px;">
+      Sonuç bulunamadı</div>`;
     return;
   }
 
@@ -4761,11 +4815,9 @@ function buildInvList(filter) {
   }).join('');
 }
 
-function filterInvList(val) {
-  buildInvList(val);
-}
+function filterInvList(val) { buildInvList(val); }
 
-/* ── تغيير كمية في النافذة ── */
+/* ── تغيير كمية ── */
 function changeInvQty(id, delta) {
   const current = invPendingChanges[id] !== undefined
     ? invPendingChanges[id]
@@ -4776,13 +4828,10 @@ function changeInvQty(id, delta) {
   const valEl = document.getElementById('invqty-' + id);
   const dotEl = document.getElementById('invdot-' + id);
   if (valEl) valEl.textContent = newVal;
-  if (dotEl) {
-    const s = getStockStatus(newVal);
-    dotEl.className = 'inv-status-dot ' + s.dotCls;
-  }
+  if (dotEl) dotEl.className = 'inv-status-dot ' + getStockStatus(newVal).dotCls;
 }
 
-/* ── حفظ التغييرات في Supabase ── */
+/* ── حفظ في Supabase ── */
 async function saveAllInventory() {
   const btn = document.getElementById('invSaveBtn');
   const dot = document.getElementById('invSyncDot');
@@ -4790,55 +4839,61 @@ async function saveAllInventory() {
 
   const changes = Object.entries(invPendingChanges);
   if (!changes.length) {
-    closeInventoryModal();
+    showInvToast('Değişiklik yok', 'info');
     return;
   }
 
-  /* حالة الحفظ */
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> KAYDEDİLİYOR...'; }
   if (dot) dot.className = 'inv-sync-dot syncing';
   if (txt) txt.textContent = 'Kaydediliyor...';
 
-  const sb = initSupabase();
+  const sb = await initSupabase();
   if (!sb) {
-    showInvToast('Supabase bağlantısı yok!', 'error');
+    showInvToast('Supabase bağlantısı kurulamadı!', 'error');
     resetInvBtn(btn, dot, txt);
     return;
   }
 
   try {
-    /* upsert دفعة واحدة */
     const rows = changes.map(([id, stock]) => ({
-      id      : Number(id),
-      stock   : stock,
-      updated_at: new Date().toISOString(),
+      id         : Number(id),
+      stock      : Number(stock),
+      updated_at : new Date().toISOString(),
     }));
 
-    const { error } = await sb
-      .from('inventory')
-      .upsert(rows, { onConflict: 'id' });
+    console.log('[Supabase] upsert rows:', rows);
 
-    if (error) throw error;
+    const { data, error } = await sb
+      .from(INV_TABLE)
+      .upsert(rows, { onConflict: 'id' })
+      .select();   /* ← select() يُعيد البيانات المحدَّثة */
+
+    if (error) {
+      console.error('[Supabase] upsert error:', error);
+      console.error('message:', error.message);
+      console.error('hint:',    error.hint);
+      console.error('details:', error.details);
+      console.error('code:',    error.code);
+      throw new Error(error.message || JSON.stringify(error));
+    }
+
+    console.log('[Supabase] ✅ upsert نجح:', data);
 
     /* تحديث الذاكرة المحلية */
     changes.forEach(([id, stock]) => {
-      inventoryData[Number(id)] = stock;
+      inventoryData[Number(id)] = Number(stock);
     });
     invPendingChanges = {};
-
-    /* تحديث الشارات المرئية */
     refreshStockBadges();
 
     showInvToast('Stok başarıyla güncellendi ✓', 'success');
-
     if (dot) dot.className = 'inv-sync-dot';
     if (txt) txt.textContent = 'Canlı bağlantı';
-
-    setTimeout(() => closeInventoryModal(), 800);
+    setTimeout(() => closeInventoryModal(), 700);
 
   } catch(e) {
-    console.error('[Supabase] save error:', e);
-    showInvToast('Kayıt hatası: ' + (e.message || e), 'error');
+    console.error('[Supabase] saveAllInventory exception:', e);
+    showInvToast('Kayıt hatası: ' + (e.message || String(e)), 'error');
     resetInvBtn(btn, dot, txt);
   }
 }
@@ -4849,7 +4904,7 @@ function resetInvBtn(btn, dot, txt) {
   if (txt) txt.textContent = 'Canlı bağlantı';
 }
 
-/* ── Toast إشعار ── */
+/* ── Toast ── */
 function showInvToast(msg, type = 'success') {
   let t = document.getElementById('invToast');
   if (!t) {
@@ -4868,47 +4923,61 @@ function showInvToast(msg, type = 'success') {
       white-space:nowrap;pointer-events:none;`;
     document.body.appendChild(t);
   }
-  const isSuccess = type === 'success';
-  t.style.background = isSuccess ? 'rgba(10,10,10,0.97)' : 'rgba(30,5,5,0.97)';
-  t.style.border = isSuccess
-    ? '1px solid rgba(74,222,128,0.4)'
-    : '1px solid rgba(239,68,68,0.4)';
-  t.style.color = 'rgba(255,255,255,0.85)';
-  t.innerHTML = isSuccess
-    ? `<i class="fas fa-check-circle" style="color:#4ade80;"></i> ${msg}`
-    : `<i class="fas fa-exclamation-circle" style="color:#ef4444;"></i> ${msg}`;
+  const colors = {
+    success : { bg:'rgba(10,10,10,0.97)', border:'rgba(74,222,128,0.4)',  icon:`<i class="fas fa-check-circle" style="color:#4ade80;"></i>` },
+    error   : { bg:'rgba(30,5,5,0.97)',   border:'rgba(239,68,68,0.4)',   icon:`<i class="fas fa-exclamation-circle" style="color:#ef4444;"></i>` },
+    info    : { bg:'rgba(10,10,10,0.97)', border:'rgba(201,168,76,0.4)',  icon:`<i class="fas fa-info-circle" style="color:#c9a84c;"></i>` },
+  };
+  const c = colors[type] || colors.info;
+  t.style.background = c.bg;
+  t.style.border     = `1px solid ${c.border}`;
+  t.style.color      = 'rgba(255,255,255,0.85)';
+  t.innerHTML        = `${c.icon} ${msg}`;
 
   requestAnimationFrame(() => {
-    t.style.opacity = '1';
+    t.style.opacity   = '1';
     t.style.transform = 'translateX(-50%) translateY(0)';
   });
   setTimeout(() => {
-    t.style.opacity = '0';
+    t.style.opacity   = '0';
     t.style.transform = 'translateX(-50%) translateY(20px)';
-  }, 3000);
+  }, 3200);
 }
 
 /* ============================================================
-   تهيئة عند الدخول
+   Override — تهيئة عند الدخول
 ============================================================ */
-/* نعيد كتابة doLogin لتشمل تحميل المخزون */
-const _origDoLogin = doLogin;
+/* نضيف تحميل المخزون بعد تسجيل الدخول */
+const _origDoLogin_inv = doLogin;
 doLogin = function() {
-  const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
-  if (USERS[user] && USERS[user] === pass) {
-    /* تحميل المخزون + الاشتراك */
-    loadInventory().then(() => subscribeInventory());
-  }
-  _origDoLogin();
+  _origDoLogin_inv();
+  /* ننتظر قليلاً حتى يكتمل الـ login animation */
+  setTimeout(async () => {
+    const ok = await testSupabaseConnection();
+    if (ok) {
+      await loadInventory();
+      subscribeInventory();
+    } else {
+      console.warn('[Supabase] الاتصال فشل — تحقق من المفاتيح واسم الجدول');
+    }
+  }, 900);
 };
 
-/* تحديث buildOrderPage لتشمل الشارات بعد البناء */
-const _origBuildOrderPage = buildOrderPage;
+/* تحديث buildOrderPage لإضافة الشارات */
+const _origBuildOrderPage_inv = buildOrderPage;
 buildOrderPage = function() {
-  _origBuildOrderPage();
-  /* بعد بناء الصفحة نحدث الشارات */
-  setTimeout(() => refreshStockBadges(), 100);
+  _origBuildOrderPage_inv();
+  setTimeout(() => refreshStockBadges(), 150);
+};
+
+/* تعديل buildOrderCard لإضافة شارة المخزون */
+const _origBuildOrderCard_inv = buildOrderCard;
+buildOrderCard = function(img, idx) {
+  const html      = _origBuildOrderCard_inv(img, idx);
+  const stockHtml = buildStockBadgeHtml(img.id);
+  /* أدرج الشارة قبل آخر </div> في البطاقة */
+  const lastDiv = html.lastIndexOf('</div>');
+  return html.slice(0, lastDiv) + stockHtml + html.slice(lastDiv);
 };
 
 
