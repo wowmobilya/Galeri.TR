@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Supabase Client -->
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <!-- =====================================================
      PWA — تثبيت كتطبيق
@@ -1217,289 +1218,246 @@ html { scroll-behavior: auto; }
 
 
 /* =====================================================
-   INVENTORY MODAL — نافذة إدارة المخزون
+   INVENTORY BADGE — عداد المخزون
 ===================================================== */
+.stock-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 11px 8px;
+  background: rgba(0,0,0,0.25);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  flex-shrink: 0;
+  gap: 6px;
+}
+.stock-badge-label {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.28);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.stock-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+}
+.stock-pill.in-stock {
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.3);
+  color: #4ade80;
+}
+.stock-pill.low-stock {
+  background: rgba(251,191,36,0.12);
+  border: 1px solid rgba(251,191,36,0.3);
+  color: #fbbf24;
+}
+.stock-pill.out-stock {
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.3);
+  color: #ef4444;
+}
+.stock-pill i { font-size: 9px; }
+
+/* ── نافذة تعديل المخزون ── */
 #inventoryModal {
   position: fixed; inset: 0; z-index: 7000;
   display: none; align-items: center; justify-content: center;
-  background: rgba(0,0,0,0.92);
+  background: rgba(0,0,0,0.88);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   padding: 16px;
 }
 #inventoryModal.active { display: flex; }
 
-.inv-box {
+.inv-modal-box {
   position: relative;
-  width: 100%; max-width: 680px;
+  width: 100%; max-width: 480px;
   max-height: 90vh;
-  display: flex; flex-direction: column;
-  border-radius: 22px; overflow: hidden;
-  background: linear-gradient(145deg,#0f0f0f,#161616);
+  overflow-y: auto;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #0f0f0f, #161616);
   border: 1px solid rgba(201,168,76,0.25);
-  box-shadow: 0 40px 100px rgba(0,0,0,0.85),
-              0 0 60px rgba(201,168,76,0.06);
-  animation: invBoxIn 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 60px rgba(201,168,76,0.06);
+  animation: devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
 }
-@keyframes invBoxIn {
-  from { opacity:0; transform:scale(0.88) translateY(24px); }
-  to   { opacity:1; transform:scale(1) translateY(0); }
+.inv-modal-box::-webkit-scrollbar { width: 3px; }
+.inv-modal-box::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.3); border-radius: 4px;
 }
 
 .inv-topline {
   height: 2px;
-  background: linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
-  flex-shrink: 0;
+  background: linear-gradient(90deg, transparent, #c9a84c 30%, #f0d080 50%, #c9a84c 70%, transparent);
 }
 
 .inv-header {
-  padding: 16px 20px 14px;
+  padding: 18px 20px 14px;
   display: flex; align-items: center; justify-content: space-between;
   border-bottom: 1px solid rgba(255,255,255,0.05);
-  flex-shrink: 0;
-  background: rgba(0,0,0,0.3);
+  position: sticky; top: 0;
+  background: linear-gradient(145deg, #0f0f0f, #161616);
+  z-index: 2;
 }
-.inv-header-left { display:flex; align-items:center; gap:12px; }
+.inv-header-left { display: flex; align-items: center; gap: 12px; }
 .inv-header-icon {
-  width:42px; height:42px;
-  background: linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+  width: 42px; height: 42px;
+  background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.04));
   border: 1px solid rgba(201,168,76,0.3);
   border-radius: 12px;
-  display:flex; align-items:center; justify-content:center;
-  color: var(--gold); font-size:17px; flex-shrink:0;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold); font-size: 17px; flex-shrink: 0;
 }
 .inv-header-tag {
-  font-size:8px; letter-spacing:3px;
-  color:rgba(201,168,76,0.55); text-transform:uppercase; margin-bottom:3px;
+  font-size: 8px; letter-spacing: 3px;
+  color: rgba(201,168,76,0.55); text-transform: uppercase; margin-bottom: 3px;
 }
 .inv-header-title {
-  font-size:16px; font-weight:900; color:#fff; letter-spacing:0.3px;
+  font-size: 16px; font-weight: 900; color: var(--white);
 }
 .inv-close {
-  width:32px; height:32px; flex-shrink:0;
-  background:rgba(255,255,255,0.04);
-  border:1px solid rgba(255,255,255,0.07);
-  border-radius:8px; color:rgba(255,255,255,0.3);
-  font-size:14px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:all 0.25s;
+  width: 32px; height: 32px; flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px; color: rgba(255,255,255,0.3);
+  font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s;
 }
 .inv-close:hover {
-  background:rgba(255,70,70,0.1);
-  border-color:rgba(255,70,70,0.25);
-  color:#ff6b6b; transform:rotate(90deg);
+  background: rgba(255,70,70,0.1);
+  border-color: rgba(255,70,70,0.25);
+  color: #ff6b6b; transform: rotate(90deg);
 }
 
-/* شريط البحث */
-.inv-search-wrap {
-  padding: 12px 20px;
-  border-bottom: 1px solid rgba(255,255,255,0.04);
-  flex-shrink: 0;
-  background: rgba(0,0,0,0.2);
-}
+.inv-body { padding: 16px 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+
 .inv-search {
-  width:100%; padding:10px 14px 10px 38px;
-  background:rgba(255,255,255,0.05);
-  border:1px solid rgba(201,168,76,0.2);
-  border-radius:10px; color:#fff;
-  font-family:'Montserrat',sans-serif; font-size:13px;
-  outline:none; transition:all 0.3s;
-  -webkit-user-select:text; user-select:text;
+  position: relative; margin-bottom: 4px;
 }
-.inv-search:focus {
-  border-color:var(--gold);
-  box-shadow:0 0 20px rgba(201,168,76,0.1);
+.inv-search input {
+  width: 100%; padding: 10px 14px 10px 38px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 10px; color: var(--white);
+  font-family: 'Montserrat', sans-serif; font-size: 12px;
+  outline: none; transition: all 0.3s;
+  -webkit-user-select: text; user-select: text;
 }
-.inv-search-wrap { position:relative; }
-.inv-search-icon {
-  position:absolute; left:33px; top:50%;
-  transform:translateY(-50%);
-  color:rgba(201,168,76,0.45); font-size:13px;
-  pointer-events:none;
+.inv-search input:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 16px rgba(201,168,76,0.1);
 }
-
-/* قائمة المخزون */
-.inv-list {
-  flex:1; overflow-y:auto;
-  padding:10px 14px 14px;
-  -webkit-overflow-scrolling:touch;
-}
-.inv-list::-webkit-scrollbar { width:4px; }
-.inv-list::-webkit-scrollbar-track { background:transparent; }
-.inv-list::-webkit-scrollbar-thumb {
-  background:rgba(201,168,76,0.25); border-radius:4px;
+.inv-search i {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(201,168,76,0.5); font-size: 13px;
 }
 
-/* بطاقة موديل واحد في المخزون */
+.inv-list { display: flex; flex-direction: column; gap: 7px; }
+
 .inv-item {
-  display:flex; align-items:center; gap:12px;
-  padding:10px 12px;
-  background:rgba(255,255,255,0.025);
-  border:1px solid rgba(255,255,255,0.05);
-  border-radius:12px; margin-bottom:7px;
-  transition:all 0.25s;
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 10px 12px;
+  transition: all 0.25s;
 }
 .inv-item:hover {
-  background:rgba(201,168,76,0.05);
-  border-color:rgba(201,168,76,0.15);
+  background: rgba(201,168,76,0.05);
+  border-color: rgba(201,168,76,0.15);
 }
-.inv-item-img {
-  width:52px; height:42px; object-fit:cover;
-  border-radius:7px; flex-shrink:0;
-  border:1px solid rgba(255,255,255,0.07);
-  pointer-events:none;
+.inv-item-thumb {
+  width: 44px; height: 34px;
+  object-fit: cover; border-radius: 7px;
+  border: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
 }
-.inv-item-info { flex:1; min-width:0; }
-.inv-item-title {
-  font-size:13px; font-weight:700; color:#fff;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+.inv-item-name {
+  font-size: 12px; font-weight: 700; color: var(--white); flex: 1;
 }
 .inv-item-cat {
-  font-size:9px; color:var(--gold);
-  letter-spacing:1.5px; margin-top:2px;
+  font-size: 9px; color: var(--gold); letter-spacing: 1.5px; margin-top: 2px;
 }
+.inv-qty-ctrl {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 3px 6px;
+  flex-shrink: 0;
+}
+.inv-qty-btn {
+  width: 26px; height: 26px; border-radius: 6px;
+  border: 1px solid rgba(201,168,76,0.25);
+  background: rgba(201,168,76,0.08);
+  color: var(--gold); font-size: 15px; font-weight: 700;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; font-family: 'Montserrat', sans-serif;
+  line-height: 1; flex-shrink: 0;
+}
+.inv-qty-btn:hover { background: rgba(201,168,76,0.2); border-color: var(--gold); }
+.inv-qty-val {
+  font-size: 14px; font-weight: 900; color: var(--white);
+  min-width: 26px; text-align: center;
+}
+.inv-status-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  transition: background 0.3s;
+}
+.inv-status-dot.in  { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.5); }
+.inv-status-dot.low { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,0.5); }
+.inv-status-dot.out { background: #ef4444; box-shadow: 0 0 6px rgba(239,68,68,0.5); }
 
-/* عداد المخزون */
-.inv-stock-ctrl {
-  display:flex; align-items:center; gap:8px; flex-shrink:0;
-}
-.inv-stock-badge {
-  font-size:11px; font-weight:700;
-  padding:3px 10px; border-radius:50px;
-  min-width:52px; text-align:center;
-  transition:all 0.3s;
-}
-.inv-stock-badge.available {
-  background:rgba(74,222,128,0.12);
-  border:1px solid rgba(74,222,128,0.3);
-  color:#4ade80;
-}
-.inv-stock-badge.low {
-  background:rgba(251,191,36,0.12);
-  border:1px solid rgba(251,191,36,0.3);
-  color:#fbbf24;
-}
-.inv-stock-badge.out {
-  background:rgba(239,68,68,0.12);
-  border:1px solid rgba(239,68,68,0.3);
-  color:#ef4444;
-}
-
-/* حقل إدخال الكمية */
-.inv-qty-input {
-  width:58px; padding:6px 8px;
-  background:rgba(255,255,255,0.06);
-  border:1px solid rgba(201,168,76,0.25);
-  border-radius:8px; color:#fff;
-  font-family:'Montserrat',sans-serif;
-  font-size:13px; font-weight:700;
-  text-align:center; outline:none;
-  transition:all 0.25s;
-  -webkit-user-select:text; user-select:text;
-}
-.inv-qty-input:focus {
-  border-color:var(--gold);
-  box-shadow:0 0 12px rgba(201,168,76,0.15);
-}
-
-/* زر الحفظ */
-.inv-save-btn {
-  width:32px; height:32px;
-  background:rgba(201,168,76,0.1);
-  border:1px solid rgba(201,168,76,0.25);
-  border-radius:8px; color:var(--gold);
-  font-size:13px; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  transition:all 0.25s; flex-shrink:0;
-}
-.inv-save-btn:hover {
-  background:rgba(201,168,76,0.22);
-  border-color:var(--gold);
-  transform:scale(1.08);
-}
-.inv-save-btn.saving {
-  animation:iconPulse 0.8s ease infinite;
-}
-.inv-save-btn.saved {
-  background:rgba(74,222,128,0.15);
-  border-color:rgba(74,222,128,0.4);
-  color:#4ade80;
-}
-
-/* تذييل النافذة */
 .inv-footer {
-  padding:10px 20px 14px;
-  border-top:1px solid rgba(255,255,255,0.04);
-  display:flex; align-items:center; justify-content:space-between;
-  flex-shrink:0; background:rgba(0,0,0,0.2);
-  flex-wrap:wrap; gap:8px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; gap: 8px; align-items: center;
 }
-.inv-footer-stat {
-  font-size:10px; color:rgba(255,255,255,0.25);
-  letter-spacing:1px;
-  display:flex; align-items:center; gap:6px;
+.inv-save-btn {
+  flex: 1; padding: 11px;
+  background: linear-gradient(135deg, #c9a84c, #f0d080);
+  border: none; border-radius: 10px;
+  color: var(--dark); font-family: 'Montserrat', sans-serif;
+  font-size: 12px; font-weight: 900; letter-spacing: 2px;
+  cursor: pointer; transition: all 0.25s;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
 }
-.inv-footer-stat i { color:rgba(201,168,76,0.4); }
-.inv-realtime-dot {
-  width:7px; height:7px; border-radius:50%;
-  background:#4ade80;
-  box-shadow:0 0 6px rgba(74,222,128,0.7);
-  animation:iconPulse 1.5s ease infinite;
-  flex-shrink:0;
+.inv-save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,168,76,0.35); }
+.inv-save-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.inv-sync-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; color: rgba(255,255,255,0.3);
+  letter-spacing: 1px;
 }
-.inv-realtime-txt {
-  font-size:9px; color:rgba(74,222,128,0.7);
-  letter-spacing:1.5px; font-weight:700;
+.inv-sync-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(74,222,128,0.6);
+  animation: iconPulse 2s infinite;
+}
+.inv-sync-dot.syncing {
+  background: #fbbf24;
+  animation: updSpin 0.8s linear infinite;
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
 }
 
-/* شارة المخزون على بطاقة الموديل */
-.stock-badge {
-  position:absolute; top:8px; left:8px; z-index:10;
-  font-size:9px; font-weight:700; letter-spacing:1px;
-  padding:3px 9px; border-radius:50px;
-  backdrop-filter:blur(8px);
-  pointer-events:none;
+/* زر فتح نافذة المخزون في الهيدر */
+.inv-open-btn {
+  background: rgba(201,168,76,0.07) !important;
+  border-color: rgba(201,168,76,0.2) !important;
+  color: var(--gold) !important;
 }
-.stock-badge.available {
-  background:rgba(74,222,128,0.18);
-  border:1px solid rgba(74,222,128,0.4);
-  color:#4ade80;
+.inv-open-btn:hover {
+  background: rgba(201,168,76,0.15) !important;
+  border-color: rgba(201,168,76,0.4) !important;
 }
-.stock-badge.low {
-  background:rgba(251,191,36,0.18);
-  border:1px solid rgba(251,191,36,0.4);
-  color:#fbbf24;
-}
-.stock-badge.out {
-  background:rgba(239,68,68,0.18);
-  border:1px solid rgba(239,68,68,0.4);
-  color:#ef4444;
-}
-
-/* على بطاقة الطلبيات */
-.order-stock-badge {
-  display:inline-flex; align-items:center; gap:4px;
-  font-size:9px; font-weight:700; letter-spacing:1px;
-  padding:2px 8px; border-radius:50px; margin-top:4px;
-}
-.order-stock-badge.available {
-  background:rgba(74,222,128,0.1);
-  border:1px solid rgba(74,222,128,0.25);
-  color:#4ade80;
-}
-.order-stock-badge.low {
-  background:rgba(251,191,36,0.1);
-  border:1px solid rgba(251,191,36,0.25);
-  color:#fbbf24;
-}
-.order-stock-badge.out {
-  background:rgba(239,68,68,0.1);
-  border:1px solid rgba(239,68,68,0.25);
-  color:#ef4444;
-}
-
-
-
 
 
 
@@ -1636,25 +1594,34 @@ html { scroll-behavior: auto; }
 
     </div>
     <div class="nav-tools">
-      <button class="nav-icon-btn" onclick="openDevModal()" data-tip="Yazılım & Tasarım"><i class="fas fa-code"></i></button>
+  <button class="nav-icon-btn" onclick="openDevModal()" data-tip="Yazılım & Tasarım">
+    <i class="fas fa-code"></i>
+  </button>
 
-  <button class="nav-icon-btn" onclick="openInventoryModal()" data-tip="Stok Yönetimi">
+  <!-- ✅ زر إدارة المخزون -->
+  <button class="nav-icon-btn inv-open-btn" onclick="openInventoryModal()" data-tip="Stok Yönetimi">
     <i class="fas fa-boxes"></i>
   </button>
 
-      <div class="nav-sep"></div>
-<button class="nav-icon-btn cart-reminder-btn" id="cartReminderBtn"
-        onclick="showPage('orders')" data-tip="Onaylanmamış Sipariş"
-        style="display:none;">
-  <i class="fas fa-shopping-cart"></i>
-  <span class="cart-reminder-badge" id="cartReminderBadge">0</span>
-</button>
-<div class="nav-sep" id="cartReminderSep" style="display:none;"></div>
+  <div class="nav-sep"></div>
 
-      <button class="nav-icon-btn" id="audioNavBtn" onclick="toggleAudio()" data-tip="Müzik Aç/Kapat"><i class="fas fa-volume-mute" id="audioNavIcon"></i></button>
-      <div class="nav-sep"></div>
-      <button class="nav-icon-btn logout-btn" onclick="doLogout()" data-tip="Çıkış Yap"><i class="fas fa-sign-out-alt"></i></button>
-    </div>
+  <button class="nav-icon-btn cart-reminder-btn" id="cartReminderBtn"
+          onclick="showPage('orders')" data-tip="Onaylanmamış Sipariş"
+          style="display:none;">
+    <i class="fas fa-shopping-cart"></i>
+    <span class="cart-reminder-badge" id="cartReminderBadge">0</span>
+  </button>
+  <div class="nav-sep" id="cartReminderSep" style="display:none;"></div>
+
+  <button class="nav-icon-btn" id="audioNavBtn" onclick="toggleAudio()" data-tip="Müzik Aç/Kapat">
+    <i class="fas fa-volume-mute" id="audioNavIcon"></i>
+  </button>
+  <div class="nav-sep"></div>
+  <button class="nav-icon-btn logout-btn" onclick="doLogout()" data-tip="Çıkış Yap">
+    <i class="fas fa-sign-out-alt"></i>
+  </button>
+</div>
+
     <div class="header-right-group">
   <button class="mobile-audio-btn cart-reminder-btn" id="mobileCartReminderBtn"
           onclick="showPage('orders')"
@@ -1690,13 +1657,6 @@ html { scroll-behavior: auto; }
           <i class="fas fa-code"></i> Yazılım & Tasarım
         </button>
       </div>
-
-
-<button class="mob-tool-btn mob-tool-dev" onclick="openInventoryModal();closeMobileMenu();">
-  <i class="fas fa-boxes"></i> Stok Yönetimi
-</button>
-
-
       <button class="mob-logout" onclick="doLogout()">
         <i class="fas fa-sign-out-alt"></i> ÇIKIŞ YAP
       </button>
@@ -1960,61 +1920,49 @@ html { scroll-behavior: auto; }
 
 
 
-
-
-
-
-
-
 <!-- =====================================================
      نافذة إدارة المخزون
 ===================================================== -->
 <div id="inventoryModal" onclick="handleInvModalBg(event)">
-  <div class="inv-box">
+  <div class="inv-modal-box">
     <div class="inv-topline"></div>
     <div class="inv-header">
       <div class="inv-header-left">
         <div class="inv-header-icon"><i class="fas fa-boxes"></i></div>
         <div>
-          <div class="inv-header-tag">WOW MOBİLYA — STOK</div>
-          <div class="inv-header-title">Stok Yönetimi</div>
+          <div class="inv-header-tag">STOK YÖNETİMİ — CANLI</div>
+          <div class="inv-header-title">Envanter Düzenle</div>
         </div>
       </div>
-      <div class="inv-close" onclick="closeInventoryModal()">
-        <i class="fas fa-times"></i>
+      <div class="inv-close" onclick="closeInventoryModal()"><i class="fas fa-times"></i></div>
+    </div>
+    <div class="inv-body">
+      <div class="inv-search">
+        <i class="fas fa-search"></i>
+        <input type="text" id="invSearchInput"
+               placeholder="Model ara..."
+               oninput="filterInvList(this.value)"
+               autocomplete="off"/>
+      </div>
+      <div class="inv-list" id="invList">
+        <!-- يُبنى ديناميكياً -->
       </div>
     </div>
-
-    <!-- بحث -->
-    <div class="inv-search-wrap">
-      <i class="fas fa-search inv-search-icon"></i>
-      <input class="inv-search" id="invSearchInput"
-             type="text" placeholder="Model ara... (W 514, T 415...)"
-             oninput="renderInvList()"
-             autocomplete="off"/>
-    </div>
-
-    <!-- القائمة -->
-    <div class="inv-list" id="invList">
-      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
-        <i class="fas fa-spinner fa-spin" style="font-size:24px;color:var(--gold);"></i>
-        <p style="margin-top:10px;font-size:12px;letter-spacing:2px;">Yükleniyor...</p>
-      </div>
-    </div>
-
-    <!-- تذييل -->
     <div class="inv-footer">
-      <div class="inv-footer-stat">
-        <i class="fas fa-database"></i>
-        <span id="invFooterStat">— model</span>
+      <div class="inv-sync-indicator">
+        <div class="inv-sync-dot" id="invSyncDot"></div>
+        <span id="invSyncTxt">Canlı bağlantı</span>
       </div>
-      <div style="display:flex;align-items:center;gap:7px;">
-        <div class="inv-realtime-dot"></div>
-        <span class="inv-realtime-txt">CANLI GÜNCELLEME</span>
-      </div>
+      <button class="inv-save-btn" id="invSaveBtn" onclick="saveAllInventory()">
+        <i class="fas fa-cloud-upload-alt"></i> KAYDET
+      </button>
     </div>
   </div>
 </div>
+
+
+
+
 
 
 </div><!-- /mainSite -->
@@ -2210,8 +2158,6 @@ function doLogin(){
 setTimeout(()=>{
   ov.style.display='none';
   loadCartFromStorage();
-initInventory();
-
   updateCartReminder(
     Object.values(orderCart).reduce((a,b)=>a+b,0)
   );
@@ -2281,41 +2227,26 @@ const labels={
   dresuar:{tag:'DRESUAR KOLEKSİYONU',title:'DRESUAR',accent:'MODELLERİ'}
 };
 
-function showPage(cat) {
-  currentPage = cat;
-  selectedIds.clear();
-  selectMode  = false;
-  document.body.classList.remove('select-mode');
-  updateBulkBar();
-
-  document.querySelectorAll('.nav-link')
-    .forEach(a => a.classList.remove('active'));
-  const navEl = document.getElementById('nav-' + cat);
-  if (navEl) navEl.classList.add('active');
-
-  document.querySelectorAll('.mobile-menu a')
-    .forEach(a => a.classList.remove('active'));
-  const mobEl = document.getElementById('mob-' + cat);
-  if (mobEl) mobEl.classList.add('active');
-
+function showPage(cat){
+  currentPage=cat;selectedIds.clear();selectMode=false;
+  document.body.classList.remove('select-mode');updateBulkBar();
+  document.querySelectorAll('.nav-link').forEach(a=>a.classList.remove('active'));
+  const navEl=document.getElementById('nav-'+cat);if(navEl)navEl.classList.add('active');
+  document.querySelectorAll('.mobile-menu a').forEach(a=>a.classList.remove('active'));
+  const mobEl=document.getElementById('mob-'+cat);if(mobEl)mobEl.classList.add('active');
+  /* إذا كانت الصفحة هي الطلبيات نبني صفحة خاصة */
   if (cat === 'orders') {
     filteredImages = [];
     buildOrderPage();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+// وفي showPage() استخدم:
+window.scrollTo({ top: 0, behavior: 'smooth' }); // ← هذا يكفي
     appState = 'section';
     pushState('section', { cat });
     return;
   }
-
   filteredImages = images.filter(i => i.cat === cat);
-  buildPage(cat);
-
-  /* ✅ تحديث الشارات بعد بناء الصفحة */
-  requestAnimationFrame(() => refreshStockBadges());
-
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-  appState = 'section';
-  pushState('section', { cat });
+  buildPage(cat);window.scrollTo({top:0,behavior:'smooth'});
+  appState='section';pushState('section',{cat});
 }
 
 function buildPage(cat){
@@ -2373,50 +2304,24 @@ function buildListPrice(img){
     :`<div class="card-list-price"><i class="card-list-price-icon">₺</i><span class="card-list-price-text" style="font-size:11px;background:none;-webkit-text-fill-color:rgba(201,168,76,0.6);color:rgba(201,168,76,0.6);">Fiyat için arayın</span></div>`;
 }
 
-function buildCard(img, idx) {
-  const sel   = selectedIds.has(img.id) ? 'selected' : '';
+function buildCard(img,idx){
+  const sel=selectedIds.has(img.id)?'selected':'';
   const delay = (Math.min(idx, 8) * 0.04).toFixed(2);
-  const hasDims = img.dims && img.dims.length > 0;
-
-  /* ── شارة المخزون ── */
-  const { status, label } = getStock(img.id);
-  const stockBadgeHtml = `
-    <div class="stock-badge ${status}" id="sbadge-${img.id}">
-      ${label}
-    </div>`;
-
+  const hasDims=img.dims&&img.dims.length>0;
   return `
-    <div class="gallery-item ${sel}" id="card-${img.id}"
-         data-id="${img.id}"
-         style="animation-delay:${delay}s"
-         onclick="handleCardClick(event,${img.id},${idx})">
-      <div class="select-badge" id="badge-${img.id}"
-           onclick="handleBadgeClick(event,${img.id})">
-        <i class="fas fa-check"></i>
-      </div>
-      ${hasDims
-        ? `<button class="dims-btn"
-                   onclick="openDimsModal(event,${img.id})">
-             <i class="fas fa-ruler-combined"></i> ÖLÇÜLER
-           </button>`
-        : ''}
+    <div class="gallery-item ${sel}" id="card-${img.id}" data-id="${img.id}" style="animation-delay:${delay}s" onclick="handleCardClick(event,${img.id},${idx})">
+      <div class="select-badge" id="badge-${img.id}" onclick="handleBadgeClick(event,${img.id})"><i class="fas fa-check"></i></div>
+      ${hasDims?`<button class="dims-btn" onclick="openDimsModal(event,${img.id})"><i class="fas fa-ruler-combined"></i> ÖLÇÜLER</button>`:''}
       <div class="card-img-wrap">
         <img src="${img.src}" alt="${img.title}" loading="lazy" draggable="false"
              onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW+MOBİLYA'"/>
-        ${stockBadgeHtml}
         <div class="card-label">
           <div class="card-label-title">${img.title}</div>
           <div class="card-label-cat">${img.catLabel}</div>
         </div>
         <div class="card-actions">
-          <button class="card-btn card-btn-view"
-                  onclick="openLightbox(${idx},event)">
-            <i class="fas fa-eye"></i> Görüntüle
-          </button>
-          <button class="card-btn card-btn-dl"
-                  onclick="downloadOne(${idx},event)">
-            <i class="fas fa-download"></i> İndir
-          </button>
+          <button class="card-btn card-btn-view" onclick="openLightbox(${idx},event)"><i class="fas fa-eye"></i> Görüntüle</button>
+          <button class="card-btn card-btn-dl"   onclick="downloadOne(${idx},event)"><i class="fas fa-download"></i> İndir</button>
         </div>
       </div>
       ${buildPriceBar(img)}
@@ -2425,14 +2330,8 @@ function buildCard(img, idx) {
         <div class="card-list-cat">${img.catLabel}</div>
         ${buildListPrice(img)}
         <div class="card-list-actions">
-          <button class="card-btn card-btn-view" style="flex:1"
-                  onclick="openLightbox(${idx},event)">
-            <i class="fas fa-eye"></i> Görüntüle
-          </button>
-          <button class="card-btn card-btn-dl" style="flex:1"
-                  onclick="downloadOne(${idx},event)">
-            <i class="fas fa-download"></i> İndir
-          </button>
+          <button class="card-btn card-btn-view" style="flex:1" onclick="openLightbox(${idx},event)"><i class="fas fa-eye"></i> Görüntüle</button>
+          <button class="card-btn card-btn-dl"   style="flex:1" onclick="downloadOne(${idx},event)"><i class="fas fa-download"></i> İndir</button>
         </div>
       </div>
     </div>`;
@@ -3288,7 +3187,6 @@ function buildOrderPage() {
     </div>`;
 
   /* استعادة الكميات المحفوظة */
-  /* استعادة الكميات المحفوظة */
   Object.keys(orderCart).forEach(id => {
     const qty = orderCart[id];
     if (qty > 0) {
@@ -3300,31 +3198,15 @@ function buildOrderPage() {
       }
     }
   });
-
-  /* ✅ تحديث شارات المخزون بعد بناء الصفحة */
-  requestAnimationFrame(() => refreshStockBadges());
-
   updateOrderBar();
 }
 
 /* ── بناء بطاقة موديل واحد ── */
 function buildOrderCard(img, idx) {
-  const delay  = (idx * 0.04).toFixed(2);
-  const qty    = orderCart[img.id] || 0;
+  const delay = (idx * 0.04).toFixed(2);
+  const qty   = orderCart[img.id] || 0;
   const inCart = qty > 0 ? 'in-cart' : '';
-  const f      = formatPrice(img.price);
-
-  /* ── شارة المخزون ── */
-  const { status, label } = getStock(img.id);
-  const stockBadgeHtml = `
-    <div class="order-stock-badge ${status}" id="osbadge-${img.id}">
-      <i class="fas fa-${status === 'available'
-        ? 'check-circle'
-        : status === 'low'
-          ? 'exclamation-circle'
-          : 'times-circle'}"></i>
-      ${label}
-    </div>`;
+  const f = formatPrice(img.price);
 
   return `
     <div class="order-card ${inCart}" id="ocard-${img.id}"
@@ -3340,7 +3222,6 @@ function buildOrderCard(img, idx) {
         <div class="order-card-title">${img.title}</div>
         <div class="order-card-cat">${img.catLabel}</div>
         ${f ? `<div class="order-card-price">${f} ₺</div>` : ''}
-        ${stockBadgeHtml}
       </div>
       <div class="order-qty-row">
         <span class="order-qty-label">ADET</span>
@@ -4677,369 +4558,162 @@ function showOrderSuccessToast(orderNum) {
 
 
 
-/* ============================================================
-   ★ SUPABASE — إدارة المخزون مع Realtime ★
-   ⚠️ غيّر القيم أدناه بمعلومات مشروعك
-============================================================ */
-const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';       // ← غيّر هذا
-const SUPABASE_KEY = 'sb_publishable_BqXtDNL9XXdRaMDh6t_JPA_wzVJRtH_'; // ← غيّر هذا
 
-const _supa = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-/* ── جدول المخزون المحلي (يُحدَّث من Supabase) ── */
-let inventoryData = {};   /* { id: stock } */
-let invRealtimeSub = null;
 
 /* ============================================================
-   ★ SUPABASE — المخزون مع Realtime دائم في الخلفية ★
+   ★ SUPABASE — إدارة المخزون الحي ★
 ============================================================ */
 
-async function initInventory() {
-  console.log('[Inventory] بدء التهيئة...');
+/* ── إعدادات Supabase — ضع مفاتيحك هنا ── */
+const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co/rest/v1/';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
 
+let _sb = null;
+let inventoryData = {};       /* { id: stock } */
+let invPendingChanges = {};   /* تغييرات لم تُحفظ بعد */
+let invRealtimeChannel = null;
+
+/* ── تهيئة Supabase ── */
+function initSupabase() {
+  if (_sb) return _sb;
   try {
-    /* ── جلب البيانات ── */
-    const { data, error } = await _supa
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch(e) {
+    console.warn('[Supabase] init error:', e);
+  }
+  return _sb;
+}
+
+/* ── تحميل المخزون من Supabase ── */
+async function loadInventory() {
+  const sb = initSupabase();
+  if (!sb) return;
+  try {
+    const { data, error } = await sb
       .from('inventory')
-      .select('id, title, stock, is_active');
-
-    if (error) {
-      console.error('[Inventory] خطأ في الجلب:', error);
-      throw error;
-    }
-
-    console.log('[Inventory] تم جلب', data.length, 'موديل');
-
+      .select('id, stock, is_active');
+    if (error) throw error;
     data.forEach(row => {
-      inventoryData[row.id] = {
-        stock    : row.stock     ?? 0,
-        is_active: row.is_active ?? true,
-        title    : row.title,
-      };
+      inventoryData[row.id] = row.stock ?? 0;
     });
-
+    /* تحديث الواجهة إذا كان قسم الطلبيات مفتوحاً */
     refreshStockBadges();
-
-    /* ── تشغيل Realtime ── */
-    startRealtimeListener();
-
-  } catch (err) {
-    console.error('[Inventory] فشل التهيئة:', err);
-    /* إعادة المحاولة بعد 5 ثوان */
-    setTimeout(() => initInventory(), 5000);
+  } catch(e) {
+    console.warn('[Supabase] loadInventory error:', e);
   }
 }
 
-function startRealtimeListener() {
-  /* إلغاء القناة السابقة */
-  if (invRealtimeSub) {
-    try {
-      _supa.removeChannel(invRealtimeSub);
-    } catch(e) {}
-    invRealtimeSub = null;
-  }
+/* ── الاشتراك في التحديثات الحية ── */
+function subscribeInventory() {
+  const sb = initSupabase();
+  if (!sb || invRealtimeChannel) return;
 
-  console.log('[Realtime] جاري الاتصال...');
-
-  invRealtimeSub = _supa
-    .channel('inv-live', {
-      config: { broadcast: { self: true } }
-    })
-
-    /* ── postgres_changes ── */
+  invRealtimeChannel = sb
+    .channel('inventory-changes')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'inventory' },
       payload => {
-        console.log('[Realtime] 📦 تغيير:', payload);
-        handleRealtimePayload(payload);
-      }
-    )
-
-    /* ── broadcast — ضمان إضافي ── */
-    .on(
-      'broadcast',
-      { event: 'stock_update' },
-      ({ payload }) => {
-        console.log('[Realtime] 📡 broadcast:', payload);
-        if (!payload?.id && payload?.id !== 0) return;
-        const id    = Number(payload.id);
-        const stock = payload.stock ?? 0;
-        if (inventoryData[id]) {
-          inventoryData[id].stock = stock;
-        } else {
-          inventoryData[id] = { stock, is_active: true, title: '' };
+        const row = payload.new || payload.old;
+        if (row && row.id !== undefined) {
+          inventoryData[row.id] = row.stock ?? 0;
+          /* تحديث فوري للشارة المرئية */
+          updateSingleStockBadge(row.id, row.stock ?? 0);
         }
-        refreshStockBadges();
-        refreshInvListItem(id);
-        showStockUpdateToast(id, stock);
       }
     )
-
     .subscribe(status => {
-      console.log('[Realtime] الحالة:', status);
-
+      const dot = document.getElementById('invSyncDot');
+      const txt = document.getElementById('invSyncTxt');
       if (status === 'SUBSCRIBED') {
-        console.log('[Realtime] ✅ متصل ويستمع لجميع التغييرات');
-      }
-
-      if (status === 'TIMED_OUT') {
-        console.warn('[Realtime] ⏱ انتهى الوقت — إعادة...');
-        setTimeout(() => startRealtimeListener(), 2000);
-      }
-
-      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        console.warn('[Realtime] ❌ انقطع — إعادة بعد 4 ثوان');
-        setTimeout(() => startRealtimeListener(), 4000);
+        if (dot) { dot.className = 'inv-sync-dot'; }
+        if (txt) txt.textContent = 'Canlı bağlantı';
+      } else {
+        if (dot) { dot.className = 'inv-sync-dot syncing'; }
+        if (txt) txt.textContent = 'Bağlanıyor...';
       }
     });
 }
 
-
-
-
-/* ── إشعار صغير عند تحديث مخزون أي موديل ── */
-function showStockUpdateToast(id, newStock) {
-  const img = images.find(i => i.id === id);
-  if (!img) return;
-
-  const { status, label } = getStock(id);
-
-  /* إزالة أي إشعار سابق */
-  document.getElementById('stockToast')?.remove();
-
-  const t = document.createElement('div');
-  t.id = 'stockToast';
-
-  const colorMap = {
-    available : { bg:'rgba(74,222,128,0.12)',  border:'rgba(74,222,128,0.35)',  color:'#4ade80',  icon:'fa-boxes' },
-    low       : { bg:'rgba(251,191,36,0.12)',  border:'rgba(251,191,36,0.35)',  color:'#fbbf24',  icon:'fa-exclamation-triangle' },
-    out       : { bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.35)',   color:'#ef4444',  icon:'fa-times-circle' },
-  };
-  const c = colorMap[status] || colorMap.available;
-
-  t.style.cssText = `
-    position: fixed;
-    bottom: 28px;
-    right: 20px;
-    z-index: 9998;
-    background: rgba(10,10,10,0.97);
-    border: 1px solid ${c.border};
-    border-radius: 14px;
-    padding: 11px 16px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-    backdrop-filter: blur(20px);
-    opacity: 0;
-    transform: translateX(30px);
-    transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
-    pointer-events: none;
-    max-width: 260px;
-  `;
-
-  t.innerHTML = `
-    <div style="
-      width:32px; height:32px; flex-shrink:0;
-      background:${c.bg};
-      border:1px solid ${c.border};
-      border-radius:9px;
-      display:flex; align-items:center; justify-content:center;
-      color:${c.color}; font-size:13px;
-    ">
-      <i class="fas ${c.icon}"></i>
-    </div>
-    <div style="min-width:0;">
-      <div style="
-        font-size:11px; font-weight:700; color:#fff;
-        letter-spacing:0.3px; white-space:nowrap;
-        overflow:hidden; text-overflow:ellipsis;
-        font-family:'Montserrat',sans-serif;
-      ">${img.title}</div>
-      <div style="
-        font-size:10px; color:${c.color};
-        letter-spacing:1px; margin-top:2px;
-        font-family:'Montserrat',sans-serif;
-        font-weight:700;
-      ">${label}</div>
-    </div>
-    <div style="
-      width:5px; height:5px; border-radius:50%;
-      background:${c.color};
-      box-shadow:0 0 6px ${c.color};
-      flex-shrink:0;
-      animation:iconPulse 1.5s ease infinite;
-    "></div>
-  `;
-
-  document.body.appendChild(t);
-
-  /* ظهور */
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      t.style.opacity   = '1';
-      t.style.transform = 'translateX(0)';
-    });
-  });
-
-  /* اختفاء بعد 3 ثواني */
-  setTimeout(() => {
-    t.style.opacity   = '0';
-    t.style.transform = 'translateX(30px)';
-    setTimeout(() => t.remove(), 400);
-  }, 3000);
+/* ── حساب حالة المخزون ── */
+function getStockStatus(stock) {
+  if (stock <= 0)  return { cls: 'out-stock', dotCls: 'out', icon: 'fa-times-circle',   label: 'TÜKENDİ' };
+  if (stock <= 3)  return { cls: 'low-stock', dotCls: 'low', icon: 'fa-exclamation-circle', label: stock + ' ADET' };
+  return            { cls: 'in-stock',  dotCls: 'in',  icon: 'fa-check-circle',  label: stock + ' ADET' };
 }
 
-
-
-
-
-
-
-
-async function saveStock(id, newStock) {
-  const stock = Math.max(0, parseInt(newStock) || 0);
-  id = Number(id);
-
-  /* تحديث محلي فوري */
-  if (inventoryData[id]) {
-    inventoryData[id].stock = stock;
-  } else {
-    inventoryData[id] = { stock, is_active: true, title: '' };
-  }
-  refreshStockBadges();
-
-  /* ── حفظ في Supabase ── */
-  const { error } = await _supa
-    .from('inventory')
-    .upsert({ id, stock, updated_at: new Date().toISOString() });
-
-  if (error) {
-    console.error('[Inventory] خطأ في الحفظ:', error);
-    return false;
-  }
-
-  console.log('[Inventory] ✅ تم حفظ', id, '→', stock);
-
-  /* ── broadcast للأجهزة الأخرى ── */
-  try {
-    await invRealtimeSub.send({
-      type   : 'broadcast',
-      event  : 'stock_update',
-      payload: { id, stock },
-    });
-    console.log('[Broadcast] ✅ تم الإرسال');
-  } catch(e) {
-    console.warn('[Broadcast] ⚠️ فشل الإرسال:', e);
-  }
-
-  return true;
+/* ── بناء شارة المخزون HTML ── */
+function buildStockBadgeHtml(imgId) {
+  const stock = inventoryData[imgId] ?? null;
+  if (stock === null) return '';   /* لم يُحمَّل بعد */
+  const s = getStockStatus(stock);
+  return `
+    <div class="stock-badge" id="sbadge-${imgId}">
+      <span class="stock-badge-label">STOK</span>
+      <span class="stock-pill ${s.cls}">
+        <i class="fas ${s.icon}"></i> ${s.label}
+      </span>
+    </div>`;
 }
 
-/* ── الحصول على بيانات مخزون موديل ── */
-function getStock(id) {
-  const d = inventoryData[id];
-  if (!d) return { stock: 0, status: 'unknown' };
-  const s = d.stock;
-  return {
-    stock : s,
-    status: s <= 0 ? 'out' : s <= 3 ? 'low' : 'available',
-    label : s <= 0 ? 'TÜKENDİ' : s <= 3 ? `Son ${s} adet` : `${s} adet`,
-  };
+/* ── تحديث شارة واحدة بعد التغيير الحي ── */
+function updateSingleStockBadge(id, stock) {
+  const el = document.getElementById('sbadge-' + id);
+  if (!el) return;
+  const s = getStockStatus(stock);
+  el.innerHTML = `
+    <span class="stock-badge-label">STOK</span>
+    <span class="stock-pill ${s.cls}">
+      <i class="fas ${s.icon}"></i> ${s.label}
+    </span>`;
+
+  /* تحديث قيمة في نافذة التعديل إذا كانت مفتوحة */
+  const valEl = document.getElementById('invqty-' + id);
+  if (valEl) valEl.textContent = stock;
+  const dotEl = document.getElementById('invdot-' + id);
+  if (dotEl) dotEl.className = 'inv-status-dot ' + s.dotCls;
 }
 
-/* ── تحديث شارات المخزون في الصفحة ── */
+/* ── تحديث كل الشارات المرئية ── */
 function refreshStockBadges() {
+  if (currentPage !== 'orders') return;
   images.forEach(img => {
-    const { status, label } = getStock(img.id);
-
-    /* ── شارة المعرض ── */
-    const sb = document.getElementById('sbadge-' + img.id);
-    if (sb) {
-      sb.className   = `stock-badge ${status}`;
-      sb.textContent = label;
-    }
-
-    /* ── شارة الطلبيات ── */
-    const ob = document.getElementById('osbadge-' + img.id);
-    if (ob) {
-      ob.className = `order-stock-badge ${status}`;
-      ob.innerHTML = `
-        <i class="fas fa-${status === 'available'
-          ? 'check-circle'
-          : status === 'low'
-            ? 'exclamation-circle'
-            : 'times-circle'}"></i>
-        ${label}`;
-    }
+    const stock = inventoryData[img.id];
+    if (stock !== undefined) updateSingleStockBadge(img.id, stock);
   });
-}
-
-/* ── شارة مخزون على بطاقة المعرض ── */
-function updateCardStockBadge(card, id) {
-  const { status, label } = getStock(id);
-  let badge = card.querySelector('.stock-badge');
-
-  if (!badge) {
-    badge = document.createElement('div');
-    badge.className = 'stock-badge';
-    const imgWrap = card.querySelector('.card-img-wrap');
-    if (imgWrap) imgWrap.appendChild(badge);
-  }
-
-  badge.className = `stock-badge ${status}`;
-  badge.textContent = label;
-}
-
-/* ── شارة مخزون على بطاقة الطلبيات ── */
-function updateOrderCardStock(card, id) {
-  const { status, label } = getStock(id);
-  let badge = card.querySelector('.order-stock-badge');
-
-  if (!badge) {
-    badge = document.createElement('div');
-    badge.className = 'order-stock-badge';
-    const info = card.querySelector('.order-card-info');
-    if (info) info.appendChild(badge);
-  }
-
-  badge.className = `order-stock-badge ${status}`;
-  badge.innerHTML = `<i class="fas fa-${status === 'available' ? 'check' : status === 'low' ? 'exclamation' : 'times'}-circle"></i> ${label}`;
-}
-
-function refreshInvListItem(id) {
-  /* تحديث نافذة المخزون إن كانت مفتوحة */
-  const item = document.getElementById('inv-item-' + id);
-  if (!item) return;
-
-  const { stock, status, label } = getStock(id);
-
-  const badge = item.querySelector('.inv-stock-badge');
-  if (badge) {
-    badge.className   = `inv-stock-badge ${status}`;
-    badge.textContent = label;
-  }
-
-  const input = item.querySelector('.inv-qty-input');
-  if (input && document.activeElement !== input) {
-    input.value = stock;
-  }
 }
 
 /* ============================================================
-   ★ نافذة إدارة المخزون ★
+   تعديل buildOrderCard لإضافة شارة المخزون
 ============================================================ */
+/* احتفظ بالدالة الأصلية وأضف الشارة */
+const _origBuildOrderCard = buildOrderCard;
+buildOrderCard = function(img, idx) {
+  const html = _origBuildOrderCard(img, idx);
+  const stockHtml = buildStockBadgeHtml(img.id);
+  /* أدرج الشارة قبل نهاية البطاقة */
+  return html.replace('</div>\n    </div>', stockHtml + '</div>\n    </div>');
+};
+
+/* ============================================================
+   نافذة إدارة المخزون
+============================================================ */
+let _invListCache = [];   /* نسخة مؤقتة للبحث */
+
 function openInventoryModal() {
-  renderInvList();
+  invPendingChanges = {};
+  buildInvList('');
   document.getElementById('inventoryModal').classList.add('active');
   document.body.style.overflow = 'hidden';
+  const inp = document.getElementById('invSearchInput');
+  if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 300); }
 }
 
 function closeInventoryModal() {
   document.getElementById('inventoryModal').classList.remove('active');
   document.body.style.overflow = '';
-  document.getElementById('invSearchInput').value = '';
+  invPendingChanges = {};
 }
 
 function handleInvModalBg(e) {
@@ -5047,116 +4721,197 @@ function handleInvModalBg(e) {
     closeInventoryModal();
 }
 
-/* ── رسم قائمة المخزون ── */
-function renderInvList() {
-  const q     = (document.getElementById('invSearchInput')?.value || '').toLowerCase().trim();
-  const list  = document.getElementById('invList');
-  const stat  = document.getElementById('invFooterStat');
+/* ── بناء قائمة المخزون ── */
+function buildInvList(filter) {
+  const list = document.getElementById('invList');
   if (!list) return;
 
   const filtered = images.filter(img =>
-    !q || img.title.toLowerCase().includes(q) || img.catLabel.toLowerCase().includes(q)
+    !filter || img.title.toLowerCase().includes(filter.toLowerCase())
   );
+  _invListCache = filtered;
 
   if (!filtered.length) {
-    list.innerHTML = `
-      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
-        <i class="fas fa-search" style="font-size:28px;color:rgba(201,168,76,0.2);"></i>
-        <p style="margin-top:10px;font-size:12px;letter-spacing:2px;">Sonuç bulunamadı</p>
-      </div>`;
+    list.innerHTML = `<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.2);
+      font-size:12px;letter-spacing:2px;">Sonuç bulunamadı</div>`;
     return;
   }
 
   list.innerHTML = filtered.map(img => {
-    const { stock, status, label } = getStock(img.id);
+    const stock = invPendingChanges[img.id] !== undefined
+      ? invPendingChanges[img.id]
+      : (inventoryData[img.id] ?? 0);
+    const s = getStockStatus(stock);
     return `
-      <div class="inv-item" id="inv-item-${img.id}">
-        <img class="inv-item-img" src="${img.src}" alt="${img.title}"
+      <div class="inv-item" id="invitem-${img.id}">
+        <img class="inv-item-thumb" src="${img.src}" alt="${img.title}"
              draggable="false"
-             onerror="this.src='https://placehold.co/52x42/1a1a1a/c9a84c?text=W'"/>
-        <div class="inv-item-info">
-          <div class="inv-item-title">${img.title}</div>
+             onerror="this.src='https://placehold.co/44x34/1a1a1a/c9a84c?text=W'"/>
+        <div style="flex:1;min-width:0;">
+          <div class="inv-item-name">${img.title}</div>
           <div class="inv-item-cat">${img.catLabel}</div>
         </div>
-        <div class="inv-stock-ctrl">
-          <div class="inv-stock-badge ${status}">${label}</div>
-          <input class="inv-qty-input" type="number" min="0" max="999"
-                 value="${stock}"
-                 id="inv-input-${img.id}"
-                 onkeydown="if(event.key==='Enter')invSaveOne(${img.id})"
-                 onchange="invSaveOne(${img.id})"/>
-          <button class="inv-save-btn" id="inv-btn-${img.id}"
-                  onclick="invSaveOne(${img.id})"
-                  title="Kaydet">
-            <i class="fas fa-check"></i>
-          </button>
+        <div class="inv-qty-ctrl">
+          <button class="inv-qty-btn" onclick="changeInvQty(${img.id},-1)">−</button>
+          <span class="inv-qty-val" id="invqty-${img.id}">${stock}</span>
+          <button class="inv-qty-btn" onclick="changeInvQty(${img.id},+1)">+</button>
         </div>
+        <div class="inv-status-dot ${s.dotCls}" id="invdot-${img.id}"></div>
       </div>`;
   }).join('');
-
-  if (stat) stat.textContent = `${filtered.length} model`;
 }
 
-/* ── حفظ مخزون موديل واحد من النافذة ── */
-async function invSaveOne(id) {
-  const input = document.getElementById('inv-input-' + id);
-  const btn   = document.getElementById('inv-btn-'   + id);
-  if (!input || !btn) return;
+function filterInvList(val) {
+  buildInvList(val);
+}
 
-  const newStock = parseInt(input.value) || 0;
-  input.value = newStock;
+/* ── تغيير كمية في النافذة ── */
+function changeInvQty(id, delta) {
+  const current = invPendingChanges[id] !== undefined
+    ? invPendingChanges[id]
+    : (inventoryData[id] ?? 0);
+  const newVal = Math.max(0, current + delta);
+  invPendingChanges[id] = newVal;
 
-  /* حالة "جاري الحفظ" */
-  btn.className = 'inv-save-btn saving';
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-  const ok = await saveStock(id, newStock);
-
-  if (ok) {
-    btn.className = 'inv-save-btn saved';
-    btn.innerHTML = '<i class="fas fa-check"></i>';
-    setTimeout(() => {
-      btn.className = 'inv-save-btn';
-      btn.innerHTML = '<i class="fas fa-check"></i>';
-    }, 1800);
-  } else {
-    btn.className = 'inv-save-btn';
-    btn.innerHTML = '<i class="fas fa-exclamation"></i>';
-    btn.style.color = '#ef4444';
-    setTimeout(() => {
-      btn.style.color = '';
-      btn.innerHTML = '<i class="fas fa-check"></i>';
-    }, 2000);
+  const valEl = document.getElementById('invqty-' + id);
+  const dotEl = document.getElementById('invdot-' + id);
+  if (valEl) valEl.textContent = newVal;
+  if (dotEl) {
+    const s = getStockStatus(newVal);
+    dotEl.className = 'inv-status-dot ' + s.dotCls;
   }
+}
+
+/* ── حفظ التغييرات في Supabase ── */
+async function saveAllInventory() {
+  const btn = document.getElementById('invSaveBtn');
+  const dot = document.getElementById('invSyncDot');
+  const txt = document.getElementById('invSyncTxt');
+
+  const changes = Object.entries(invPendingChanges);
+  if (!changes.length) {
+    closeInventoryModal();
+    return;
+  }
+
+  /* حالة الحفظ */
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> KAYDEDİLİYOR...'; }
+  if (dot) dot.className = 'inv-sync-dot syncing';
+  if (txt) txt.textContent = 'Kaydediliyor...';
+
+  const sb = initSupabase();
+  if (!sb) {
+    showInvToast('Supabase bağlantısı yok!', 'error');
+    resetInvBtn(btn, dot, txt);
+    return;
+  }
+
+  try {
+    /* upsert دفعة واحدة */
+    const rows = changes.map(([id, stock]) => ({
+      id      : Number(id),
+      stock   : stock,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await sb
+      .from('inventory')
+      .upsert(rows, { onConflict: 'id' });
+
+    if (error) throw error;
+
+    /* تحديث الذاكرة المحلية */
+    changes.forEach(([id, stock]) => {
+      inventoryData[Number(id)] = stock;
+    });
+    invPendingChanges = {};
+
+    /* تحديث الشارات المرئية */
+    refreshStockBadges();
+
+    showInvToast('Stok başarıyla güncellendi ✓', 'success');
+
+    if (dot) dot.className = 'inv-sync-dot';
+    if (txt) txt.textContent = 'Canlı bağlantı';
+
+    setTimeout(() => closeInventoryModal(), 800);
+
+  } catch(e) {
+    console.error('[Supabase] save error:', e);
+    showInvToast('Kayıt hatası: ' + (e.message || e), 'error');
+    resetInvBtn(btn, dot, txt);
+  }
+}
+
+function resetInvBtn(btn, dot, txt) {
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> KAYDET'; }
+  if (dot) dot.className = 'inv-sync-dot';
+  if (txt) txt.textContent = 'Canlı bağlantı';
+}
+
+/* ── Toast إشعار ── */
+function showInvToast(msg, type = 'success') {
+  let t = document.getElementById('invToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'invToast';
+    t.style.cssText = `
+      position:fixed;bottom:32px;left:50%;
+      transform:translateX(-50%) translateY(20px);
+      font-family:Montserrat,sans-serif;
+      font-size:12px;font-weight:700;letter-spacing:1.5px;
+      padding:12px 22px;border-radius:50px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.5);
+      backdrop-filter:blur(20px);z-index:9999;
+      display:flex;align-items:center;gap:9px;
+      opacity:0;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      white-space:nowrap;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  const isSuccess = type === 'success';
+  t.style.background = isSuccess ? 'rgba(10,10,10,0.97)' : 'rgba(30,5,5,0.97)';
+  t.style.border = isSuccess
+    ? '1px solid rgba(74,222,128,0.4)'
+    : '1px solid rgba(239,68,68,0.4)';
+  t.style.color = 'rgba(255,255,255,0.85)';
+  t.innerHTML = isSuccess
+    ? `<i class="fas fa-check-circle" style="color:#4ade80;"></i> ${msg}`
+    : `<i class="fas fa-exclamation-circle" style="color:#ef4444;"></i> ${msg}`;
+
+  requestAnimationFrame(() => {
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 3000);
 }
 
 /* ============================================================
-   تهيئة المخزون عند تسجيل الدخول
-   — أضف هذا السطر داخل دالة doLogin() بعد loadCartFromStorage()
+   تهيئة عند الدخول
 ============================================================ */
-// initInventory();   ← انظر التعليمات أدناه
-
-
-function handleRealtimePayload(payload) {
-  const row = payload.new || payload.old;
-  if (!row?.id) return;
-
-  const id = Number(row.id);
-
-  if (payload.eventType === 'DELETE') {
-    delete inventoryData[id];
-  } else {
-    inventoryData[id] = {
-      stock    : row.stock     ?? 0,
-      is_active: row.is_active ?? true,
-      title    : row.title || inventoryData[id]?.title || '',
-    };
+/* نعيد كتابة doLogin لتشمل تحميل المخزون */
+const _origDoLogin = doLogin;
+doLogin = function() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+  if (USERS[user] && USERS[user] === pass) {
+    /* تحميل المخزون + الاشتراك */
+    loadInventory().then(() => subscribeInventory());
   }
+  _origDoLogin();
+};
 
-  refreshStockBadges();
-  refreshInvListItem(id);
-  showStockUpdateToast(id, row.stock ?? 0);
-}
+/* تحديث buildOrderPage لتشمل الشارات بعد البناء */
+const _origBuildOrderPage = buildOrderPage;
+buildOrderPage = function() {
+  _origBuildOrderPage();
+  /* بعد بناء الصفحة نحدث الشارات */
+  setTimeout(() => refreshStockBadges(), 100);
+};
+
+
 
 
 
