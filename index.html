@@ -4695,13 +4695,20 @@ let invRealtimeSub = null;
 ============================================================ */
 
 async function initInventory() {
+  console.log('[Inventory] بدء التهيئة...');
+
   try {
-    /* ── 1. جلب كل المخزون أول مرة ── */
+    /* ── جلب البيانات ── */
     const { data, error } = await _supa
       .from('inventory')
       .select('id, title, stock, is_active');
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Inventory] خطأ في الجلب:', error);
+      throw error;
+    }
+
+    console.log('[Inventory] تم جلب', data.length, 'موديل');
 
     data.forEach(row => {
       inventoryData[row.id] = {
@@ -4711,63 +4718,78 @@ async function initInventory() {
       };
     });
 
-    /* تحديث الشارات في الصفحة الحالية */
     refreshStockBadges();
 
-    /* ── 2. Realtime دائم — يعمل في الخلفية طوال الجلسة ── */
+    /* ── تشغيل Realtime ── */
     startRealtimeListener();
 
   } catch (err) {
-    console.warn('[Inventory] init error:', err);
+    console.error('[Inventory] فشل التهيئة:', err);
+    /* إعادة المحاولة بعد 5 ثوان */
+    setTimeout(() => initInventory(), 5000);
   }
 }
 
-/* ── الاستماع الدائم للتغييرات ── */
 function startRealtimeListener() {
-  /* إلغاء أي قناة سابقة */
+  /* إلغاء القناة السابقة */
   if (invRealtimeSub) {
-    try { _supa.removeChannel(invRealtimeSub); } catch(e) {}
+    try {
+      _supa.removeChannel(invRealtimeSub);
+    } catch(e) {}
     invRealtimeSub = null;
   }
 
+  console.log('[Realtime] جاري الاتصال...');
+
   invRealtimeSub = _supa
-    .channel('inventory-global-' + Date.now())
+    .channel('inv-live', {
+      config: { broadcast: { self: true } }
+    })
+
+    /* ── postgres_changes ── */
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'inventory' },
       payload => {
-        const row = payload.new || payload.old;
-        if (!row?.id) return;
-
-        /* تحديث البيانات المحلية */
-        if (payload.eventType === 'DELETE') {
-          delete inventoryData[row.id];
-        } else {
-          inventoryData[row.id] = {
-            stock    : row.stock     ?? 0,
-            is_active: row.is_active ?? true,
-            title    : row.title
-                       || inventoryData[row.id]?.title
-                       || '',
-          };
-        }
-
-        /* تحديث الواجهة فوراً */
-        refreshStockBadges();
-        refreshInvListItem(row.id);
-        showStockUpdateToast(row.id, row.stock ?? 0);
+        console.log('[Realtime] 📦 تغيير:', payload);
+        handleRealtimePayload(payload);
       }
     )
+
+    /* ── broadcast — ضمان إضافي ── */
+    .on(
+      'broadcast',
+      { event: 'stock_update' },
+      ({ payload }) => {
+        console.log('[Realtime] 📡 broadcast:', payload);
+        if (!payload?.id && payload?.id !== 0) return;
+        const id    = Number(payload.id);
+        const stock = payload.stock ?? 0;
+        if (inventoryData[id]) {
+          inventoryData[id].stock = stock;
+        } else {
+          inventoryData[id] = { stock, is_active: true, title: '' };
+        }
+        refreshStockBadges();
+        refreshInvListItem(id);
+        showStockUpdateToast(id, stock);
+      }
+    )
+
     .subscribe(status => {
-      console.log('[Realtime]', status);
+      console.log('[Realtime] الحالة:', status);
 
       if (status === 'SUBSCRIBED') {
-        console.log('[Realtime] ✅ متصل ويستمع');
+        console.log('[Realtime] ✅ متصل ويستمع لجميع التغييرات');
       }
 
-      /* إعادة الاتصال تلقائياً عند الانقطاع */
+      if (status === 'TIMED_OUT') {
+        console.warn('[Realtime] ⏱ انتهى الوقت — إعادة...');
+        setTimeout(() => startRealtimeListener(), 2000);
+      }
+
       if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-        console.warn('[Realtime] ⚠️ انقطع — إعادة الاتصال بعد 4 ثوان');
+        console.warn('[Realtime] ❌ انقطع — إعادة بعد 4 ثوان');
         setTimeout(() => startRealtimeListener(), 4000);
       }
     });
@@ -4876,25 +4898,42 @@ function showStockUpdateToast(id, newStock) {
 
 
 
-/* ── حفظ تغيير مخزون موديل واحد ── */
 async function saveStock(id, newStock) {
   const stock = Math.max(0, parseInt(newStock) || 0);
+  id = Number(id);
 
   /* تحديث محلي فوري */
-  if (inventoryData[id]) inventoryData[id].stock = stock;
-  else inventoryData[id] = { stock, is_active: true, title: '' };
-
+  if (inventoryData[id]) {
+    inventoryData[id].stock = stock;
+  } else {
+    inventoryData[id] = { stock, is_active: true, title: '' };
+  }
   refreshStockBadges();
 
-  /* حفظ في Supabase */
+  /* ── حفظ في Supabase ── */
   const { error } = await _supa
     .from('inventory')
     .upsert({ id, stock, updated_at: new Date().toISOString() });
 
   if (error) {
-    console.warn('[Inventory] save error:', error);
+    console.error('[Inventory] خطأ في الحفظ:', error);
     return false;
   }
+
+  console.log('[Inventory] ✅ تم حفظ', id, '→', stock);
+
+  /* ── broadcast للأجهزة الأخرى ── */
+  try {
+    await invRealtimeSub.send({
+      type   : 'broadcast',
+      event  : 'stock_update',
+      payload: { id, stock },
+    });
+    console.log('[Broadcast] ✅ تم الإرسال');
+  } catch(e) {
+    console.warn('[Broadcast] ⚠️ فشل الإرسال:', e);
+  }
+
   return true;
 }
 
@@ -5098,6 +5137,26 @@ async function invSaveOne(id) {
 // initInventory();   ← انظر التعليمات أدناه
 
 
+function handleRealtimePayload(payload) {
+  const row = payload.new || payload.old;
+  if (!row?.id) return;
+
+  const id = Number(row.id);
+
+  if (payload.eventType === 'DELETE') {
+    delete inventoryData[id];
+  } else {
+    inventoryData[id] = {
+      stock    : row.stock     ?? 0,
+      is_active: row.is_active ?? true,
+      title    : row.title || inventoryData[id]?.title || '',
+    };
+  }
+
+  refreshStockBadges();
+  refreshInvListItem(id);
+  showStockUpdateToast(id, row.stock ?? 0);
+}
 
 
 
