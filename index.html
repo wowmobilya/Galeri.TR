@@ -3239,11 +3239,26 @@ function buildOrderCard(img, idx) {
 /* ── تغيير الكمية ── */
 function changeQty(e, id, delta) {
   e.stopPropagation();
-  const current = orderCart[id] || 0;
-  const newQty  = Math.max(0, current + delta);
+  const current  = orderCart[id] || 0;
+  const maxStock = inventoryData[id] ?? 999;
+
+  /* ★ منع الزيادة عن المخزون المتاح ★ */
+  if (delta > 0 && current >= maxStock) {
+    showInvToast(
+      `Maksimum stok: ${maxStock} adet`,
+      'error'
+    );
+    /* اهتزاز بصري للزر */
+    const btn = e.currentTarget;
+    btn.style.animation = 'none';
+    void btn.offsetWidth;
+    btn.style.animation = 'shake 0.4s ease';
+    return;
+  }
+
+  const newQty = Math.max(0, current + delta);
   orderCart[id] = newQty;
   saveCartToStorage();
-
 
   /* تحديث العرض */
   const valEl = document.getElementById('oqty-' + id);
@@ -3255,6 +3270,14 @@ function changeQty(e, id, delta) {
       ? card.classList.add('in-cart')
       : card.classList.remove('in-cart');
   }
+
+  /* تحديث لون زر + عند الوصول للحد الأقصى */
+  const plusBtn = e.currentTarget.parentElement?.querySelector('.qty-btn:last-child');
+  if (plusBtn) {
+    plusBtn.style.opacity = (newQty >= maxStock) ? '0.35' : '1';
+    plusBtn.style.cursor  = (newQty >= maxStock) ? 'not-allowed' : 'pointer';
+  }
+
   updateOrderBar();
 }
 
@@ -3379,9 +3402,6 @@ function handleOrderModalBg(e) {
 
 
 
-/* ============================================================
-   ★ Excel فضي أنيق — قائمة علوية منتصف + قفل السعر فقط ★
-============================================================ */
 async function sendOrderViaWhatsApp() {
   const btn    = document.getElementById('ocmSendBtn');
   const setBtn = (html, off=true) => {
@@ -3390,10 +3410,30 @@ async function sendOrderViaWhatsApp() {
     btn.innerHTML = html;
   };
 
+  const selected = images.filter(img => (orderCart[img.id]||0) > 0);
+
+  /* ══════════════════════════════════════════
+     ★ التحقق من المخزون + الخصم أولاً ★
+  ══════════════════════════════════════════ */
+  setBtn('<i class="fas fa-spinner fa-spin"></i> Stok kontrol ediliyor...');
+
+  const stockResult = await deductStockAfterOrder(selected);
+
+  if (!stockResult.success) {
+    /* إعادة زر الإرسال */
+    setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASINI İNDİR (EXCEL)', false);
+    /* عرض نافذة خطأ المخزون */
+    showStockErrorModal(stockResult.errors);
+    return;
+  }
+  /* ══════════════════════════════════════════ */
+
   setBtn('<i class="fas fa-spinner fa-spin"></i> Hazırlanıyor...');
 
-  const selected = images.filter(img => (orderCart[img.id]||0) > 0);
-  const note     = (document.getElementById('orderNoteInput')?.value||'').trim();
+
+
+
+
 
   /* ── 1. تحميل ExcelJS ── */
   if (typeof ExcelJS === 'undefined') {
@@ -4029,10 +4069,30 @@ function printOrderPdf() {
 async function downloadOrderPdf() {
   const btn = document.getElementById('ocmPdfBtn');
   const origHtml = btn ? btn.innerHTML : '';
+
+  /* ══════════════════════════════════════════
+     ★ التحقق من المخزون + الخصم أولاً ★
+  ══════════════════════════════════════════ */
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Stok kontrol ediliyor...';
+  }
+
+  const stockResult = await deductStockAfterOrder(_pdfSelected);
+
+  if (!stockResult.success) {
+    if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+    showStockErrorModal(stockResult.errors);
+    return;
+  }
+  /* ══════════════════════════════════════════ */
+
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> PDF hazırlanıyor...';
   }
+
+
 
   /* ── تحميل المكتبات ── */
   if (typeof html2canvas === 'undefined') {
@@ -4948,6 +5008,215 @@ function showInvToast(msg, type = 'success') {
     t.style.transform = 'translateX(-50%) translateY(20px)';
   }, 3200);
 }
+
+
+
+
+
+
+
+/* ============================================================
+   ★ خصم المخزون عند تنزيل الطلبية ★
+============================================================ */
+async function deductStockAfterOrder(selected) {
+  const sb = await initSupabase();
+  if (!sb) {
+    console.warn('[Stock] Supabase غير متاح — تخطي الخصم');
+    return { success: false, errors: [] };
+  }
+
+  /* بناء قائمة العناصر للخصم */
+  const items = selected
+    .filter(img => (orderCart[img.id] || 0) > 0)
+    .map(img => ({
+      id:  img.id,
+      qty: orderCart[img.id]
+    }));
+
+  if (!items.length) return { success: true, errors: [] };
+
+  try {
+    /* استدعاء الدالة الآمنة في Supabase */
+    const { data, error } = await sb.rpc('reserve_stock', {
+      p_items: items
+    });
+
+    if (error) {
+      /* تحليل أخطاء المخزون غير الكافي */
+      if (error.message?.includes('STOCK_ERROR:')) {
+        const errJson = error.message.replace('STOCK_ERROR:', '').trim();
+        try {
+          const errors = JSON.parse(errJson);
+          return { success: false, errors };
+        } catch { /* ignore */ }
+      }
+      console.error('[Stock] deductStock error:', error);
+      return { success: false, errors: [{ error: error.message }] };
+    }
+
+    console.log('[Stock] ✅ خُصم بنجاح:', data);
+
+    /* تحديث الذاكرة المحلية فوراً */
+    if (Array.isArray(data)) {
+      data.forEach(row => {
+        const id = Number(row.id);
+        inventoryData[id] = Number(row.remaining);
+        updateSingleStockBadge(id, Number(row.remaining));
+      });
+    }
+
+    return { success: true, errors: [] };
+
+  } catch(e) {
+    console.error('[Stock] deductStock exception:', e);
+    return { success: false, errors: [{ error: String(e) }] };
+  }
+}
+
+/* ── عرض رسالة خطأ المخزون ── */
+function showStockErrorModal(errors, onContinue) {
+  /* بناء قائمة الموديلات التي نفد مخزونها */
+  const lines = errors.map(err => {
+    const img = images.find(i => i.id === Number(err.id));
+    const name = img ? img.title : `ID:${err.id}`;
+    if (err.error === 'insufficient') {
+      return `<div style="
+        display:flex;align-items:center;justify-content:space-between;
+        padding:9px 12px;background:rgba(239,68,68,0.07);
+        border:1px solid rgba(239,68,68,0.2);border-radius:9px;
+        margin-bottom:7px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff;">${name}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);
+               letter-spacing:1px;margin-top:2px;">
+            Talep: ${orderCart[Number(err.id)]} adet
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;font-weight:700;color:#ef4444;">
+            <i class="fas fa-times-circle"></i> YETERSİZ
+          </div>
+          <div style="font-size:10px;color:#fbbf24;margin-top:2px;">
+            Mevcut: ${err.available ?? 0} adet
+          </div>
+        </div>
+      </div>`;
+    }
+    return `<div style="padding:8px 12px;color:#ef4444;font-size:12px;">
+      ${name} — ${err.error}
+    </div>`;
+  }).join('');
+
+  /* إنشاء النافذة */
+  let modal = document.getElementById('stockErrModal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'stockErrModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9000;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);backdrop-filter:blur(16px);
+    padding:16px;`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:440px;
+      background:linear-gradient(145deg,#0f0f0f,#1a0a0a);
+      border:1px solid rgba(239,68,68,0.3);
+      border-radius:20px;overflow:hidden;
+      box-shadow:0 40px 80px rgba(0,0,0,0.8),
+                 0 0 60px rgba(239,68,68,0.06);
+      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+      <!-- خط علوي أحمر -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#ef4444 30%,#ff6b6b 50%,#ef4444 70%,transparent);"></div>
+
+      <!-- هيدر -->
+      <div style="padding:18px 20px 14px;display:flex;
+           align-items:center;justify-content:space-between;
+           border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:42px;height:42px;flex-shrink:0;
+               background:rgba(239,68,68,0.12);
+               border:1px solid rgba(239,68,68,0.3);
+               border-radius:12px;display:flex;align-items:center;
+               justify-content:center;color:#ef4444;font-size:18px;">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(239,68,68,0.6);text-transform:uppercase;
+                 margin-bottom:3px;">STOK UYARISI</div>
+            <div style="font-size:16px;font-weight:900;color:#fff;">
+              Yetersiz Stok
+            </div>
+          </div>
+        </div>
+        <div onclick="closeStockErrModal()" style="
+          width:32px;height:32px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+          color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <!-- جسم -->
+      <div style="padding:16px 18px;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);
+             letter-spacing:1px;margin-bottom:12px;line-height:1.6;">
+          Aşağıdaki ürünler için yeterli stok bulunmuyor.
+          Miktarları güncelleyip tekrar deneyin.
+        </div>
+        ${lines}
+      </div>
+
+      <!-- أزرار -->
+      <div style="padding:12px 18px 18px;display:flex;gap:8px;">
+        <button onclick="closeStockErrModal()" style="
+          flex:1;padding:11px;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.5);
+          font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1px;
+          cursor:pointer;transition:all 0.25s;">
+          <i class="fas fa-times"></i> İPTAL
+        </button>
+        <button onclick="closeStockErrModal(true)" style="
+          flex:2;padding:11px;border-radius:10px;border:none;
+          background:linear-gradient(135deg,#ef4444,#dc2626);
+          color:#fff;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:1px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:7px;">
+          <i class="fas fa-edit"></i> MİKTARI DÜZENLE
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  window._stockErrOnContinue = onContinue || null;
+}
+
+function closeStockErrModal(goEdit = false) {
+  document.getElementById('stockErrModal')?.remove();
+  if (goEdit) {
+    /* إغلاق نافذة التأكيد والعودة لصفحة الطلبيات */
+    closeOrderConfirmModal();
+    showPage('orders');
+  }
+}
+
+
+
+
+
+
+
 
 /* ============================================================
    Override — تهيئة عند الدخول
