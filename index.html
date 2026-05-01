@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="tr" dir="ltr" translate="no">
 <head>
   <meta charset="UTF-8"/>
@@ -1572,6 +1572,30 @@ html { scroll-behavior: auto; }
           <div class="home-card-btn">Sipariş Ver <i class="fas fa-shopping-cart"></i></div>
         </div>
       </div>
+
+<!-- بطاقة لوحة الإدارة — WOW فقط -->
+<div class="home-card" id="homeAdminCard" 
+     onclick="enterSection('admin')" style="display:none;">
+  <img class="home-card-img"
+       src="https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png"
+       alt="Admin" loading="lazy" draggable="false"/>
+  <div class="home-card-overlay"></div>
+  <div class="home-card-shine"></div>
+  <div class="home-card-count" style="background:rgba(239,68,68,0.7);
+       border-color:rgba(239,68,68,0.5);color:#fff;">ADMIN</div>
+  <div class="home-card-content">
+    <div class="home-card-num">05 — YÖNETİM</div>
+    <div class="home-card-title">SİPARİŞ<span>PANELİ</span></div>
+    <div class="home-card-desc">Tüm Siparişleri Yönet</div>
+    <div class="home-card-btn">
+      Panele Gir <i class="fas fa-shield-alt"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
     </div>
     <div class="home-footer">
       <div class="home-footer-text">© 2026 WOW MOBİLYA — Tüm Hakları Saklıdır</div>
@@ -1591,6 +1615,11 @@ html { scroll-behavior: auto; }
       <a class="nav-link"        id="nav-tv"      href="#" onclick="showPage('tv');return false;">TV ÜNİTESİ</a>
       <a class="nav-link"        id="nav-dresuar" href="#" onclick="showPage('dresuar');return false;">DRESUAR</a>
       <a class="nav-link" id="nav-orders" href="#" onclick="showPage('orders');return false;">SİPARİŞ</a>
+<a class="nav-link" id="nav-admin" href="#" 
+   onclick="showPage('admin');return false;" 
+   style="display:none;">
+  <i class="fas fa-shield-alt"></i> PANEL
+</a>
 
     </div>
     <div class="nav-tools">
@@ -1650,6 +1679,10 @@ html { scroll-behavior: auto; }
       <a href="#" id="mob-tv"      onclick="showPage('tv');closeMobileMenu();return false;"><i class="fas fa-tv"></i> TV ÜNİTESİ</a>
       <a href="#" id="mob-dresuar" onclick="showPage('dresuar');closeMobileMenu();return false;"><i class="fas fa-border-all"></i> DRESUAR</a>
       <a href="#" id="mob-orders" onclick="showPage('orders');closeMobileMenu();return false;"><i class="fas fa-shopping-cart"></i> SİPARİŞ VER</a>
+<a href="#" id="mob-admin" onclick="showPage('admin');closeMobileMenu();return false;" 
+   style="display:none;">
+  <i class="fas fa-shield-alt"></i> SİPARİŞ PANELİ
+</a>
 
       <div class="mob-divider"></div>
       <div class="mob-tools-row">
@@ -2456,8 +2489,17 @@ function togglePassVisibility(){
 /* ============================================================
    المستخدمون + المتغيرات
 ============================================================ */
-const USERS={"EYMENSEEV":"EYMENSEEV","BEYAZIT":"BEYAZIT","WOW2026":"1010","WOW":"WOW"};
-let currentUsername = '';
+const USERS = {
+  "EYMENSEEV": "EYMENSEEV",
+  "BEYAZIT":   "BEYAZIT",
+  "WOW2026":   "1010",
+  "WOW":       "WOW"
+};
+
+/* ★ المستخدم الحالي — يُعيَّن عند تسجيل الدخول */
+let currentUser = '';
+const ADMIN_USER = 'WOW'; /* الحساب الذي يرى لوحة الإدارة */
+
 
 let currentPage='orta',currentView='grid-3',selectedIds=new Set(),currentLbIdx=0,filteredImages=[],audioPlaying=false,selectMode=false;
 const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRESUAR',orders:'WOW MOBILYA SIPARIS'};
@@ -2486,20 +2528,23 @@ function doLogin(){
   const remember=document.getElementById('rememberMe').checked;
   const err=document.getElementById('loginError');
   if(USERS[user]&&USERS[user]===pass){
-    currentUsername = user;  // ★ أضف هذا السطر فقط
-
     if(remember)saveCredentials(user,pass);else clearSavedCredentials();
+    
+    /* ★ حفظ المستخدم الحالي */
+    currentUser = user;
+    
     const ov=document.getElementById('loginOverlay');
     ov.style.transition='opacity 0.7s';ov.style.opacity='0';
-setTimeout(()=>{
-  ov.style.display='none';
-  loadCartFromStorage();
-  updateCartReminder(
-    Object.values(orderCart).reduce((a,b)=>a+b,0)
-  );
-  showHomeScreen();
-  setTimeout(tryPlayAudio,600);
-},700);
+    setTimeout(()=>{
+      ov.style.display='none';
+      loadCartFromStorage();
+      updateCartReminder(
+        Object.values(orderCart).reduce((a,b)=>a+b,0)
+      );
+      showHomeScreen();
+      setTimeout(tryPlayAudio,600);
+    },700);
+
     err.style.display='none';
   }else{
     err.style.display='block';
@@ -2518,6 +2563,11 @@ function showHomeScreen(){
   requestAnimationFrame(()=>{hs.style.opacity='1';});
   document.body.style.overflow='';window.scrollTo({top:0});
   appState='home';pushState('home');
+/* ★ إظهار/إخفاء بطاقة الإدارة */
+  const adminCard = document.getElementById('homeAdminCard');
+  if(adminCard){
+    adminCard.style.display = (currentUser === ADMIN_USER) ? 'block' : 'none';
+  }
 }
 function enterSection(cat){
   const hs=document.getElementById('homeScreen');
@@ -4169,18 +4219,13 @@ async function sendOrderViaWhatsApp() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-  setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
-
-// ★ حفظ الطلب في Supabase
-await saveOrderToSupabase(orderNum, selected, note);
-
-setTimeout(() => {
-  setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
-  closeOrderConfirmModal();
-  clearOrderCart();
-  showOrderSuccessToast(orderNum);
-}, 2000);
-
+    setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
+    setTimeout(() => {
+      setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
+      closeOrderConfirmModal();
+      clearOrderCart();
+      showOrderSuccessToast(orderNum);
+    }, 2000);
 
   } catch(excelErr) {
     /* ★ هذا هو المكان الذي كان يتعطل فيه بصمت ★ */
@@ -4388,9 +4433,7 @@ async function downloadOrderPdf() {
     }
 
     pdf.save(`WOW_Siparis_${_pdfOrderNum}.pdf`);
-// ★ حفظ الطلب في Supabase
-await saveOrderToSupabase(_pdfOrderNum, _pdfSelected, _pdfNote);
-
+// ← أضف هذا الكود
 setTimeout(() => {
   closeOrderPdfModal();
   clearOrderCart();
@@ -4810,60 +4853,6 @@ function showOrderSuccessToast(orderNum) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-/* ============================================================
-   ★ حفظ الطلبية في Supabase مع اسم المستخدم ★
-============================================================ */
-async function saveOrderToSupabase(orderNum, selected, note) {
-  const sb = await initSupabase();
-  if (!sb) {
-    console.warn('[Orders] Supabase غير متاح');
-    return;
-  }
-
-  try {
-    // بناء قائمة المنتجات
-    const items = selected.map(img => ({
-      id       : img.id,
-      title    : img.title,
-      catLabel : img.catLabel,
-      qty      : orderCart[img.id] || 0,
-      price    : img.price || 0,
-    }));
-
-    // حساب الإجمالي
-    const totalPrice = items.reduce((sum, item) => {
-      return sum + (item.price * item.qty);
-    }, 0);
-
-    const { error } = await sb.from('orders').insert({
-      username    : currentUsername,
-      order_num   : orderNum,
-      items       : items,
-      note        : note || '',
-      total_price : totalPrice,
-    });
-
-    if (error) {
-      console.error('[Orders] حفظ فشل:', error.message);
-    } else {
-      console.log('[Orders] ✅ تم حفظ الطلب:', orderNum, 'للمستخدم:', currentUsername);
-    }
-
-  } catch(e) {
-    console.error('[Orders] exception:', e);
-  }
-}
 
 
 
@@ -5888,6 +5877,778 @@ function ocmDownloadPdf() {
   closeOrderConfirmModal();
   openOrderPdfModal();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ نظام الطلبيات الكامل — حفظ + لوحة إدارة + متابعة ★
+============================================================ */
+
+/* ── حالات الطلبية ── */
+const ORDER_STATUSES = {
+  pending:       { label:'Beklemede',       color:'#fbbf24', bg:'rgba(251,191,36,0.12)',  border:'rgba(251,191,36,0.3)',  icon:'fa-clock'           },
+  manufacturing: { label:'Üretimde',        color:'#60a5fa', bg:'rgba(96,165,250,0.12)',  border:'rgba(96,165,250,0.3)',  icon:'fa-industry'        },
+  ready:         { label:'Teslime Hazır',   color:'#4ade80', bg:'rgba(74,222,128,0.12)',  border:'rgba(74,222,128,0.3)',  icon:'fa-check-circle'    },
+  cancelled:     { label:'İptal Edildi',    color:'#ef4444', bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.3)',   icon:'fa-times-circle'    },
+};
+
+/* ── حفظ الطلبية في Supabase ── */
+async function saveOrderToSupabase(orderNum, items, note) {
+  const sb = await initSupabase();
+  if (!sb) {
+    console.warn('[Orders] Supabase غير متاح');
+    return null;
+  }
+
+  const orderData = {
+    username:     currentUser,
+    order_number: orderNum,
+    items:        items.map(img => ({
+      id:       img.id,
+      title:    img.title,
+      catLabel: img.catLabel,
+      qty:      orderCart[img.id] || 0,
+      price:    img.price || 0,
+      src:      img.src,
+    })),
+    note:   note || '',
+    status: 'pending',
+  };
+
+  try {
+    const { data, error } = await sb
+      .from('orders')
+      .insert([orderData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[Orders] حفظ فشل:', error.message);
+      return null;
+    }
+
+    console.log('[Orders] ✅ تم الحفظ:', data);
+    
+    /* تحديث زر "طلبيتي" */
+    updateMyOrderBtn();
+    
+    return data;
+  } catch(e) {
+    console.error('[Orders] exception:', e);
+    return null;
+  }
+}
+
+/* ── تحديث nav link الإدارة ── */
+function updateAdminNavVisibility() {
+  const isAdmin = currentUser === ADMIN_USER;
+  ['nav-admin','mob-admin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? '' : 'none';
+  });
+}
+
+/* ── زر "طلبيتي" في الهيدر ── */
+async function updateMyOrderBtn() {
+  if (currentUser === ADMIN_USER) return;
+  
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data } = await sb
+    .from('orders')
+    .select('id, status, order_number, created_at')
+    .eq('username', currentUser)
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  const btn = document.getElementById('myOrderBtn');
+  const dot = document.getElementById('myOrderDot');
+  
+  if (!data || !data.length) {
+    if (btn) btn.style.display = 'none';
+    return;
+  }
+
+  const last   = data[0];
+  const status = ORDER_STATUSES[last.status] || ORDER_STATUSES.pending;
+  
+  if (btn) {
+    btn.style.display = 'flex';
+    btn.style.borderColor = status.border;
+    btn.style.color       = status.color;
+    btn.title             = 'Siparişim: ' + status.label;
+  }
+  if (dot) {
+    dot.style.background = status.color;
+  }
+}
+
+/* ── بناء صفحة الإدارة (WOW فقط) ── */
+async function buildAdminPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div>
+          <div class="section-banner-tag">✦ YÖNETİM PANELİ</div>
+          <div class="section-banner-title">
+            SİPARİŞ <span class="accent">PANELİ</span>
+          </div>
+          <div class="section-banner-count" id="adminOrderCount">
+            Yükleniyor...
+          </div>
+          <div class="section-banner-line"></div>
+        </div>
+        <button onclick="loadAdminOrders()" style="
+          padding:10px 20px;border-radius:10px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:2px;
+          cursor:pointer;display:flex;align-items:center;gap:8px;
+          transition:all 0.25s;">
+          <i class="fas fa-sync-alt"></i> YENİLE
+        </button>
+      </div>
+
+      <!-- فلاتر الحالة -->
+      <div style="
+        padding:12px 22px;
+        background:var(--dark4);
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:10px;letter-spacing:2px;
+              color:rgba(255,255,255,0.3);font-weight:600;">FİLTRE:</span>
+        <button class="admin-filter-btn active" 
+                data-filter="all" onclick="filterAdminOrders('all',this)">
+          Tümü
+        </button>
+        ${Object.entries(ORDER_STATUSES).map(([key,val])=>`
+          <button class="admin-filter-btn" 
+                  data-filter="${key}" 
+                  onclick="filterAdminOrders('${key}',this)"
+                  style="--fc:${val.color};--fb:${val.bg};--fbr:${val.border};">
+            <i class="fas ${val.icon}"></i> ${val.label}
+          </button>
+        `).join('')}
+      </div>
+
+      <!-- قائمة الطلبيات -->
+      <div style="padding:18px 22px;" id="adminOrdersList">
+        <div style="text-align:center;padding:60px 20px;
+             color:rgba(255,255,255,0.2);">
+          <i class="fas fa-spinner fa-spin" 
+             style="font-size:32px;color:rgba(201,168,76,0.3);
+                    display:block;margin-bottom:14px;"></i>
+          <p style="font-size:12px;letter-spacing:2px;">
+            Siparişler yükleniyor...
+          </p>
+        </div>
+      </div>
+    </div>`;
+
+  /* CSS للفلاتر */
+  if (!document.getElementById('adminFilterStyle')) {
+    const style = document.createElement('style');
+    style.id = 'adminFilterStyle';
+    style.textContent = `
+      .admin-filter-btn {
+        padding:6px 14px;border-radius:50px;
+        border:1px solid rgba(255,255,255,0.1);
+        background:rgba(255,255,255,0.04);
+        color:rgba(255,255,255,0.4);
+        font-family:'Montserrat',sans-serif;
+        font-size:10px;font-weight:700;letter-spacing:1px;
+        cursor:pointer;transition:all 0.25s;
+        display:inline-flex;align-items:center;gap:5px;
+      }
+      .admin-filter-btn:hover {
+        border-color:rgba(201,168,76,0.3);color:var(--gold);
+      }
+      .admin-filter-btn.active {
+        background:rgba(201,168,76,0.12);
+        border-color:rgba(201,168,76,0.4);
+        color:#c9a84c;
+      }
+      .admin-filter-btn[data-filter]:not([data-filter="all"]).active {
+        background:var(--fb);
+        border-color:var(--fbr);
+        color:var(--fc);
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  await loadAdminOrders();
+}
+
+/* ── تحميل الطلبيات ── */
+let allAdminOrders = [];
+let currentAdminFilter = 'all';
+
+async function loadAdminOrders() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const listEl  = document.getElementById('adminOrdersList');
+  const countEl = document.getElementById('adminOrderCount');
+
+  if (listEl) listEl.innerHTML = `
+    <div style="text-align:center;padding:40px;">
+      <i class="fas fa-spinner fa-spin" 
+         style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
+    </div>`;
+
+  const { data, error } = await sb
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !data) {
+    if (listEl) listEl.innerHTML = `
+      <div style="text-align:center;padding:40px;color:#ef4444;">
+        <i class="fas fa-exclamation-circle" style="font-size:28px;"></i>
+        <p style="margin-top:12px;font-size:12px;">Yükleme hatası</p>
+      </div>`;
+    return;
+  }
+
+  allAdminOrders = data;
+  if (countEl) countEl.textContent =
+    data.length + ' sipariş — ' +
+    Object.keys(
+      data.reduce((a,o)=>({...a,[o.username]:1}),{})
+    ).length + ' müşteri';
+
+  renderAdminOrders(currentAdminFilter);
+}
+
+/* ── رسم الطلبيات ── */
+function renderAdminOrders(filter) {
+  const listEl = document.getElementById('adminOrdersList');
+  if (!listEl) return;
+
+  const filtered = filter === 'all'
+    ? allAdminOrders
+    : allAdminOrders.filter(o => o.status === filter);
+
+  if (!filtered.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;
+           color:rgba(255,255,255,0.2);">
+        <i class="fas fa-inbox" 
+           style="font-size:36px;display:block;margin-bottom:14px;
+                  color:rgba(201,168,76,0.2);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">
+          Bu filtrede sipariş yok
+        </p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(order => buildAdminOrderCard(order)).join('');
+}
+
+/* ── بناء بطاقة طلبية واحدة ── */
+function buildAdminOrderCard(order) {
+  const st      = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+  const date    = new Date(order.created_at);
+  const dateStr = date.toLocaleDateString('tr-TR');
+  const timeStr = date.toLocaleTimeString('tr-TR',
+    { hour:'2-digit', minute:'2-digit' });
+  const items   = Array.isArray(order.items) ? order.items : [];
+  const total   = items.reduce((s,i) => s + (i.price||0)*(i.qty||0), 0);
+
+  const statusBtns = Object.entries(ORDER_STATUSES).map(([key,val]) => `
+    <button onclick="updateOrderStatus(${order.id},'${key}',this)"
+            style="
+      flex:1;padding:7px 4px;border-radius:8px;
+      border:1px solid ${order.status===key ? val.border : 'rgba(255,255,255,0.08)'};
+      background:${order.status===key ? val.bg : 'rgba(255,255,255,0.03)'};
+      color:${order.status===key ? val.color : 'rgba(255,255,255,0.25)'};
+      font-family:'Montserrat',sans-serif;
+      font-size:9px;font-weight:700;letter-spacing:0.5px;
+      cursor:pointer;transition:all 0.25s;
+      display:flex;align-items:center;justify-content:center;gap:4px;
+    ">
+      <i class="fas ${val.icon}" style="font-size:10px;"></i>
+      ${val.label}
+    </button>`).join('');
+
+  const itemsHtml = items.slice(0,3).map(item => `
+    <div style="
+      display:flex;align-items:center;gap:8px;
+      padding:6px 10px;
+      background:rgba(255,255,255,0.02);
+      border-radius:8px;margin-bottom:5px;">
+      <img src="${item.src||''}" alt="${item.title}"
+           style="width:36px;height:28px;object-fit:cover;
+                  border-radius:5px;border:1px solid rgba(255,255,255,0.07);"
+           onerror="this.style.display='none'"/>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:700;color:#fff;
+             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${item.title}
+        </div>
+        <div style="font-size:9px;color:rgba(201,168,76,0.6);
+             letter-spacing:1px;">${item.catLabel||''}</div>
+      </div>
+      <div style="
+        font-size:11px;font-weight:900;color:#c9a84c;
+        background:rgba(201,168,76,0.1);
+        border:1px solid rgba(201,168,76,0.2);
+        border-radius:6px;padding:2px 8px;flex-shrink:0;">
+        ×${item.qty}
+      </div>
+    </div>`).join('');
+
+  const moreItems = items.length > 3
+    ? `<div style="font-size:10px;color:rgba(255,255,255,0.25);
+            padding:4px 10px;letter-spacing:1px;">
+         +${items.length-3} ürün daha...
+       </div>` : '';
+
+  return `
+    <div id="admincard-${order.id}" style="
+      background:rgba(255,255,255,0.025);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:16px;margin-bottom:14px;
+      overflow:hidden;transition:all 0.3s ease;">
+
+      <!-- هيدر البطاقة -->
+      <div style="
+        padding:14px 16px 12px;
+        display:flex;align-items:center;
+        justify-content:space-between;flex-wrap:wrap;gap:8px;
+        border-bottom:1px solid rgba(255,255,255,0.04);">
+
+        <div style="display:flex;align-items:center;gap:10px;">
+          <!-- أيقونة المستخدم -->
+          <div style="
+            width:38px;height:38px;border-radius:50%;
+            background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
+            border:1.5px solid rgba(201,168,76,0.3);
+            display:flex;align-items:center;justify-content:center;
+            color:#c9a84c;font-size:15px;flex-shrink:0;">
+            <i class="fas fa-user"></i>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:900;color:#fff;
+                 letter-spacing:0.5px;">${order.username}</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.3);
+                 letter-spacing:1.5px;margin-top:2px;">
+              ${order.order_number} &nbsp;·&nbsp; ${dateStr} ${timeStr}
+            </div>
+          </div>
+        </div>
+
+        <!-- شارة الحالة -->
+        <div style="
+          display:flex;align-items:center;gap:6px;
+          padding:5px 12px;border-radius:50px;
+          background:${st.bg};border:1px solid ${st.border};
+          color:${st.color};font-size:10px;font-weight:700;
+          letter-spacing:1px;">
+          <i class="fas ${st.icon}"></i>
+          ${st.label}
+        </div>
+      </div>
+
+      <!-- المنتجات -->
+      <div style="padding:12px 14px 8px;">
+        ${itemsHtml}
+        ${moreItems}
+      </div>
+
+      <!-- الإجمالي + الملاحظة -->
+      <div style="
+        padding:8px 14px 10px;
+        display:flex;align-items:center;
+        justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        ${total > 0 ? `
+          <div style="display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-lira-sign" 
+               style="color:#c9a84c;font-size:12px;"></i>
+            <span style="
+              font-size:14px;font-weight:900;
+              background:linear-gradient(135deg,#c9a84c,#f0d080);
+              -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+              background-clip:text;">
+              ${Number(total).toLocaleString('tr-TR')} ₺
+            </span>
+          </div>` : '<div></div>'}
+        ${order.note ? `
+          <div style="
+            font-size:10px;color:rgba(255,255,255,0.3);
+            background:rgba(255,255,255,0.03);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:6px;padding:4px 10px;
+            max-width:200px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap;"
+            title="${order.note}">
+            <i class="fas fa-sticky-note" 
+               style="color:rgba(201,168,76,0.4);margin-right:4px;"></i>
+            ${order.note}
+          </div>` : ''}
+      </div>
+
+      <!-- أزرار تغيير الحالة -->
+      <div style="
+        padding:10px 14px 14px;
+        border-top:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:9px;letter-spacing:2px;
+             color:rgba(255,255,255,0.2);margin-bottom:8px;
+             font-weight:600;">DURUM GÜNCELLE:</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${statusBtns}
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── تحديث حالة الطلبية ── */
+async function updateOrderStatus(orderId, newStatus, btnEl) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* تأثير بصري فوري */
+  const card = document.getElementById('admincard-' + orderId);
+  if (card) card.style.opacity = '0.6';
+
+  const { error } = await sb
+    .from('orders')
+    .update({
+      status:     newStatus,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('[Orders] تحديث فشل:', error.message);
+    if (card) card.style.opacity = '1';
+    showInvToast('Güncelleme hatası: ' + error.message, 'error');
+    return;
+  }
+
+  /* تحديث محلي */
+  const idx = allAdminOrders.findIndex(o => o.id === orderId);
+  if (idx !== -1) allAdminOrders[idx].status = newStatus;
+
+  /* إعادة رسم البطاقة */
+  if (card) {
+    card.outerHTML = buildAdminOrderCard(allAdminOrders[idx]);
+  }
+
+  const st = ORDER_STATUSES[newStatus];
+  showInvToast(
+    `Sipariş durumu güncellendi: ${st.label}`,
+    newStatus === 'cancelled' ? 'error' :
+    newStatus === 'ready'     ? 'success' : 'info'
+  );
+}
+
+/* ── فلترة الطلبيات ── */
+function filterAdminOrders(filter, btn) {
+  currentAdminFilter = filter;
+  document.querySelectorAll('.admin-filter-btn').forEach(b =>
+    b.classList.remove('active')
+  );
+  if (btn) btn.classList.add('active');
+  renderAdminOrders(filter);
+}
+
+/* ── صفحة "طلبيتي" للمستخدم العادي ── */
+async function buildMyOrdersPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div>
+          <div class="section-banner-tag">✦ SİPARİŞLERİM</div>
+          <div class="section-banner-title">
+            SİPARİŞ <span class="accent">TAKİBİ</span>
+          </div>
+          <div class="section-banner-count">
+            ${currentUser} hesabına ait siparişler
+          </div>
+          <div class="section-banner-line"></div>
+        </div>
+      </div>
+      <div style="padding:18px 22px;" id="myOrdersList">
+        <div style="text-align:center;padding:40px;">
+          <i class="fas fa-spinner fa-spin" 
+             style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
+        </div>
+      </div>
+    </div>`;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data, error } = await sb
+    .from('orders')
+    .select('*')
+    .eq('username', currentUser)
+    .order('created_at', { ascending: false });
+
+  const listEl = document.getElementById('myOrdersList');
+  if (!listEl) return;
+
+  if (error || !data || !data.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;
+           color:rgba(255,255,255,0.2);">
+        <i class="fas fa-shopping-cart" 
+           style="font-size:40px;display:block;margin-bottom:16px;
+                  color:rgba(201,168,76,0.15);"></i>
+        <p style="font-size:13px;letter-spacing:2px;">
+          Henüz siparişiniz bulunmuyor
+        </p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = data.map(order => {
+    const st      = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+    const date    = new Date(order.created_at);
+    const dateStr = date.toLocaleDateString('tr-TR');
+    const items   = Array.isArray(order.items) ? order.items : [];
+    const total   = items.reduce((s,i) => s+(i.price||0)*(i.qty||0), 0);
+
+    return `
+      <div style="
+        background:rgba(255,255,255,0.025);
+        border:1px solid ${st.border};
+        border-radius:16px;margin-bottom:14px;
+        overflow:hidden;">
+
+        <!-- هيدر -->
+        <div style="
+          padding:14px 16px;
+          display:flex;align-items:center;
+          justify-content:space-between;flex-wrap:wrap;gap:8px;
+          border-bottom:1px solid rgba(255,255,255,0.04);">
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff;">
+              ${order.order_number}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);
+                 margin-top:2px;">${dateStr}</div>
+          </div>
+          <!-- شارة الحالة الكبيرة -->
+          <div style="
+            display:flex;align-items:center;gap:8px;
+            padding:8px 16px;border-radius:50px;
+            background:${st.bg};border:1px solid ${st.border};
+            color:${st.color};font-size:12px;font-weight:900;
+            letter-spacing:1px;">
+            <i class="fas ${st.icon}" style="font-size:14px;"></i>
+            ${st.label}
+          </div>
+        </div>
+
+        <!-- المنتجات -->
+        <div style="padding:12px 14px;">
+          ${items.map(item => `
+            <div style="
+              display:flex;align-items:center;gap:8px;
+              padding:6px 0;
+              border-bottom:1px solid rgba(255,255,255,0.03);">
+              <img src="${item.src||''}" alt="${item.title}"
+                   style="width:40px;height:32px;object-fit:cover;
+                          border-radius:6px;flex-shrink:0;"
+                   onerror="this.style.display='none'"/>
+              <div style="flex:1;">
+                <div style="font-size:12px;font-weight:700;color:#fff;">
+                  ${item.title}
+                </div>
+                <div style="font-size:9px;color:rgba(201,168,76,0.5);
+                     letter-spacing:1px;">${item.catLabel}</div>
+              </div>
+              <div style="
+                font-size:12px;font-weight:900;color:#c9a84c;
+                background:rgba(201,168,76,0.1);
+                border:1px solid rgba(201,168,76,0.2);
+                border-radius:6px;padding:3px 10px;">
+                ×${item.qty}
+              </div>
+            </div>`).join('')}
+        </div>
+
+        <!-- الإجمالي -->
+        ${total > 0 ? `
+          <div style="
+            padding:10px 14px;
+            border-top:1px solid rgba(255,255,255,0.04);
+            display:flex;justify-content:flex-end;">
+            <span style="
+              font-size:15px;font-weight:900;
+              background:linear-gradient(135deg,#c9a84c,#f0d080);
+              -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+              background-clip:text;">
+              Toplam: ${Number(total).toLocaleString('tr-TR')} ₺
+            </span>
+          </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+/* ── تعديل showPage لدعم admin و myorders ── */
+const _origShowPage = showPage;
+showPage = function(cat) {
+  if (cat === 'admin') {
+    if (currentUser !== ADMIN_USER) return;
+    currentPage = 'admin';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    const el = document.getElementById('nav-admin');
+    if (el) el.classList.add('active');
+    filteredImages = [];
+    buildAdminPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'admin' });
+    return;
+  }
+  if (cat === 'myorders') {
+    currentPage = 'myorders';
+    filteredImages = [];
+    buildMyOrdersPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'myorders' });
+    return;
+  }
+  _origShowPage(cat);
+};
+
+/* ── تعديل enterSection لدعم admin ── */
+const _origEnterSection = enterSection;
+enterSection = function(cat) {
+  if (cat === 'admin') {
+    const hs = document.getElementById('homeScreen');
+    hs.style.transition = 'opacity 0.4s ease';
+    hs.style.opacity = '0';
+    setTimeout(() => {
+      hs.style.display = 'none';
+      document.getElementById('mainSite').style.display = 'block';
+      updateAdminNavVisibility();
+      showPage('admin');
+    }, 400);
+    return;
+  }
+  _origEnterSection(cat);
+};
+
+/* ── Hook: حفظ الطلب عند تنزيل Excel ── */
+const _origSendOrderViaWhatsApp = sendOrderViaWhatsApp;
+sendOrderViaWhatsApp = async function() {
+  /* تشغيل الدالة الأصلية */
+  await _origSendOrderViaWhatsApp();
+};
+
+/* ── Hook: حفظ الطلب عند تنزيل PDF ── */
+const _origOpenOrderPdfModal = openOrderPdfModal;
+openOrderPdfModal = function() {
+  _origOpenOrderPdfModal();
+};
+
+/* ── الحفظ الفعلي يحدث داخل كل دالة تنزيل ── */
+/* نعدّل showOrderSuccessToast لنحفظ بعد النجاح */
+const _origShowOrderSuccessToast = showOrderSuccessToast;
+showOrderSuccessToast = function(orderNum) {
+  /* حفظ في Supabase */
+  const selected = images.filter(img => (orderCart[img.id]||0) > 0);
+  const note     = document.getElementById('orderNoteInput')?.value || '';
+  
+  /* نحفظ قبل تفريغ السلة */
+  saveOrderToSupabase(orderNum, selected, note).then(saved => {
+    if (saved) {
+      console.log('[Orders] ✅ طلبية محفوظة:', orderNum);
+    }
+  });
+  
+  /* استدعاء الأصلي */
+  _origShowOrderSuccessToast(orderNum);
+};
+
+/* ── إضافة زر "طلبيتي" في الهيدر ── */
+(function addMyOrderBtn() {
+  /* ننتظر تحميل DOM */
+  document.addEventListener('DOMContentLoaded', () => {}, { once:true });
+  
+  setTimeout(() => {
+    /* زر ديسكتوب */
+    const navTools = document.querySelector('.nav-tools');
+    if (navTools && !document.getElementById('myOrderBtn')) {
+      const btn = document.createElement('button');
+      btn.id        = 'myOrderBtn';
+      btn.className = 'nav-icon-btn';
+      btn.title     = 'Siparişlerim';
+      btn.style.display = 'none';
+      btn.innerHTML = `
+        <i class="fas fa-box"></i>
+        <span id="myOrderDot" style="
+          position:absolute;top:-4px;right:-4px;
+          width:8px;height:8px;border-radius:50%;
+          background:#fbbf24;
+          border:2px solid rgba(8,8,8,0.96);
+        "></span>`;
+      btn.onclick = () => showPage('myorders');
+      
+      /* أضفه قبل زر الصوت */
+      const audioBtn = document.getElementById('audioNavBtn');
+      if (audioBtn) navTools.insertBefore(btn, audioBtn);
+      else navTools.appendChild(btn);
+    }
+
+    /* زر موبايل في القائمة */
+    const mobMenu = document.querySelector('.mobile-menu-inner');
+    if (mobMenu && !document.getElementById('mobMyOrderBtn')) {
+      const mobBtn = document.createElement('a');
+      mobBtn.id        = 'mobMyOrderBtn';
+      mobBtn.href      = '#';
+      mobBtn.style.display = 'none';
+      mobBtn.innerHTML = `<i class="fas fa-box"></i> SİPARİŞLERİM`;
+      mobBtn.onclick   = (e) => {
+        e.preventDefault();
+        showPage('myorders');
+        closeMobileMenu();
+      };
+      const divider = mobMenu.querySelector('.mob-divider');
+      if (divider) mobMenu.insertBefore(mobBtn, divider.nextSibling);
+    }
+  }, 500);
+})();
+
+/* ── تحديث nav عند دخول mainSite ── */
+const _origEnterSection2 = enterSection;
+enterSection = function(cat) {
+  setTimeout(() => {
+    updateAdminNavVisibility();
+    /* إظهار زر "طلبيتي" للمستخدمين العاديين */
+    if (currentUser && currentUser !== ADMIN_USER) {
+      const btn    = document.getElementById('myOrderBtn');
+      const mobBtn = document.getElementById('mobMyOrderBtn');
+      if (btn)    btn.style.display    = 'flex';
+      if (mobBtn) mobBtn.style.display = 'flex';
+      updateMyOrderBtn();
+    }
+  }, 200);
+  _origEnterSection2(cat);
+};
+
+
+
+
+
 
 
 
