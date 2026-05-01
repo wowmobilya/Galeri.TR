@@ -1813,29 +1813,90 @@ html { scroll-behavior: auto; }
           <strong><i class="fas fa-sticky-note"></i> &nbsp; NOT</strong>
           <span id="ocmNoteText"></span>
         </div>
-      <!-- زر Excel -->
-<button class="ocm-wa-btn" id="ocmSendBtn" onclick="sendOrderViaWhatsApp()"
-  style="background:linear-gradient(135deg,rgba(30,80,30,0.0),rgba(30,80,30,0.0));
-         border-color:rgba(201,168,76,0.4);color:var(--gold);">
-  <i class="fas fa-file-excel" style="color:#1D6F42;font-size:22px;"></i>
-  SİPARİŞ DOSYASINI İNDİR (EXCEL)
-</button>
+  <!-- ★ مربع الموافقة فقط — بدون أزرار تنزيل ★ -->
+<label id="ocmCheckLabel" style="
+  display:flex;align-items:flex-start;gap:13px;
+  background:rgba(201,168,76,0.04);
+  border:1.5px solid rgba(201,168,76,0.15);
+  border-radius:14px;padding:15px 16px;
+  cursor:pointer;transition:all 0.3s ease;
+  user-select:none;-webkit-user-select:none;
+  margin-top:4px;
+">
+  <!-- مربع الاختيار -->
+  <div style="position:relative;flex-shrink:0;margin-top:2px;">
+    <input type="checkbox" id="ocmCheckbox"
+           onchange="onOcmCheckChange()"
+           style="
+             appearance:none;-webkit-appearance:none;
+             width:24px;height:24px;
+             background:rgba(255,255,255,0.05);
+             border:2px solid rgba(201,168,76,0.3);
+             border-radius:7px;cursor:pointer;
+             display:block;transition:all 0.25s;
+           "/>
+    <i class="fas fa-check" id="ocmCheckIcon" style="
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%) scale(0);
+      color:#0a0a0a;font-size:12px;
+      pointer-events:none;
+      transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    "></i>
+  </div>
 
-<!-- زر PDF -->
-<button class="ocm-wa-btn" id="ocmPdfBtn" onclick="openOrderPdfModal()"
-  style="background:linear-gradient(135deg,rgba(180,30,30,0.0),rgba(180,30,30,0.0));
-         border-color:rgba(220,80,80,0.45);color:#ff8a80;margin-top:0;">
-  <i class="fas fa-file-pdf" style="color:#e53935;font-size:22px;"></i>
-  SİPARİŞ PDF — GÖRÜNTÜLE / YAZDIR / İNDİR
+  <div style="flex:1;">
+    <div style="font-size:13px;font-weight:700;color:#fff;
+         letter-spacing:0.5px;margin-bottom:5px;">
+      Okudum ve Onaylıyorum
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.3);
+         letter-spacing:0.3px;line-height:1.7;">
+      Sipariş bilgilerini kontrol ettim, stoktan düşüleceğini
+      ve indirme sonrası
+      <span style="color:rgba(251,191,36,0.75);font-weight:700;">
+        iptal edilemeyeceğini
+      </span>
+      kabul ediyorum.
+    </div>
+  </div>
+</label>
+
+<!-- تحذير -->
+<div style="
+  display:flex;align-items:center;gap:9px;
+  background:rgba(251,191,36,0.06);
+  border:1px solid rgba(251,191,36,0.18);
+  border-radius:10px;padding:10px 13px;
+">
+  <i class="fas fa-exclamation-triangle"
+     style="color:#fbbf24;font-size:13px;flex-shrink:0;"></i>
+  <span style="font-size:10px;color:rgba(255,255,255,0.35);
+        letter-spacing:0.5px;line-height:1.6;">
+    İndirme işleminden sonra sipariş
+    <strong style="color:#fbbf24;">iptal edilemez</strong>
+    ve stoktan düşülür.
+  </span>
+</div>
+
+<!-- زر الإجراء الوحيد — معطّل حتى الموافقة -->
+<button id="ocmProceedBtn" onclick="openFinalConfirmModal()" disabled style="
+  width:100%;padding:15px;border-radius:14px;border:none;
+  background:rgba(255,255,255,0.05);
+  color:rgba(255,255,255,0.2);
+  font-family:'Montserrat',sans-serif;
+  font-size:12px;font-weight:900;letter-spacing:2px;
+  cursor:not-allowed;transition:all 0.35s ease;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+">
+  <i class="fas fa-lock" style="font-size:14px;"></i>
+  DEVAM ET
 </button>
 
 <div class="ocm-footer-note">
   <i class="fas fa-info-circle"></i>
-  Excel veya PDF olarak kaydedin — PDF önizleme ile yazdırabilirsiniz
+  Onayladıktan sonra Excel veya PDF seçebilirsiniz
 </div>
-      </div>
-    </div>
-  </div>
+
 
 
 
@@ -1959,6 +2020,427 @@ html { scroll-behavior: auto; }
     </div>
   </div>
 </div>
+
+
+
+
+
+
+<!-- =====================================================
+     نافذة التأكيد النهائي — Final Confirm Modal
+===================================================== -->
+<div id="finalConfirmModal" style="
+  display:none;
+  position:fixed;inset:0;z-index:7500;
+  align-items:flex-end;
+  justify-content:center;
+  background:rgba(0,0,0,0.92);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  padding:0;
+">
+  <div id="fcmBox" style="
+    position:relative;
+    width:100%;
+    max-width:100%;
+    max-height:92dvh;
+    max-height:92vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    border-radius:24px 24px 0 0;
+    background:linear-gradient(160deg,#0a0a0a 0%,#111 50%,#0d0d0d 100%);
+    border:1px solid rgba(201,168,76,0.2);
+    border-bottom:none;
+    box-shadow:0 -20px 80px rgba(0,0,0,0.9),0 0 60px rgba(201,168,76,0.05);
+    animation:fcmSheetIn 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  ">
+
+    <style>
+      @keyframes fcmSheetIn {
+        from{opacity:0;transform:translateY(60px);}
+        to{opacity:1;transform:translateY(0);}
+      }
+      @keyframes fcmModalIn {
+        from{opacity:0;transform:scale(0.88) translateY(24px);}
+        to{opacity:1;transform:scale(1) translateY(0);}
+      }
+      @keyframes fcmPulse {
+        0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4);}
+        50%{box-shadow:0 0 0 10px rgba(201,168,76,0);}
+      }
+      @keyframes fcmShake {
+        0%,100%{transform:translateX(0);}
+        25%{transform:translateX(-6px);}
+        75%{transform:translateX(6px);}
+      }
+      @keyframes fcmCheckPop {
+        0%{transform:translate(-50%,-50%) scale(0) rotate(-20deg);}
+        70%{transform:translate(-50%,-50%) scale(1.2) rotate(5deg);}
+        100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);}
+      }
+      @keyframes fcmBtnReady {
+        0%{transform:scale(1);}
+        50%{transform:scale(1.02);}
+        100%{transform:scale(1);}
+      }
+
+      @media(min-width:600px){
+        #fcmBox{
+          max-width:480px !important;
+          border-radius:24px !important;
+          border-bottom:1px solid rgba(201,168,76,0.2) !important;
+          animation:fcmModalIn 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards !important;
+          padding-bottom:0 !important;
+        }
+        #finalConfirmModal{
+          align-items:center !important;
+          padding:16px !important;
+        }
+      }
+
+      #fcmBox::-webkit-scrollbar{width:3px;}
+      #fcmBox::-webkit-scrollbar-thumb{
+        background:rgba(201,168,76,0.25);border-radius:4px;
+      }
+
+      .fcm-step-dot{
+        width:8px;height:8px;border-radius:50%;
+        background:rgba(255,255,255,0.12);
+        transition:all 0.3s ease;flex-shrink:0;
+      }
+      .fcm-step-dot.active{
+        background:#c9a84c;
+        box-shadow:0 0 8px rgba(201,168,76,0.6);
+        transform:scale(1.3);
+      }
+      .fcm-step-dot.done{
+        background:#4ade80;
+        box-shadow:0 0 6px rgba(74,222,128,0.5);
+      }
+
+      .fcm-info-row{
+        display:flex;align-items:center;gap:10px;
+        padding:11px 13px;
+        background:rgba(255,255,255,0.025);
+        border:1px solid rgba(255,255,255,0.06);
+        border-radius:11px;
+        transition:all 0.25s;
+      }
+      .fcm-info-row:hover{
+        background:rgba(201,168,76,0.05);
+        border-color:rgba(201,168,76,0.15);
+      }
+      .fcm-info-icon{
+        width:34px;height:34px;flex-shrink:0;
+        border-radius:9px;
+        display:flex;align-items:center;justify-content:center;
+        font-size:14px;
+      }
+
+      .fcm-check-wrap{
+        display:flex;align-items:flex-start;gap:13px;
+        background:rgba(201,168,76,0.04);
+        border:2px solid rgba(201,168,76,0.15);
+        border-radius:16px;padding:16px;
+        cursor:pointer;transition:all 0.3s ease;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .fcm-check-wrap.checked{
+        background:rgba(201,168,76,0.09);
+        border-color:rgba(201,168,76,0.5);
+        box-shadow:0 0 20px rgba(201,168,76,0.08);
+      }
+
+      .fcm-checkbox-visual{
+        width:26px;height:26px;flex-shrink:0;
+        border-radius:8px;
+        background:rgba(255,255,255,0.05);
+        border:2px solid rgba(201,168,76,0.3);
+        position:relative;
+        transition:all 0.25s ease;
+        margin-top:1px;
+      }
+      .fcm-checkbox-visual.checked{
+        background:linear-gradient(135deg,#c9a84c,#f0d080);
+        border-color:#c9a84c;
+        animation:fcmPulse 0.6s ease;
+      }
+      .fcm-checkbox-visual .fcm-check-i{
+        position:absolute;top:50%;left:50%;
+        transform:translate(-50%,-50%) scale(0);
+        color:#0a0a0a;font-size:12px;font-weight:900;
+        pointer-events:none;
+        transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+      }
+      .fcm-checkbox-visual.checked .fcm-check-i{
+        animation:fcmCheckPop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+        transform:translate(-50%,-50%) scale(1);
+      }
+
+      .fcm-action-btn{
+        flex:1;padding:clamp(13px,3vw,16px);
+        border-radius:14px;border:none;
+        font-family:'Montserrat',sans-serif;
+        font-size:clamp(10px,2.5vw,12px);
+        font-weight:900;letter-spacing:1.5px;
+        cursor:pointer;transition:all 0.3s ease;
+        display:flex;align-items:center;justify-content:center;
+        gap:8px;-webkit-tap-highlight-color:transparent;
+      }
+      .fcm-action-btn:disabled{
+        cursor:not-allowed;
+        background:rgba(255,255,255,0.05) !important;
+        color:rgba(255,255,255,0.2) !important;
+        box-shadow:none !important;
+        transform:none !important;
+      }
+      .fcm-action-btn:not(:disabled):active{
+        transform:scale(0.97);
+      }
+    </style>
+
+    <!-- مقبض السحب — موبايل فقط -->
+    <div style="
+      display:flex;align-items:center;justify-content:center;
+      padding:10px 0 4px;flex-shrink:0;
+    " class="fcm-drag-handle-wrap">
+      <div style="
+        width:40px;height:4px;
+        background:rgba(255,255,255,0.15);
+        border-radius:4px;
+      "></div>
+    </div>
+
+    <!-- خط ذهبي -->
+    <div style="height:2px;background:linear-gradient(90deg,
+      transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+      flex-shrink:0;"></div>
+
+    <!-- هيدر -->
+    <div style="
+      padding:16px 18px 14px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid rgba(255,255,255,0.05);
+      position:sticky;top:0;
+      background:linear-gradient(160deg,#0a0a0a,#111);
+      z-index:2;
+    ">
+      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+        <!-- أيقونة متحركة -->
+        <div style="
+          width:46px;height:46px;flex-shrink:0;
+          background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+          border:1px solid rgba(201,168,76,0.3);
+          border-radius:14px;
+          display:flex;align-items:center;justify-content:center;
+          color:#c9a84c;font-size:20px;
+          animation:fcmPulse 2.5s ease infinite;
+        ">
+          <i class="fas fa-file-signature"></i>
+        </div>
+        <div style="min-width:0;">
+          <div style="font-size:8px;letter-spacing:3px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;
+               margin-bottom:3px;">
+            SON ONAY AŞAMASI
+          </div>
+          <div style="font-size:clamp(15px,4vw,18px);font-weight:900;
+               color:#fff;white-space:nowrap;overflow:hidden;
+               text-overflow:ellipsis;">
+            İndirme Onayı
+          </div>
+        </div>
+      </div>
+
+      <!-- مؤشر الخطوات -->
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px;">
+        <div class="fcm-step-dot done"></div>
+        <div style="width:16px;height:1px;background:rgba(74,222,128,0.4);"></div>
+        <div class="fcm-step-dot active"></div>
+      </div>
+    </div>
+
+    <!-- جسم النافذة -->
+    <div style="padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px;">
+
+      <!-- ★ رسالة مختلفة — بطاقة تحذير بارزة ★ -->
+      <div style="
+        background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(180,30,30,0.04));
+        border:1px solid rgba(239,68,68,0.25);
+        border-radius:16px;padding:16px;
+        position:relative;overflow:hidden;
+      ">
+        <!-- زخرفة خلفية -->
+        <div style="
+          position:absolute;top:-20px;right:-20px;
+          width:100px;height:100px;
+          background:radial-gradient(circle,rgba(239,68,68,0.08),transparent 70%);
+          pointer-events:none;
+        "></div>
+
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="
+            width:36px;height:36px;flex-shrink:0;
+            background:rgba(239,68,68,0.12);
+            border:1px solid rgba(239,68,68,0.3);
+            border-radius:10px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:16px;color:#ef4444;
+          ">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div style="font-size:clamp(12px,3vw,14px);font-weight:900;
+               color:#fff;letter-spacing:0.3px;">
+            Bu İşlem Geri Alınamaz!
+          </div>
+        </div>
+
+        <div style="font-size:clamp(10px,2.5vw,11px);
+             color:rgba(255,255,255,0.45);line-height:1.8;
+             letter-spacing:0.3px;">
+          Dosyayı indirdiğiniz anda sipariş sisteme kaydedilir ve
+          <strong style="color:#fbbf24;">stoktan otomatik düşülür.</strong>
+          Bu işlemi geri alamaz, siparişi iptal edemezsiniz.
+        </div>
+      </div>
+
+      <!-- معلومات الطلب -->
+      <div style="display:flex;flex-direction:column;gap:8px;">
+
+        <div class="fcm-info-row">
+          <div class="fcm-info-icon" style="
+            background:rgba(201,168,76,0.1);
+            border:1px solid rgba(201,168,76,0.2);color:#c9a84c;">
+            <i class="fas fa-shopping-basket"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);text-transform:uppercase;">
+              TOPLAM ÜRÜN
+            </div>
+            <div id="fcmItemCount" style="font-size:clamp(13px,3.5vw,15px);
+                 font-weight:900;color:#fff;margin-top:1px;"></div>
+          </div>
+          <div id="fcmTotal" style="
+            font-size:clamp(14px,3.5vw,16px);font-weight:900;
+            background:linear-gradient(135deg,#c9a84c,#f0d080);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            background-clip:text;white-space:nowrap;
+          "></div>
+        </div>
+
+        <div class="fcm-info-row">
+          <div class="fcm-info-icon" style="
+            background:rgba(239,68,68,0.1);
+            border:1px solid rgba(239,68,68,0.2);color:#ef4444;">
+            <i class="fas fa-boxes"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);text-transform:uppercase;">
+              STOK DURUMU
+            </div>
+            <div style="font-size:clamp(11px,3vw,12px);font-weight:700;
+                 color:#fbbf24;margin-top:1px;">
+              İndirme sonrası stoktan düşülür
+            </div>
+          </div>
+          <i class="fas fa-arrow-right"
+             style="color:rgba(255,255,255,0.15);font-size:12px;"></i>
+        </div>
+
+        <div class="fcm-info-row">
+          <div class="fcm-info-icon" style="
+            background:rgba(74,222,128,0.1);
+            border:1px solid rgba(74,222,128,0.2);color:#4ade80;">
+            <i class="fas fa-file-download"></i>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);text-transform:uppercase;">
+              FORMAT SEÇİMİ
+            </div>
+            <div style="font-size:clamp(11px,3vw,12px);font-weight:700;
+                 color:#4ade80;margin-top:1px;">
+              Excel veya PDF — Sonraki adımda seçin
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ★ مربع التأكيد النهائي ★ -->
+      <div class="fcm-check-wrap" id="fcmCheckWrap"
+           onclick="toggleFcmCheck()">
+        <div class="fcm-checkbox-visual" id="fcmCheckVisual">
+          <i class="fas fa-check fcm-check-i" id="fcmCheckI"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:clamp(12px,3vw,13px);font-weight:700;
+               color:#fff;margin-bottom:5px;letter-spacing:0.3px;">
+            Tüm koşulları okudum ve onaylıyorum
+          </div>
+          <div style="font-size:clamp(9px,2.5vw,10px);
+               color:rgba(255,255,255,0.3);line-height:1.7;letter-spacing:0.3px;">
+            Siparişin geri alınamayacağını, stoktan düşüleceğini
+            ve dosyanın indirileceğini
+            <span style="color:rgba(251,191,36,0.7);font-weight:700;">
+              kabul ediyorum.
+            </span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- أزرار الإجراء -->
+    <div style="
+      padding:12px 16px 16px;
+      display:flex;gap:10px;
+      position:sticky;bottom:0;
+      background:linear-gradient(to top,#0a0a0a 80%,transparent);
+      padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    ">
+
+      <!-- زر الإلغاء -->
+      <button onclick="closeFinalConfirmModal()" class="fcm-action-btn" style="
+        flex:0 0 auto;width:52px;padding:16px 0;
+        background:rgba(255,100,100,0.07);
+        border:1px solid rgba(255,100,100,0.2) !important;
+        color:#ff9999;border-radius:14px;
+      ">
+        <i class="fas fa-times" style="font-size:16px;"></i>
+      </button>
+
+      <!-- زر Excel -->
+      <button id="fcmExcelBtn" onclick="fcmDownloadExcel()"
+              class="fcm-action-btn" disabled style="
+        background:rgba(255,255,255,0.05);
+        color:rgba(255,255,255,0.2);
+        border:1px solid transparent;
+      ">
+        <i class="fas fa-file-excel" style="font-size:16px;"></i>
+        EXCEL
+      </button>
+
+      <!-- زر PDF -->
+      <button id="fcmPdfBtn" onclick="fcmDownloadPdf()"
+              class="fcm-action-btn" disabled style="
+        background:rgba(255,255,255,0.05);
+        color:rgba(255,255,255,0.2);
+        border:1px solid transparent;
+      ">
+        <i class="fas fa-file-pdf" style="font-size:16px;"></i>
+        PDF
+      </button>
+
+    </div>
+
+  </div>
+</div>
+
+
 
 
 
@@ -3403,102 +3885,119 @@ function handleOrderModalBg(e) {
 
 
 async function sendOrderViaWhatsApp() {
-  const btn    = document.getElementById('ocmSendBtn');
-  const setBtn = (html, off=true) => {
+  const btn = document.getElementById('ocmSendBtn');
+  const setBtn = (html, off = true) => {
     if (!btn) return;
     btn.disabled  = off;
     btn.innerHTML = html;
   };
 
-  const selected = images.filter(img => (orderCart[img.id]||0) > 0);
+  const selected = images.filter(img => (orderCart[img.id] || 0) > 0);
+  if (!selected.length) return;
 
   /* ══════════════════════════════════════════
-     ★ التحقق من المخزون + الخصم أولاً ★
+     ★ 1. فحص المخزون
   ══════════════════════════════════════════ */
   setBtn('<i class="fas fa-spinner fa-spin"></i> Stok kontrol ediliyor...');
-
   const stockResult = await deductStockAfterOrder(selected);
-
   if (!stockResult.success) {
-    /* إعادة زر الإرسال */
     setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASINI İNDİR (EXCEL)', false);
-    /* عرض نافذة خطأ المخزون */
     showStockErrorModal(stockResult.errors);
     return;
   }
-  /* ══════════════════════════════════════════ */
 
+  /* ══════════════════════════════════════════
+     ★ 2. تحميل ExcelJS
+  ══════════════════════════════════════════ */
   setBtn('<i class="fas fa-spinner fa-spin"></i> Hazırlanıyor...');
-
-
-
-
-
-
-  /* ── 1. تحميل ExcelJS ── */
   if (typeof ExcelJS === 'undefined') {
     await loadScript(
       'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'
     );
   }
 
-  /* ── 2. معلومات الطلب ── */
+  /* ══════════════════════════════════════════
+     ★ 3. معلومات الطلب
+  ══════════════════════════════════════════ */
   const now      = new Date();
   const dateStr  = now.toLocaleDateString('tr-TR');
-  const timeStr  = now.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
+  const timeStr  = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
   const orderNum = 'WOW-' + Date.now().toString().slice(-6);
 
-  /* ── 3. تحويل URL → Base64 ── */
-  async function toBase64(url) {
-    try {
-      const res = await fetch(getHighQualityUrl(url),{mode:'cors'});
-      if (!res.ok) throw 0;
-      const blob = await res.blob();
-      return await new Promise((ok,no)=>{
-        const rd = new FileReader();
-        rd.onload  = ()=>ok(rd.result);
-        rd.onerror = no;
-        rd.readAsDataURL(blob);
-      });
-    } catch { return null; }
+  /* ══════════════════════════════════════════
+     ★ 4. تحويل صورة → base64 مع TIMEOUT
+        - allSettled: لا يتوقف عند فشل صورة
+        - timeout 5 ثواني لكل صورة
+  ══════════════════════════════════════════ */
+  setBtn('<i class="fas fa-spinner fa-spin"></i> Görseller yükleniyor...');
+
+  async function toBase64Safe(url) {
+    /* timeout wrapper — يمنع التعليق الأبدي */
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 5000)
+    );
+
+    const fetchPromise = (async () => {
+      /* نجرب mode: cors أولاً، ثم no-cors كاحتياط */
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const blob = await res.blob();
+        return await new Promise((ok, no) => {
+          const rd = new FileReader();
+          rd.onload  = () => ok(rd.result);
+          rd.onerror = no;
+          rd.readAsDataURL(blob);
+        });
+      } catch {
+        /* محاولة ثانية بدون cors */
+        const res2 = await fetch(url, { mode: 'no-cors' });
+        const blob2 = await res2.blob();
+        if (!blob2.size) throw new Error('empty blob');
+        return await new Promise((ok, no) => {
+          const rd = new FileReader();
+          rd.onload  = () => ok(rd.result);
+          rd.onerror = no;
+          rd.readAsDataURL(blob2);
+        });
+      }
+    })();
+
+    return Promise.race([fetchPromise, timeoutPromise]);
   }
 
-  /* ── 4. جلب صور الموديلات ── */
-  setBtn('<i class="fas fa-spinner fa-spin"></i> Görseller yükleniyor...');
-  const imgMap = {};
-  await Promise.all(selected.map(async img => {
-    const b64 = await toBase64(img.src);
-    if (b64) imgMap[img.id] = b64;
-  }));
+  /* allSettled — يكمل حتى لو فشلت كل الصور */
+  const imgResults = await Promise.allSettled(
+    selected.map(img => toBase64Safe(getHighQualityUrl(img.src)))
+  );
 
-  /* ── 5. إنشاء Workbook ── */
+  const imgMap = {};
+  selected.forEach((img, i) => {
+    if (imgResults[i].status === 'fulfilled') {
+      imgMap[img.id] = imgResults[i].value;
+    }
+    /* إذا فشلت الصورة → imgMap[id] = undefined → نتخطاها */
+  });
+
+  console.log('[Excel] صور محملة:', Object.keys(imgMap).length, '/', selected.length);
+
+  /* ══════════════════════════════════════════
+     ★ 5. إنشاء Workbook
+  ══════════════════════════════════════════ */
   setBtn('<i class="fas fa-spinner fa-spin"></i> Excel oluşturuluyor...');
 
-  const wb   = new ExcelJS.Workbook();
+  const wb = new ExcelJS.Workbook();
   wb.creator = 'WOW MOBİLYA';
   wb.created = now;
 
   const ws = wb.addWorksheet('Sipariş', {
     pageSetup: {
-      paperSize   : 9,
-      orientation : 'portrait',
-      fitToPage   : true,
-      fitToWidth  : 1,
-      fitToHeight : 0,
-      margins     : { left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.3, footer:0.3 },
+      paperSize: 9, orientation: 'portrait',
+      fitToPage: true, fitToWidth: 1, fitToHeight: 0,
+      margins: { left:0.4, right:0.4, top:0.5, bottom:0.5, header:0.3, footer:0.3 },
     },
-    properties: { tabColor:{ argb:'FF9E9E9E' } },
   });
 
-  /* ── 6. الأعمدة
-     A  رقم         4
-     B  صورة       26
-     C  اسم         22
-     D  فئة         16
-     E  كمية         8
-     F  سعر         14   ← مقفل
-     G  إجمالي      14
-  ── */
   ws.columns = [
     { key:'no',    width:4  },
     { key:'img',   width:26 },
@@ -3509,489 +4008,293 @@ async function sendOrderViaWhatsApp() {
     { key:'total', width:14 },
   ];
 
-   /* ── 7. ثوابت الألوان الذهبية ── */
+  /* ── ألوان ── */
   const C = {
-    /* ذهبي */
-    silver1  : 'FFFFFDF5',   /* أبيض مائل للذهبي خفيف جداً — صفوف زوجية */
-    silver2  : 'FFFFF8E7',   /* ذهبي فاتح جداً — صفوف فردية */
-    silver3  : 'FFE8D5A0',   /* حدود ذهبية فاتحة */
-    silver4  : 'FFC9A84C',   /* ذهبي أساسي — نصوص ثانوية */
-    silver5  : 'FF8B6914',   /* ذهبي داكن — نصوص ثالثية */
-    silverHdr: 'FF1A1A1A',   /* رأس الجدول — أسود */
-    silverHT : 'FFC9A84C',   /* نص رأس الجدول — ذهبي */
-
-    /* رأس الصفحة وتذييلها */
-    topBg    : 'FF0F0F0F',   /* أسود عميق */
-    topLine  : 'FFC9A84C',   /* شريط ذهبي */
-
-    /* تذييل */
-    footBg   : 'FF0F0F0F',
-
-    /* عام */
-    white    : 'FFFFFFFF',
-    black    : 'FF111111',
-    darkText : 'FF1A1A1A',
-    midText  : 'FF5A4A1A',   /* بني ذهبي داكن */
-    green    : 'FF2E7D32',
-    greenPale: 'FFF1F8F2',
-
-    /* قفل السعر */
-    lockBg   : 'FFFFFBF0',   /* ذهبي شاحب جداً */
-    lockBdr  : 'FFD4A843',   /* حدود ذهبية */
+    topBg   : 'FF0F0F0F', topLine : 'FFC9A84C',
+    white   : 'FFFFFFFF', black   : 'FF111111',
+    darkText: 'FF1A1A1A', midText : 'FF5A4A1A',
+    silver4 : 'FFC9A84C', silverHT: 'FFC9A84C',
+    silverHdr:'FF1A1A1A', green   : 'FF2E7D32',
   };
 
-
-  /* ── 8. دوال مساعدة ── */
-  const sf = a => ({ type:'pattern', pattern:'solid', fgColor:{argb:a} });
-
-  const mf = (o={}) => ({
-    name  : o.name   || 'Calibri',
-    bold  : o.bold   || false,
-    italic: o.italic || false,
-    size  : o.size   || 11,
-    color : { argb: o.color || C.darkText },
+  const sf  = a => ({ type:'pattern', pattern:'solid', fgColor:{ argb:a } });
+  const mf  = (o={}) => ({
+    name: o.name||'Calibri', bold:o.bold||false,
+    size: o.size||11, color:{ argb: o.color||C.darkText },
   });
-
-  const ma = (h='left', v='middle', wrap=false) => ({
-    horizontal:h, vertical:v, wrapText:wrap,
-  });
-
-   /* حدود رفيعة سوداء */
-  const bdrSilver = {
-    top   :{style:'thin',  color:{argb:C.black}},
-    left  :{style:'thin',  color:{argb:C.black}},
-    bottom:{style:'thin',  color:{argb:C.black}},
-    right :{style:'thin',  color:{argb:C.black}},
+  const ma  = (h='left',v='middle',wrap=false) =>
+    ({ horizontal:h, vertical:v, wrapText:wrap });
+  const bdr = {
+    top   :{ style:'thin', color:{ argb:C.black } },
+    left  :{ style:'thin', color:{ argb:C.black } },
+    bottom:{ style:'thin', color:{ argb:C.black } },
+    right :{ style:'thin', color:{ argb:C.black } },
   };
-
-
-  /* حدود متوسطة داكنة لرأس الجدول */
-  const bdrDark = {
-    top   :{style:'medium',color:{argb:'FF444444'}},
-    left  :{style:'medium',color:{argb:'FF444444'}},
-    bottom:{style:'medium',color:{argb:'FF444444'}},
-    right :{style:'medium',color:{argb:'FF444444'}},
+  const bdrD = {
+    top   :{ style:'medium', color:{ argb:'FF444444' } },
+    left  :{ style:'medium', color:{ argb:'FF444444' } },
+    bottom:{ style:'medium', color:{ argb:'FF444444' } },
+    right :{ style:'medium', color:{ argb:'FF444444' } },
   };
-
-   /* حدود خلية السعر — سوداء */
-  const bdrLock = {
-    top   :{style:'thin',  color:{argb:C.black}},
-    left  :{style:'thin',  color:{argb:C.black}},
-    bottom:{style:'thin',  color:{argb:C.black}},
-    right :{style:'thin',  color:{argb:C.black}},
-  };
-
 
   function ac(cell, o={}) {
-    if (o.value  !== undefined) cell.value      = o.value;
-    if (o.font)                 cell.font        = o.font;
-    if (o.fill)                 cell.fill        = o.fill;
-    if (o.align)                cell.alignment   = o.align;
-    if (o.border)               cell.border      = o.border;
-    if (o.protection)           cell.protection  = o.protection;
-    if (o.numFmt)               cell.numFmt      = o.numFmt;
+    if (o.value     !== undefined) cell.value      = o.value;
+    if (o.font)                    cell.font        = o.font;
+    if (o.fill)                    cell.fill        = o.fill;
+    if (o.align)                   cell.alignment   = o.align;
+    if (o.border)                  cell.border      = o.border;
+    if (o.protection)              cell.protection  = o.protection;
+    if (o.numFmt)                  cell.numFmt      = o.numFmt;
   }
-
   function mc(range, o={}) {
     ws.mergeCells(range);
     ac(ws.getCell(range.split(':')[0]), o);
   }
 
-  /* ── 9. حساب الإجمالي ── */
-  let grandTotal=0, hasPrice=false;
-  selected.forEach(img => {
-    const q = orderCart[img.id];
-    if (img.price) { grandTotal += img.price*q; hasPrice=true; }
-  });
-
-  /* ══════════════════════════════════════════════════════
-     ★ هيكل الورقة
-
-     صف 1  — شريط فضي رفيع (3pt)
-     صف 2  — خلفية داكنة (3pt)
-     صف 3  — قائمة علوية منتصف (52pt) ← اسم الشركة + معلومات
-     صف 4  — خلفية داكنة (3pt)
-     صف 5  — شريط فضي رفيع (3pt)
-     صف 6  — فراغ أبيض (10pt)
-     صف 7  — رأس الجدول (30pt)
-     صفوف 8+ — بيانات (90pt)
-     صف إجمالي — (34pt)
-     + ملاحظة
-     صف قبل أخير — شريط فضي (3pt)
-     صف أخير     — تذييل داكن (20pt)
-     صف أخير+1   — شريط فضي (3pt)
-  ══════════════════════════════════════════════════════ */
-
-  /* ── صف 1: شريط فضي ── */
+  /* ── صف 1: شريط ذهبي ── */
   ws.getRow(1).height = 3;
   mc('A1:G1', { fill:sf(C.topLine) });
 
-  /* ── صف 2: خلفية داكنة ── */
+  /* ── صف 2: داكن ── */
   ws.getRow(2).height = 3;
   mc('A2:G2', { fill:sf(C.topBg) });
 
-  /* ── صف 3: القائمة العلوية ── */
-  ws.getRow(3).height = 52;
-
-  /* خلفية داكنة لكل خلايا الصف 3 */
-  for (let c=1; c<=7; c++) {
-    ws.getRow(3).getCell(c).fill = sf(C.topBg);
-  }
-
-  /*
-    القائمة العلوية في المنتصف:
-    ندمج كل A3:G3 ونضع النص في المنتصف
-  */
-    /* ── صف 3: نرفع ارتفاعه لاستيعاب سطرين ── */
+  /* ── صف 3: رأس الصفحة ── */
   ws.getRow(3).height = 64;
-
+  for (let c=1; c<=7; c++) ws.getRow(3).getCell(c).fill = sf(C.topBg);
   ws.mergeCells('A3:G3');
   const topCell = ws.getCell('A3');
   topCell.value = {
     richText: [
-      /* ── السطر الأول: اسم الشركة ── */
-      {
-        text : 'WOW MOBİLYA',
-        font : {
-          name : 'Calibri',
-          bold : true,
-          size : 22,
-          color: { argb: C.topLine },
-        },
-      },
-      /* ── فاصل سطر ── */
-      {
-        text : '\n',
-        font : { name:'Calibri', size:8, color:{ argb:C.topBg } },
-      },
-      /* ── السطر الثاني: المعلومات مع رموز ── */
-      {
-        text : `📋 ${orderNum}     📅 ${dateStr}     🕐 ${timeStr}`,
-        font : {
-          name  : 'Calibri',
-          bold  : false,
-          size  : 10,
-          italic: false,
-          color : { argb: 'FFFFFFFF' },
-        },
-      },
+      { text:'WOW MOBİLYA',
+        font:{ name:'Calibri', bold:true, size:22, color:{ argb:C.topLine } } },
+      { text:'\n',
+        font:{ name:'Calibri', size:8, color:{ argb:C.topBg } } },
+      { text:`📋 ${orderNum}     📅 ${dateStr}     🕐 ${timeStr}`,
+        font:{ name:'Calibri', size:10, color:{ argb:'FFFFFFFF' } } },
     ],
   };
-  topCell.alignment = {
-    horizontal : 'center',
-    vertical   : 'middle',
-    wrapText   : true,
-  };
+  topCell.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
   topCell.fill = sf(C.topBg);
 
-
-  /* ── صف 4: خلفية داكنة ── */
-  ws.getRow(4).height = 3;
-  mc('A4:G4', { fill:sf(C.topBg) });
-
-  /* ── صف 5: شريط فضي ── */
-  ws.getRow(5).height = 3;
-  mc('A5:G5', { fill:sf(C.topLine) });
-
-  /* ── صف 6: فراغ أبيض ── */
-  ws.getRow(6).height = 10;
-  mc('A6:G6', { fill:sf(C.white) });
+  /* ── صف 4-5: فواصل ── */
+  ws.getRow(4).height = 3; mc('A4:G4', { fill:sf(C.topBg)  });
+  ws.getRow(5).height = 3; mc('A5:G5', { fill:sf(C.topLine) });
+  ws.getRow(6).height = 10; mc('A6:G6', { fill:sf(C.white)  });
 
   /* ── صف 7: رأس الجدول ── */
   ws.getRow(7).height = 30;
-  const headers = [
-    { t:'#',            a:'center' },
-    { t:'GÖRSEL',       a:'center' },
-    { t:'MODEL ADI',    a:'center' },
-    { t:'DETAYLARI',     a:'center' },
-    { t:'ADET',         a:'center' },
-    { t:'BİRİM FİYAT',  a:'center' },
-    { t:'TOPLAM',       a:'center' },
-  ];
-  headers.forEach((h,ci) => {
-    ac(ws.getRow(7).getCell(ci+1), {
-      value  : h.t,
-      font   : mf({ bold:true, size:10, color:C.silverHT }),
-      fill   : sf(C.silverHdr),
-      align  : ma(h.a,'middle'),
-      border : bdrDark,
-      /* رأس الجدول غير مقفول */
-      protection: { locked:false },
+  ['#','GÖRSEL','MODEL ADI','DETAYLARI','ADET','BİRİM FİYAT','TOPLAM']
+    .forEach((t, ci) => {
+      ac(ws.getRow(7).getCell(ci+1), {
+        value : t,
+        font  : mf({ bold:true, size:10, color:C.silverHT }),
+        fill  : sf(C.silverHdr),
+        align : ma('center','middle'),
+        border: bdrD,
+        protection: { locked:false },
+      });
     });
-  });
 
-  /* ══════════════════════════════════════════════════════
-     ★ صفوف البيانات — تبدأ من صف 8
-  ══════════════════════════════════════════════════════ */
-  const DATA_START = 8;
-  const ROW_H_PT   = 90;
-  const ROW_H_EMU  = ROW_H_PT * 12700;
-  const COL_B_EMU  = Math.round(26 * 7 * 9525);
-  const MARGIN_EMU = Math.round(ROW_H_EMU * 0.05);
-  const IMG_H_EMU  = ROW_H_EMU - MARGIN_EMU * 2;
-  const IMG_W_EMU  = COL_B_EMU - MARGIN_EMU * 2;
+  /* ── صفوف البيانات ── */
+  const DATA_START  = 8;
+  const ROW_H_PT    = 90;
+  const ROW_H_EMU   = ROW_H_PT * 12700;
+  const COL_B_EMU   = Math.round(26 * 7 * 9525);
+  const MARGIN_EMU  = Math.round(ROW_H_EMU * 0.05);
+  const IMG_H_EMU   = ROW_H_EMU - MARGIN_EMU * 2;
+  const IMG_W_EMU   = COL_B_EMU - MARGIN_EMU * 2;
 
-  for (let i=0; i<selected.length; i++) {
+  for (let i = 0; i < selected.length; i++) {
     const img    = selected[i];
     const qty    = orderCart[img.id];
     const price  = img.price || 0;
-    const total  = price * qty;
     const rowNum = DATA_START + i;
     const row    = ws.getRow(rowNum);
     row.height   = ROW_H_PT;
 
-    /* تبادل خفيف بين أبيض وفضي فاتح جداً */
-    /* جميع الصفوف أبيض نظيف */
-    const rowBg = C.white;
-
-    /* A — رقم (غير مقفول) */
+    /* A — رقم */
     ac(row.getCell(1), {
-      value     : i+1,
-      font      : mf({ bold:true, size:11, color:C.silver4 }),
-      fill      : sf(rowBg),
-      align     : ma('center','middle'),
-      border    : bdrSilver,
-      protection: { locked:false },
+      value:i+1, font:mf({ bold:true, size:11, color:C.silver4 }),
+      fill:sf(C.white), align:ma('center','middle'),
+      border:bdr, protection:{ locked:false },
     });
 
-    /* B — خلية الصورة (غير مقفولة) */
+    /* B — خلية الصورة */
     ac(row.getCell(2), {
-      fill      : sf(C.white),
-      border    : bdrSilver,
-      protection: { locked:false },
+      fill:sf(C.white), border:bdr, protection:{ locked:false },
     });
 
-  /* C — اسم الموديل ← مقفول لمنع التعديل */
-ac(row.getCell(3), {
-  value     : '  ' + img.title,
-  font      : mf({ bold:true, size:12, color:C.darkText }),
-  fill      : sf(C.white),
-  align     : ma('center','middle'),
-  border    : bdrLock,
-  protection: { locked:true, hidden:false },
-});
+    /* C — اسم الموديل */
+    ac(row.getCell(3), {
+      value:'  '+img.title,
+      font:mf({ bold:true, size:12, color:C.darkText }),
+      fill:sf(C.white), align:ma('center','middle'),
+      border:bdr, protection:{ locked:true },
+    });
 
-
-    /* D — الفئة (غير مقفولة) */
+    /* D — الفئة */
     ac(row.getCell(4), {
-      value     : img.catLabel,
-      font      : mf({ size:10, color:C.midText }),
-      fill      : sf(rowBg),
-      align     : ma('center','middle'),
-      border    : bdrSilver,
-      protection: { locked:false },
+      value:img.catLabel,
+      font:mf({ size:10, color:C.midText }),
+      fill:sf(C.white), align:ma('center','middle'),
+      border:bdr, protection:{ locked:false },
     });
 
-    /* E — الكمية (غير مقفولة — قابلة للتعديل) */
+    /* E — الكمية */
     ac(row.getCell(5), {
-      value     : qty,
-      font      : mf({ bold:true, size:15, color:C.darkText }),
-      fill      : sf(rowBg),
-      align     : ma('center','middle'),
-      border    : bdrSilver,
-      protection: { locked:false },
+      value:qty,
+      font:mf({ bold:true, size:15, color:C.darkText }),
+      fill:sf(C.white), align:ma('center','middle'),
+      border:bdr, protection:{ locked:false },
     });
 
-    /* ══════════════════════════════════════════
-       F — السعر ← مقفول لمنع التعديل
-       نضع رمز قفل 🔒 أمام القيمة
-    ══════════════════════════════════════════ */
-    const priceDisplay = price > 0
-      ? '  ' + Number(price).toLocaleString('tr-TR') + ' ₺'
-      : '  Fiyat için arayın';
-
-       ac(row.getCell(6), {
-      value     : priceDisplay,
-      font      : mf({
-        size  : 10,
-        italic: true,
-        color : price > 0 ? C.midText : C.silver5,
-      }),
-      fill      : sf(C.white),
-
-      align     : ma('center','middle'),
-      border    : bdrLock,
-      /* ★ هذه الخلية مقفولة ★ */
-      protection: { locked:true, hidden:false },
+    /* F — السعر */
+    ac(row.getCell(6), {
+      value: price > 0
+        ? '  '+Number(price).toLocaleString('tr-TR')+' ₺'
+        : '  Fiyat için arayın',
+      font:mf({ size:10, italic:true,
+        color: price > 0 ? C.midText : C.silver4 }),
+      fill:sf(C.white), align:ma('center','middle'),
+      border:bdr, protection:{ locked:true },
     });
 
-       /* G — TOPLAM ← رقم حقيقي + تنسيق + مقفول */
+    /* G — الإجمالي */
     const gCell = row.getCell(7);
-
     if (price > 0) {
-      gCell.value  = { formula: `E${rowNum}*${price}` };
+      gCell.value  = { formula:`E${rowNum}*${price}` };
       gCell.numFmt = '#,##0 "₺"';
     } else {
-      gCell.value  = '—';
+      gCell.value = '—';
     }
-
     ac(gCell, {
-      font      : mf({ bold:true, size:12,
-                       color: price>0 ? C.green : C.silver5 }),
-      fill      : sf(C.white),
-      align     : ma('center','middle'),
-      border    : bdrSilver,
-      protection: { locked:true, hidden:false },
+      font:mf({ bold:true, size:12,
+        color: price > 0 ? C.green : C.silver4 }),
+      fill:sf(C.white), align:ma('center','middle'),
+      border:bdr, protection:{ locked:true },
     });
 
-
-    /* ── إدراج صورة الموديل ── */
+    /* ── إدراج الصورة إذا توفرت ── */
     const b64 = imgMap[img.id];
-    if (b64) {
-      const mime = b64.match(/^data:(image\/\w+);base64,/)?.[1]||'image/jpeg';
-      const ext  = mime.includes('png')?'png':'jpeg';
-      const data = b64.replace(/^data:image\/\w+;base64,/,'');
-      const id   = wb.addImage({ base64:data, extension:ext });
-
-      ws.addImage(id, {
-        tl: {
-          nativeCol    : 1,
-          nativeColOff : MARGIN_EMU,
-          nativeRow    : DATA_START - 1 + i,
-          nativeRowOff : MARGIN_EMU,
-        },
-        ext: {
-          width  : Math.round(IMG_W_EMU / 9525),
-          height : Math.round(IMG_H_EMU / 9525),
-        },
-      });
+    if (b64 && b64.startsWith('data:image')) {
+      try {
+        const mime = b64.match(/^data:(image\/\w+);base64,/)?.[1] || 'image/jpeg';
+        const ext  = mime.includes('png') ? 'png' : 'jpeg';
+        const data = b64.replace(/^data:image\/\w+;base64,/, '');
+        const id   = wb.addImage({ base64:data, extension:ext });
+        ws.addImage(id, {
+          tl: {
+            nativeCol    : 1,
+            nativeColOff : MARGIN_EMU,
+            nativeRow    : DATA_START - 1 + i,
+            nativeRowOff : MARGIN_EMU,
+          },
+          ext: {
+            width : Math.round(IMG_W_EMU / 9525),
+            height: Math.round(IMG_H_EMU / 9525),
+          },
+        });
+      } catch(imgErr) {
+        console.warn('[Excel] صورة فشلت في الإدراج:', img.title, imgErr);
+        /* نكمل بدون الصورة */
+      }
     }
   }
 
   /* ── صف الإجمالي ── */
   const totR = DATA_START + selected.length;
   ws.getRow(totR).height = 34;
-
   mc(`A${totR}:F${totR}`, {
-    value     : '💰 GENEL TOPLAM',
-    font      : mf({ bold:true, size:11, color:C.silverHT }),
-    fill      : sf(C.silverHdr),
-    align     : ma('right','middle'),
-    border    : bdrDark,
-    protection: { locked:false },
+    value:'💰 GENEL TOPLAM',
+    font:mf({ bold:true, size:11, color:C.silverHT }),
+    fill:sf(C.silverHdr), align:ma('right','middle'),
+    border:bdrD, protection:{ locked:false },
   });
-
-    /* GENEL TOPLAM ← SUM بسيط على أرقام حقيقية + مقفول */
-  const gFirst = DATA_START;
-  const gLast  = DATA_START + selected.length - 1;
-
   const totCell = ws.getRow(totR).getCell(7);
-  totCell.value  = { formula: `SUM(G${gFirst}:G${gLast})` };
+  totCell.value  = { formula:`SUM(G${DATA_START}:G${DATA_START+selected.length-1})` };
   totCell.numFmt = '#,##0 "₺"';
-
   ac(totCell, {
-    font      : mf({ bold:true, size:13, color:C.green }),
-    fill      : sf(C.white),
-    align     : ma('center','middle'),
-    border    : bdrDark,
-    protection: { locked:true, hidden:false },
+    font:mf({ bold:true, size:13, color:C.green }),
+    fill:sf(C.white), align:ma('center','middle'),
+    border:bdrD, protection:{ locked:true },
   });
 
-
-  /* ── الملاحظة ── */
+  /* ── ملاحظة ── */
+  const note = (document.getElementById('orderNoteInput')?.value || '').trim();
   let nR = totR + 1;
   if (note) {
-    ws.getRow(nR).height = 8;
-    mc(`A${nR}:G${nR}`, { fill:sf(C.white) });
-    nR++;
-
+    ws.getRow(nR).height = 8;  mc(`A${nR}:G${nR}`, { fill:sf(C.white) }); nR++;
     ws.getRow(nR).height = 30;
     ac(ws.getRow(nR).getCell(1), {
-      value     : 'NOT',
-      font      : mf({ bold:true, size:9, color:C.silverHT }),
-      fill      : sf(C.silverHdr),
-      align     : ma('center','middle'),
-      border    : bdrDark,
-      protection: { locked:false },
+      value:'NOT', font:mf({ bold:true, size:9, color:C.silverHT }),
+      fill:sf(C.silverHdr), align:ma('center','middle'),
+      border:bdrD, protection:{ locked:false },
     });
     ws.mergeCells(`B${nR}:G${nR}`);
     ac(ws.getRow(nR).getCell(2), {
-      value     : note,
-      font      : mf({ size:11, color:C.darkText }),
-      fill      : sf(C.white),
-      align     : ma('left','middle',true),
-      border    : bdrSilver,
-      protection: { locked:false },
+      value:note, font:mf({ size:11, color:C.darkText }),
+      fill:sf(C.white), align:ma('left','middle',true),
+      border:bdr, protection:{ locked:false },
     });
     nR++;
   }
 
-  /* ── فراغ ── */
-  ws.getRow(nR).height = 10;
-  mc(`A${nR}:G${nR}`, { fill:sf(C.white) });
-  nR++;
-
-  /* ── شريط فضي ── */
-  ws.getRow(nR).height = 3;
-  mc(`A${nR}:G${nR}`, { fill:sf(C.topLine) });
-  nR++;
-
-  /* ── تذييل داكن ── */
+  /* ── تذييل ── */
+  ws.getRow(nR).height = 10; mc(`A${nR}:G${nR}`, { fill:sf(C.white) }); nR++;
+  ws.getRow(nR).height = 3;  mc(`A${nR}:G${nR}`, { fill:sf(C.topLine) }); nR++;
   ws.getRow(nR).height = 20;
   mc(`A${nR}:G${nR}`, {
-    value     : '© 2026 WOW MOBİLYA  —  Tüm Hakları Saklıdır  |  +90 538 626 37 00',
-    font      : mf({ size:8, italic:true, color:C.silver4 }),
-    fill      : sf(C.topBg),
-    align     : ma('center','middle'),
-    protection: { locked:false },
+    value:'© 2026 WOW MOBİLYA  —  Tüm Hakları Saklıdır  |  +90 538 626 37 00',
+    font:mf({ size:8, italic:true, color:C.silver4 }),
+    fill:sf(C.topBg), align:ma('center','middle'),
+    protection:{ locked:false },
   });
   nR++;
+  ws.getRow(nR).height = 3; mc(`A${nR}:G${nR}`, { fill:sf(C.topLine) });
 
-  /* ── شريط فضي سفلي ── */
-  ws.getRow(nR).height = 3;
-  mc(`A${nR}:G${nR}`, { fill:sf(C.topLine) });
-
-  /* ══════════════════════════════════════════════════════
-     ★ تفعيل الحماية على الورقة — مع السماح بتحرير
-       الخلايا غير المقفولة (locked:false)
-     كلمة المرور فارغة = يمكن لأي شخص إلغاء الحماية
-     لكن لا يمكن تعديل خلايا السعر مباشرةً
-  ══════════════════════════════════════════════════════ */
+  /* ── حماية الورقة ── */
   ws.protect('', {
-    /* ما يُسمح به للمستخدم */
     selectLockedCells  : true,
     selectUnlockedCells: true,
     formatCells        : false,
-    formatColumns      : false,
-    formatRows         : false,
-    insertColumns      : false,
-    insertRows         : false,
-    deleteColumns      : false,
-    deleteRows         : false,
-    sort               : false,
-    autoFilter         : false,
   });
 
-  /* ── إعدادات العرض ── */
-  ws.views = [{
-    state        : 'frozen',
-    ySplit       : 7,
-    showGridLines: false,
-  }];
+  ws.views = [{ state:'frozen', ySplit:7, showGridLines:false }];
 
-  /* ── تصدير ── */
+  /* ══════════════════════════════════════════
+     ★ 6. التصدير — مع try/catch محكم
+  ══════════════════════════════════════════ */
   setBtn('<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...');
 
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob   = new Blob([buffer], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  });
-  const fn  = `WOW_Siparis_${orderNum}.xlsx`;
-  const url = URL.createObjectURL(blob);
-  const a   = document.createElement('a');
-  a.href=url; a.download=fn;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  setTimeout(()=>URL.revokeObjectURL(url), 3000);
+  try {
+    const buffer  = await wb.xlsx.writeBuffer();
+    const blob    = new Blob([buffer], {
+      type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const fn  = `WOW_Siparis_${orderNum}.xlsx`;
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href = url; a.download = fn;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-  /* ── إغلاق + رسالة نجاح ── */
-  setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
+    setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
+    setTimeout(() => {
+      setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
+      closeOrderConfirmModal();
+      clearOrderCart();
+      showOrderSuccessToast(orderNum);
+    }, 2000);
 
-  setTimeout(()=>{
-    setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
-    closeOrderConfirmModal();
-    clearOrderCart();
-    showOrderSuccessToast(orderNum);
-  }, 2000);
+  } catch(excelErr) {
+    /* ★ هذا هو المكان الذي كان يتعطل فيه بصمت ★ */
+    console.error('[Excel] writeBuffer hatası:', excelErr);
+    setBtn('<i class="fas fa-exclamation-triangle"></i> HATA — Tekrar Dene', false);
+    showInvToast('Excel oluşturma hatası: ' + excelErr.message, 'error');
+  }
 }
 
 
@@ -5400,6 +5703,295 @@ buildOrderCard = function(img, idx) {
 
 
 
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ نافذة التأكيد النهائي — النسخة المطورة ★
+============================================================ */
+
+let _fcmChecked = false;
+
+/* ── فتح النافذة ── */
+function openFinalConfirmModal() {
+  /* حساب الملخص */
+  let totalItems = 0;
+  let totalPrice = 0;
+  let hasPrice   = false;
+
+  images.forEach(img => {
+    const qty = orderCart[img.id] || 0;
+    if (qty > 0) {
+      totalItems += qty;
+      if (img.price) { totalPrice += img.price * qty; hasPrice = true; }
+    }
+  });
+
+  const countEl = document.getElementById('fcmItemCount');
+  const totalEl = document.getElementById('fcmTotal');
+  if (countEl) countEl.textContent = totalItems + ' Ürün';
+  if (totalEl) totalEl.textContent = hasPrice
+    ? Number(totalPrice).toLocaleString('tr-TR') + ' ₺'
+    : '—';
+
+  /* إعادة ضبط */
+  _fcmChecked = false;
+  resetFcmCheck();
+  setFcmBtnsState(false);
+
+  /* إظهار */
+  const modal = document.getElementById('finalConfirmModal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+/* ── إغلاق ── */
+function closeFinalConfirmModal() {
+  const modal = document.getElementById('finalConfirmModal');
+  const box   = document.getElementById('fcmBox');
+
+  /* أنيميشن الإغلاق */
+  if (box) {
+    box.style.transition  = 'transform 0.3s ease, opacity 0.3s ease';
+    box.style.transform   = 'translateY(60px)';
+    box.style.opacity     = '0';
+  }
+
+  setTimeout(() => {
+    modal.style.display = 'none';
+    document.body.style.overflow = '';
+    if (box) {
+      box.style.transition = '';
+      box.style.transform  = '';
+      box.style.opacity    = '';
+    }
+    _fcmChecked = false;
+    resetFcmCheck();
+    setFcmBtnsState(false);
+  }, 280);
+}
+
+/* ── إعادة ضبط مربع الاختيار ── */
+function resetFcmCheck() {
+  const visual = document.getElementById('fcmCheckVisual');
+  const wrap   = document.getElementById('fcmCheckWrap');
+
+  if (visual) visual.className = 'fcm-checkbox-visual';
+  if (wrap)   wrap.className   = 'fcm-check-wrap';
+}
+
+/* ── تبديل مربع الاختيار ── */
+function toggleFcmCheck() {
+  _fcmChecked = !_fcmChecked;
+
+  const visual = document.getElementById('fcmCheckVisual');
+  const wrap   = document.getElementById('fcmCheckWrap');
+
+  if (_fcmChecked) {
+    if (visual) visual.className = 'fcm-checkbox-visual checked';
+    if (wrap)   wrap.className   = 'fcm-check-wrap checked';
+    setFcmBtnsState(true);
+  } else {
+    if (visual) visual.className = 'fcm-checkbox-visual';
+    if (wrap)   wrap.className   = 'fcm-check-wrap';
+    setFcmBtnsState(false);
+  }
+}
+
+/* ── تفعيل/تعطيل الأزرار ── */
+function setFcmBtnsState(enabled) {
+  const excelBtn = document.getElementById('fcmExcelBtn');
+  const pdfBtn   = document.getElementById('fcmPdfBtn');
+
+  if (enabled) {
+    if (excelBtn) {
+      excelBtn.disabled = false;
+      excelBtn.style.cssText = `
+        flex:1;padding:clamp(13px,3vw,16px);border-radius:14px;border:none;
+        font-family:'Montserrat',sans-serif;
+        font-size:clamp(10px,2.5vw,12px);font-weight:900;letter-spacing:1.5px;
+        cursor:pointer;transition:all 0.3s ease;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        background:linear-gradient(135deg,rgba(18,60,35,0.95),rgba(22,70,40,0.95));
+        color:#4ade80;
+        border:1px solid rgba(74,222,128,0.3) !important;
+        box-shadow:0 6px 20px rgba(74,222,128,0.12);
+        animation:fcmBtnReady 0.4s ease;
+      `;
+    }
+    if (pdfBtn) {
+      pdfBtn.disabled = false;
+      pdfBtn.style.cssText = `
+        flex:1;padding:clamp(13px,3vw,16px);border-radius:14px;border:none;
+        font-family:'Montserrat',sans-serif;
+        font-size:clamp(10px,2.5vw,12px);font-weight:900;letter-spacing:1.5px;
+        cursor:pointer;transition:all 0.3s ease;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        background:linear-gradient(135deg,rgba(120,20,20,0.95),rgba(160,25,25,0.95));
+        color:#ff8a80;
+        border:1px solid rgba(239,68,68,0.35) !important;
+        box-shadow:0 6px 20px rgba(239,68,68,0.1);
+        animation:fcmBtnReady 0.4s ease 0.08s;
+      `;
+    }
+  } else {
+    [excelBtn, pdfBtn].forEach(btn => {
+      if (!btn) return;
+      btn.disabled = true;
+      btn.style.cssText = `
+        flex:1;padding:clamp(13px,3vw,16px);border-radius:14px;
+        font-family:'Montserrat',sans-serif;
+        font-size:clamp(10px,2.5vw,12px);font-weight:900;letter-spacing:1.5px;
+        display:flex;align-items:center;justify-content:center;gap:8px;
+        background:rgba(255,255,255,0.05);
+        color:rgba(255,255,255,0.2);
+        cursor:not-allowed;border:none;
+        transition:all 0.3s ease;
+      `;
+    });
+  }
+}
+
+/* ── تنزيل Excel ── */
+function fcmDownloadExcel() {
+  if (!_fcmChecked) return;
+  closeFinalConfirmModal();
+  setTimeout(() => sendOrderViaWhatsApp(), 350);
+}
+
+/* ── تنزيل PDF ── */
+function fcmDownloadPdf() {
+  if (!_fcmChecked) return;
+  closeFinalConfirmModal();
+  setTimeout(() => openOrderPdfModal(), 350);
+}
+
+/* ── إغلاق بالضغط على الخلفية ── */
+document.getElementById('finalConfirmModal')
+  ?.addEventListener('click', function(e) {
+    if (e.target === this) closeFinalConfirmModal();
+  });
+
+/* ── Swipe لأسفل لإغلاق النافذة ── */
+(function(){
+  let startY = 0, dragging = false;
+  const getHandle = () =>
+    document.querySelector('#fcmBox .fcm-drag-handle-wrap');
+
+  document.addEventListener('touchstart', e => {
+    const h = getHandle();
+    if (h && h.contains(e.target)) {
+      startY   = e.touches[0].clientY;
+      dragging = true;
+    }
+  }, { passive:true });
+
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const box  = document.getElementById('fcmBox');
+    const diff = e.touches[0].clientY - startY;
+    if (diff > 0 && box) {
+      box.style.transform  = `translateY(${diff}px)`;
+      box.style.transition = 'none';
+    }
+  }, { passive:true });
+
+  document.addEventListener('touchend', e => {
+    if (!dragging) return;
+    dragging = false;
+    const box  = document.getElementById('fcmBox');
+    const diff = e.changedTouches[0].clientY - startY;
+    if (box) box.style.transition = '';
+    if (diff > 100) {
+      if (box) box.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        if (box) box.style.transform = '';
+        closeFinalConfirmModal();
+      }, 300);
+    } else {
+      if (box) box.style.transform = '';
+    }
+  }, { passive:true });
+})();
+
+/* ── تغيير مربع الاختيار في نافذة التأكيد الأولى ── */
+function onOcmCheckChange() {
+  const cb      = document.getElementById('ocmCheckbox');
+  const icon    = document.getElementById('ocmCheckIcon');
+  const label   = document.getElementById('ocmCheckLabel');
+  const procBtn = document.getElementById('ocmProceedBtn');
+
+  if (cb.checked) {
+    /* ✅ تم التحديد — تفعيل زر DEVAM ET */
+    cb.style.background  = 'linear-gradient(135deg,#c9a84c,#f0d080)';
+    cb.style.borderColor = '#c9a84c';
+    if (icon)  icon.style.transform = 'translate(-50%,-50%) scale(1)';
+    if (label) {
+      label.style.background  = 'rgba(201,168,76,0.1)';
+      label.style.borderColor = 'rgba(201,168,76,0.5)';
+    }
+    if (procBtn) {
+      procBtn.disabled         = false;
+      procBtn.style.background =
+        'linear-gradient(135deg,#c9a84c,#f0d080)';
+      procBtn.style.color      = '#0a0a0a';
+      procBtn.style.cursor     = 'pointer';
+      procBtn.style.boxShadow  =
+        '0 8px 24px rgba(201,168,76,0.35)';
+    }
+
+  } else {
+    /* ☐ تم الإلغاء — تعطيل الزر */
+    cb.style.background  = 'rgba(255,255,255,0.05)';
+    cb.style.borderColor = 'rgba(201,168,76,0.3)';
+    if (icon)  icon.style.transform = 'translate(-50%,-50%) scale(0)';
+    if (label) {
+      label.style.background  = 'rgba(201,168,76,0.04)';
+      label.style.borderColor = 'rgba(201,168,76,0.15)';
+    }
+    if (procBtn) {
+      procBtn.disabled         = true;
+      procBtn.style.background = 'rgba(255,255,255,0.05)';
+      procBtn.style.color      = 'rgba(255,255,255,0.2)';
+      procBtn.style.cursor     = 'not-allowed';
+      procBtn.style.boxShadow  = 'none';
+    }
+  }
+}
+
+/* ── إعادة ضبط مربع الاختيار عند إغلاق النافذة ── */
+const _origCloseOrderConfirmModal = closeOrderConfirmModal;
+closeOrderConfirmModal = function() {
+  /* إعادة ضبط الـ checkbox */
+  const cb = document.getElementById('ocmCheckbox');
+  if (cb) {
+    cb.checked           = false;
+    cb.style.background  = 'rgba(255,255,255,0.05)';
+    cb.style.borderColor = 'rgba(201,168,76,0.3)';
+  }
+  const icon = document.getElementById('ocmCheckIcon');
+  if (icon) icon.style.transform = 'translate(-50%,-50%) scale(0)';
+
+  const label = document.getElementById('ocmCheckLabel');
+  if (label) {
+    label.style.background  = 'rgba(201,168,76,0.04)';
+    label.style.borderColor = 'rgba(201,168,76,0.15)';
+  }
+  const procBtn = document.getElementById('ocmProceedBtn');
+  if (procBtn) {
+    procBtn.disabled         = true;
+    procBtn.style.background = 'rgba(255,255,255,0.05)';
+    procBtn.style.color      = 'rgba(255,255,255,0.2)';
+    procBtn.style.cursor     = 'not-allowed';
+    procBtn.style.boxShadow  = 'none';
+  }
+  _origCloseOrderConfirmModal();
+};
 
 
 
