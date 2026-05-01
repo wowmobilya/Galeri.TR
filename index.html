@@ -1787,117 +1787,176 @@ html { scroll-behavior: auto; }
 
 
 
-  <!-- =====================================================
-       نافذة تأكيد الطلب
-  ===================================================== -->
-  <div id="orderConfirmModal" onclick="handleOrderModalBg(event)">
-    <div class="order-confirm-box" id="ocmBox">
-  <div class="ocm-topline"></div>
-  <div class="ocm-drag-handle" id="ocmDragHandle"></div>
-  <div class="ocm-header">
+  
 
-        <div class="ocm-header-left">
-          <div class="ocm-icon"><i class="fas fa-shopping-cart"></i></div>
-          <div>
-            <div class="ocm-tag">WOW MOBİLYA — SİPARİŞ</div>
-            <div class="ocm-title">Siparişi Onayla</div>
+<div id="orderConfirmModal" onclick="handleOrderModalBg(event)">
+  <div class="order-confirm-box" id="ocmBox">
+    <div class="ocm-topline"></div>
+    <div class="ocm-drag-handle" id="ocmDragHandle"></div>
+
+    <!-- هيدر -->
+    <div class="ocm-header">
+      <div class="ocm-header-left">
+        <div class="ocm-icon"><i class="fas fa-shopping-cart"></i></div>
+        <div>
+          <div class="ocm-tag">WOW MOBİLYA — SİPARİŞ</div>
+          <div class="ocm-title">Siparişi Onayla</div>
+        </div>
+      </div>
+      <div class="ocm-close" onclick="closeOrderConfirmModal()">
+        <i class="fas fa-times"></i>
+      </div>
+    </div>
+
+    <div class="ocm-body">
+
+      <!-- ── قائمة المنتجات ── -->
+      <div class="ocm-items-list" id="ocmItemsList"></div>
+
+      <!-- ── معاينة الملاحظة ── -->
+      <div class="ocm-note-preview" id="ocmNotePreview">
+        <strong><i class="fas fa-sticky-note"></i> &nbsp; NOT</strong>
+        <span id="ocmNoteText"></span>
+      </div>
+
+      <!-- ── ملخص الإجمالي ── -->
+      <div id="ocmSummaryBar" style="
+        display:flex;align-items:center;justify-content:space-between;
+        background:rgba(255,255,255,0.025);
+        border:1px solid rgba(255,255,255,0.06);
+        border-radius:12px;padding:12px 15px;
+        flex-wrap:wrap;gap:8px;
+      ">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-shopping-cart" style="color:#c9a84c;font-size:14px;"></i>
+          <span id="ocmSummaryCount" style="
+            font-size:13px;font-weight:700;color:#fff;
+          "></span>
+        </div>
+        <span id="ocmSummaryTotal" style="
+          font-size:15px;font-weight:900;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+          background-clip:text;
+        "></span>
+      </div>
+
+      <!-- ── تحذير ── -->
+      <div style="
+        background:rgba(251,191,36,0.07);
+        border:1px solid rgba(251,191,36,0.2);
+        border-radius:12px;padding:11px 14px;
+        display:flex;gap:10px;align-items:flex-start;
+      ">
+        <i class="fas fa-exclamation-triangle"
+           style="color:#fbbf24;font-size:13px;margin-top:2px;flex-shrink:0;"></i>
+        <div style="
+          font-size:10px;color:rgba(255,255,255,0.4);
+          line-height:1.7;letter-spacing:0.3px;
+          font-family:'Montserrat',sans-serif;
+        ">
+          Siparişiniz onaylandıktan sonra stoktan düşülecektir.
+          İndirme işleminden sonra sipariş
+          <strong style="color:#fbbf24;">iptal edilemez.</strong>
+        </div>
+      </div>
+
+      <!-- ★ مربع الموافقة ★ -->
+      <label id="ocmCheckLabel" style="
+        display:flex;align-items:flex-start;gap:13px;
+        background:rgba(201,168,76,0.04);
+        border:1.5px solid rgba(201,168,76,0.15);
+        border-radius:14px;padding:14px 15px;
+        cursor:pointer;transition:all 0.3s ease;
+        -webkit-user-select:none;user-select:none;
+      ">
+        <!-- مربع الاختيار -->
+        <div style="position:relative;flex-shrink:0;margin-top:1px;">
+          <input type="checkbox" id="ocmCheckbox"
+                 onchange="onOcmCheckChange()"
+                 style="
+                   appearance:none;-webkit-appearance:none;
+                   width:22px;height:22px;
+                   background:rgba(255,255,255,0.05);
+                   border:2px solid rgba(201,168,76,0.3);
+                   border-radius:6px;cursor:pointer;
+                   display:block;transition:all 0.25s;
+                 "/>
+          <i class="fas fa-check" id="ocmCheckIcon" style="
+            position:absolute;top:50%;left:50%;
+            transform:translate(-50%,-50%) scale(0);
+            color:#0a0a0a;font-size:11px;
+            pointer-events:none;
+            transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+          "></i>
+        </div>
+        <div style="flex:1;">
+          <div style="
+            font-size:12px;font-weight:700;color:#fff;
+            letter-spacing:0.5px;margin-bottom:4px;
+            font-family:'Montserrat',sans-serif;
+          ">Okudum ve Onaylıyorum</div>
+          <div style="
+            font-size:10px;color:rgba(255,255,255,0.3);
+            letter-spacing:0.3px;line-height:1.6;
+            font-family:'Montserrat',sans-serif;
+          ">
+            Sipariş bilgilerini kontrol ettim, stoktan düşüleceğini ve
+            indirme sonrası
+            <span style="color:rgba(251,191,36,0.65);">
+              iptal edilemeyeceğini
+            </span>
+            kabul ediyorum.
           </div>
         </div>
-        <div class="ocm-close" onclick="closeOrderConfirmModal()"><i class="fas fa-times"></i></div>
+      </label>
+
+      <!-- ── أزرار التنزيل ── -->
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+
+        <!-- زر Excel -->
+        <button id="ocmExcelBtn" onclick="ocmDownloadExcel()" disabled style="
+          flex:1;min-width:130px;
+          padding:13px 10px;border-radius:12px;
+          border:1px solid rgba(255,255,255,0.06);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.2);
+          font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:1px;
+          cursor:not-allowed;transition:all 0.35s ease;
+          display:flex;align-items:center;justify-content:center;gap:8px;
+        ">
+          <i class="fas fa-file-excel" style="font-size:17px;"></i>
+          EXCEL İNDİR
+        </button>
+
+        <!-- زر PDF -->
+        <button id="ocmPdfBtn" onclick="ocmDownloadPdf()" disabled style="
+          flex:1;min-width:130px;
+          padding:13px 10px;border-radius:12px;
+          border:1px solid rgba(255,255,255,0.06);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.2);
+          font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:1px;
+          cursor:not-allowed;transition:all 0.35s ease;
+          display:flex;align-items:center;justify-content:center;gap:8px;
+        ">
+          <i class="fas fa-file-pdf" style="font-size:17px;"></i>
+          PDF İNDİR
+        </button>
+
       </div>
-      <div class="ocm-body">
-        <!-- قائمة العناصر -->
-        <div class="ocm-items-list" id="ocmItemsList"></div>
-        <!-- معاينة الملاحظة -->
-        <div class="ocm-note-preview" id="ocmNotePreview">
-          <strong><i class="fas fa-sticky-note"></i> &nbsp; NOT</strong>
-          <span id="ocmNoteText"></span>
-        </div>
-  <!-- ★ مربع الموافقة فقط — بدون أزرار تنزيل ★ -->
-<label id="ocmCheckLabel" style="
-  display:flex;align-items:flex-start;gap:13px;
-  background:rgba(201,168,76,0.04);
-  border:1.5px solid rgba(201,168,76,0.15);
-  border-radius:14px;padding:15px 16px;
-  cursor:pointer;transition:all 0.3s ease;
-  user-select:none;-webkit-user-select:none;
-  margin-top:4px;
-">
-  <!-- مربع الاختيار -->
-  <div style="position:relative;flex-shrink:0;margin-top:2px;">
-    <input type="checkbox" id="ocmCheckbox"
-           onchange="onOcmCheckChange()"
-           style="
-             appearance:none;-webkit-appearance:none;
-             width:24px;height:24px;
-             background:rgba(255,255,255,0.05);
-             border:2px solid rgba(201,168,76,0.3);
-             border-radius:7px;cursor:pointer;
-             display:block;transition:all 0.25s;
-           "/>
-    <i class="fas fa-check" id="ocmCheckIcon" style="
-      position:absolute;top:50%;left:50%;
-      transform:translate(-50%,-50%) scale(0);
-      color:#0a0a0a;font-size:12px;
-      pointer-events:none;
-      transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
-    "></i>
-  </div>
 
-  <div style="flex:1;">
-    <div style="font-size:13px;font-weight:700;color:#fff;
-         letter-spacing:0.5px;margin-bottom:5px;">
-      Okudum ve Onaylıyorum
-    </div>
-    <div style="font-size:10px;color:rgba(255,255,255,0.3);
-         letter-spacing:0.3px;line-height:1.7;">
-      Sipariş bilgilerini kontrol ettim, stoktan düşüleceğini
-      ve indirme sonrası
-      <span style="color:rgba(251,191,36,0.75);font-weight:700;">
-        iptal edilemeyeceğini
-      </span>
-      kabul ediyorum.
+      <!-- ملاحظة سفلية -->
+      <div class="ocm-footer-note">
+        <i class="fas fa-info-circle"></i>
+        Excel veya PDF olarak kaydedin
+      </div>
+
     </div>
   </div>
-</label>
-
-<!-- تحذير -->
-<div style="
-  display:flex;align-items:center;gap:9px;
-  background:rgba(251,191,36,0.06);
-  border:1px solid rgba(251,191,36,0.18);
-  border-radius:10px;padding:10px 13px;
-">
-  <i class="fas fa-exclamation-triangle"
-     style="color:#fbbf24;font-size:13px;flex-shrink:0;"></i>
-  <span style="font-size:10px;color:rgba(255,255,255,0.35);
-        letter-spacing:0.5px;line-height:1.6;">
-    İndirme işleminden sonra sipariş
-    <strong style="color:#fbbf24;">iptal edilemez</strong>
-    ve stoktan düşülür.
-  </span>
 </div>
-
-<!-- زر الإجراء الوحيد — معطّل حتى الموافقة -->
-<button id="ocmProceedBtn" onclick="openFinalConfirmModal()" disabled style="
-  width:100%;padding:15px;border-radius:14px;border:none;
-  background:rgba(255,255,255,0.05);
-  color:rgba(255,255,255,0.2);
-  font-family:'Montserrat',sans-serif;
-  font-size:12px;font-weight:900;letter-spacing:2px;
-  cursor:not-allowed;transition:all 0.35s ease;
-  display:flex;align-items:center;justify-content:center;gap:10px;
-">
-  <i class="fas fa-lock" style="font-size:14px;"></i>
-  DEVAM ET
-</button>
-
-<div class="ocm-footer-note">
-  <i class="fas fa-info-circle"></i>
-  Onayladıktan sonra Excel veya PDF seçebilirsiniz
-</div>
-
-
 
 
 
@@ -2027,419 +2086,210 @@ html { scroll-behavior: auto; }
 
 
 <!-- =====================================================
-     نافذة التأكيد النهائي — Final Confirm Modal
+     نافذة التأكيد النهائي قبل التنزيل
 ===================================================== -->
 <div id="finalConfirmModal" style="
   display:none;
   position:fixed;inset:0;z-index:7500;
-  align-items:flex-end;
-  justify-content:center;
+  align-items:center;justify-content:center;
   background:rgba(0,0,0,0.92);
   backdrop-filter:blur(20px);
   -webkit-backdrop-filter:blur(20px);
-  padding:0;
+  padding:16px;
 ">
   <div id="fcmBox" style="
     position:relative;
-    width:100%;
-    max-width:100%;
-    max-height:92dvh;
-    max-height:92vh;
-    overflow-y:auto;
-    -webkit-overflow-scrolling:touch;
-    border-radius:24px 24px 0 0;
-    background:linear-gradient(160deg,#0a0a0a 0%,#111 50%,#0d0d0d 100%);
-    border:1px solid rgba(201,168,76,0.2);
-    border-bottom:none;
-    box-shadow:0 -20px 80px rgba(0,0,0,0.9),0 0 60px rgba(201,168,76,0.05);
-    animation:fcmSheetIn 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards;
-    padding-bottom:env(safe-area-inset-bottom,0px);
+    width:100%;max-width:460px;
+    border-radius:22px;overflow:hidden;
+    background:linear-gradient(145deg,#0f0f0f,#161616);
+    border:1px solid rgba(201,168,76,0.25);
+    box-shadow:0 40px 100px rgba(0,0,0,0.9),0 0 60px rgba(201,168,76,0.06);
+    animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
   ">
-
-    <style>
-      @keyframes fcmSheetIn {
-        from{opacity:0;transform:translateY(60px);}
-        to{opacity:1;transform:translateY(0);}
-      }
-      @keyframes fcmModalIn {
-        from{opacity:0;transform:scale(0.88) translateY(24px);}
-        to{opacity:1;transform:scale(1) translateY(0);}
-      }
-      @keyframes fcmPulse {
-        0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4);}
-        50%{box-shadow:0 0 0 10px rgba(201,168,76,0);}
-      }
-      @keyframes fcmShake {
-        0%,100%{transform:translateX(0);}
-        25%{transform:translateX(-6px);}
-        75%{transform:translateX(6px);}
-      }
-      @keyframes fcmCheckPop {
-        0%{transform:translate(-50%,-50%) scale(0) rotate(-20deg);}
-        70%{transform:translate(-50%,-50%) scale(1.2) rotate(5deg);}
-        100%{transform:translate(-50%,-50%) scale(1) rotate(0deg);}
-      }
-      @keyframes fcmBtnReady {
-        0%{transform:scale(1);}
-        50%{transform:scale(1.02);}
-        100%{transform:scale(1);}
-      }
-
-      @media(min-width:600px){
-        #fcmBox{
-          max-width:480px !important;
-          border-radius:24px !important;
-          border-bottom:1px solid rgba(201,168,76,0.2) !important;
-          animation:fcmModalIn 0.42s cubic-bezier(0.34,1.56,0.64,1) forwards !important;
-          padding-bottom:0 !important;
-        }
-        #finalConfirmModal{
-          align-items:center !important;
-          padding:16px !important;
-        }
-      }
-
-      #fcmBox::-webkit-scrollbar{width:3px;}
-      #fcmBox::-webkit-scrollbar-thumb{
-        background:rgba(201,168,76,0.25);border-radius:4px;
-      }
-
-      .fcm-step-dot{
-        width:8px;height:8px;border-radius:50%;
-        background:rgba(255,255,255,0.12);
-        transition:all 0.3s ease;flex-shrink:0;
-      }
-      .fcm-step-dot.active{
-        background:#c9a84c;
-        box-shadow:0 0 8px rgba(201,168,76,0.6);
-        transform:scale(1.3);
-      }
-      .fcm-step-dot.done{
-        background:#4ade80;
-        box-shadow:0 0 6px rgba(74,222,128,0.5);
-      }
-
-      .fcm-info-row{
-        display:flex;align-items:center;gap:10px;
-        padding:11px 13px;
-        background:rgba(255,255,255,0.025);
-        border:1px solid rgba(255,255,255,0.06);
-        border-radius:11px;
-        transition:all 0.25s;
-      }
-      .fcm-info-row:hover{
-        background:rgba(201,168,76,0.05);
-        border-color:rgba(201,168,76,0.15);
-      }
-      .fcm-info-icon{
-        width:34px;height:34px;flex-shrink:0;
-        border-radius:9px;
-        display:flex;align-items:center;justify-content:center;
-        font-size:14px;
-      }
-
-      .fcm-check-wrap{
-        display:flex;align-items:flex-start;gap:13px;
-        background:rgba(201,168,76,0.04);
-        border:2px solid rgba(201,168,76,0.15);
-        border-radius:16px;padding:16px;
-        cursor:pointer;transition:all 0.3s ease;
-        -webkit-tap-highlight-color:transparent;
-      }
-      .fcm-check-wrap.checked{
-        background:rgba(201,168,76,0.09);
-        border-color:rgba(201,168,76,0.5);
-        box-shadow:0 0 20px rgba(201,168,76,0.08);
-      }
-
-      .fcm-checkbox-visual{
-        width:26px;height:26px;flex-shrink:0;
-        border-radius:8px;
-        background:rgba(255,255,255,0.05);
-        border:2px solid rgba(201,168,76,0.3);
-        position:relative;
-        transition:all 0.25s ease;
-        margin-top:1px;
-      }
-      .fcm-checkbox-visual.checked{
-        background:linear-gradient(135deg,#c9a84c,#f0d080);
-        border-color:#c9a84c;
-        animation:fcmPulse 0.6s ease;
-      }
-      .fcm-checkbox-visual .fcm-check-i{
-        position:absolute;top:50%;left:50%;
-        transform:translate(-50%,-50%) scale(0);
-        color:#0a0a0a;font-size:12px;font-weight:900;
-        pointer-events:none;
-        transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
-      }
-      .fcm-checkbox-visual.checked .fcm-check-i{
-        animation:fcmCheckPop 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
-        transform:translate(-50%,-50%) scale(1);
-      }
-
-      .fcm-action-btn{
-        flex:1;padding:clamp(13px,3vw,16px);
-        border-radius:14px;border:none;
-        font-family:'Montserrat',sans-serif;
-        font-size:clamp(10px,2.5vw,12px);
-        font-weight:900;letter-spacing:1.5px;
-        cursor:pointer;transition:all 0.3s ease;
-        display:flex;align-items:center;justify-content:center;
-        gap:8px;-webkit-tap-highlight-color:transparent;
-      }
-      .fcm-action-btn:disabled{
-        cursor:not-allowed;
-        background:rgba(255,255,255,0.05) !important;
-        color:rgba(255,255,255,0.2) !important;
-        box-shadow:none !important;
-        transform:none !important;
-      }
-      .fcm-action-btn:not(:disabled):active{
-        transform:scale(0.97);
-      }
-    </style>
-
-    <!-- مقبض السحب — موبايل فقط -->
-    <div style="
-      display:flex;align-items:center;justify-content:center;
-      padding:10px 0 4px;flex-shrink:0;
-    " class="fcm-drag-handle-wrap">
-      <div style="
-        width:40px;height:4px;
-        background:rgba(255,255,255,0.15);
-        border-radius:4px;
-      "></div>
-    </div>
-
-    <!-- خط ذهبي -->
-    <div style="height:2px;background:linear-gradient(90deg,
-      transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
-      flex-shrink:0;"></div>
+    <!-- خط ذهبي علوي -->
+    <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
 
     <!-- هيدر -->
     <div style="
-      padding:16px 18px 14px;
+      padding:18px 20px 14px;
       display:flex;align-items:center;justify-content:space-between;
       border-bottom:1px solid rgba(255,255,255,0.05);
-      position:sticky;top:0;
-      background:linear-gradient(160deg,#0a0a0a,#111);
-      z-index:2;
     ">
-      <div style="display:flex;align-items:center;gap:12px;min-width:0;">
-        <!-- أيقونة متحركة -->
+      <div style="display:flex;align-items:center;gap:12px;">
         <div style="
-          width:46px;height:46px;flex-shrink:0;
+          width:44px;height:44px;flex-shrink:0;
           background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
           border:1px solid rgba(201,168,76,0.3);
-          border-radius:14px;
-          display:flex;align-items:center;justify-content:center;
-          color:#c9a84c;font-size:20px;
-          animation:fcmPulse 2.5s ease infinite;
-        ">
-          <i class="fas fa-file-signature"></i>
-        </div>
-        <div style="min-width:0;">
-          <div style="font-size:8px;letter-spacing:3px;
-               color:rgba(201,168,76,0.55);text-transform:uppercase;
-               margin-bottom:3px;">
-            SON ONAY AŞAMASI
-          </div>
-          <div style="font-size:clamp(15px,4vw,18px);font-weight:900;
-               color:#fff;white-space:nowrap;overflow:hidden;
-               text-overflow:ellipsis;">
-            İndirme Onayı
-          </div>
+          border-radius:12px;display:flex;align-items:center;justify-content:center;
+          color:#c9a84c;font-size:18px;
+        "><i class="fas fa-shield-alt"></i></div>
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,0.55);
+               text-transform:uppercase;margin-bottom:3px;">SİPARİŞ ONAYI</div>
+          <div style="font-size:16px;font-weight:900;color:#fff;">Son Onay</div>
         </div>
       </div>
-
-      <!-- مؤشر الخطوات -->
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px;">
-        <div class="fcm-step-dot done"></div>
-        <div style="width:16px;height:1px;background:rgba(74,222,128,0.4);"></div>
-        <div class="fcm-step-dot active"></div>
+      <div onclick="closeFinalConfirmModal()" style="
+        width:32px;height:32px;
+        background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.07);
+        border-radius:8px;color:rgba(255,255,255,0.3);
+        font-size:14px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
+        transition:all 0.25s;
+      " onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+         onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+        <i class="fas fa-times"></i>
       </div>
     </div>
 
     <!-- جسم النافذة -->
-    <div style="padding:16px 16px 8px;display:flex;flex-direction:column;gap:12px;">
+    <div style="padding:20px 20px 8px;display:flex;flex-direction:column;gap:14px;">
 
-      <!-- ★ رسالة مختلفة — بطاقة تحذير بارزة ★ -->
+      <!-- ملخص الطلب -->
       <div style="
-        background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(180,30,30,0.04));
-        border:1px solid rgba(239,68,68,0.25);
-        border-radius:16px;padding:16px;
-        position:relative;overflow:hidden;
+        background:rgba(255,255,255,0.025);
+        border:1px solid rgba(255,255,255,0.06);
+        border-radius:14px;padding:13px 15px;
+        display:flex;align-items:center;justify-content:space-between;
+        flex-wrap:wrap;gap:8px;
       ">
-        <!-- زخرفة خلفية -->
-        <div style="
-          position:absolute;top:-20px;right:-20px;
-          width:100px;height:100px;
-          background:radial-gradient(circle,rgba(239,68,68,0.08),transparent 70%);
-          pointer-events:none;
-        "></div>
-
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="
-            width:36px;height:36px;flex-shrink:0;
-            background:rgba(239,68,68,0.12);
-            border:1px solid rgba(239,68,68,0.3);
-            border-radius:10px;
-            display:flex;align-items:center;justify-content:center;
-            font-size:16px;color:#ef4444;
-          ">
-            <i class="fas fa-exclamation-triangle"></i>
-          </div>
-          <div style="font-size:clamp(12px,3vw,14px);font-weight:900;
-               color:#fff;letter-spacing:0.3px;">
-            Bu İşlem Geri Alınamaz!
+        <div style="display:flex;align-items:center;gap:10px;">
+          <i class="fas fa-shopping-cart" style="color:#c9a84c;font-size:16px;"></i>
+          <div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.35);
+                 letter-spacing:1.5px;text-transform:uppercase;">TOPLAM ÜRÜN</div>
+            <div id="fcmItemCount" style="font-size:18px;font-weight:900;color:#fff;"></div>
           </div>
         </div>
-
-        <div style="font-size:clamp(10px,2.5vw,11px);
-             color:rgba(255,255,255,0.45);line-height:1.8;
-             letter-spacing:0.3px;">
-          Dosyayı indirdiğiniz anda sipariş sisteme kaydedilir ve
-          <strong style="color:#fbbf24;">stoktan otomatik düşülür.</strong>
-          Bu işlemi geri alamaz, siparişi iptal edemezsiniz.
-        </div>
-      </div>
-
-      <!-- معلومات الطلب -->
-      <div style="display:flex;flex-direction:column;gap:8px;">
-
-        <div class="fcm-info-row">
-          <div class="fcm-info-icon" style="
-            background:rgba(201,168,76,0.1);
-            border:1px solid rgba(201,168,76,0.2);color:#c9a84c;">
-            <i class="fas fa-shopping-basket"></i>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:9px;letter-spacing:2px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;">
-              TOPLAM ÜRÜN
-            </div>
-            <div id="fcmItemCount" style="font-size:clamp(13px,3.5vw,15px);
-                 font-weight:900;color:#fff;margin-top:1px;"></div>
-          </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);
+               letter-spacing:1.5px;text-transform:uppercase;">TOPLAM TUTAR</div>
           <div id="fcmTotal" style="
-            font-size:clamp(14px,3.5vw,16px);font-weight:900;
+            font-size:18px;font-weight:900;
             background:linear-gradient(135deg,#c9a84c,#f0d080);
             -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-            background-clip:text;white-space:nowrap;
+            background-clip:text;
           "></div>
         </div>
-
-        <div class="fcm-info-row">
-          <div class="fcm-info-icon" style="
-            background:rgba(239,68,68,0.1);
-            border:1px solid rgba(239,68,68,0.2);color:#ef4444;">
-            <i class="fas fa-boxes"></i>
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:9px;letter-spacing:2px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;">
-              STOK DURUMU
-            </div>
-            <div style="font-size:clamp(11px,3vw,12px);font-weight:700;
-                 color:#fbbf24;margin-top:1px;">
-              İndirme sonrası stoktan düşülür
-            </div>
-          </div>
-          <i class="fas fa-arrow-right"
-             style="color:rgba(255,255,255,0.15);font-size:12px;"></i>
-        </div>
-
-        <div class="fcm-info-row">
-          <div class="fcm-info-icon" style="
-            background:rgba(74,222,128,0.1);
-            border:1px solid rgba(74,222,128,0.2);color:#4ade80;">
-            <i class="fas fa-file-download"></i>
-          </div>
-          <div style="flex:1;">
-            <div style="font-size:9px;letter-spacing:2px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;">
-              FORMAT SEÇİMİ
-            </div>
-            <div style="font-size:clamp(11px,3vw,12px);font-weight:700;
-                 color:#4ade80;margin-top:1px;">
-              Excel veya PDF — Sonraki adımda seçin
-            </div>
-          </div>
-        </div>
-
       </div>
 
-      <!-- ★ مربع التأكيد النهائي ★ -->
-      <div class="fcm-check-wrap" id="fcmCheckWrap"
-           onclick="toggleFcmCheck()">
-        <div class="fcm-checkbox-visual" id="fcmCheckVisual">
-          <i class="fas fa-check fcm-check-i" id="fcmCheckI"></i>
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:clamp(12px,3vw,13px);font-weight:700;
-               color:#fff;margin-bottom:5px;letter-spacing:0.3px;">
-            Tüm koşulları okudum ve onaylıyorum
-          </div>
-          <div style="font-size:clamp(9px,2.5vw,10px);
-               color:rgba(255,255,255,0.3);line-height:1.7;letter-spacing:0.3px;">
-            Siparişin geri alınamayacağını, stoktan düşüleceğini
-            ve dosyanın indirileceğini
-            <span style="color:rgba(251,191,36,0.7);font-weight:700;">
-              kabul ediyorum.
-            </span>
-          </div>
+      <!-- تحذير -->
+      <div style="
+        background:rgba(251,191,36,0.07);
+        border:1px solid rgba(251,191,36,0.2);
+        border-radius:12px;padding:12px 14px;
+        display:flex;gap:10px;align-items:flex-start;
+      ">
+        <i class="fas fa-exclamation-triangle" style="color:#fbbf24;font-size:14px;margin-top:1px;flex-shrink:0;"></i>
+        <div style="font-size:11px;color:rgba(255,255,255,0.45);line-height:1.7;letter-spacing:0.3px;">
+          Siparişiniz onaylandıktan sonra stoktan düşülecektir.
+          İndirme işleminden sonra sipariş <strong style="color:#fbbf24;">iptal edilemez.</strong>
         </div>
       </div>
+
+      <!-- ★ مربع الموافقة ★ -->
+      <label id="fcmCheckLabel" style="
+        display:flex;align-items:flex-start;gap:13px;
+        background:rgba(201,168,76,0.04);
+        border:1.5px solid rgba(201,168,76,0.15);
+        border-radius:14px;padding:14px 15px;
+        cursor:pointer;transition:all 0.3s ease;
+        user-select:none;-webkit-user-select:none;
+      "
+      onmouseover="this.style.background='rgba(201,168,76,0.08)';this.style.borderColor='rgba(201,168,76,0.35)';"
+      onmouseout="if(!document.getElementById('fcmCheckbox').checked){this.style.background='rgba(201,168,76,0.04)';this.style.borderColor='rgba(201,168,76,0.15)';}">
+
+        <!-- مربع الاختيار المخصص -->
+        <div style="position:relative;flex-shrink:0;margin-top:1px;">
+          <input type="checkbox" id="fcmCheckbox"
+                 onchange="onFcmCheckChange()"
+                 style="
+                   appearance:none;-webkit-appearance:none;
+                   width:22px;height:22px;
+                   background:rgba(255,255,255,0.05);
+                   border:2px solid rgba(201,168,76,0.3);
+                   border-radius:6px;cursor:pointer;
+                   position:relative;transition:all 0.25s;
+                   display:block;
+                 "/>
+          <i class="fas fa-check" id="fcmCheckIcon" style="
+            position:absolute;top:50%;left:50%;
+            transform:translate(-50%,-50%) scale(0);
+            color:#0a0a0a;font-size:11px;
+            pointer-events:none;
+            transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+          "></i>
+        </div>
+
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:#fff;
+               letter-spacing:0.5px;margin-bottom:4px;">
+            Okudum ve Onaylıyorum
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);
+               letter-spacing:0.5px;line-height:1.6;">
+            Sipariş bilgilerini kontrol ettim, stoktan düşüleceğini
+            ve indirme sonrası <span style="color:rgba(251,191,36,0.7);">
+            iptal edilemeyeceğini</span> kabul ediyorum.
+          </div>
+        </div>
+      </label>
 
     </div>
 
     <!-- أزرار الإجراء -->
-    <div style="
-      padding:12px 16px 16px;
-      display:flex;gap:10px;
-      position:sticky;bottom:0;
-      background:linear-gradient(to top,#0a0a0a 80%,transparent);
-      padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
-    ">
+    <div style="padding:16px 20px 20px;display:flex;gap:10px;">
 
       <!-- زر الإلغاء -->
-      <button onclick="closeFinalConfirmModal()" class="fcm-action-btn" style="
-        flex:0 0 auto;width:52px;padding:16px 0;
+      <button onclick="closeFinalConfirmModal()" style="
+        flex:1;padding:13px;border-radius:12px;
+        border:1px solid rgba(255,100,100,0.2);
         background:rgba(255,100,100,0.07);
-        border:1px solid rgba(255,100,100,0.2) !important;
-        color:#ff9999;border-radius:14px;
-      ">
-        <i class="fas fa-times" style="font-size:16px;"></i>
+        color:#ff9999;font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1.5px;
+        cursor:pointer;transition:all 0.25s;
+        display:flex;align-items:center;justify-content:center;gap:7px;
+      "
+      onmouseover="this.style.background='rgba(255,100,100,0.14)';"
+      onmouseout="this.style.background='rgba(255,100,100,0.07)';">
+        <i class="fas fa-times"></i> İPTAL
       </button>
 
       <!-- زر Excel -->
-      <button id="fcmExcelBtn" onclick="fcmDownloadExcel()"
-              class="fcm-action-btn" disabled style="
+      <button id="fcmExcelBtn" onclick="fcmDownloadExcel()" disabled style="
+        flex:2;padding:13px;border-radius:12px;border:none;
         background:rgba(255,255,255,0.05);
         color:rgba(255,255,255,0.2);
-        border:1px solid transparent;
+        font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:900;letter-spacing:1px;
+        cursor:not-allowed;transition:all 0.35s ease;
+        display:flex;align-items:center;justify-content:center;gap:8px;
       ">
         <i class="fas fa-file-excel" style="font-size:16px;"></i>
-        EXCEL
+        EXCEL İNDİR
       </button>
 
       <!-- زر PDF -->
-      <button id="fcmPdfBtn" onclick="fcmDownloadPdf()"
-              class="fcm-action-btn" disabled style="
+      <button id="fcmPdfBtn" onclick="fcmDownloadPdf()" disabled style="
+        flex:2;padding:13px;border-radius:12px;border:none;
         background:rgba(255,255,255,0.05);
         color:rgba(255,255,255,0.2);
-        border:1px solid transparent;
+        font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:900;letter-spacing:1px;
+        cursor:not-allowed;transition:all 0.35s ease;
+        display:flex;align-items:center;justify-content:center;gap:8px;
       ">
         <i class="fas fa-file-pdf" style="font-size:16px;"></i>
-        PDF
+        PDF İNDİR
       </button>
 
     </div>
 
+    <!-- خط ذهبي سفلي -->
+    <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
   </div>
 </div>
-
 
 
 
@@ -3836,15 +3686,15 @@ function clearOrderCart() {
   updateOrderBar();
 }
 
-/* ── فتح نافذة التأكيد ── */
 function openOrderConfirmModal() {
   const selected = images.filter(img => (orderCart[img.id] || 0) > 0);
   if (!selected.length) return;
 
-  /* بناء قائمة العناصر */
+  /* ── قائمة المنتجات ── */
   document.getElementById('ocmItemsList').innerHTML = selected.map(img => `
     <div class="ocm-item">
-      <img class="ocm-item-img" src="${img.src}" alt="${img.title}" draggable="false"
+      <img class="ocm-item-img" src="${img.src}" alt="${img.title}"
+           draggable="false"
            onerror="this.src='https://placehold.co/52x40/1a1a1a/c9a84c?text=W'"/>
       <div style="flex:1;min-width:0;">
         <div class="ocm-item-name">${img.title}</div>
@@ -3853,7 +3703,7 @@ function openOrderConfirmModal() {
       <div class="ocm-item-qty">× ${orderCart[img.id]}</div>
     </div>`).join('');
 
-  /* معاينة الملاحظة */
+  /* ── ملاحظة ── */
   const note    = (document.getElementById('orderNoteInput')?.value || '').trim();
   const noteDiv = document.getElementById('ocmNotePreview');
   const noteTxt = document.getElementById('ocmNoteText');
@@ -3864,12 +3714,46 @@ function openOrderConfirmModal() {
     noteDiv.classList.remove('has-note');
   }
 
+  /* ── ملخص الإجمالي ── */
+  let totalItems = 0, totalPrice = 0, hasPrice = false;
+  selected.forEach(img => {
+    const qty = orderCart[img.id] || 0;
+    totalItems += qty;
+    if (img.price) { totalPrice += img.price * qty; hasPrice = true; }
+  });
+  const countEl = document.getElementById('ocmSummaryCount');
+  const totalEl = document.getElementById('ocmSummaryTotal');
+  if (countEl) countEl.textContent = totalItems + ' Ürün';
+  if (totalEl) totalEl.textContent = hasPrice
+    ? Number(totalPrice).toLocaleString('tr-TR') + ' ₺'
+    : 'Fiyat için arayın';
+
+  /* ── إعادة ضبط مربع الاختيار ── */
+  const cb = document.getElementById('ocmCheckbox');
+  if (cb) {
+    cb.checked             = false;
+    cb.style.background    = 'rgba(255,255,255,0.05)';
+    cb.style.borderColor   = 'rgba(201,168,76,0.3)';
+  }
+  const icon = document.getElementById('ocmCheckIcon');
+  if (icon) icon.style.transform = 'translate(-50%,-50%) scale(0)';
+
+  const label = document.getElementById('ocmCheckLabel');
+  if (label) {
+    label.style.background  = 'rgba(201,168,76,0.04)';
+    label.style.borderColor = 'rgba(201,168,76,0.15)';
+  }
+
+  /* ── تعطيل الأزرار ── */
+  setOcmBtnsState(false);
+
+  /* ── إظهار النافذة ── */
   document.getElementById('orderConfirmModal').classList.add('active');
   document.body.style.overflow = 'hidden';
- /* ✅ أضف هذا السطر */
   appState = 'orderConfirm';
   pushState('orderConfirm');
 }
+
 
 
 /* ── إغلاق نافذة التأكيد ── */
@@ -5712,10 +5596,8 @@ buildOrderCard = function(img, idx) {
 
 
 /* ============================================================
-   ★ نافذة التأكيد النهائي — النسخة المطورة ★
+   ★ نافذة التأكيد النهائي — Final Confirm Modal ★
 ============================================================ */
-
-let _fcmChecked = false;
 
 /* ── فتح النافذة ── */
 function openFinalConfirmModal() {
@@ -5732,75 +5614,48 @@ function openFinalConfirmModal() {
     }
   });
 
+  /* تحديث الأرقام */
   const countEl = document.getElementById('fcmItemCount');
   const totalEl = document.getElementById('fcmTotal');
   if (countEl) countEl.textContent = totalItems + ' Ürün';
   if (totalEl) totalEl.textContent = hasPrice
     ? Number(totalPrice).toLocaleString('tr-TR') + ' ₺'
-    : '—';
+    : 'Fiyat için arayın';
 
-  /* إعادة ضبط */
-  _fcmChecked = false;
-  resetFcmCheck();
+  /* إعادة ضبط مربع الاختيار */
+  const cb = document.getElementById('fcmCheckbox');
+  if (cb) {
+    cb.checked = false;
+    cb.style.background    = 'rgba(255,255,255,0.05)';
+    cb.style.borderColor   = 'rgba(201,168,76,0.3)';
+  }
+  const icon = document.getElementById('fcmCheckIcon');
+  if (icon) icon.style.transform = 'translate(-50%,-50%) scale(0)';
+
+  const label = document.getElementById('fcmCheckLabel');
+  if (label) {
+    label.style.background   = 'rgba(201,168,76,0.04)';
+    label.style.borderColor  = 'rgba(201,168,76,0.15)';
+  }
+
+  /* تعطيل الأزرار */
   setFcmBtnsState(false);
 
-  /* إظهار */
+  /* إظهار النافذة */
   const modal = document.getElementById('finalConfirmModal');
   modal.style.display = 'flex';
   document.body.style.overflow = 'hidden';
 }
 
-/* ── إغلاق ── */
+/* ── إغلاق النافذة ── */
 function closeFinalConfirmModal() {
-  const modal = document.getElementById('finalConfirmModal');
-  const box   = document.getElementById('fcmBox');
+  document.getElementById('finalConfirmModal').style.display = 'none';
+  document.body.style.overflow = '';
 
-  /* أنيميشن الإغلاق */
-  if (box) {
-    box.style.transition  = 'transform 0.3s ease, opacity 0.3s ease';
-    box.style.transform   = 'translateY(60px)';
-    box.style.opacity     = '0';
-  }
-
-  setTimeout(() => {
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
-    if (box) {
-      box.style.transition = '';
-      box.style.transform  = '';
-      box.style.opacity    = '';
-    }
-    _fcmChecked = false;
-    resetFcmCheck();
-    setFcmBtnsState(false);
-  }, 280);
-}
-
-/* ── إعادة ضبط مربع الاختيار ── */
-function resetFcmCheck() {
-  const visual = document.getElementById('fcmCheckVisual');
-  const wrap   = document.getElementById('fcmCheckWrap');
-
-  if (visual) visual.className = 'fcm-checkbox-visual';
-  if (wrap)   wrap.className   = 'fcm-check-wrap';
-}
-
-/* ── تبديل مربع الاختيار ── */
-function toggleFcmCheck() {
-  _fcmChecked = !_fcmChecked;
-
-  const visual = document.getElementById('fcmCheckVisual');
-  const wrap   = document.getElementById('fcmCheckWrap');
-
-  if (_fcmChecked) {
-    if (visual) visual.className = 'fcm-checkbox-visual checked';
-    if (wrap)   wrap.className   = 'fcm-check-wrap checked';
-    setFcmBtnsState(true);
-  } else {
-    if (visual) visual.className = 'fcm-checkbox-visual';
-    if (wrap)   wrap.className   = 'fcm-check-wrap';
-    setFcmBtnsState(false);
-  }
+  /* إعادة ضبط مربع الاختيار */
+  const cb = document.getElementById('fcmCheckbox');
+  if (cb) cb.checked = false;
+  setFcmBtnsState(false);
 }
 
 /* ── تفعيل/تعطيل الأزرار ── */
@@ -5809,66 +5664,79 @@ function setFcmBtnsState(enabled) {
   const pdfBtn   = document.getElementById('fcmPdfBtn');
 
   if (enabled) {
+    /* ✅ مفعّل — ذهبي للـ Excel، أحمر للـ PDF */
     if (excelBtn) {
-      excelBtn.disabled = false;
-      excelBtn.style.cssText = `
-        flex:1;padding:clamp(13px,3vw,16px);border-radius:14px;border:none;
-        font-family:'Montserrat',sans-serif;
-        font-size:clamp(10px,2.5vw,12px);font-weight:900;letter-spacing:1.5px;
-        cursor:pointer;transition:all 0.3s ease;
-        display:flex;align-items:center;justify-content:center;gap:8px;
-        background:linear-gradient(135deg,rgba(18,60,35,0.95),rgba(22,70,40,0.95));
-        color:#4ade80;
-        border:1px solid rgba(74,222,128,0.3) !important;
-        box-shadow:0 6px 20px rgba(74,222,128,0.12);
-        animation:fcmBtnReady 0.4s ease;
-      `;
+      excelBtn.disabled          = false;
+      excelBtn.style.background  =
+        'linear-gradient(135deg,rgba(29,111,66,0.9),rgba(22,80,45,0.9))';
+      excelBtn.style.color       = '#4ade80';
+      excelBtn.style.cursor      = 'pointer';
+      excelBtn.style.borderColor = 'rgba(74,222,128,0.3)';
+      excelBtn.style.border      = '1px solid rgba(74,222,128,0.3)';
     }
     if (pdfBtn) {
-      pdfBtn.disabled = false;
-      pdfBtn.style.cssText = `
-        flex:1;padding:clamp(13px,3vw,16px);border-radius:14px;border:none;
-        font-family:'Montserrat',sans-serif;
-        font-size:clamp(10px,2.5vw,12px);font-weight:900;letter-spacing:1.5px;
-        cursor:pointer;transition:all 0.3s ease;
-        display:flex;align-items:center;justify-content:center;gap:8px;
-        background:linear-gradient(135deg,rgba(120,20,20,0.95),rgba(160,25,25,0.95));
-        color:#ff8a80;
-        border:1px solid rgba(239,68,68,0.35) !important;
-        box-shadow:0 6px 20px rgba(239,68,68,0.1);
-        animation:fcmBtnReady 0.4s ease 0.08s;
-      `;
+      pdfBtn.disabled          = false;
+      pdfBtn.style.background  =
+        'linear-gradient(135deg,rgba(180,30,30,0.9),rgba(140,20,20,0.9))';
+      pdfBtn.style.color       = '#ff8a80';
+      pdfBtn.style.cursor      = 'pointer';
+      pdfBtn.style.border      = '1px solid rgba(239,68,68,0.35)';
     }
   } else {
+    /* ❌ معطّل — رمادي */
     [excelBtn, pdfBtn].forEach(btn => {
       if (!btn) return;
-      btn.disabled = true;
-      btn.style.cssText = `
-        flex:1;padding:clamp(13px,3vw,16px);border-radius:14px;
-        font-family:'Montserrat',sans-serif;
-        font-size:clamp(10px,2.5vw,12px);font-weight:900;letter-spacing:1.5px;
-        display:flex;align-items:center;justify-content:center;gap:8px;
-        background:rgba(255,255,255,0.05);
-        color:rgba(255,255,255,0.2);
-        cursor:not-allowed;border:none;
-        transition:all 0.3s ease;
-      `;
+      btn.disabled         = true;
+      btn.style.background = 'rgba(255,255,255,0.05)';
+      btn.style.color      = 'rgba(255,255,255,0.2)';
+      btn.style.cursor     = 'not-allowed';
+      btn.style.border     = 'none';
     });
   }
 }
 
-/* ── تنزيل Excel ── */
-function fcmDownloadExcel() {
-  if (!_fcmChecked) return;
-  closeFinalConfirmModal();
-  setTimeout(() => sendOrderViaWhatsApp(), 350);
+/* ── عند تغيير مربع الاختيار ── */
+function onFcmCheckChange() {
+  const cb    = document.getElementById('fcmCheckbox');
+  const icon  = document.getElementById('fcmCheckIcon');
+  const label = document.getElementById('fcmCheckLabel');
+
+  if (cb.checked) {
+    /* ✅ تم التحديد */
+    cb.style.background  = 'linear-gradient(135deg,#c9a84c,#f0d080)';
+    cb.style.borderColor = '#c9a84c';
+    if (icon)  icon.style.transform = 'translate(-50%,-50%) scale(1)';
+    if (label) {
+      label.style.background  = 'rgba(201,168,76,0.1)';
+      label.style.borderColor = 'rgba(201,168,76,0.5)';
+    }
+    setFcmBtnsState(true);
+
+  } else {
+    /* ☐ تم الإلغاء */
+    cb.style.background  = 'rgba(255,255,255,0.05)';
+    cb.style.borderColor = 'rgba(201,168,76,0.3)';
+    if (icon)  icon.style.transform = 'translate(-50%,-50%) scale(0)';
+    if (label) {
+      label.style.background  = 'rgba(201,168,76,0.04)';
+      label.style.borderColor = 'rgba(201,168,76,0.15)';
+    }
+    setFcmBtnsState(false);
+  }
 }
 
-/* ── تنزيل PDF ── */
-function fcmDownloadPdf() {
-  if (!_fcmChecked) return;
+/* ── تنزيل Excel من النافذة ── */
+function fcmDownloadExcel() {
   closeFinalConfirmModal();
-  setTimeout(() => openOrderPdfModal(), 350);
+  /* استدعاء الدالة الأصلية */
+  sendOrderViaWhatsApp();
+}
+
+/* ── تنزيل PDF من النافذة ── */
+function fcmDownloadPdf() {
+  closeFinalConfirmModal();
+  /* استدعاء الدالة الأصلية */
+  openOrderPdfModal();
 }
 
 /* ── إغلاق بالضغط على الخلفية ── */
@@ -5877,57 +5745,53 @@ document.getElementById('finalConfirmModal')
     if (e.target === this) closeFinalConfirmModal();
   });
 
-/* ── Swipe لأسفل لإغلاق النافذة ── */
-(function(){
-  let startY = 0, dragging = false;
-  const getHandle = () =>
-    document.querySelector('#fcmBox .fcm-drag-handle-wrap');
 
-  document.addEventListener('touchstart', e => {
-    const h = getHandle();
-    if (h && h.contains(e.target)) {
-      startY   = e.touches[0].clientY;
-      dragging = true;
+
+
+
+
+
+/* ── تفعيل/تعطيل أزرار التنزيل ── */
+function setOcmBtnsState(enabled) {
+  const excelBtn = document.getElementById('ocmExcelBtn');
+  const pdfBtn   = document.getElementById('ocmPdfBtn');
+
+  if (enabled) {
+    if (excelBtn) {
+      excelBtn.disabled        = false;
+      excelBtn.style.background =
+        'linear-gradient(135deg,rgba(29,111,66,0.9),rgba(22,80,45,0.9))';
+      excelBtn.style.color      = '#4ade80';
+      excelBtn.style.cursor     = 'pointer';
+      excelBtn.style.border     = '1px solid rgba(74,222,128,0.3)';
     }
-  }, { passive:true });
-
-  document.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    const box  = document.getElementById('fcmBox');
-    const diff = e.touches[0].clientY - startY;
-    if (diff > 0 && box) {
-      box.style.transform  = `translateY(${diff}px)`;
-      box.style.transition = 'none';
+    if (pdfBtn) {
+      pdfBtn.disabled        = false;
+      pdfBtn.style.background =
+        'linear-gradient(135deg,rgba(180,30,30,0.9),rgba(140,20,20,0.9))';
+      pdfBtn.style.color      = '#ff8a80';
+      pdfBtn.style.cursor     = 'pointer';
+      pdfBtn.style.border     = '1px solid rgba(239,68,68,0.35)';
     }
-  }, { passive:true });
+  } else {
+    [excelBtn, pdfBtn].forEach(btn => {
+      if (!btn) return;
+      btn.disabled         = true;
+      btn.style.background = 'rgba(255,255,255,0.04)';
+      btn.style.color      = 'rgba(255,255,255,0.2)';
+      btn.style.cursor     = 'not-allowed';
+      btn.style.border     = '1px solid rgba(255,255,255,0.06)';
+    });
+  }
+}
 
-  document.addEventListener('touchend', e => {
-    if (!dragging) return;
-    dragging = false;
-    const box  = document.getElementById('fcmBox');
-    const diff = e.changedTouches[0].clientY - startY;
-    if (box) box.style.transition = '';
-    if (diff > 100) {
-      if (box) box.style.transform = 'translateY(100%)';
-      setTimeout(() => {
-        if (box) box.style.transform = '';
-        closeFinalConfirmModal();
-      }, 300);
-    } else {
-      if (box) box.style.transform = '';
-    }
-  }, { passive:true });
-})();
-
-/* ── تغيير مربع الاختيار في نافذة التأكيد الأولى ── */
+/* ── عند تغيير مربع الاختيار ── */
 function onOcmCheckChange() {
-  const cb      = document.getElementById('ocmCheckbox');
-  const icon    = document.getElementById('ocmCheckIcon');
-  const label   = document.getElementById('ocmCheckLabel');
-  const procBtn = document.getElementById('ocmProceedBtn');
+  const cb    = document.getElementById('ocmCheckbox');
+  const icon  = document.getElementById('ocmCheckIcon');
+  const label = document.getElementById('ocmCheckLabel');
 
   if (cb.checked) {
-    /* ✅ تم التحديد — تفعيل زر DEVAM ET */
     cb.style.background  = 'linear-gradient(135deg,#c9a84c,#f0d080)';
     cb.style.borderColor = '#c9a84c';
     if (icon)  icon.style.transform = 'translate(-50%,-50%) scale(1)';
@@ -5935,18 +5799,8 @@ function onOcmCheckChange() {
       label.style.background  = 'rgba(201,168,76,0.1)';
       label.style.borderColor = 'rgba(201,168,76,0.5)';
     }
-    if (procBtn) {
-      procBtn.disabled         = false;
-      procBtn.style.background =
-        'linear-gradient(135deg,#c9a84c,#f0d080)';
-      procBtn.style.color      = '#0a0a0a';
-      procBtn.style.cursor     = 'pointer';
-      procBtn.style.boxShadow  =
-        '0 8px 24px rgba(201,168,76,0.35)';
-    }
-
+    setOcmBtnsState(true);
   } else {
-    /* ☐ تم الإلغاء — تعطيل الزر */
     cb.style.background  = 'rgba(255,255,255,0.05)';
     cb.style.borderColor = 'rgba(201,168,76,0.3)';
     if (icon)  icon.style.transform = 'translate(-50%,-50%) scale(0)';
@@ -5954,47 +5808,21 @@ function onOcmCheckChange() {
       label.style.background  = 'rgba(201,168,76,0.04)';
       label.style.borderColor = 'rgba(201,168,76,0.15)';
     }
-    if (procBtn) {
-      procBtn.disabled         = true;
-      procBtn.style.background = 'rgba(255,255,255,0.05)';
-      procBtn.style.color      = 'rgba(255,255,255,0.2)';
-      procBtn.style.cursor     = 'not-allowed';
-      procBtn.style.boxShadow  = 'none';
-    }
+    setOcmBtnsState(false);
   }
 }
 
-/* ── إعادة ضبط مربع الاختيار عند إغلاق النافذة ── */
-const _origCloseOrderConfirmModal = closeOrderConfirmModal;
-closeOrderConfirmModal = function() {
-  /* إعادة ضبط الـ checkbox */
-  const cb = document.getElementById('ocmCheckbox');
-  if (cb) {
-    cb.checked           = false;
-    cb.style.background  = 'rgba(255,255,255,0.05)';
-    cb.style.borderColor = 'rgba(201,168,76,0.3)';
-  }
-  const icon = document.getElementById('ocmCheckIcon');
-  if (icon) icon.style.transform = 'translate(-50%,-50%) scale(0)';
+/* ── تنزيل Excel ── */
+function ocmDownloadExcel() {
+  closeOrderConfirmModal();
+  sendOrderViaWhatsApp();
+}
 
-  const label = document.getElementById('ocmCheckLabel');
-  if (label) {
-    label.style.background  = 'rgba(201,168,76,0.04)';
-    label.style.borderColor = 'rgba(201,168,76,0.15)';
-  }
-  const procBtn = document.getElementById('ocmProceedBtn');
-  if (procBtn) {
-    procBtn.disabled         = true;
-    procBtn.style.background = 'rgba(255,255,255,0.05)';
-    procBtn.style.color      = 'rgba(255,255,255,0.2)';
-    procBtn.style.cursor     = 'not-allowed';
-    procBtn.style.boxShadow  = 'none';
-  }
-  _origCloseOrderConfirmModal();
-};
-
-
-
+/* ── تنزيل PDF ── */
+function ocmDownloadPdf() {
+  closeOrderConfirmModal();
+  openOrderPdfModal();
+}
 
 
 
