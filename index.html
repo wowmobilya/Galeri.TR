@@ -4733,17 +4733,27 @@ async function subscribeInventory() {
       { event: '*', schema: 'public', table: INV_TABLE },
       payload => {
         const row = payload.new || payload.old;
-        if (row && row.id !== undefined) {
-          const id    = Number(row.id);
-          const stock = row.stock ?? 0;
-          inventoryData[id] = stock;
-          updateSingleStockBadge(id, stock);
-          /* تحديث نافذة التعديل إذا كانت مفتوحة */
-          const valEl = document.getElementById('invqty-' + id);
-          const dotEl = document.getElementById('invdot-' + id);
-          if (valEl) valEl.textContent = stock;
-          if (dotEl) dotEl.className = 'inv-status-dot ' + getStockStatus(stock).dotCls;
-        }
+        if (!row || row.id === undefined) return;
+
+        const id       = Number(row.id);
+        const newStock = Number(row.stock ?? 0);
+        const oldStock = inventoryData[id] ?? newStock;
+
+        /* 1. تحديث الذاكرة المحلية */
+        inventoryData[id] = newStock;
+
+        /* 2. تحديث شارة المخزون في الصفحة */
+        updateSingleStockBadge(id, newStock);
+
+        /* 3. تحديث نافذة إدارة المخزون إذا كانت مفتوحة */
+        const valEl = document.getElementById('invqty-' + id);
+        const dotEl = document.getElementById('invdot-' + id);
+        if (valEl) valEl.textContent = newStock;
+        if (dotEl) dotEl.className =
+          'inv-status-dot ' + getStockStatus(newStock).dotCls;
+
+        /* 4. ★ ضبط السلة إذا تجاوزت المخزون الجديد ★ */
+        syncCartWithStock(id, newStock, oldStock);
       }
     )
     .subscribe(status => {
@@ -4755,10 +4765,141 @@ async function subscribeInventory() {
         if (txt) txt.textContent = 'Canlı bağlantı';
       } else {
         if (dot) dot.className = 'inv-sync-dot syncing';
-        if (txt) txt.textContent = status === 'CHANNEL_ERROR' ? 'Bağlantı hatası' : 'Bağlanıyor...';
+        if (txt) txt.textContent =
+          status === 'CHANNEL_ERROR' ? 'Bağlantı hatası' : 'Bağlanıyor...';
       }
     });
 }
+
+
+/* ============================================================
+   ★ ضبط السلة عند تغيّر المخزون في الوقت الفعلي ★
+============================================================ */
+function syncCartWithStock(id, newStock, oldStock) {
+  const currentQty = orderCart[id] || 0;
+
+  /* لا يوجد شيء في السلة → تجاهل */
+  if (currentQty === 0) return;
+
+  /* المخزون كافٍ → لا تغيير */
+  if (currentQty <= newStock) return;
+
+  /* ★ المخزون أقل من الكمية في السلة → اضبط ★ */
+  const adjustedQty = Math.max(0, newStock);
+  orderCart[id]     = adjustedQty;
+  saveCartToStorage();
+
+  /* تحديث العرض في صفحة الطلبيات */
+  const valEl = document.getElementById('oqty-' + id);
+  const card  = document.getElementById('ocard-' + id);
+
+  if (valEl) {
+    valEl.style.transition = 'none';
+    valEl.style.color      = '#ef4444';
+    valEl.style.transform  = 'scale(1.4)';
+    valEl.textContent      = adjustedQty;
+    setTimeout(() => {
+      valEl.style.transition = 'all 0.4s ease';
+      valEl.style.color      = '';
+      valEl.style.transform  = '';
+    }, 600);
+  }
+
+  if (card) {
+    if (adjustedQty === 0) {
+      card.classList.remove('in-cart');
+      card.style.borderColor = 'rgba(239,68,68,0.6)';
+      card.style.boxShadow   =
+        '0 0 0 2px rgba(239,68,68,0.4), 0 10px 34px rgba(239,68,68,0.15)';
+      setTimeout(() => {
+        card.style.borderColor = '';
+        card.style.boxShadow   = '';
+      }, 1800);
+    } else {
+      card.style.borderColor = 'rgba(251,191,36,0.7)';
+      card.style.boxShadow   =
+        '0 0 0 2px rgba(251,191,36,0.4), 0 10px 34px rgba(251,191,36,0.15)';
+      setTimeout(() => {
+        card.style.borderColor = '';
+        card.style.boxShadow   = '';
+      }, 1800);
+    }
+  }
+
+  /* تحديث شريط الطلب */
+  updateOrderBar();
+
+  /* ★ Toast إشعار للمستخدم ★ */
+  const img  = images.find(i => i.id === id);
+  const name = img ? img.title : `#${id}`;
+
+  if (adjustedQty === 0) {
+    showCartSyncToast(
+      `<i class="fas fa-times-circle" style="color:#ef4444;"></i>`,
+      `<b style="color:#fff;">${name}</b> stok tükendi — sepetten kaldırıldı`,
+      'error'
+    );
+  } else {
+    showCartSyncToast(
+      `<i class="fas fa-exclamation-triangle" style="color:#fbbf24;"></i>`,
+      `<b style="color:#fff;">${name}</b> miktarı güncellendi: ` +
+      `<span style="color:#ef4444;text-decoration:line-through;">${currentQty}</span>` +
+      ` → <span style="color:#4ade80;">${adjustedQty}</span>`,
+      'warning'
+    );
+  }
+}
+
+
+/* ── Toast تزامن السلة ── */
+let _cartSyncToastTimer = null;
+
+function showCartSyncToast(iconHtml, msgHtml, type) {
+  let t = document.getElementById('cartSyncToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'cartSyncToast';
+    t.style.cssText = `
+      position:fixed;
+      bottom:90px;
+      left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:rgba(10,10,10,0.97);
+      font-family:'Montserrat',sans-serif;
+      font-size:12px;font-weight:600;
+      letter-spacing:0.5px;
+      padding:13px 20px;
+      border-radius:14px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.6);
+      backdrop-filter:blur(20px);
+      z-index:9998;
+      display:flex;align-items:center;gap:10px;
+      opacity:0;
+      transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events:none;
+      max-width:90vw;
+      line-height:1.5;
+    `;
+    document.body.appendChild(t);
+  }
+
+  t.style.border = `1px solid ${
+    type === 'error' ? 'rgba(239,68,68,0.45)' : 'rgba(251,191,36,0.45)'
+  }`;
+  t.innerHTML = `${iconHtml}<span>${msgHtml}</span>`;
+
+  requestAnimationFrame(() => {
+    t.style.opacity   = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+  });
+
+  clearTimeout(_cartSyncToastTimer);
+  _cartSyncToastTimer = setTimeout(() => {
+    t.style.opacity   = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 4000);
+}
+
 
 /* ── حالة المخزون ── */
 function getStockStatus(stock) {
@@ -4811,6 +4952,7 @@ function refreshStockBadges() {
     if (stock !== undefined) updateSingleStockBadge(img.id, stock);
   });
 }
+
 
 /* ============================================================
    نافذة إدارة المخزون
