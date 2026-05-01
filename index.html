@@ -2457,6 +2457,8 @@ function togglePassVisibility(){
    المستخدمون + المتغيرات
 ============================================================ */
 const USERS={"EYMENSEEV":"EYMENSEEV","BEYAZIT":"BEYAZIT","WOW2026":"1010","WOW":"WOW"};
+let currentUsername = '';
+
 let currentPage='orta',currentView='grid-3',selectedIds=new Set(),currentLbIdx=0,filteredImages=[],audioPlaying=false,selectMode=false;
 const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRESUAR',orders:'WOW MOBILYA SIPARIS'};
 
@@ -2484,6 +2486,8 @@ function doLogin(){
   const remember=document.getElementById('rememberMe').checked;
   const err=document.getElementById('loginError');
   if(USERS[user]&&USERS[user]===pass){
+    currentUsername = user;  // ★ أضف هذا السطر فقط
+
     if(remember)saveCredentials(user,pass);else clearSavedCredentials();
     const ov=document.getElementById('loginOverlay');
     ov.style.transition='opacity 0.7s';ov.style.opacity='0';
@@ -4165,13 +4169,18 @@ async function sendOrderViaWhatsApp() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-    setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
-    setTimeout(() => {
-      setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
-      closeOrderConfirmModal();
-      clearOrderCart();
-      showOrderSuccessToast(orderNum);
-    }, 2000);
+  setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
+
+// ★ حفظ الطلب في Supabase
+await saveOrderToSupabase(orderNum, selected, note);
+
+setTimeout(() => {
+  setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
+  closeOrderConfirmModal();
+  clearOrderCart();
+  showOrderSuccessToast(orderNum);
+}, 2000);
+
 
   } catch(excelErr) {
     /* ★ هذا هو المكان الذي كان يتعطل فيه بصمت ★ */
@@ -4379,7 +4388,9 @@ async function downloadOrderPdf() {
     }
 
     pdf.save(`WOW_Siparis_${_pdfOrderNum}.pdf`);
-// ← أضف هذا الكود
+// ★ حفظ الطلب في Supabase
+await saveOrderToSupabase(_pdfOrderNum, _pdfSelected, _pdfNote);
+
 setTimeout(() => {
   closeOrderPdfModal();
   clearOrderCart();
@@ -4799,6 +4810,60 @@ function showOrderSuccessToast(orderNum) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ حفظ الطلبية في Supabase مع اسم المستخدم ★
+============================================================ */
+async function saveOrderToSupabase(orderNum, selected, note) {
+  const sb = await initSupabase();
+  if (!sb) {
+    console.warn('[Orders] Supabase غير متاح');
+    return;
+  }
+
+  try {
+    // بناء قائمة المنتجات
+    const items = selected.map(img => ({
+      id       : img.id,
+      title    : img.title,
+      catLabel : img.catLabel,
+      qty      : orderCart[img.id] || 0,
+      price    : img.price || 0,
+    }));
+
+    // حساب الإجمالي
+    const totalPrice = items.reduce((sum, item) => {
+      return sum + (item.price * item.qty);
+    }, 0);
+
+    const { error } = await sb.from('orders').insert({
+      username    : currentUsername,
+      order_num   : orderNum,
+      items       : items,
+      note        : note || '',
+      total_price : totalPrice,
+    });
+
+    if (error) {
+      console.error('[Orders] حفظ فشل:', error.message);
+    } else {
+      console.log('[Orders] ✅ تم حفظ الطلب:', orderNum, 'للمستخدم:', currentUsername);
+    }
+
+  } catch(e) {
+    console.error('[Orders] exception:', e);
+  }
+}
 
 
 
