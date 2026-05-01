@@ -4219,13 +4219,20 @@ async function sendOrderViaWhatsApp() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-    setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
-    setTimeout(() => {
+  setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
+    setTimeout(async () => {
       setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
+      
+      /* ★ احفظ الطلبية قبل تفريغ السلة */
+      const selectedForSave = images.filter(img => (orderCart[img.id]||0) > 0);
+      const noteForSave     = document.getElementById('orderNoteInput')?.value || '';
+      await saveOrderToSupabase(orderNum, selectedForSave, noteForSave);
+      
       closeOrderConfirmModal();
       clearOrderCart();
       showOrderSuccessToast(orderNum);
     }, 2000);
+
 
   } catch(excelErr) {
     /* ★ هذا هو المكان الذي كان يتعطل فيه بصمت ★ */
@@ -4433,8 +4440,12 @@ async function downloadOrderPdf() {
     }
 
     pdf.save(`WOW_Siparis_${_pdfOrderNum}.pdf`);
-// ← أضف هذا الكود
-setTimeout(() => {
+setTimeout(async () => {
+  /* ★ احفظ الطلبية قبل تفريغ السلة */
+  const selectedForSave = images.filter(img => (orderCart[img.id]||0) > 0);
+  const noteForSave     = document.getElementById('orderNoteInput')?.value || '';
+  await saveOrderToSupabase(_pdfOrderNum, selectedForSave, noteForSave);
+  
   closeOrderPdfModal();
   clearOrderCart();
   showOrderSuccessToast(_pdfOrderNum);
@@ -5884,355 +5895,130 @@ function ocmDownloadPdf() {
 
 
 
-
-
 /* ============================================================
-   ★ نظام الطلبيات — النسخة المُصحَّحة الكاملة ★
+   ★ نظام الطلبيات الكامل — حفظ + لوحة إدارة + متابعة ★
 ============================================================ */
 
-/* ── 1. المتغيرات الأساسية ── */
-let currentUser  = '';
-const ADMIN_USER = 'WOW';
-
+/* ── حالات الطلبية ── */
 const ORDER_STATUSES = {
-  pending:       {
-    label:'Beklemede',
-    color:'#fbbf24',
-    bg:'rgba(251,191,36,0.12)',
-    border:'rgba(251,191,36,0.3)',
-    icon:'fa-clock'
-  },
-  manufacturing: {
-    label:'Üretimde',
-    color:'#60a5fa',
-    bg:'rgba(96,165,250,0.12)',
-    border:'rgba(96,165,250,0.3)',
-    icon:'fa-industry'
-  },
-  ready:         {
-    label:'Teslime Hazır',
-    color:'#4ade80',
-    bg:'rgba(74,222,128,0.12)',
-    border:'rgba(74,222,128,0.3)',
-    icon:'fa-check-circle'
-  },
-  cancelled:     {
-    label:'İptal Edildi',
-    color:'#ef4444',
-    bg:'rgba(239,68,68,0.12)',
-    border:'rgba(239,68,68,0.3)',
-    icon:'fa-times-circle'
-  },
+  pending:       { label:'Beklemede',       color:'#fbbf24', bg:'rgba(251,191,36,0.12)',  border:'rgba(251,191,36,0.3)',  icon:'fa-clock'           },
+  manufacturing: { label:'Üretimde',        color:'#60a5fa', bg:'rgba(96,165,250,0.12)',  border:'rgba(96,165,250,0.3)',  icon:'fa-industry'        },
+  ready:         { label:'Teslime Hazır',   color:'#4ade80', bg:'rgba(74,222,128,0.12)',  border:'rgba(74,222,128,0.3)',  icon:'fa-check-circle'    },
+  cancelled:     { label:'İptal Edildi',    color:'#ef4444', bg:'rgba(239,68,68,0.12)',   border:'rgba(239,68,68,0.3)',   icon:'fa-times-circle'    },
 };
 
-/* ── 2. إصلاح doLogin — تعيين currentUser ── */
-/* ابحث عن دالة doLogin الأصلية وأضف هذا السطر */
-/* بعد: const pass = ... */
-/* currentUser = user;  */
-
-/* نعيد تعريف doLogin كاملاً */
-function doLogin(){
-  const user = document.getElementById('loginUser').value.trim();
-  const pass = document.getElementById('loginPass').value.trim();
-  const remember = document.getElementById('rememberMe').checked;
-  const err = document.getElementById('loginError');
-
-  if(USERS[user] && USERS[user] === pass){
-    /* ★ تعيين المستخدم الحالي */
-    currentUser = user;
-
-    if(remember) saveCredentials(user,pass);
-    else clearSavedCredentials();
-
-    const ov = document.getElementById('loginOverlay');
-    ov.style.transition = 'opacity 0.7s';
-    ov.style.opacity    = '0';
-
-    setTimeout(()=>{
-      ov.style.display = 'none';
-      loadCartFromStorage();
-      updateCartReminder(
-        Object.values(orderCart).reduce((a,b)=>a+b,0)
-      );
-      showHomeScreen();
-      setTimeout(tryPlayAudio, 600);
-    }, 700);
-
-    err.style.display = 'none';
-  } else {
-    err.style.display = 'block';
-    err.style.animation = 'none';
-    void err.offsetWidth;
-    err.style.animation = 'shake 0.4s ease';
-  }
-}
-
-/* ── 3. حفظ الطلبية في Supabase ── */
-async function saveOrderToSupabase(orderNum, itemsSnapshot, note){
-  /* itemsSnapshot = نسخة من السلة قبل تفريغها */
+/* ── حفظ الطلبية في Supabase ── */
+async function saveOrderToSupabase(orderNum, items, note) {
   const sb = await initSupabase();
-  if(!sb){
+  if (!sb) {
     console.warn('[Orders] Supabase غير متاح');
     return null;
   }
 
-  const payload = {
-    username:     currentUser || 'unknown',
+  /* ★ تحقق من البيانات قبل الحفظ */
+  console.log('[Orders] جاري الحفظ:', {
+    user: currentUser,
+    orderNum,
+    itemsCount: items.length,
+    items: items.map(i => ({ id:i.id, title:i.title, qty:orderCart[i.id] }))
+  });
+
+  if (!currentUser) {
+    console.error('[Orders] currentUser فارغ!');
+    return null;
+  }
+
+  if (!items.length) {
+    console.error('[Orders] items فارغة!');
+    return null;
+  }
+
+  const orderData = {
+    username:     currentUser,
     order_number: orderNum,
-    items:        itemsSnapshot,
-    note:         note || '',
-    status:       'pending',
+    items:        items.map(img => ({
+      id:       img.id,
+      title:    img.title,
+      catLabel: img.catLabel,
+      qty:      orderCart[img.id] || 0,
+      price:    img.price || 0,
+      src:      img.src,
+    })),
+    note:   note || '',
+    status: 'pending',
   };
 
-  console.log('[Orders] جاري الحفظ...', payload);
-
-  try{
+  try {
     const { data, error } = await sb
       .from('orders')
-      .insert([payload])
+      .insert([orderData])
       .select()
       .single();
 
-    if(error){
-      console.error('[Orders] INSERT فشل:', error.message);
-      console.error('[Orders] hint:', error.hint);
-      console.error('[Orders] code:', error.code);
-      showInvToast('Sipariş kaydedilemedi: ' + error.message, 'error');
+    if (error) {
+      console.error('[Orders] حفظ فشل:', error.message, error.hint);
       return null;
     }
 
-    console.log('[Orders] ✅ محفوظ بنجاح:', data);
-    showInvToast('Sipariş kaydedildi ✓', 'success');
-
-    /* تحديث زر طلبيتي */
-    refreshMyOrderBtn();
+    console.log('[Orders] ✅ تم الحفظ بنجاح:', data.id, data.order_number);
+    updateMyOrderBtn();
     return data;
 
-  } catch(e){
+  } catch(e) {
     console.error('[Orders] exception:', e);
     return null;
   }
 }
 
-/* ── 4. Hook على Excel — يحفظ قبل تفريغ السلة ── */
-/* نعيد تعريف sendOrderViaWhatsApp مع الحفظ */
-const __origExcel = sendOrderViaWhatsApp;
-sendOrderViaWhatsApp = async function(){
-  /* ★ التقاط بيانات السلة الآن قبل أي تفريغ */
-  const snapshot = captureCartSnapshot();
-  const note     = document.getElementById('orderNoteInput')?.value || '';
-  const orderNum = 'WOW-' + Date.now().toString().slice(-6);
 
-  /* تشغيل الأصلي */
-  await __origExcel.call(this);
 
-  /* ★ الحفظ يحدث هنا بعد نجاح التنزيل */
-  if(snapshot.length > 0){
-    await saveOrderToSupabase(orderNum, snapshot, note);
-  }
-};
-
-/* ── 5. Hook على PDF — يحفظ قبل تفريغ السلة ── */
-const __origPdf = downloadOrderPdf;
-downloadOrderPdf = async function(){
-  /* ★ التقاط بيانات السلة الآن */
-  const snapshot = captureCartSnapshot();
-  const note     = document.getElementById('orderNoteInput')?.value || '';
-  const orderNum = 'WOW-' + Date.now().toString().slice(-6);
-
-  /* تشغيل الأصلي */
-  await __origPdf.call(this);
-
-  /* ★ الحفظ */
-  if(snapshot.length > 0){
-    await saveOrderToSupabase(orderNum, snapshot, note);
-  }
-};
-
-/* ── 6. دالة التقاط السلة (snapshot) ── */
-function captureCartSnapshot(){
-  return images
-    .filter(img => (orderCart[img.id] || 0) > 0)
-    .map(img => ({
-      id:       img.id,
-      title:    img.title,
-      catLabel: img.catLabel,
-      qty:      orderCart[img.id],
-      price:    img.price || 0,
-      src:      img.src,
-    }));
+/* ── تحديث nav link الإدارة ── */
+function updateAdminNavVisibility() {
+  const isAdmin = currentUser === ADMIN_USER;
+  ['nav-admin','mob-admin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? '' : 'none';
+  });
 }
 
-/* ── 7. زر "طلبيتي" ── */
-let _myOrderBtnAdded = false;
-
-function injectMyOrderBtn(){
-  if(_myOrderBtnAdded) return;
-  _myOrderBtnAdded = true;
-
-  /* ديسكتوب */
-  const navTools = document.querySelector('.nav-tools');
-  if(navTools && !document.getElementById('myOrderBtn')){
-    const btn = document.createElement('button');
-    btn.id        = 'myOrderBtn';
-    btn.className = 'nav-icon-btn';
-    btn.setAttribute('data-tip','Siparişlerim');
-    btn.style.cssText = 'display:none;position:relative;';
-    btn.innerHTML = `
-      <i class="fas fa-box-open"></i>
-      <span id="myOrderDot" style="
-        position:absolute;top:-4px;right:-4px;
-        width:9px;height:9px;border-radius:50%;
-        background:#fbbf24;
-        border:2px solid rgba(8,8,8,0.96);
-        display:none;"></span>`;
-    btn.onclick = ()=> showPage('myorders');
-    const sep = document.querySelector('.nav-sep');
-    if(sep) navTools.insertBefore(btn, sep);
-    else navTools.prepend(btn);
-  }
-
-  /* موبايل */
-  const mobInner = document.querySelector('.mobile-menu-inner');
-  if(mobInner && !document.getElementById('mobMyOrderBtn')){
-    const a = document.createElement('a');
-    a.id        = 'mobMyOrderBtn';
-    a.href      = '#';
-    a.style.display = 'none';
-    a.innerHTML = '<i class="fas fa-box-open"></i> SİPARİŞLERİM';
-    a.onclick   = e=>{
-      e.preventDefault();
-      showPage('myorders');
-      closeMobileMenu();
-    };
-    const firstDiv = mobInner.querySelector('.mob-divider');
-    if(firstDiv) mobInner.insertBefore(a, firstDiv.nextSibling);
-    else mobInner.appendChild(a);
-  }
-}
-
-async function refreshMyOrderBtn(){
-  if(currentUser === ADMIN_USER) return;
-
+/* ── زر "طلبيتي" في الهيدر ── */
+async function updateMyOrderBtn() {
+  if (currentUser === ADMIN_USER) return;
+  
   const sb = await initSupabase();
-  if(!sb) return;
+  if (!sb) return;
 
   const { data } = await sb
     .from('orders')
-    .select('id,status')
+    .select('id, status, order_number, created_at')
     .eq('username', currentUser)
-    .order('created_at',{ ascending:false })
+    .order('created_at', { ascending: false })
     .limit(1);
 
   const btn = document.getElementById('myOrderBtn');
   const dot = document.getElementById('myOrderDot');
-  const mob = document.getElementById('mobMyOrderBtn');
-
-  if(!data || !data.length){
-    if(btn) btn.style.display = 'none';
-    if(mob) mob.style.display = 'none';
+  
+  if (!data || !data.length) {
+    if (btn) btn.style.display = 'none';
     return;
   }
 
-  const st = ORDER_STATUSES[data[0].status] || ORDER_STATUSES.pending;
-
-  if(btn){
-    btn.style.display     = 'flex';
-    btn.style.borderColor = st.border;
-    btn.style.color       = st.color;
+  const last   = data[0];
+  const status = ORDER_STATUSES[last.status] || ORDER_STATUSES.pending;
+  
+  if (btn) {
+    btn.style.display = 'flex';
+    btn.style.borderColor = status.border;
+    btn.style.color       = status.color;
+    btn.title             = 'Siparişim: ' + status.label;
   }
-  if(dot){
-    dot.style.display    = 'block';
-    dot.style.background = st.color;
-  }
-  if(mob){
-    mob.style.display = 'flex';
-    mob.style.color   = st.color;
+  if (dot) {
+    dot.style.background = status.color;
   }
 }
 
-/* ── 8. إظهار عناصر الإدارة ── */
-function applyUserUI(){
-  const isAdmin = currentUser === ADMIN_USER;
-
-  /* nav admin */
-  ['nav-admin','mob-admin'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el) el.style.display = isAdmin ? '' : 'none';
-  });
-
-  /* بطاقة الهوم */
-  const adminCard = document.getElementById('homeAdminCard');
-  if(adminCard) adminCard.style.display = isAdmin ? 'block' : 'none';
-
-  /* زر طلبيتي */
-  if(!isAdmin){
-    injectMyOrderBtn();
-    refreshMyOrderBtn();
-  }
-}
-
-/* ── 9. Override showHomeScreen ── */
-const __origShowHome = showHomeScreen;
-showHomeScreen = function(){
-  __origShowHome.call(this);
-  setTimeout(applyUserUI, 100);
-};
-
-/* ── 10. Override enterSection ── */
-const __origEnter = enterSection;
-enterSection = function(cat){
-  if(cat === 'admin'){
-    if(currentUser !== ADMIN_USER) return;
-    const hs = document.getElementById('homeScreen');
-    hs.style.transition = 'opacity 0.4s ease';
-    hs.style.opacity    = '0';
-    setTimeout(()=>{
-      hs.style.display = 'none';
-      document.getElementById('mainSite').style.display = 'block';
-      applyUserUI();
-      showPage('admin');
-    }, 400);
-    return;
-  }
-  __origEnter.call(this, cat);
-  setTimeout(applyUserUI, 300);
-};
-
-/* ── 11. Override showPage ── */
-const __origShowPage = showPage;
-showPage = function(cat){
-  if(cat === 'admin'){
-    if(currentUser !== ADMIN_USER) return;
-    currentPage = 'admin';
-    document.querySelectorAll('.nav-link').forEach(a=>a.classList.remove('active'));
-    const el = document.getElementById('nav-admin');
-    if(el) el.classList.add('active');
-    filteredImages = [];
-    buildAdminPage();
-    window.scrollTo({top:0, behavior:'smooth'});
-    appState = 'section';
-    pushState('section',{cat:'admin'});
-    return;
-  }
-  if(cat === 'myorders'){
-    currentPage = 'myorders';
-    document.querySelectorAll('.nav-link').forEach(a=>a.classList.remove('active'));
-    filteredImages = [];
-    buildMyOrdersPage();
-    window.scrollTo({top:0, behavior:'smooth'});
-    appState = 'section';
-    pushState('section',{cat:'myorders'});
-    return;
-  }
-  __origShowPage.call(this, cat);
-};
-
-/* ── 12. صفحة الإدارة ── */
-let allAdminOrders      = [];
-let currentAdminFilter  = 'all';
-
-async function buildAdminPage(){
+/* ── بناء صفحة الإدارة (WOW فقط) ── */
+async function buildAdminPage() {
   document.getElementById('pageContent').innerHTML = `
     <div class="page-transition">
       <div class="section-banner">
@@ -6251,43 +6037,54 @@ async function buildAdminPage(){
           background:linear-gradient(135deg,#c9a84c,#f0d080);
           color:#0a0a0a;font-family:'Montserrat',sans-serif;
           font-size:11px;font-weight:900;letter-spacing:2px;
-          cursor:pointer;display:flex;align-items:center;gap:8px;">
+          cursor:pointer;display:flex;align-items:center;gap:8px;
+          transition:all 0.25s;">
           <i class="fas fa-sync-alt"></i> YENİLE
         </button>
       </div>
 
-      <!-- فلاتر -->
-      <div style="padding:12px 22px;background:var(--dark4);
-           border-bottom:1px solid rgba(255,255,255,0.04);
-           display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <!-- فلاتر الحالة -->
+      <div style="
+        padding:12px 22px;
+        background:var(--dark4);
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
         <span style="font-size:10px;letter-spacing:2px;
-              color:rgba(255,255,255,0.3);font-weight:600;">
-          FİLTRE:
-        </span>
-        <button class="adm-f active" onclick="filterAdmin('all',this)"
-                data-f="all">Tümü</button>
-        ${Object.entries(ORDER_STATUSES).map(([k,v])=>`
-          <button class="adm-f" onclick="filterAdmin('${k}',this)"
-                  data-f="${k}" style="--fc:${v.color};">
-            <i class="fas ${v.icon}"></i> ${v.label}
-          </button>`).join('')}
+              color:rgba(255,255,255,0.3);font-weight:600;">FİLTRE:</span>
+        <button class="admin-filter-btn active" 
+                data-filter="all" onclick="filterAdminOrders('all',this)">
+          Tümü
+        </button>
+        ${Object.entries(ORDER_STATUSES).map(([key,val])=>`
+          <button class="admin-filter-btn" 
+                  data-filter="${key}" 
+                  onclick="filterAdminOrders('${key}',this)"
+                  style="--fc:${val.color};--fb:${val.bg};--fbr:${val.border};">
+            <i class="fas ${val.icon}"></i> ${val.label}
+          </button>
+        `).join('')}
       </div>
 
       <!-- قائمة الطلبيات -->
       <div style="padding:18px 22px;" id="adminOrdersList">
-        <div style="text-align:center;padding:60px;">
-          <i class="fas fa-spinner fa-spin"
-             style="font-size:32px;color:rgba(201,168,76,0.3);"></i>
+        <div style="text-align:center;padding:60px 20px;
+             color:rgba(255,255,255,0.2);">
+          <i class="fas fa-spinner fa-spin" 
+             style="font-size:32px;color:rgba(201,168,76,0.3);
+                    display:block;margin-bottom:14px;"></i>
+          <p style="font-size:12px;letter-spacing:2px;">
+            Siparişler yükleniyor...
+          </p>
         </div>
       </div>
     </div>`;
 
-  /* CSS الفلاتر */
-  if(!document.getElementById('admStyle')){
-    const s = document.createElement('style');
-    s.id = 'admStyle';
-    s.textContent = `
-      .adm-f{
+  /* CSS للفلاتر */
+  if (!document.getElementById('adminFilterStyle')) {
+    const style = document.createElement('style');
+    style.id = 'adminFilterStyle';
+    style.textContent = `
+      .admin-filter-btn {
         padding:6px 14px;border-radius:50px;
         border:1px solid rgba(255,255,255,0.1);
         background:rgba(255,255,255,0.04);
@@ -6297,72 +6094,83 @@ async function buildAdminPage(){
         cursor:pointer;transition:all 0.25s;
         display:inline-flex;align-items:center;gap:5px;
       }
-      .adm-f:hover{ border-color:rgba(201,168,76,0.3);color:#c9a84c; }
-      .adm-f.active{
+      .admin-filter-btn:hover {
+        border-color:rgba(201,168,76,0.3);color:var(--gold);
+      }
+      .admin-filter-btn.active {
         background:rgba(201,168,76,0.12);
         border-color:rgba(201,168,76,0.4);
-        color:var(--fc,#c9a84c);
-      }`;
-    document.head.appendChild(s);
+        color:#c9a84c;
+      }
+      .admin-filter-btn[data-filter]:not([data-filter="all"]).active {
+        background:var(--fb);
+        border-color:var(--fbr);
+        color:var(--fc);
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   await loadAdminOrders();
 }
 
-async function loadAdminOrders(){
+/* ── تحميل الطلبيات ── */
+let allAdminOrders = [];
+let currentAdminFilter = 'all';
+
+async function loadAdminOrders() {
   const sb = await initSupabase();
-  if(!sb) return;
+  if (!sb) return;
 
   const listEl  = document.getElementById('adminOrdersList');
   const countEl = document.getElementById('adminOrderCount');
 
-  if(listEl) listEl.innerHTML = `
+  if (listEl) listEl.innerHTML = `
     <div style="text-align:center;padding:40px;">
-      <i class="fas fa-spinner fa-spin"
+      <i class="fas fa-spinner fa-spin" 
          style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
     </div>`;
 
   const { data, error } = await sb
     .from('orders')
     .select('*')
-    .order('created_at',{ ascending:false });
+    .order('created_at', { ascending: false });
 
-  if(error || !data){
-    if(listEl) listEl.innerHTML = `
+  if (error || !data) {
+    if (listEl) listEl.innerHTML = `
       <div style="text-align:center;padding:40px;color:#ef4444;">
         <i class="fas fa-exclamation-circle" style="font-size:28px;"></i>
-        <p style="margin-top:12px;font-size:12px;letter-spacing:1px;">
-          ${error?.message || 'Yükleme hatası'}
-        </p>
+        <p style="margin-top:12px;font-size:12px;">Yükleme hatası</p>
       </div>`;
     return;
   }
 
   allAdminOrders = data;
-
-  /* عدد المستخدمين الفريدين */
-  const users = [...new Set(data.map(o=>o.username))];
-  if(countEl) countEl.textContent =
-    data.length + ' sipariş · ' + users.length + ' müşteri';
+  if (countEl) countEl.textContent =
+    data.length + ' sipariş — ' +
+    Object.keys(
+      data.reduce((a,o)=>({...a,[o.username]:1}),{})
+    ).length + ' müşteri';
 
   renderAdminOrders(currentAdminFilter);
 }
 
-function renderAdminOrders(filter){
+/* ── رسم الطلبيات ── */
+function renderAdminOrders(filter) {
   const listEl = document.getElementById('adminOrdersList');
-  if(!listEl) return;
+  if (!listEl) return;
 
-  const list = filter === 'all'
+  const filtered = filter === 'all'
     ? allAdminOrders
     : allAdminOrders.filter(o => o.status === filter);
 
-  if(!list.length){
+  if (!filtered.length) {
     listEl.innerHTML = `
-      <div style="text-align:center;padding:60px;
+      <div style="text-align:center;padding:60px 20px;
            color:rgba(255,255,255,0.2);">
-        <i class="fas fa-inbox"
+        <i class="fas fa-inbox" 
            style="font-size:36px;display:block;margin-bottom:14px;
-                  color:rgba(201,168,76,0.15);"></i>
+                  color:rgba(201,168,76,0.2);"></i>
         <p style="font-size:12px;letter-spacing:2px;">
           Bu filtrede sipariş yok
         </p>
@@ -6370,141 +6178,159 @@ function renderAdminOrders(filter){
     return;
   }
 
-  listEl.innerHTML = list.map(o => buildAdminCard(o)).join('');
+  listEl.innerHTML = filtered.map(order => buildAdminOrderCard(order)).join('');
 }
 
-function buildAdminCard(order){
-  const st    = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
-  const items = Array.isArray(order.items) ? order.items : [];
-  const total = items.reduce((s,i)=>s+(i.price||0)*(i.qty||0), 0);
-  const date  = new Date(order.created_at)
-    .toLocaleString('tr-TR',{
-      day:'2-digit', month:'2-digit', year:'numeric',
-      hour:'2-digit', minute:'2-digit'
-    });
+/* ── بناء بطاقة طلبية واحدة ── */
+function buildAdminOrderCard(order) {
+  const st      = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+  const date    = new Date(order.created_at);
+  const dateStr = date.toLocaleDateString('tr-TR');
+  const timeStr = date.toLocaleTimeString('tr-TR',
+    { hour:'2-digit', minute:'2-digit' });
+  const items   = Array.isArray(order.items) ? order.items : [];
+  const total   = items.reduce((s,i) => s + (i.price||0)*(i.qty||0), 0);
 
-  const statusBtns = Object.entries(ORDER_STATUSES).map(([k,v])=>`
-    <button onclick="updateOrderStatus(${order.id},'${k}')"
-      style="flex:1;padding:7px 4px;border-radius:8px;
-        border:1px solid ${order.status===k ? v.border:'rgba(255,255,255,0.07)'};
-        background:${order.status===k ? v.bg:'rgba(255,255,255,0.03)'};
-        color:${order.status===k ? v.color:'rgba(255,255,255,0.25)'};
-        font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;
-        cursor:pointer;transition:all 0.25s;
-        display:flex;align-items:center;justify-content:center;gap:4px;">
-      <i class="fas ${v.icon}" style="font-size:10px;"></i>
-      ${v.label}
+  const statusBtns = Object.entries(ORDER_STATUSES).map(([key,val]) => `
+    <button onclick="updateOrderStatus(${order.id},'${key}',this)"
+            style="
+      flex:1;padding:7px 4px;border-radius:8px;
+      border:1px solid ${order.status===key ? val.border : 'rgba(255,255,255,0.08)'};
+      background:${order.status===key ? val.bg : 'rgba(255,255,255,0.03)'};
+      color:${order.status===key ? val.color : 'rgba(255,255,255,0.25)'};
+      font-family:'Montserrat',sans-serif;
+      font-size:9px;font-weight:700;letter-spacing:0.5px;
+      cursor:pointer;transition:all 0.25s;
+      display:flex;align-items:center;justify-content:center;gap:4px;
+    ">
+      <i class="fas ${val.icon}" style="font-size:10px;"></i>
+      ${val.label}
     </button>`).join('');
 
-  const itemsHtml = items.slice(0,4).map(item=>`
-    <div style="display:flex;align-items:center;gap:8px;
-         padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.03);">
-      <img src="${item.src||''}" alt="${item.title||''}"
-           style="width:40px;height:32px;object-fit:cover;
-                  border-radius:6px;flex-shrink:0;
-                  border:1px solid rgba(255,255,255,0.07);"
+  const itemsHtml = items.slice(0,3).map(item => `
+    <div style="
+      display:flex;align-items:center;gap:8px;
+      padding:6px 10px;
+      background:rgba(255,255,255,0.02);
+      border-radius:8px;margin-bottom:5px;">
+      <img src="${item.src||''}" alt="${item.title}"
+           style="width:36px;height:28px;object-fit:cover;
+                  border-radius:5px;border:1px solid rgba(255,255,255,0.07);"
            onerror="this.style.display='none'"/>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:12px;font-weight:700;color:#fff;
+        <div style="font-size:11px;font-weight:700;color:#fff;
              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${item.title||''}
+          ${item.title}
         </div>
-        <div style="font-size:9px;color:rgba(201,168,76,0.5);
+        <div style="font-size:9px;color:rgba(201,168,76,0.6);
              letter-spacing:1px;">${item.catLabel||''}</div>
       </div>
-      <div style="font-size:12px;font-weight:900;color:#c9a84c;
-           background:rgba(201,168,76,0.1);
-           border:1px solid rgba(201,168,76,0.2);
-           border-radius:6px;padding:3px 10px;flex-shrink:0;">
-        ×${item.qty||0}
+      <div style="
+        font-size:11px;font-weight:900;color:#c9a84c;
+        background:rgba(201,168,76,0.1);
+        border:1px solid rgba(201,168,76,0.2);
+        border-radius:6px;padding:2px 8px;flex-shrink:0;">
+        ×${item.qty}
       </div>
     </div>`).join('');
 
-  const moreHtml = items.length > 4
-    ? `<div style="font-size:10px;color:rgba(255,255,255,0.2);
-            padding:4px 0;letter-spacing:1px;">
-         +${items.length-4} ürün daha
+  const moreItems = items.length > 3
+    ? `<div style="font-size:10px;color:rgba(255,255,255,0.25);
+            padding:4px 10px;letter-spacing:1px;">
+         +${items.length-3} ürün daha...
        </div>` : '';
 
   return `
-    <div id="admc-${order.id}" style="
+    <div id="admincard-${order.id}" style="
       background:rgba(255,255,255,0.025);
-      border:1px solid ${st.border};
-      border-radius:16px;margin-bottom:14px;overflow:hidden;
-      transition:all 0.3s;">
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:16px;margin-bottom:14px;
+      overflow:hidden;transition:all 0.3s ease;">
 
-      <!-- هيدر -->
-      <div style="padding:14px 16px 12px;
-           display:flex;align-items:center;
-           justify-content:space-between;flex-wrap:wrap;gap:8px;
-           border-bottom:1px solid rgba(255,255,255,0.04);">
+      <!-- هيدر البطاقة -->
+      <div style="
+        padding:14px 16px 12px;
+        display:flex;align-items:center;
+        justify-content:space-between;flex-wrap:wrap;gap:8px;
+        border-bottom:1px solid rgba(255,255,255,0.04);">
+
         <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:38px;height:38px;border-radius:50%;
-               background:linear-gradient(135deg,
-                 rgba(201,168,76,0.2),rgba(201,168,76,0.05));
-               border:1.5px solid rgba(201,168,76,0.3);
-               display:flex;align-items:center;justify-content:center;
-               color:#c9a84c;font-size:15px;flex-shrink:0;">
+          <!-- أيقونة المستخدم -->
+          <div style="
+            width:38px;height:38px;border-radius:50%;
+            background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
+            border:1.5px solid rgba(201,168,76,0.3);
+            display:flex;align-items:center;justify-content:center;
+            color:#c9a84c;font-size:15px;flex-shrink:0;">
             <i class="fas fa-user"></i>
           </div>
           <div>
-            <div style="font-size:14px;font-weight:900;color:#fff;">
-              ${order.username}
-            </div>
+            <div style="font-size:14px;font-weight:900;color:#fff;
+                 letter-spacing:0.5px;">${order.username}</div>
             <div style="font-size:9px;color:rgba(255,255,255,0.3);
-                 letter-spacing:1px;margin-top:2px;">
-              ${order.order_number} · ${date}
+                 letter-spacing:1.5px;margin-top:2px;">
+              ${order.order_number} &nbsp;·&nbsp; ${dateStr} ${timeStr}
             </div>
           </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;
-             padding:5px 14px;border-radius:50px;
-             background:${st.bg};border:1px solid ${st.border};
-             color:${st.color};font-size:10px;font-weight:700;
-             letter-spacing:1px;">
-          <i class="fas ${st.icon}"></i> ${st.label}
+
+        <!-- شارة الحالة -->
+        <div style="
+          display:flex;align-items:center;gap:6px;
+          padding:5px 12px;border-radius:50px;
+          background:${st.bg};border:1px solid ${st.border};
+          color:${st.color};font-size:10px;font-weight:700;
+          letter-spacing:1px;">
+          <i class="fas ${st.icon}"></i>
+          ${st.label}
         </div>
       </div>
 
       <!-- المنتجات -->
-      <div style="padding:12px 16px 8px;">
+      <div style="padding:12px 14px 8px;">
         ${itemsHtml}
-        ${moreHtml}
+        ${moreItems}
       </div>
 
       <!-- الإجمالي + الملاحظة -->
-      <div style="padding:8px 16px 10px;
-           display:flex;align-items:center;
-           justify-content:space-between;flex-wrap:wrap;gap:6px;">
+      <div style="
+        padding:8px 14px 10px;
+        display:flex;align-items:center;
+        justify-content:space-between;flex-wrap:wrap;gap:6px;">
         ${total > 0 ? `
-          <span style="font-size:14px;font-weight:900;
-            background:linear-gradient(135deg,#c9a84c,#f0d080);
-            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-            background-clip:text;">
-            ${Number(total).toLocaleString('tr-TR')} ₺
-          </span>` : '<span></span>'}
+          <div style="display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-lira-sign" 
+               style="color:#c9a84c;font-size:12px;"></i>
+            <span style="
+              font-size:14px;font-weight:900;
+              background:linear-gradient(135deg,#c9a84c,#f0d080);
+              -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+              background-clip:text;">
+              ${Number(total).toLocaleString('tr-TR')} ₺
+            </span>
+          </div>` : '<div></div>'}
         ${order.note ? `
-          <div style="font-size:10px;color:rgba(255,255,255,0.3);
-               background:rgba(255,255,255,0.03);
-               border:1px solid rgba(255,255,255,0.06);
-               border-radius:6px;padding:4px 10px;
-               max-width:220px;overflow:hidden;
-               text-overflow:ellipsis;white-space:nowrap;"
-               title="${order.note}">
-            <i class="fas fa-sticky-note"
+          <div style="
+            font-size:10px;color:rgba(255,255,255,0.3);
+            background:rgba(255,255,255,0.03);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:6px;padding:4px 10px;
+            max-width:200px;overflow:hidden;
+            text-overflow:ellipsis;white-space:nowrap;"
+            title="${order.note}">
+            <i class="fas fa-sticky-note" 
                style="color:rgba(201,168,76,0.4);margin-right:4px;"></i>
             ${order.note}
           </div>` : ''}
       </div>
 
-      <!-- أزرار الحالة -->
-      <div style="padding:10px 16px 14px;
-           border-top:1px solid rgba(255,255,255,0.04);">
+      <!-- أزرار تغيير الحالة -->
+      <div style="
+        padding:10px 14px 14px;
+        border-top:1px solid rgba(255,255,255,0.04);">
         <div style="font-size:9px;letter-spacing:2px;
              color:rgba(255,255,255,0.2);margin-bottom:8px;
-             font-weight:600;text-transform:uppercase;">
-          Durum Güncelle:
-        </div>
+             font-weight:600;">DURUM GÜNCELLE:</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           ${statusBtns}
         </div>
@@ -6512,50 +6338,59 @@ function buildAdminCard(order){
     </div>`;
 }
 
-async function updateOrderStatus(orderId, newStatus){
+/* ── تحديث حالة الطلبية ── */
+async function updateOrderStatus(orderId, newStatus, btnEl) {
   const sb = await initSupabase();
-  if(!sb) return;
+  if (!sb) return;
 
-  /* تأثير بصري */
-  const card = document.getElementById('admc-'+orderId);
-  if(card) card.style.opacity = '0.5';
+  /* تأثير بصري فوري */
+  const card = document.getElementById('admincard-' + orderId);
+  if (card) card.style.opacity = '0.6';
 
   const { error } = await sb
     .from('orders')
-    .update({ status:newStatus, updated_at:new Date().toISOString() })
+    .update({
+      status:     newStatus,
+      updated_at: new Date().toISOString()
+    })
     .eq('id', orderId);
 
-  if(error){
-    if(card) card.style.opacity = '1';
-    showInvToast('Güncelleme hatası: '+error.message, 'error');
+  if (error) {
+    console.error('[Orders] تحديث فشل:', error.message);
+    if (card) card.style.opacity = '1';
+    showInvToast('Güncelleme hatası: ' + error.message, 'error');
     return;
   }
 
   /* تحديث محلي */
-  const idx = allAdminOrders.findIndex(o=>o.id===orderId);
-  if(idx !== -1) allAdminOrders[idx].status = newStatus;
+  const idx = allAdminOrders.findIndex(o => o.id === orderId);
+  if (idx !== -1) allAdminOrders[idx].status = newStatus;
 
   /* إعادة رسم البطاقة */
-  if(card){
-    card.style.opacity = '1';
-    card.outerHTML = buildAdminCard(allAdminOrders[idx]);
+  if (card) {
+    card.outerHTML = buildAdminOrderCard(allAdminOrders[idx]);
   }
 
   const st = ORDER_STATUSES[newStatus];
-  showInvToast('Durum güncellendi: '+st.label,
-    newStatus==='cancelled' ? 'error' :
-    newStatus==='ready'     ? 'success' : 'info');
+  showInvToast(
+    `Sipariş durumu güncellendi: ${st.label}`,
+    newStatus === 'cancelled' ? 'error' :
+    newStatus === 'ready'     ? 'success' : 'info'
+  );
 }
 
-function filterAdmin(filter, btn){
+/* ── فلترة الطلبيات ── */
+function filterAdminOrders(filter, btn) {
   currentAdminFilter = filter;
-  document.querySelectorAll('.adm-f').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
+  document.querySelectorAll('.admin-filter-btn').forEach(b =>
+    b.classList.remove('active')
+  );
+  if (btn) btn.classList.add('active');
   renderAdminOrders(filter);
 }
 
-/* ── 13. صفحة "طلبيتي" ── */
-async function buildMyOrdersPage(){
+/* ── صفحة "طلبيتي" للمستخدم العادي ── */
+async function buildMyOrdersPage() {
   document.getElementById('pageContent').innerHTML = `
     <div class="page-transition">
       <div class="section-banner">
@@ -6565,36 +6400,36 @@ async function buildMyOrdersPage(){
             SİPARİŞ <span class="accent">TAKİBİ</span>
           </div>
           <div class="section-banner-count">
-            ${currentUser} — sipariş geçmişi
+            ${currentUser} hesabına ait siparişler
           </div>
           <div class="section-banner-line"></div>
         </div>
       </div>
       <div style="padding:18px 22px;" id="myOrdersList">
         <div style="text-align:center;padding:40px;">
-          <i class="fas fa-spinner fa-spin"
+          <i class="fas fa-spinner fa-spin" 
              style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
         </div>
       </div>
     </div>`;
 
   const sb = await initSupabase();
-  if(!sb) return;
+  if (!sb) return;
 
   const { data, error } = await sb
     .from('orders')
     .select('*')
     .eq('username', currentUser)
-    .order('created_at',{ ascending:false });
+    .order('created_at', { ascending: false });
 
   const listEl = document.getElementById('myOrdersList');
-  if(!listEl) return;
+  if (!listEl) return;
 
-  if(error || !data || !data.length){
+  if (error || !data || !data.length) {
     listEl.innerHTML = `
-      <div style="text-align:center;padding:60px;
+      <div style="text-align:center;padding:60px 20px;
            color:rgba(255,255,255,0.2);">
-        <i class="fas fa-shopping-cart"
+        <i class="fas fa-shopping-cart" 
            style="font-size:40px;display:block;margin-bottom:16px;
                   color:rgba(201,168,76,0.15);"></i>
         <p style="font-size:13px;letter-spacing:2px;">
@@ -6604,79 +6439,81 @@ async function buildMyOrdersPage(){
     return;
   }
 
-  listEl.innerHTML = data.map(order=>{
-    const st    = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
-    const items = Array.isArray(order.items) ? order.items : [];
-    const total = items.reduce((s,i)=>s+(i.price||0)*(i.qty||0),0);
-    const date  = new Date(order.created_at)
-      .toLocaleString('tr-TR',{
-        day:'2-digit',month:'2-digit',year:'numeric',
-        hour:'2-digit',minute:'2-digit'
-      });
+  listEl.innerHTML = data.map(order => {
+    const st      = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+    const date    = new Date(order.created_at);
+    const dateStr = date.toLocaleDateString('tr-TR');
+    const items   = Array.isArray(order.items) ? order.items : [];
+    const total   = items.reduce((s,i) => s+(i.price||0)*(i.qty||0), 0);
 
     return `
       <div style="
         background:rgba(255,255,255,0.025);
-        border:2px solid ${st.border};
-        border-radius:16px;margin-bottom:16px;overflow:hidden;">
+        border:1px solid ${st.border};
+        border-radius:16px;margin-bottom:14px;
+        overflow:hidden;">
 
         <!-- هيدر -->
-        <div style="padding:14px 16px;
-             display:flex;align-items:center;
-             justify-content:space-between;flex-wrap:wrap;gap:8px;
-             background:${st.bg};
-             border-bottom:1px solid ${st.border};">
+        <div style="
+          padding:14px 16px;
+          display:flex;align-items:center;
+          justify-content:space-between;flex-wrap:wrap;gap:8px;
+          border-bottom:1px solid rgba(255,255,255,0.04);">
           <div>
             <div style="font-size:12px;font-weight:700;color:#fff;">
               ${order.order_number}
             </div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.4);
-                 margin-top:2px;">${date}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);
+                 margin-top:2px;">${dateStr}</div>
           </div>
-          <!-- حالة كبيرة -->
-          <div style="display:flex;align-items:center;gap:8px;
-               padding:9px 18px;border-radius:50px;
-               background:${st.bg};border:1.5px solid ${st.border};
-               color:${st.color};font-size:13px;font-weight:900;
-               letter-spacing:1px;">
-            <i class="fas ${st.icon}" style="font-size:16px;"></i>
+          <!-- شارة الحالة الكبيرة -->
+          <div style="
+            display:flex;align-items:center;gap:8px;
+            padding:8px 16px;border-radius:50px;
+            background:${st.bg};border:1px solid ${st.border};
+            color:${st.color};font-size:12px;font-weight:900;
+            letter-spacing:1px;">
+            <i class="fas ${st.icon}" style="font-size:14px;"></i>
             ${st.label}
           </div>
         </div>
 
         <!-- المنتجات -->
-        <div style="padding:12px 16px;">
-          ${items.map(item=>`
-            <div style="display:flex;align-items:center;gap:10px;
-                 padding:8px 0;
-                 border-bottom:1px solid rgba(255,255,255,0.04);">
-              <img src="${item.src||''}" alt="${item.title||''}"
-                   style="width:44px;height:34px;object-fit:cover;
-                          border-radius:7px;flex-shrink:0;
-                          border:1px solid rgba(255,255,255,0.08);"
+        <div style="padding:12px 14px;">
+          ${items.map(item => `
+            <div style="
+              display:flex;align-items:center;gap:8px;
+              padding:6px 0;
+              border-bottom:1px solid rgba(255,255,255,0.03);">
+              <img src="${item.src||''}" alt="${item.title}"
+                   style="width:40px;height:32px;object-fit:cover;
+                          border-radius:6px;flex-shrink:0;"
                    onerror="this.style.display='none'"/>
               <div style="flex:1;">
-                <div style="font-size:13px;font-weight:700;color:#fff;">
-                  ${item.title||''}
+                <div style="font-size:12px;font-weight:700;color:#fff;">
+                  ${item.title}
                 </div>
                 <div style="font-size:9px;color:rgba(201,168,76,0.5);
-                     letter-spacing:1.5px;">${item.catLabel||''}</div>
+                     letter-spacing:1px;">${item.catLabel}</div>
               </div>
-              <div style="font-size:13px;font-weight:900;color:#c9a84c;
-                   background:rgba(201,168,76,0.1);
-                   border:1px solid rgba(201,168,76,0.2);
-                   border-radius:7px;padding:4px 12px;flex-shrink:0;">
-                ×${item.qty||0}
+              <div style="
+                font-size:12px;font-weight:900;color:#c9a84c;
+                background:rgba(201,168,76,0.1);
+                border:1px solid rgba(201,168,76,0.2);
+                border-radius:6px;padding:3px 10px;">
+                ×${item.qty}
               </div>
             </div>`).join('')}
         </div>
 
         <!-- الإجمالي -->
         ${total > 0 ? `
-          <div style="padding:10px 16px;
-               border-top:1px solid rgba(255,255,255,0.04);
-               display:flex;justify-content:flex-end;">
-            <span style="font-size:15px;font-weight:900;
+          <div style="
+            padding:10px 14px;
+            border-top:1px solid rgba(255,255,255,0.04);
+            display:flex;justify-content:flex-end;">
+            <span style="
+              font-size:15px;font-weight:900;
               background:linear-gradient(135deg,#c9a84c,#f0d080);
               -webkit-background-clip:text;-webkit-text-fill-color:transparent;
               background-clip:text;">
@@ -6687,31 +6524,131 @@ async function buildMyOrdersPage(){
   }).join('');
 }
 
-/* ── 14. HTML الإضافي — أضفه في body ── */
-/*
-  أضف في nav-capsule:
-  <a class="nav-link" id="nav-admin" href="#"
-     onclick="showPage('admin');return false;"
-     style="display:none;">
-    <i class="fas fa-shield-alt"></i> PANEL
-  </a>
+/* ── تعديل showPage لدعم admin و myorders ── */
+const _origShowPage = showPage;
+showPage = function(cat) {
+  if (cat === 'admin') {
+    if (currentUser !== ADMIN_USER) return;
+    currentPage = 'admin';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    const el = document.getElementById('nav-admin');
+    if (el) el.classList.add('active');
+    filteredImages = [];
+    buildAdminPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'admin' });
+    return;
+  }
+  if (cat === 'myorders') {
+    currentPage = 'myorders';
+    filteredImages = [];
+    buildMyOrdersPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'myorders' });
+    return;
+  }
+  _origShowPage(cat);
+};
 
-  أضف في mobile-menu-inner:
-  <a href="#" id="mob-admin"
-     onclick="showPage('admin');closeMobileMenu();return false;"
-     style="display:none;">
-    <i class="fas fa-shield-alt"></i> SİPARİŞ PANELİ
-  </a>
+/* ── تعديل enterSection لدعم admin ── */
+const _origEnterSection = enterSection;
+enterSection = function(cat) {
+  if (cat === 'admin') {
+    const hs = document.getElementById('homeScreen');
+    hs.style.transition = 'opacity 0.4s ease';
+    hs.style.opacity = '0';
+    setTimeout(() => {
+      hs.style.display = 'none';
+      document.getElementById('mainSite').style.display = 'block';
+      updateAdminNavVisibility();
+      showPage('admin');
+    }, 400);
+    return;
+  }
+  _origEnterSection(cat);
+};
 
-  أضف في home-cards (بعد بطاقة orders):
-  <div class="home-card" id="homeAdminCard"
-       onclick="enterSection('admin')" style="display:none;">
-    ... (نفس هيكل البطاقات الأخرى)
-  </div>
-*/
+/* ── Hook: حفظ الطلب عند تنزيل Excel ── */
+const _origSendOrderViaWhatsApp = sendOrderViaWhatsApp;
+sendOrderViaWhatsApp = async function() {
+  /* تشغيل الدالة الأصلية */
+  await _origSendOrderViaWhatsApp();
+};
+
+/* ── Hook: حفظ الطلب عند تنزيل PDF ── */
+const _origOpenOrderPdfModal = openOrderPdfModal;
+openOrderPdfModal = function() {
+  _origOpenOrderPdfModal();
+};
 
 
+/* ── إضافة زر "طلبيتي" في الهيدر ── */
+(function addMyOrderBtn() {
+  /* ننتظر تحميل DOM */
+  document.addEventListener('DOMContentLoaded', () => {}, { once:true });
+  
+  setTimeout(() => {
+    /* زر ديسكتوب */
+    const navTools = document.querySelector('.nav-tools');
+    if (navTools && !document.getElementById('myOrderBtn')) {
+      const btn = document.createElement('button');
+      btn.id        = 'myOrderBtn';
+      btn.className = 'nav-icon-btn';
+      btn.title     = 'Siparişlerim';
+      btn.style.display = 'none';
+      btn.innerHTML = `
+        <i class="fas fa-box"></i>
+        <span id="myOrderDot" style="
+          position:absolute;top:-4px;right:-4px;
+          width:8px;height:8px;border-radius:50%;
+          background:#fbbf24;
+          border:2px solid rgba(8,8,8,0.96);
+        "></span>`;
+      btn.onclick = () => showPage('myorders');
+      
+      /* أضفه قبل زر الصوت */
+      const audioBtn = document.getElementById('audioNavBtn');
+      if (audioBtn) navTools.insertBefore(btn, audioBtn);
+      else navTools.appendChild(btn);
+    }
 
+    /* زر موبايل في القائمة */
+    const mobMenu = document.querySelector('.mobile-menu-inner');
+    if (mobMenu && !document.getElementById('mobMyOrderBtn')) {
+      const mobBtn = document.createElement('a');
+      mobBtn.id        = 'mobMyOrderBtn';
+      mobBtn.href      = '#';
+      mobBtn.style.display = 'none';
+      mobBtn.innerHTML = `<i class="fas fa-box"></i> SİPARİŞLERİM`;
+      mobBtn.onclick   = (e) => {
+        e.preventDefault();
+        showPage('myorders');
+        closeMobileMenu();
+      };
+      const divider = mobMenu.querySelector('.mob-divider');
+      if (divider) mobMenu.insertBefore(mobBtn, divider.nextSibling);
+    }
+  }, 500);
+})();
+
+/* ── تحديث nav عند دخول mainSite ── */
+const _origEnterSection2 = enterSection;
+enterSection = function(cat) {
+  setTimeout(() => {
+    updateAdminNavVisibility();
+    /* إظهار زر "طلبيتي" للمستخدمين العاديين */
+    if (currentUser && currentUser !== ADMIN_USER) {
+      const btn    = document.getElementById('myOrderBtn');
+      const mobBtn = document.getElementById('mobMyOrderBtn');
+      if (btn)    btn.style.display    = 'flex';
+      if (mobBtn) mobBtn.style.display = 'flex';
+      updateMyOrderBtn();
+    }
+  }, 200);
+  _origEnterSection2(cat);
+};
 
 
 
