@@ -6191,6 +6191,7 @@ function buildAdminOrderCard(order) {
   const items   = Array.isArray(order.items) ? order.items : [];
   const total   = items.reduce((s,i) => s + (i.price||0)*(i.qty||0), 0);
 
+  /* ── أزرار تغيير الحالة ── */
   const statusBtns = Object.entries(ORDER_STATUSES).map(([key,val]) => `
     <button onclick="updateOrderStatus(${order.id},'${key}',this)"
             style="
@@ -6207,136 +6208,522 @@ function buildAdminOrderCard(order) {
       ${val.label}
     </button>`).join('');
 
-  const itemsHtml = items.slice(0,3).map(item => `
+  /* ── كل المنتجات بدون اختصار ── */
+  const itemsHtml = items.map(item => `
     <div style="
-      display:flex;align-items:center;gap:8px;
-      padding:6px 10px;
+      display:flex;align-items:center;gap:10px;
+      padding:8px 10px;
       background:rgba(255,255,255,0.02);
-      border-radius:8px;margin-bottom:5px;">
+      border:1px solid rgba(255,255,255,0.04);
+      border-radius:10px;margin-bottom:6px;
+      transition:background 0.2s;">
       <img src="${item.src||''}" alt="${item.title}"
-           style="width:36px;height:28px;object-fit:cover;
-                  border-radius:5px;border:1px solid rgba(255,255,255,0.07);"
+           style="width:52px;height:40px;object-fit:cover;
+                  border-radius:7px;border:1px solid rgba(255,255,255,0.07);
+                  flex-shrink:0;"
            onerror="this.style.display='none'"/>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:11px;font-weight:700;color:#fff;
-             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <div style="font-size:12px;font-weight:700;color:#fff;
+             letter-spacing:0.3px;">
           ${item.title}
         </div>
         <div style="font-size:9px;color:rgba(201,168,76,0.6);
-             letter-spacing:1px;">${item.catLabel||''}</div>
+             letter-spacing:1.5px;margin-top:2px;text-transform:uppercase;">
+          ${item.catLabel||''}
+        </div>
+        ${item.price ? `
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);
+               margin-top:2px;">
+            ${Number(item.price).toLocaleString('tr-TR')} ₺ / adet
+          </div>` : ''}
       </div>
-      <div style="
-        font-size:11px;font-weight:900;color:#c9a84c;
-        background:rgba(201,168,76,0.1);
-        border:1px solid rgba(201,168,76,0.2);
-        border-radius:6px;padding:2px 8px;flex-shrink:0;">
-        ×${item.qty}
+      <div style="text-align:right;flex-shrink:0;">
+        <div style="
+          font-size:13px;font-weight:900;color:#c9a84c;
+          background:rgba(201,168,76,0.1);
+          border:1px solid rgba(201,168,76,0.2);
+          border-radius:7px;padding:4px 12px;
+          margin-bottom:4px;">
+          ×${item.qty}
+        </div>
+        ${item.price ? `
+          <div style="font-size:10px;font-weight:700;color:#4ade80;">
+            ${Number(item.price * item.qty).toLocaleString('tr-TR')} ₺
+          </div>` : ''}
       </div>
     </div>`).join('');
 
-  const moreItems = items.length > 3
-    ? `<div style="font-size:10px;color:rgba(255,255,255,0.25);
-            padding:4px 10px;letter-spacing:1px;">
-         +${items.length-3} ürün daha...
-       </div>` : '';
+  /* ── ملاحظة الأدمن ── */
+  const adminNoteVal = order.admin_note || '';
+  const adminNoteHtml = `
+    <div style="margin-top:10px;">
+      <div style="font-size:9px;letter-spacing:2px;
+           color:rgba(201,168,76,0.55);font-weight:700;
+           text-transform:uppercase;margin-bottom:6px;
+           display:flex;align-items:center;gap:6px;">
+        <i class="fas fa-pen" style="font-size:10px;"></i>
+        YÖNETİCİ NOTU
+      </div>
+      <div style="display:flex;gap:8px;align-items:flex-start;">
+        <textarea
+          id="adminnote-${order.id}"
+          placeholder="Bu siparişe not ekle..."
+          maxlength="300"
+          style="
+            flex:1;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);
+            border-radius:9px;
+            color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;
+            padding:9px 12px;
+            resize:none;
+            min-height:60px;
+            outline:none;
+            transition:border-color 0.3s,box-shadow 0.3s;
+            -webkit-user-select:text;
+            user-select:text;
+          "
+          onfocus="this.style.borderColor='#c9a84c';this.style.boxShadow='0 0 16px rgba(201,168,76,0.1)';"
+          onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';this.style.boxShadow='none';"
+        >${adminNoteVal}</textarea>
+        <button onclick="saveAdminNote(${order.id})" style="
+          padding:9px 14px;border-radius:9px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:10px;font-weight:900;letter-spacing:1px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;gap:5px;
+          flex-shrink:0;align-self:flex-end;
+          min-height:38px;">
+          <i class="fas fa-save"></i> KAYDET
+        </button>
+      </div>
+    </div>`;
 
   return `
     <div id="admincard-${order.id}" style="
       background:rgba(255,255,255,0.025);
       border:1px solid rgba(255,255,255,0.06);
-      border-radius:16px;margin-bottom:14px;
+      border-radius:16px;margin-bottom:16px;
       overflow:hidden;transition:all 0.3s ease;">
 
-      <!-- هيدر البطاقة -->
+      <!-- ══ هيدر البطاقة ══ -->
       <div style="
         padding:14px 16px 12px;
         display:flex;align-items:center;
         justify-content:space-between;flex-wrap:wrap;gap:8px;
-        border-bottom:1px solid rgba(255,255,255,0.04);">
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        background:rgba(255,255,255,0.015);">
 
         <div style="display:flex;align-items:center;gap:10px;">
-          <!-- أيقونة المستخدم -->
           <div style="
-            width:38px;height:38px;border-radius:50%;
+            width:40px;height:40px;border-radius:50%;
             background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
             border:1.5px solid rgba(201,168,76,0.3);
             display:flex;align-items:center;justify-content:center;
-            color:#c9a84c;font-size:15px;flex-shrink:0;">
+            color:#c9a84c;font-size:16px;flex-shrink:0;">
             <i class="fas fa-user"></i>
           </div>
           <div>
-            <div style="font-size:14px;font-weight:900;color:#fff;
-                 letter-spacing:0.5px;">${order.username}</div>
+            <div style="font-size:15px;font-weight:900;color:#fff;
+                 letter-spacing:0.5px;">
+              ${order.username}
+            </div>
             <div style="font-size:9px;color:rgba(255,255,255,0.3);
                  letter-spacing:1.5px;margin-top:2px;">
-              ${order.order_number} &nbsp;·&nbsp; ${dateStr} ${timeStr}
+              ${order.order_number}
+              &nbsp;·&nbsp;
+              ${dateStr} ${timeStr}
             </div>
           </div>
         </div>
 
-        <!-- شارة الحالة -->
-        <div style="
-          display:flex;align-items:center;gap:6px;
-          padding:5px 12px;border-radius:50px;
-          background:${st.bg};border:1px solid ${st.border};
-          color:${st.color};font-size:10px;font-weight:700;
-          letter-spacing:1px;">
-          <i class="fas ${st.icon}"></i>
-          ${st.label}
+        <div style="display:flex;align-items:center;gap:8px;">
+          <!-- شارة الحالة -->
+          <div style="
+            display:flex;align-items:center;gap:6px;
+            padding:6px 14px;border-radius:50px;
+            background:${st.bg};border:1px solid ${st.border};
+            color:${st.color};font-size:10px;font-weight:700;
+            letter-spacing:1px;">
+            <i class="fas ${st.icon}"></i>
+            ${st.label}
+          </div>
+
+          <!-- ★ زر الحذف ★ -->
+          <button onclick="deleteOrder(${order.id})" style="
+            width:34px;height:34px;border-radius:9px;
+            border:1px solid rgba(239,68,68,0.25);
+            background:rgba(239,68,68,0.08);
+            color:rgba(239,68,68,0.6);
+            font-size:13px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:all 0.25s;flex-shrink:0;"
+            onmouseover="this.style.background='rgba(239,68,68,0.18)';
+                         this.style.borderColor='rgba(239,68,68,0.5)';
+                         this.style.color='#ef4444';"
+            onmouseout="this.style.background='rgba(239,68,68,0.08)';
+                        this.style.borderColor='rgba(239,68,68,0.25)';
+                        this.style.color='rgba(239,68,68,0.6)';">
+            <i class="fas fa-trash-alt"></i>
+          </button>
         </div>
       </div>
 
-      <!-- المنتجات -->
-      <div style="padding:12px 14px 8px;">
+      <!-- ══ المنتجات الكاملة ══ -->
+      <div style="padding:14px 14px 8px;">
+        <div style="font-size:9px;letter-spacing:2px;
+             color:rgba(255,255,255,0.2);font-weight:600;
+             margin-bottom:10px;text-transform:uppercase;">
+          <i class="fas fa-box" style="margin-right:5px;
+             color:rgba(201,168,76,0.4);"></i>
+          ÜRÜNLER (${items.length} kalem)
+        </div>
         ${itemsHtml}
-        ${moreItems}
       </div>
 
-      <!-- الإجمالي + الملاحظة -->
+      <!-- ══ الإجمالي + ملاحظة المستخدم ══ -->
       <div style="
-        padding:8px 14px 10px;
-        display:flex;align-items:center;
-        justify-content:space-between;flex-wrap:wrap;gap:6px;">
+        padding:8px 14px 12px;
+        display:flex;align-items:flex-start;
+        justify-content:space-between;flex-wrap:wrap;gap:8px;
+        border-top:1px solid rgba(255,255,255,0.04);">
+
         ${total > 0 ? `
-          <div style="display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-lira-sign" 
-               style="color:#c9a84c;font-size:12px;"></i>
-            <span style="
-              font-size:14px;font-weight:900;
-              background:linear-gradient(135deg,#c9a84c,#f0d080);
-              -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-              background-clip:text;">
-              ${Number(total).toLocaleString('tr-TR')} ₺
-            </span>
-          </div>` : '<div></div>'}
+  <div style="
+    width:100%;
+    margin:4px 0 2px;
+    background:linear-gradient(135deg,rgba(201,168,76,0.08),rgba(201,168,76,0.03));
+    border:1px solid rgba(201,168,76,0.22);
+    border-radius:12px;
+    padding:14px 18px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;">
+
+    <!-- وهج خلفي -->
+    <div style="
+      position:absolute;right:-20px;top:-20px;
+      width:100px;height:100px;
+      background:radial-gradient(circle,rgba(201,168,76,0.08) 0%,transparent 70%);
+      pointer-events:none;">
+    </div>
+
+    <!-- يسار: نص الفاتورة -->
+    <div style="display:flex;align-items:center;gap:10px;position:relative;z-index:1;">
+      <div style="
+        width:34px;height:34px;
+        background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.05));
+        border:1px solid rgba(201,168,76,0.3);
+        border-radius:9px;
+        display:flex;align-items:center;justify-content:center;
+        flex-shrink:0;">
+        <i class="fas fa-receipt" style="color:#c9a84c;font-size:14px;"></i>
+      </div>
+      <div>
+        <div style="
+          font-size:9px;
+          letter-spacing:2.5px;
+          color:rgba(201,168,76,0.55);
+          text-transform:uppercase;
+          font-weight:700;
+          margin-bottom:2px;">
+          FATURA TOPLAMI
+        </div>
+        <div style="
+          font-size:10px;
+          color:rgba(255,255,255,0.2);
+          letter-spacing:1px;">
+          ${items.length} kalem ürün
+        </div>
+      </div>
+    </div>
+
+    <!-- يمين: المبلغ -->
+    <div style="
+      display:flex;align-items:baseline;gap:5px;
+      position:relative;z-index:1;">
+      <span style="
+        font-size:13px;
+        font-weight:900;
+        color:rgba(201,168,76,0.7);
+        letter-spacing:0;">
+        ₺
+      </span>
+      <span style="
+        font-size:16px;
+        font-weight:900;
+        letter-spacing:-0.5px;
+        background:linear-gradient(135deg,#c9a84c,#f0d080,#c9a84c);
+        -webkit-background-clip:text;
+        -webkit-text-fill-color:transparent;
+        background-clip:text;
+        line-height:1;">
+        ${Number(total).toLocaleString('tr-TR')}
+      </span>
+    </div>
+
+  </div>` : ''}
+
+
         ${order.note ? `
           <div style="
-            font-size:10px;color:rgba(255,255,255,0.3);
+            max-width:260px;
             background:rgba(255,255,255,0.03);
-            border:1px solid rgba(255,255,255,0.06);
-            border-radius:6px;padding:4px 10px;
-            max-width:200px;overflow:hidden;
-            text-overflow:ellipsis;white-space:nowrap;"
-            title="${order.note}">
-            <i class="fas fa-sticky-note" 
-               style="color:rgba(201,168,76,0.4);margin-right:4px;"></i>
-            ${order.note}
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:8px;padding:7px 12px;">
+            <div style="font-size:8px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.25);margin-bottom:3px;
+                 text-transform:uppercase;">
+              <i class="fas fa-sticky-note"
+                 style="color:rgba(201,168,76,0.4);margin-right:4px;"></i>
+              MÜŞTERİ NOTU
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.5);
+                 line-height:1.5;word-break:break-word;">
+              ${order.note}
+            </div>
           </div>` : ''}
       </div>
 
-      <!-- أزرار تغيير الحالة -->
+      <!-- ══ ملاحظة الأدمن ══ -->
       <div style="
-        padding:10px 14px 14px;
+        padding:12px 14px;
+        border-top:1px solid rgba(255,255,255,0.04);
+        background:rgba(201,168,76,0.02);">
+        ${adminNoteHtml}
+      </div>
+
+      <!-- ══ أزرار تغيير الحالة ══ -->
+      <div style="
+        padding:12px 14px 14px;
         border-top:1px solid rgba(255,255,255,0.04);">
         <div style="font-size:9px;letter-spacing:2px;
              color:rgba(255,255,255,0.2);margin-bottom:8px;
-             font-weight:600;">DURUM GÜNCELLE:</div>
+             font-weight:600;text-transform:uppercase;">
+          <i class="fas fa-sliders-h" style="margin-right:5px;
+             color:rgba(201,168,76,0.4);"></i>
+          DURUM GÜNCELLE
+        </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           ${statusBtns}
         </div>
       </div>
     </div>`;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+/* ── حذف الطلبية ── */
+async function deleteOrder(orderId) {
+  /* نافذة تأكيد بسيطة */
+  const confirmed = await showDeleteConfirm();
+  if (!confirmed) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* تأثير بصري */
+  const card = document.getElementById('admincard-' + orderId);
+  if (card) {
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity    = '0.4';
+    card.style.transform  = 'scale(0.98)';
+  }
+
+  const { error } = await sb
+    .from('orders')
+    .delete()
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('[Orders] حذف فشل:', error.message);
+    if (card) {
+      card.style.opacity   = '1';
+      card.style.transform = 'scale(1)';
+    }
+    showInvToast('Silme hatası: ' + error.message, 'error');
+    return;
+  }
+
+  /* إزالة من المصفوفة المحلية */
+  allAdminOrders = allAdminOrders.filter(o => o.id !== orderId);
+
+  /* إزالة البطاقة بأنيميشن */
+  if (card) {
+    card.style.maxHeight  = card.offsetHeight + 'px';
+    card.style.overflow   = 'hidden';
+    requestAnimationFrame(() => {
+      card.style.transition  = 'all 0.4s ease';
+      card.style.maxHeight   = '0';
+      card.style.opacity     = '0';
+      card.style.marginBottom = '0';
+      card.style.padding     = '0';
+      setTimeout(() => card.remove(), 420);
+    });
+  }
+
+  showInvToast('Sipariş başarıyla silindi', 'success');
+
+  /* تحديث العداد */
+  const countEl = document.getElementById('adminOrderCount');
+  if (countEl) {
+    countEl.textContent =
+      allAdminOrders.length + ' sipariş — ' +
+      Object.keys(
+        allAdminOrders.reduce((a,o) => ({...a,[o.username]:1}), {})
+      ).length + ' müşteri';
+  }
+}
+
+/* ── نافذة تأكيد الحذف ── */
+function showDeleteConfirm() {
+  return new Promise(resolve => {
+    /* إزالة أي نافذة سابقة */
+    document.getElementById('deleteConfirmModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'deleteConfirmModal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:8000;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.88);
+      backdrop-filter:blur(16px);
+      padding:16px;`;
+
+    modal.innerHTML = `
+      <div style="
+        width:100%;max-width:380px;
+        background:linear-gradient(145deg,#0f0f0f,#1a0808);
+        border:1px solid rgba(239,68,68,0.3);
+        border-radius:20px;overflow:hidden;
+        box-shadow:0 40px 80px rgba(0,0,0,0.8);
+        animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+        <div style="height:3px;background:linear-gradient(90deg,
+          transparent,#ef4444 30%,#ff6b6b 50%,#ef4444 70%,transparent);"></div>
+
+        <div style="padding:24px 22px 20px;text-align:center;">
+          <div style="
+            width:56px;height:56px;border-radius:50%;
+            background:rgba(239,68,68,0.12);
+            border:1.5px solid rgba(239,68,68,0.3);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 16px;
+            color:#ef4444;font-size:22px;">
+            <i class="fas fa-trash-alt"></i>
+          </div>
+          <div style="font-size:17px;font-weight:900;color:#fff;
+               margin-bottom:8px;">Siparişi Sil</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.35);
+               line-height:1.6;letter-spacing:0.3px;">
+            Bu sipariş kalıcı olarak silinecek.<br/>
+            <span style="color:rgba(239,68,68,0.7);font-weight:700;">
+              Bu işlem geri alınamaz.
+            </span>
+          </div>
+        </div>
+
+        <div style="padding:0 20px 22px;display:flex;gap:10px;">
+          <button id="delCancelBtn" style="
+            flex:1;padding:12px;border-radius:11px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.5);
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;">
+            İPTAL
+          </button>
+          <button id="delConfirmBtn" style="
+            flex:1;padding:12px;border-radius:11px;border:none;
+            background:linear-gradient(135deg,#ef4444,#dc2626);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:12px;font-weight:900;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:7px;">
+            <i class="fas fa-trash-alt"></i> SİL
+          </button>
+        </div>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    document.getElementById('delConfirmBtn').onclick = () => {
+      modal.remove();
+      resolve(true);
+    };
+    document.getElementById('delCancelBtn').onclick = () => {
+      modal.remove();
+      resolve(false);
+    };
+    modal.addEventListener('click', e => {
+      if (e.target === modal) { modal.remove(); resolve(false); }
+    });
+  });
+}
+
+/* ── حفظ ملاحظة الأدمن ── */
+async function saveAdminNote(orderId) {
+  const textarea = document.getElementById('adminnote-' + orderId);
+  if (!textarea) return;
+
+  const note = textarea.value.trim();
+  const sb   = await initSupabase();
+  if (!sb) return;
+
+  /* تأثير بصري على الزر */
+  const btn = textarea.nextElementSibling;
+  if (btn) {
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    btn.disabled  = true;
+  }
+
+  const { error } = await sb
+    .from('orders')
+    .update({
+      admin_note: note,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', orderId);
+
+  if (btn) {
+    btn.disabled  = false;
+    btn.innerHTML = '<i class="fas fa-save"></i> KAYDET';
+  }
+
+  if (error) {
+    showInvToast('Not kaydedilemedi: ' + error.message, 'error');
+    return;
+  }
+
+  /* تحديث محلي */
+  const idx = allAdminOrders.findIndex(o => o.id === orderId);
+  if (idx !== -1) allAdminOrders[idx].admin_note = note;
+
+  showInvToast('Not başarıyla kaydedildi ✓', 'success');
+}
+
+
+
+
+
+
+
+
 
 /* ── تحديث حالة الطلبية ── */
 async function updateOrderStatus(orderId, newStatus, btnEl) {
@@ -6506,20 +6893,89 @@ async function buildMyOrdersPage() {
             </div>`).join('')}
         </div>
 
+
+
+
+        <!-- ملاحظة الأدمن إن وجدت -->
+        ${order.admin_note ? `
+          <div style="
+            margin:0 14px 10px;
+            background:rgba(201,168,76,0.06);
+            border:1px solid rgba(201,168,76,0.2);
+            border-radius:10px;padding:10px 14px;
+            display:flex;align-items:flex-start;gap:10px;">
+            <i class="fas fa-comment-alt"
+               style="color:#c9a84c;font-size:14px;
+                      margin-top:2px;flex-shrink:0;"></i>
+            <div>
+              <div style="font-size:8px;letter-spacing:2px;
+                   color:rgba(201,168,76,0.6);font-weight:700;
+                   text-transform:uppercase;margin-bottom:4px;">
+                YÖNETİCİ MESAJI
+              </div>
+              <div style="font-size:12px;color:rgba(255,255,255,0.7);
+                   line-height:1.6;word-break:break-word;">
+                ${order.admin_note}
+              </div>
+            </div>
+          </div>` : ''}
+
+
+
+
         <!-- الإجمالي -->
         ${total > 0 ? `
           <div style="
-            padding:10px 14px;
-            border-top:1px solid rgba(255,255,255,0.04);
-            display:flex;justify-content:flex-end;">
-            <span style="
-              font-size:15px;font-weight:900;
-              background:linear-gradient(135deg,#c9a84c,#f0d080);
-              -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-              background-clip:text;">
-              Toplam: ${Number(total).toLocaleString('tr-TR')} ₺
-            </span>
+            margin:8px 14px 14px;
+            background:linear-gradient(135deg,rgba(201,168,76,0.07),rgba(201,168,76,0.02));
+            border:1px solid rgba(201,168,76,0.2);
+            border-radius:12px;
+            padding:13px 16px;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            position:relative;overflow:hidden;">
+
+            <div style="
+              position:absolute;right:-15px;top:-15px;
+              width:80px;height:80px;
+              background:radial-gradient(circle,rgba(201,168,76,0.07) 0%,transparent 70%);
+              pointer-events:none;">
+            </div>
+
+            <div style="display:flex;align-items:center;gap:9px;z-index:1;">
+              <div style="
+                width:30px;height:30px;
+                background:rgba(201,168,76,0.12);
+                border:1px solid rgba(201,168,76,0.25);
+                border-radius:8px;
+                display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-receipt" style="color:#c9a84c;font-size:12px;"></i>
+              </div>
+              <div style="
+                font-size:9px;letter-spacing:2px;
+                color:rgba(201,168,76,0.55);
+                text-transform:uppercase;font-weight:700;">
+                FATURA TOPLAMI
+              </div>
+            </div>
+
+            <div style="display:flex;align-items:baseline;gap:4px;z-index:1;">
+              <span style="
+                font-size:12px;font-weight:900;
+                color:rgba(201,168,76,0.65);">₺</span>
+              <span style="
+                font-size:16px;font-weight:900;
+                background:linear-gradient(135deg,#c9a84c,#f0d080);
+                -webkit-background-clip:text;
+                -webkit-text-fill-color:transparent;
+                background-clip:text;
+                letter-spacing:-0.5px;line-height:1;">
+                ${Number(total).toLocaleString('tr-TR')}
+              </span>
+            </div>
           </div>` : ''}
+
       </div>`;
   }).join('');
 }
