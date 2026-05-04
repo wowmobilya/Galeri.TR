@@ -5024,145 +5024,6 @@ async function subscribeInventory() {
 }
 
 
-
-/* ============================================================
-   ★ Realtime — متابعة تغييرات الطلبيات حياً ★
-============================================================ */
-let ordersRealtimeChannel = null;
-
-async function subscribeOrders() {
-  const sb = await initSupabase();
-  if (!sb || ordersRealtimeChannel) return;
-
-  ordersRealtimeChannel = sb
-    .channel('orders-live')
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'orders' },
-      payload => {
-        const { eventType, new: newRow, old: oldRow } = payload;
-
-        /* ── حذف ── */
-        if (eventType === 'DELETE') {
-          const deletedId = oldRow?.id;
-          if (!deletedId) return;
-
-          /* إزالة من المصفوفة المحلية */
-          allAdminOrders = allAdminOrders.filter(o => o.id !== deletedId);
-
-          /* إزالة البطاقة بأنيميشن إذا كانت موجودة في DOM */
-          const card = document.getElementById('admincard-' + deletedId);
-          if (card) {
-            card.style.transition   = 'all 0.4s ease';
-            card.style.maxHeight    = card.offsetHeight + 'px';
-            card.style.overflow     = 'hidden';
-            requestAnimationFrame(() => {
-              card.style.maxHeight    = '0';
-              card.style.opacity      = '0';
-              card.style.marginBottom = '0';
-              setTimeout(() => card.remove(), 420);
-            });
-          }
-
-          /* تحديث العداد */
-          updateAdminOrderCount();
-          return;
-        }
-
-        /* ── إضافة جديدة ── */
-        if (eventType === 'INSERT') {
-          allAdminOrders.unshift(newRow);
-          
-          /* إذا كانت صفحة الإدارة مفتوحة → أضف البطاقة في الأعلى */
-          if (currentPage === 'admin') {
-            const listEl = document.getElementById('adminOrdersList');
-            if (listEl && listEl.querySelector('[id^="admincard-"]')) {
-              const div = document.createElement('div');
-              div.innerHTML = buildAdminOrderCard(newRow);
-              div.firstElementChild.style.opacity   = '0';
-              div.firstElementChild.style.transform = 'translateY(-12px)';
-              listEl.insertBefore(div.firstElementChild, listEl.firstChild);
-              requestAnimationFrame(() => {
-                const card = document.getElementById('admincard-' + newRow.id);
-                if (card) {
-                  card.style.transition = 'all 0.4s ease';
-                  card.style.opacity    = '1';
-                  card.style.transform  = 'translateY(0)';
-                }
-              });
-            }
-          }
-
-          updateAdminOrderCount();
-
-          /* إشعار للأدمن */
-          if (currentUser === ADMIN_USER) {
-            showInvToast(
-              `🆕 Yeni sipariş: ${newRow.username} — ${newRow.order_number}`,
-              'info'
-            );
-          }
-          return;
-        }
-
-        /* ── تحديث حالة ── */
-        if (eventType === 'UPDATE') {
-          const idx = allAdminOrders.findIndex(o => o.id === newRow.id);
-          if (idx !== -1) allAdminOrders[idx] = newRow;
-
-          /* تحديث البطاقة في DOM */
-          const card = document.getElementById('admincard-' + newRow.id);
-          if (card) {
-            const newHtml = buildAdminOrderCard(newRow);
-            const temp = document.createElement('div');
-            temp.innerHTML = newHtml;
-            const newCard = temp.firstElementChild;
-            newCard.style.opacity   = '0';
-            newCard.style.transform = 'scale(0.98)';
-            card.replaceWith(newCard);
-            requestAnimationFrame(() => {
-              newCard.style.transition = 'all 0.35s ease';
-              newCard.style.opacity    = '1';
-              newCard.style.transform  = 'scale(1)';
-            });
-          }
-
-          /* إشعار للمستخدم بتغيير حالة طلبيته */
-          if (currentUser !== ADMIN_USER && newRow.username === currentUser) {
-            const st = ORDER_STATUSES[newRow.status] || ORDER_STATUSES.pending;
-            showInvToast(
-              `<i class="fas ${st.icon}" style="color:${st.color};"></i> ` +
-              `Sipariş durumu güncellendi: <b style="color:${st.color};">${st.label}</b>`,
-              'info'
-            );
-
-            /* إذا كان في صفحة "طلبيتي" → أعد البناء */
-            if (currentPage === 'myorders') {
-              buildMyOrdersPage();
-            }
-          }
-        }
-      }
-    )
-    .subscribe(status => {
-      console.log('[Supabase Orders Realtime] status:', status);
-    });
-}
-
-/* ── تحديث عداد الطلبيات ── */
-function updateAdminOrderCount() {
-  const countEl = document.getElementById('adminOrderCount');
-  if (!countEl) return;
-  const uniqueUsers = Object.keys(
-    allAdminOrders.reduce((a, o) => ({ ...a, [o.username]: 1 }), {})
-  ).length;
-  countEl.textContent =
-    allAdminOrders.length + ' sipariş — ' + uniqueUsers + ' müşteri';
-}
-
-
-
-  
 /* ============================================================
    ★ ضبط السلة عند تغيّر المخزون في الوقت الفعلي ★
 ============================================================ */
@@ -5764,8 +5625,6 @@ doLogin = function() {
     if (ok) {
       await loadInventory();
       subscribeInventory();
-      subscribeOrders(); /* ← أضف هذا السطر */
-
     } else {
       console.warn('[Supabase] الاتصال فشل — تحقق من المفاتيح واسم الجدول');
     }
@@ -7837,4 +7696,3 @@ function triggerInstall() {
 </script>
 </body>
 </html>
-
