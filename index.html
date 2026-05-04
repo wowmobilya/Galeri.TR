@@ -6237,7 +6237,7 @@ function buildAdminOrderCard(order) {
             ${Number(item.price).toLocaleString('tr-TR')} ₺ / adet
           </div>` : ''}
       </div>
-      <div style="text-align:right;flex-shrink:0;">
+            <div style="text-align:right;flex-shrink:0;">
         <div style="
           font-size:13px;font-weight:900;color:#c9a84c;
           background:rgba(201,168,76,0.1);
@@ -6250,6 +6250,17 @@ function buildAdminOrderCard(order) {
           <div style="font-size:10px;font-weight:700;color:#4ade80;">
             ${Number(item.price * item.qty).toLocaleString('tr-TR')} ₺
           </div>` : ''}
+          
+        <!-- ★ زر إزالة المنتج الجديد ★ -->
+        <button onclick="removeProductFromOrder(${order.id}, ${item.id})" style="
+          margin-top:6px; width:100%; padding:4px 0; border-radius:5px;
+          background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25);
+          color:#ef4444; font-size:9px; font-weight:700; cursor:pointer;
+          transition:all 0.2s;"
+          onmouseover="this.style.background='rgba(239,68,68,0.2)'"
+          onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+          <i class="fas fa-trash"></i> Çıkar
+        </button>
       </div>
     </div>`).join('');
 
@@ -6527,14 +6538,19 @@ function buildAdminOrderCard(order) {
 
 
 
-/* ── حذف الطلبية ── */
+/* ── حذف الطلبية وإرجاع المخزون ── */
 async function deleteOrder(orderId) {
-  /* نافذة تأكيد بسيطة */
   const confirmed = await showDeleteConfirm();
   if (!confirmed) return;
 
   const sb = await initSupabase();
   if (!sb) return;
+
+  // 1. جلب بيانات الطلبية لمعرفة المنتجات التي يجب إرجاعها للمخزون
+  const order = allAdminOrders.find(o => o.id === orderId);
+  if (!order) return;
+  
+  const itemsToRestore = order.items.map(i => ({ id: i.id, qty: i.qty }));
 
   /* تأثير بصري */
   const card = document.getElementById('admincard-' + orderId);
@@ -6544,6 +6560,18 @@ async function deleteOrder(orderId) {
     card.style.transform  = 'scale(0.98)';
   }
 
+  // 2. إرجاع المخزون في قاعدة البيانات
+  if (itemsToRestore.length > 0) {
+    const { error: restoreErr } = await sb.rpc('restore_stock', { p_items: itemsToRestore });
+    if (restoreErr) {
+      console.error('[Stock] إرجاع المخزون فشل:', restoreErr.message);
+      showInvToast('Stok iade hatası: ' + restoreErr.message, 'error');
+      if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
+      return;
+    }
+  }
+
+  // 3. حذف الطلبية من قاعدة البيانات
   const { error } = await sb
     .from('orders')
     .delete()
@@ -6576,7 +6604,7 @@ async function deleteOrder(orderId) {
     });
   }
 
-  showInvToast('Sipariş başarıyla silindi', 'success');
+  showInvToast('Sipariş silindi ve stok iade edildi ✓', 'success');
 
   /* تحديث العداد */
   const countEl = document.getElementById('adminOrderCount');
@@ -6588,6 +6616,73 @@ async function deleteOrder(orderId) {
       ).length + ' müşteri';
   }
 }
+
+
+
+
+
+
+/* ── حذف منتج محدد من الطلبية وإرجاع مخزونه ── */
+async function removeProductFromOrder(orderId, productId) {
+  const confirmed = confirm("Bu ürünü siparişten çıkarmak ve stoğa iade etmek istediğinize emin misiniz?");
+  if (!confirmed) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const order = allAdminOrders.find(o => o.id === orderId);
+  if (!order) return;
+
+  const itemIndex = order.items.findIndex(i => i.id === productId);
+  if (itemIndex === -1) return;
+
+  const itemToRemove = order.items[itemIndex];
+  const newItems = [...order.items];
+  newItems.splice(itemIndex, 1); // إزالة المنتج من المصفوفة
+
+  // 1. إرجاع مخزون هذا المنتج فقط
+  const { error: restoreErr } = await sb.rpc('restore_stock', { 
+    p_items: [{ id: itemToRemove.id, qty: itemToRemove.qty }] 
+  });
+  
+  if (restoreErr) {
+    showInvToast('Stok iade hatası', 'error');
+    return;
+  }
+
+  // 2. إذا أصبحت الطلبية فارغة تماماً، نقوم بحذفها بالكامل
+  if (newItems.length === 0) {
+    await deleteOrder(orderId);
+    return;
+  }
+
+  // 3. تحديث الطلبية بالمنتجات المتبقية
+  const { error: updateErr } = await sb
+    .from('orders')
+    .update({ items: newItems, updated_at: new Date().toISOString() })
+    .eq('id', orderId);
+
+  if (updateErr) {
+    showInvToast('Sipariş güncellenemedi', 'error');
+    return;
+  }
+
+  // 4. تحديث الواجهة المحلية
+  order.items = newItems;
+  const card = document.getElementById('admincard-' + orderId);
+  if (card) {
+    card.outerHTML = buildAdminOrderCard(order); // إعادة رسم بطاقة الطلبية
+  }
+  showInvToast('Ürün çıkarıldı ve stok iade edildi ✓', 'success');
+}
+
+
+
+
+
+
+
+  
 
 /* ── نافذة تأكيد الحذف ── */
 function showDeleteConfirm() {
