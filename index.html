@@ -6237,7 +6237,7 @@ function buildAdminOrderCard(order) {
             ${Number(item.price).toLocaleString('tr-TR')} ₺ / adet
           </div>` : ''}
       </div>
-            <div style="text-align:right;flex-shrink:0;">
+      <div style="text-align:right;flex-shrink:0;">
         <div style="
           font-size:13px;font-weight:900;color:#c9a84c;
           background:rgba(201,168,76,0.1);
@@ -6251,17 +6251,32 @@ function buildAdminOrderCard(order) {
             ${Number(item.price * item.qty).toLocaleString('tr-TR')} ₺
           </div>` : ''}
           
-        <!-- ★ زر إزالة المنتج الجديد ★ -->
-        <button onclick="removeProductFromOrder(${order.id}, ${item.id})" style="
-          margin-top:6px; width:100%; padding:4px 0; border-radius:5px;
-          background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25);
-          color:#ef4444; font-size:9px; font-weight:700; cursor:pointer;
-          transition:all 0.2s;"
-          onmouseover="this.style.background='rgba(239,68,68,0.2)'"
-          onmouseout="this.style.background='rgba(239,68,68,0.1)'">
-          <i class="fas fa-trash"></i> Çıkar
-        </button>
+        <!-- ★ أزرار التعديل والحذف ★ -->
+        <div style="display:flex; gap:4px; margin-top:6px;">
+          <!-- زر تعديل العدد -->
+          <button onclick="editProductQtyInOrder(${order.id}, ${item.id})" style="
+            flex:1; padding:5px 8px; border-radius:5px;
+            background:rgba(96,165,250,0.1); border:1px solid rgba(96,165,250,0.25);
+            color:#60a5fa; font-size:9px; font-weight:700; cursor:pointer;
+            transition:all 0.2s;"
+            onmouseover="this.style.background='rgba(96,165,250,0.2)'"
+            onmouseout="this.style.background='rgba(96,165,250,0.1)'">
+            <i class="fas fa-edit"></i> Adet
+          </button>
+          
+          <!-- زر إزالة المنتج -->
+          <button onclick="removeProductFromOrder(${order.id}, ${item.id})" style="
+            flex:1; padding:5px 8px; border-radius:5px;
+            background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25);
+            color:#ef4444; font-size:9px; font-weight:700; cursor:pointer;
+            transition:all 0.2s;"
+            onmouseover="this.style.background='rgba(239,68,68,0.2)'"
+            onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+            <i class="fas fa-trash"></i> Çıkar
+          </button>
+        </div>
       </div>
+
     </div>`).join('');
 
   /* ── ملاحظة الأدمن ── */
@@ -6680,6 +6695,90 @@ async function removeProductFromOrder(orderId, productId) {
 
 
 
+
+
+
+/* ── تعديل كمية منتج داخل الطلبية ── */
+async function editProductQtyInOrder(orderId, productId) {
+  const order = allAdminOrders.find(o => o.id === orderId);
+  if (!order) return;
+
+  const itemIndex = order.items.findIndex(i => i.id === productId);
+  if (itemIndex === -1) return;
+
+  const item = order.items[itemIndex];
+  const oldQty = item.qty;
+
+  // 1. طلب الكمية الجديدة من الأدمن
+  const input = prompt(`"${item.title}" için yeni miktarı girin (Mevcut: ${oldQty}):`, oldQty);
+  if (input === null || input.trim() === '') return; // تم الإلغاء
+
+  const newQty = parseInt(input, 10);
+  if (isNaN(newQty) || newQty < 0) {
+    showInvToast('Geçersiz miktar!', 'error');
+    return;
+  }
+
+  if (newQty === oldQty) return; // لم يتغير شيء
+
+  // إذا كانت الكمية الجديدة 0، نقوم بحذف المنتج
+  if (newQty === 0) {
+    removeProductFromOrder(orderId, productId);
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const diff = newQty - oldQty;
+
+  // 2. تعديل المخزون بناءً على الفارق
+  if (diff > 0) {
+    // زيادة الكمية -> خصم من المخزون
+    const { error: reserveErr } = await sb.rpc('reserve_stock', {
+      p_items: [{ id: item.id, qty: diff }]
+    });
+    if (reserveErr) {
+      showInvToast('Yetersiz stok! Miktar artırılamadı.', 'error');
+      return;
+    }
+  } else if (diff < 0) {
+    // تقليل الكمية -> إرجاع للمخزون
+    const { error: restoreErr } = await sb.rpc('restore_stock', {
+      p_items: [{ id: item.id, qty: Math.abs(diff) }]
+    });
+    if (restoreErr) {
+      showInvToast('Stok iade hatası', 'error');
+      return;
+    }
+  }
+
+  // 3. تحديث الطلبية في قاعدة البيانات
+  const newItems = [...order.items];
+  newItems[itemIndex].qty = newQty;
+
+  const { error: updateErr } = await sb
+    .from('orders')
+    .update({ items: newItems, updated_at: new Date().toISOString() })
+    .eq('id', orderId);
+
+  if (updateErr) {
+    showInvToast('Sipariş güncellenemedi', 'error');
+    return;
+  }
+
+  // 4. تحديث الواجهة المحلية
+  order.items = newItems;
+  const card = document.getElementById('admincard-' + orderId);
+  if (card) {
+    card.outerHTML = buildAdminOrderCard(order); // إعادة رسم البطاقة
+  }
+  showInvToast('Miktar başarıyla güncellendi ✓', 'success');
+}
+
+
+
+  
 
 
   
