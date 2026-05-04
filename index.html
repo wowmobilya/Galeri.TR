@@ -4874,81 +4874,73 @@ function showOrderSuccessToast(orderNum) {
 
 
 /* ============================================================
-   ★ SUPABASE — النظام الكامل المُحدَّث ★
-   يشمل: مخزون + طلبيات + حذف + realtime + تزامن سلة
+   ★ SUPABASE — إدارة المخزون الحي (نسخة مُصحَّحة) ★
 ============================================================ */
 
+/* ── ضع مفاتيحك هنا بدقة — بدون مسافات ── */
 const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
-const INV_TABLE    = 'inventory';
-const ORD_TABLE    = 'orders';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc'; // ← غيّر هذا
+const INV_TABLE    = 'inventory';   /* اسم الجدول بالضبط */
 
 let _sb                = null;
-let _sbReady           = false;
 let inventoryData      = {};
 let invPendingChanges  = {};
 let invRealtimeChannel = null;
-let ordRealtimeChannel = null;
+let _sbReady           = false;
 
-/* ══════════════════════════════════════════
-   تهيئة Supabase
-══════════════════════════════════════════ */
+/* ── تحميل مكتبة Supabase إذا لم تكن موجودة ── */
 async function ensureSupabaseLib() {
   if (typeof supabase !== 'undefined') return true;
-  return new Promise(resolve => {
-    const s   = document.createElement('script');
-    s.src     = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
+  return new Promise((resolve) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js';
     s.onload  = () => resolve(true);
     s.onerror = () => resolve(false);
     document.head.appendChild(s);
   });
 }
 
+/* ── تهيئة Supabase ── */
 async function initSupabase() {
   if (_sb && _sbReady) return _sb;
   const loaded = await ensureSupabaseLib();
-  if (!loaded) {
-    console.error('[SB] مكتبة supabase-js فشلت');
-    return null;
-  }
+  if (!loaded) { console.error('[Supabase] مكتبة supabase-js فشلت في التحميل'); return null; }
   try {
-    _sb      = supabase.createClient(
-      SUPABASE_URL.trim().replace(/\/+$/, ''),
-      SUPABASE_KEY.trim()
-    );
+    /* تنظيف URL من أي مسافات أو / زائدة في النهاية */
+    const cleanUrl = SUPABASE_URL.trim().replace(/\/+$/, '');
+    const cleanKey = SUPABASE_KEY.trim();
+    _sb      = supabase.createClient(cleanUrl, cleanKey);
     _sbReady = true;
-    console.log('[SB] ✅ متصل');
+    console.log('[Supabase] ✅ متصل بـ', cleanUrl);
     return _sb;
   } catch(e) {
-    console.error('[SB] createClient error:', e);
+    console.error('[Supabase] createClient error:', e);
     return null;
   }
 }
 
-/* ══════════════════════════════════════════
-   اختبار الاتصال
-══════════════════════════════════════════ */
+/* ── اختبار الاتصال ── */
 async function testSupabaseConnection() {
   const sb = await initSupabase();
   if (!sb) return false;
   try {
     const { data, error } = await sb
-      .from(INV_TABLE).select('id').limit(1);
+      .from(INV_TABLE)
+      .select('id')
+      .limit(1);
     if (error) {
-      console.error('[SB] اختبار فشل:', error.message);
+      console.error('[Supabase] اختبار فشل:', error.message, error.hint || '');
       return false;
     }
-    console.log('[SB] ✅ الجدول موجود');
+    console.log('[Supabase] ✅ الجدول موجود، بيانات:', data);
     return true;
   } catch(e) {
-    console.error('[SB] خطأ في الاختبار:', e);
+    console.error('[Supabase] خطأ في الاختبار:', e);
     return false;
   }
 }
 
-/* ══════════════════════════════════════════
-   تحميل المخزون
-══════════════════════════════════════════ */
+/* ── تحميل المخزون ── */
 async function loadInventory() {
   const sb = await initSupabase();
   if (!sb) return;
@@ -4958,11 +4950,14 @@ async function loadInventory() {
       .select('id, stock, is_active');
 
     if (error) {
-      console.error('[SB] loadInventory error:', error.message);
+      console.error('[Supabase] loadInventory error:', error.message);
+      console.error('[Supabase] hint:', error.hint);
+      console.error('[Supabase] details:', error.details);
       return;
     }
+
     if (!data || !data.length) {
-      console.warn('[SB] الجدول فارغ');
+      console.warn('[Supabase] الجدول فارغ — تأكد من تشغيل SQL الإدراج');
       return;
     }
 
@@ -4970,149 +4965,95 @@ async function loadInventory() {
       inventoryData[Number(row.id)] = row.stock ?? 0;
     });
 
-    console.log('[SB] ✅ تم تحميل', data.length, 'سجل مخزون');
+    console.log('[Supabase] ✅ تم تحميل', data.length, 'سجل');
     refreshStockBadges();
 
   } catch(e) {
-    console.error('[SB] loadInventory exception:', e);
+    console.error('[Supabase] loadInventory exception:', e);
   }
 }
 
-/* ══════════════════════════════════════════
-   Realtime — المخزون
-══════════════════════════════════════════ */
+/* ── الاشتراك في التحديثات الحية ── */
 async function subscribeInventory() {
   const sb = await initSupabase();
   if (!sb || invRealtimeChannel) return;
 
   invRealtimeChannel = sb
     .channel('inventory-live')
-    .on('postgres_changes',
+    .on(
+      'postgres_changes',
       { event: '*', schema: 'public', table: INV_TABLE },
       payload => {
-        const row      = payload.new || payload.old;
+        const row = payload.new || payload.old;
         if (!row || row.id === undefined) return;
+
         const id       = Number(row.id);
         const newStock = Number(row.stock ?? 0);
         const oldStock = inventoryData[id] ?? newStock;
 
+        /* 1. تحديث الذاكرة المحلية */
         inventoryData[id] = newStock;
+
+        /* 2. تحديث شارة المخزون في الصفحة */
         updateSingleStockBadge(id, newStock);
 
-        /* تحديث نافذة المخزون إن كانت مفتوحة */
+        /* 3. تحديث نافذة إدارة المخزون إذا كانت مفتوحة */
         const valEl = document.getElementById('invqty-' + id);
         const dotEl = document.getElementById('invdot-' + id);
         if (valEl) valEl.textContent = newStock;
         if (dotEl) dotEl.className =
           'inv-status-dot ' + getStockStatus(newStock).dotCls;
 
+        /* 4. ★ ضبط السلة إذا تجاوزت المخزون الجديد ★ */
         syncCartWithStock(id, newStock, oldStock);
       }
     )
     .subscribe(status => {
       const dot = document.getElementById('invSyncDot');
       const txt = document.getElementById('invSyncTxt');
+      console.log('[Supabase Realtime] status:', status);
       if (status === 'SUBSCRIBED') {
-        if (dot) dot.className    = 'inv-sync-dot';
-        if (txt) txt.textContent  = 'Canlı bağlantı';
+        if (dot) dot.className = 'inv-sync-dot';
+        if (txt) txt.textContent = 'Canlı bağlantı';
       } else {
-        if (dot) dot.className    = 'inv-sync-dot syncing';
-        if (txt) txt.textContent  =
+        if (dot) dot.className = 'inv-sync-dot syncing';
+        if (txt) txt.textContent =
           status === 'CHANNEL_ERROR' ? 'Bağlantı hatası' : 'Bağlanıyor...';
       }
     });
 }
 
-/* ══════════════════════════════════════════
-   Realtime — الطلبيات (للأدمن فقط)
-══════════════════════════════════════════ */
-async function subscribeOrders() {
-  if (currentUser !== ADMIN_USER) return;
-  const sb = await initSupabase();
-  if (!sb || ordRealtimeChannel) return;
 
-  ordRealtimeChannel = sb
-    .channel('orders-live')
-    .on('postgres_changes',
-      { event: 'INSERT', schema: 'public', table: ORD_TABLE },
-      payload => {
-        const newOrder = payload.new;
-        if (!newOrder) return;
-
-        allAdminOrders.unshift(newOrder);
-        renderAdminOrders(currentAdminFilter);
-
-        const countEl = document.getElementById('adminOrderCount');
-        if (countEl) {
-          countEl.textContent =
-            allAdminOrders.length + ' sipariş — ' +
-            Object.keys(
-              allAdminOrders.reduce((a,o) => ({...a,[o.username]:1}), {})
-            ).length + ' müşteri';
-        }
-
-        showInvToast(
-          `Yeni sipariş: ${newOrder.username} — ${newOrder.order_number}`,
-          'success'
-        );
-      }
-    )
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: ORD_TABLE },
-      payload => {
-        const updated = payload.new;
-        if (!updated) return;
-        const idx = allAdminOrders.findIndex(o => o.id === updated.id);
-        if (idx !== -1) {
-          allAdminOrders[idx] = updated;
-          const card = document.getElementById('admincard-' + updated.id);
-          if (card) card.outerHTML = buildAdminOrderCard(updated);
-        }
-      }
-    )
-    .on('postgres_changes',
-      { event: 'DELETE', schema: 'public', table: ORD_TABLE },
-      payload => {
-        const deleted = payload.old;
-        if (!deleted) return;
-        allAdminOrders = allAdminOrders.filter(o => o.id !== deleted.id);
-        const card = document.getElementById('admincard-' + deleted.id);
-        if (card) {
-          card.style.transition   = 'all 0.4s ease';
-          card.style.maxHeight    = '0';
-          card.style.opacity      = '0';
-          card.style.marginBottom = '0';
-          setTimeout(() => card.remove(), 420);
-        }
-      }
-    )
-    .subscribe(status => {
-      console.log('[SB Realtime Orders]', status);
-    });
-}
-
-/* ══════════════════════════════════════════
-   تزامن السلة مع المخزون
-══════════════════════════════════════════ */
+/* ============================================================
+   ★ ضبط السلة عند تغيّر المخزون في الوقت الفعلي ★
+============================================================ */
 function syncCartWithStock(id, newStock, oldStock) {
   const currentQty = orderCart[id] || 0;
+
+  /* لا يوجد شيء في السلة → تجاهل */
   if (currentQty === 0) return;
+
+  /* المخزون كافٍ → لا تغيير */
   if (currentQty <= newStock) return;
 
+  /* ★ المخزون أقل من الكمية في السلة → اضبط ★ */
   const adjustedQty = Math.max(0, newStock);
   orderCart[id]     = adjustedQty;
   saveCartToStorage();
 
+  /* تحديث العرض في صفحة الطلبيات */
   const valEl = document.getElementById('oqty-' + id);
   const card  = document.getElementById('ocard-' + id);
 
   if (valEl) {
-    valEl.style.color     = '#ef4444';
-    valEl.style.transform = 'scale(1.4)';
-    valEl.textContent     = adjustedQty;
+    valEl.style.transition = 'none';
+    valEl.style.color      = '#ef4444';
+    valEl.style.transform  = 'scale(1.4)';
+    valEl.textContent      = adjustedQty;
     setTimeout(() => {
-      valEl.style.color     = '';
-      valEl.style.transform = '';
+      valEl.style.transition = 'all 0.4s ease';
+      valEl.style.color      = '';
+      valEl.style.transform  = '';
     }, 600);
   }
 
@@ -5120,14 +5061,16 @@ function syncCartWithStock(id, newStock, oldStock) {
     if (adjustedQty === 0) {
       card.classList.remove('in-cart');
       card.style.borderColor = 'rgba(239,68,68,0.6)';
-      card.style.boxShadow   = '0 0 0 2px rgba(239,68,68,0.4)';
+      card.style.boxShadow   =
+        '0 0 0 2px rgba(239,68,68,0.4), 0 10px 34px rgba(239,68,68,0.15)';
       setTimeout(() => {
         card.style.borderColor = '';
         card.style.boxShadow   = '';
       }, 1800);
     } else {
       card.style.borderColor = 'rgba(251,191,36,0.7)';
-      card.style.boxShadow   = '0 0 0 2px rgba(251,191,36,0.4)';
+      card.style.boxShadow   =
+        '0 0 0 2px rgba(251,191,36,0.4), 0 10px 34px rgba(251,191,36,0.15)';
       setTimeout(() => {
         card.style.borderColor = '';
         card.style.boxShadow   = '';
@@ -5135,27 +5078,82 @@ function syncCartWithStock(id, newStock, oldStock) {
     }
   }
 
+  /* تحديث شريط الطلب */
   updateOrderBar();
 
+  /* ★ Toast إشعار للمستخدم ★ */
   const img  = images.find(i => i.id === id);
   const name = img ? img.title : `#${id}`;
 
-  showCartSyncToast(
-    adjustedQty === 0
-      ? `<i class="fas fa-times-circle" style="color:#ef4444;"></i>`
-      : `<i class="fas fa-exclamation-triangle" style="color:#fbbf24;"></i>`,
-    adjustedQty === 0
-      ? `<b style="color:#fff;">${name}</b> stok tükendi — sepetten kaldırıldı`
-      : `<b style="color:#fff;">${name}</b> miktarı güncellendi: `
-        + `<span style="color:#ef4444;text-decoration:line-through;">${currentQty}</span>`
-        + ` → <span style="color:#4ade80;">${adjustedQty}</span>`,
-    adjustedQty === 0 ? 'error' : 'warning'
-  );
+  if (adjustedQty === 0) {
+    showCartSyncToast(
+      `<i class="fas fa-times-circle" style="color:#ef4444;"></i>`,
+      `<b style="color:#fff;">${name}</b> stok tükendi — sepetten kaldırıldı`,
+      'error'
+    );
+  } else {
+    showCartSyncToast(
+      `<i class="fas fa-exclamation-triangle" style="color:#fbbf24;"></i>`,
+      `<b style="color:#fff;">${name}</b> miktarı güncellendi: ` +
+      `<span style="color:#ef4444;text-decoration:line-through;">${currentQty}</span>` +
+      ` → <span style="color:#4ade80;">${adjustedQty}</span>`,
+      'warning'
+    );
+  }
 }
 
-/* ══════════════════════════════════════════
-   حالة المخزون
-══════════════════════════════════════════ */
+
+/* ── Toast تزامن السلة ── */
+let _cartSyncToastTimer = null;
+
+function showCartSyncToast(iconHtml, msgHtml, type) {
+  let t = document.getElementById('cartSyncToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'cartSyncToast';
+    t.style.cssText = `
+      position:fixed;
+      bottom:90px;
+      left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:rgba(10,10,10,0.97);
+      font-family:'Montserrat',sans-serif;
+      font-size:12px;font-weight:600;
+      letter-spacing:0.5px;
+      padding:13px 20px;
+      border-radius:14px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.6);
+      backdrop-filter:blur(20px);
+      z-index:9998;
+      display:flex;align-items:center;gap:10px;
+      opacity:0;
+      transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events:none;
+      max-width:90vw;
+      line-height:1.5;
+    `;
+    document.body.appendChild(t);
+  }
+
+  t.style.border = `1px solid ${
+    type === 'error' ? 'rgba(239,68,68,0.45)' : 'rgba(251,191,36,0.45)'
+  }`;
+  t.innerHTML = `${iconHtml}<span>${msgHtml}</span>`;
+
+  requestAnimationFrame(() => {
+    t.style.opacity   = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+  });
+
+  clearTimeout(_cartSyncToastTimer);
+  _cartSyncToastTimer = setTimeout(() => {
+    t.style.opacity   = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 4000);
+}
+
+
+/* ── حالة المخزون ── */
 function getStockStatus(stock) {
   const n = Number(stock);
   if (n <= 0) return { cls:'out-stock', dotCls:'out', icon:'fa-times-circle',      label:'TÜKENDİ'    };
@@ -5163,6 +5161,7 @@ function getStockStatus(stock) {
   return              { cls:'in-stock',  dotCls:'in',  icon:'fa-check-circle',       label: n + ' ADET' };
 }
 
+/* ── شارة المخزون HTML ── */
 function buildStockBadgeHtml(imgId) {
   const stock = inventoryData[imgId];
   if (stock === undefined) {
@@ -5185,6 +5184,7 @@ function buildStockBadgeHtml(imgId) {
     </div>`;
 }
 
+/* ── تحديث شارة واحدة ── */
 function updateSingleStockBadge(id, stock) {
   const el = document.getElementById('sbadge-' + id);
   if (!el) return;
@@ -5196,6 +5196,7 @@ function updateSingleStockBadge(id, stock) {
     </span>`;
 }
 
+/* ── تحديث كل الشارات ── */
 function refreshStockBadges() {
   if (currentPage !== 'orders') return;
   images.forEach(img => {
@@ -5204,9 +5205,10 @@ function refreshStockBadges() {
   });
 }
 
-/* ══════════════════════════════════════════
+
+/* ============================================================
    نافذة إدارة المخزون
-══════════════════════════════════════════ */
+============================================================ */
 function openInventoryModal() {
   invPendingChanges = {};
   buildInvList('');
@@ -5227,6 +5229,7 @@ function handleInvModalBg(e) {
     closeInventoryModal();
 }
 
+/* ── بناء القائمة ── */
 function buildInvList(filter) {
   const list = document.getElementById('invList');
   if (!list) return;
@@ -5268,6 +5271,7 @@ function buildInvList(filter) {
 
 function filterInvList(val) { buildInvList(val); }
 
+/* ── تغيير كمية ── */
 function changeInvQty(id, delta) {
   const current = invPendingChanges[id] !== undefined
     ? invPendingChanges[id]
@@ -5278,13 +5282,10 @@ function changeInvQty(id, delta) {
   const valEl = document.getElementById('invqty-' + id);
   const dotEl = document.getElementById('invdot-' + id);
   if (valEl) valEl.textContent = newVal;
-  if (dotEl) dotEl.className =
-    'inv-status-dot ' + getStockStatus(newVal).dotCls;
+  if (dotEl) dotEl.className = 'inv-status-dot ' + getStockStatus(newVal).dotCls;
 }
 
-/* ══════════════════════════════════════════
-   حفظ المخزون في Supabase
-══════════════════════════════════════════ */
+/* ── حفظ في Supabase ── */
 async function saveAllInventory() {
   const btn = document.getElementById('invSaveBtn');
   const dot = document.getElementById('invSyncDot');
@@ -5296,11 +5297,8 @@ async function saveAllInventory() {
     return;
   }
 
-  if (btn) {
-    btn.disabled  = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> KAYDEDİLİYOR...';
-  }
-  if (dot) dot.className   = 'inv-sync-dot syncing';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> KAYDEDİLİYOR...'; }
+  if (dot) dot.className = 'inv-sync-dot syncing';
   if (txt) txt.textContent = 'Kaydediliyor...';
 
   const sb = await initSupabase();
@@ -5311,22 +5309,34 @@ async function saveAllInventory() {
   }
 
   try {
-    const rows = changes.map(([id, stock]) => {
-      const img = images.find(i => i.id === Number(id));
-      return {
-        id         : Number(id),
-        title      : img ? img.title : String(id),
-        stock      : Number(stock),
-        updated_at : new Date().toISOString(),
-      };
-    });
+   const rows = changes.map(([id, stock]) => {
+  const img = images.find(i => i.id === Number(id));
+  return {
+    id         : Number(id),
+    title      : img ? img.title : String(id),
+    stock      : Number(stock),
+    updated_at : new Date().toISOString(),
+  };
+});
+
+
+    console.log('[Supabase] upsert rows:', rows);
 
     const { data, error } = await sb
       .from(INV_TABLE)
       .upsert(rows, { onConflict: 'id' })
-      .select();
+      .select();   /* ← select() يُعيد البيانات المحدَّثة */
 
-    if (error) throw new Error(error.message);
+    if (error) {
+      console.error('[Supabase] upsert error:', error);
+      console.error('message:', error.message);
+      console.error('hint:',    error.hint);
+      console.error('details:', error.details);
+      console.error('code:',    error.code);
+      throw new Error(error.message || JSON.stringify(error));
+    }
+
+    console.log('[Supabase] ✅ upsert نجح:', data);
 
     /* تحديث الذاكرة المحلية */
     changes.forEach(([id, stock]) => {
@@ -5336,373 +5346,24 @@ async function saveAllInventory() {
     refreshStockBadges();
 
     showInvToast('Stok başarıyla güncellendi ✓', 'success');
-    if (dot) dot.className   = 'inv-sync-dot';
+    if (dot) dot.className = 'inv-sync-dot';
     if (txt) txt.textContent = 'Canlı bağlantı';
     setTimeout(() => closeInventoryModal(), 700);
 
   } catch(e) {
-    console.error('[SB] saveAllInventory error:', e);
-    showInvToast('Kayıt hatası: ' + e.message, 'error');
+    console.error('[Supabase] saveAllInventory exception:', e);
+    showInvToast('Kayıt hatası: ' + (e.message || String(e)), 'error');
     resetInvBtn(btn, dot, txt);
   }
 }
 
 function resetInvBtn(btn, dot, txt) {
-  if (btn) {
-    btn.disabled  = false;
-    btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> KAYDET';
-  }
-  if (dot) dot.className   = 'inv-sync-dot';
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> KAYDET'; }
+  if (dot) dot.className = 'inv-sync-dot';
   if (txt) txt.textContent = 'Canlı bağlantı';
 }
 
-/* ══════════════════════════════════════════
-   خصم المخزون عند الطلب
-══════════════════════════════════════════ */
-async function deductStockAfterOrder(selected) {
-  const sb = await initSupabase();
-  if (!sb) return { success: false, errors: [] };
-
-  const items = selected
-    .filter(img => (orderCart[img.id] || 0) > 0)
-    .map(img => ({ id: img.id, qty: orderCart[img.id] }));
-
-  if (!items.length) return { success: true, errors: [] };
-
-  try {
-    const { data, error } = await sb
-      .rpc('reserve_stock', { p_items: items });
-
-    if (error) {
-      if (error.message?.includes('STOCK_ERROR:')) {
-        const errJson = error.message.replace('STOCK_ERROR:', '').trim();
-        try {
-          return { success: false, errors: JSON.parse(errJson) };
-        } catch { /* ignore */ }
-      }
-      return { success: false, errors: [{ error: error.message }] };
-    }
-
-    /* تحديث الذاكرة المحلية فوراً */
-    if (Array.isArray(data)) {
-      data.forEach(row => {
-        const id = Number(row.id);
-        inventoryData[id] = Number(row.remaining);
-        updateSingleStockBadge(id, Number(row.remaining));
-      });
-    }
-
-    return { success: true, errors: [] };
-
-  } catch(e) {
-    return { success: false, errors: [{ error: String(e) }] };
-  }
-}
-
-/* ══════════════════════════════════════════
-   حفظ الطلبية
-══════════════════════════════════════════ */
-async function saveOrderToSupabase(orderNum, items, note) {
-  const sb = await initSupabase();
-  if (!sb || !currentUser || !items.length) return null;
-
-  const orderData = {
-    username     : currentUser,
-    order_number : orderNum,
-    items        : items.map(img => ({
-      id       : img.id,
-      title    : img.title,
-      catLabel : img.catLabel,
-      qty      : orderCart[img.id] || 0,
-      price    : img.price || 0,
-      src      : img.src,
-    })),
-    note   : note || '',
-    status : 'pending',
-  };
-
-  try {
-    const { data, error } = await sb
-      .from(ORD_TABLE)
-      .insert([orderData])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('[SB] saveOrder error:', error.message);
-      return null;
-    }
-
-    console.log('[SB] ✅ طلبية محفوظة:', data.order_number);
-    updateMyOrderBtn();
-    return data;
-
-  } catch(e) {
-    console.error('[SB] saveOrder exception:', e);
-    return null;
-  }
-}
-
-/* ══════════════════════════════════════════
-   ★ حذف الطلبية — النسخة المُصحَّحة ★
-══════════════════════════════════════════ */
-async function deleteOrder(orderId) {
-  const confirmed = await showDeleteConfirm();
-  if (!confirmed) return;
-
-  const sb = await initSupabase();
-  if (!sb) {
-    showInvToast('Supabase bağlantısı yok!', 'error');
-    return;
-  }
-
-  /* ★ تحويل ID إلى رقم صحيح */
-  const numericId = parseInt(orderId, 10);
-  if (isNaN(numericId)) {
-    showInvToast('Geçersiz sipariş ID!', 'error');
-    return;
-  }
-
-  /* تأثير بصري */
-  const card = document.getElementById('admincard-' + orderId);
-  if (card) {
-    card.style.transition = 'all 0.3s ease';
-    card.style.opacity    = '0.4';
-    card.style.transform  = 'scale(0.98)';
-  }
-
-  console.log('[Delete] حذف الطلبية ID:', numericId);
-
-  /* ★ الحذف مع .select() للتحقق من النجاح */
-  const { data, error } = await sb
-    .from(ORD_TABLE)
-    .delete()
-    .eq('id', numericId)
-    .select();
-
-  console.log('[Delete] النتيجة:', { data, error });
-
-  if (error) {
-    console.error('[Delete] فشل:', error.message, error.hint, error.code);
-    if (card) {
-      card.style.opacity   = '1';
-      card.style.transform = 'scale(1)';
-    }
-    showInvToast('Silme hatası: ' + error.message, 'error');
-    return;
-  }
-
-  /* ★ تحقق من أن السجل حُذف فعلاً */
-  if (!data || data.length === 0) {
-    console.warn('[Delete] لم يُحذف أي سجل — تحقق من RLS');
-    if (card) {
-      card.style.opacity   = '1';
-      card.style.transform = 'scale(1)';
-    }
-    showInvToast('Kayıt bulunamadı veya yetki yok!', 'error');
-    return;
-  }
-
-  /* ✅ نجح الحذف — تحديث UI */
-  allAdminOrders = allAdminOrders.filter(o => o.id !== numericId);
-
-  if (card) {
-    card.style.maxHeight   = card.offsetHeight + 'px';
-    card.style.overflow    = 'hidden';
-    requestAnimationFrame(() => {
-      card.style.transition   = 'all 0.4s ease';
-      card.style.maxHeight    = '0';
-      card.style.opacity      = '0';
-      card.style.marginBottom = '0';
-      card.style.padding      = '0';
-      setTimeout(() => card.remove(), 420);
-    });
-  }
-
-  showInvToast('Sipariş başarıyla silindi ✓', 'success');
-
-  /* تحديث العداد */
-  const countEl = document.getElementById('adminOrderCount');
-  if (countEl) {
-    countEl.textContent =
-      allAdminOrders.length + ' sipariş — ' +
-      Object.keys(
-        allAdminOrders.reduce((a, o) => ({...a, [o.username]: 1}), {})
-      ).length + ' müşteri';
-  }
-}
-
-/* ══════════════════════════════════════════
-   تحديث حالة الطلبية
-══════════════════════════════════════════ */
-async function updateOrderStatus(orderId, newStatus, btnEl) {
-  const sb        = await initSupabase();
-  if (!sb) return;
-
-  const numericId = parseInt(orderId, 10);
-  const card      = document.getElementById('admincard-' + orderId);
-  if (card) card.style.opacity = '0.6';
-
-  const { error } = await sb
-    .from(ORD_TABLE)
-    .update({
-      status     : newStatus,
-      updated_at : new Date().toISOString()
-    })
-    .eq('id', numericId);
-
-  if (error) {
-    console.error('[SB] updateStatus error:', error.message);
-    if (card) card.style.opacity = '1';
-    showInvToast('Güncelleme hatası: ' + error.message, 'error');
-    return;
-  }
-
-  const idx = allAdminOrders.findIndex(o => o.id === numericId);
-  if (idx !== -1) {
-    allAdminOrders[idx].status = newStatus;
-    const updatedCard = document.getElementById('admincard-' + orderId);
-    if (updatedCard)
-      updatedCard.outerHTML = buildAdminOrderCard(allAdminOrders[idx]);
-  }
-
-  const st = ORDER_STATUSES[newStatus];
-  showInvToast(
-    `Sipariş durumu: ${st.label}`,
-    newStatus === 'cancelled' ? 'error' :
-    newStatus === 'ready'     ? 'success' : 'info'
-  );
-}
-
-/* ══════════════════════════════════════════
-   حفظ ملاحظة الأدمن
-══════════════════════════════════════════ */
-async function saveAdminNote(orderId) {
-  const textarea  = document.getElementById('adminnote-' + orderId);
-  if (!textarea) return;
-
-  const note      = textarea.value.trim();
-  const numericId = parseInt(orderId, 10);
-  const sb        = await initSupabase();
-  if (!sb) return;
-
-  const btn = textarea.nextElementSibling;
-  if (btn) {
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-    btn.disabled  = true;
-  }
-
-  const { error } = await sb
-    .from(ORD_TABLE)
-    .update({
-      admin_note : note,
-      updated_at : new Date().toISOString()
-    })
-    .eq('id', numericId);
-
-  if (btn) {
-    btn.disabled  = false;
-    btn.innerHTML = '<i class="fas fa-save"></i> KAYDET';
-  }
-
-  if (error) {
-    showInvToast('Not kaydedilemedi: ' + error.message, 'error');
-    return;
-  }
-
-  const idx = allAdminOrders.findIndex(o => o.id === numericId);
-  if (idx !== -1) allAdminOrders[idx].admin_note = note;
-
-  showInvToast('Not başarıyla kaydedildi ✓', 'success');
-}
-
-/* ══════════════════════════════════════════
-   تحميل طلبيات الأدمن
-══════════════════════════════════════════ */
-let allAdminOrders     = [];
-let currentAdminFilter = 'all';
-
-async function loadAdminOrders() {
-  const sb      = await initSupabase();
-  const listEl  = document.getElementById('adminOrdersList');
-  const countEl = document.getElementById('adminOrderCount');
-
-  if (listEl) listEl.innerHTML = `
-    <div style="text-align:center;padding:40px;">
-      <i class="fas fa-spinner fa-spin"
-         style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
-    </div>`;
-
-  if (!sb) return;
-
-  const { data, error } = await sb
-    .from(ORD_TABLE)
-    .select('*')
-    .order('created_at', { ascending: false });
-
-  if (error || !data) {
-    if (listEl) listEl.innerHTML = `
-      <div style="text-align:center;padding:40px;color:#ef4444;">
-        <i class="fas fa-exclamation-circle" style="font-size:28px;"></i>
-        <p style="margin-top:12px;font-size:12px;">
-          Yükleme hatası: ${error?.message}
-        </p>
-      </div>`;
-    return;
-  }
-
-  allAdminOrders = data;
-
-  if (countEl) countEl.textContent =
-    data.length + ' sipariş — ' +
-    Object.keys(
-      data.reduce((a,o) => ({...a,[o.username]:1}), {})
-    ).length + ' müşteri';
-
-  renderAdminOrders(currentAdminFilter);
-
-  /* تشغيل Realtime للأدمن */
-  subscribeOrders();
-}
-
-/* ══════════════════════════════════════════
-   تحميل طلبيات المستخدم
-══════════════════════════════════════════ */
-async function updateMyOrderBtn() {
-  if (currentUser === ADMIN_USER) return;
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  const { data } = await sb
-    .from(ORD_TABLE)
-    .select('id, status, order_number, created_at')
-    .eq('username', currentUser)
-    .order('created_at', { ascending: false })
-    .limit(1);
-
-  const btn = document.getElementById('myOrderBtn');
-  const dot = document.getElementById('myOrderDot');
-
-  if (!data || !data.length) {
-    if (btn) btn.style.display = 'none';
-    return;
-  }
-
-  const last   = data[0];
-  const status = ORDER_STATUSES[last.status] || ORDER_STATUSES.pending;
-
-  if (btn) {
-    btn.style.display     = 'flex';
-    btn.style.borderColor = status.border;
-    btn.style.color       = status.color;
-    btn.title             = 'Siparişim: ' + status.label;
-  }
-  if (dot) dot.style.background = status.color;
-}
-
-/* ══════════════════════════════════════════
-   Toast عام
-══════════════════════════════════════════ */
+/* ── Toast ── */
 function showInvToast(msg, type = 'success') {
   let t = document.getElementById('invToast');
   if (!t) {
@@ -5722,10 +5383,9 @@ function showInvToast(msg, type = 'success') {
     document.body.appendChild(t);
   }
   const colors = {
-    success : { bg:'rgba(10,10,10,0.97)',  border:'rgba(74,222,128,0.4)',  icon:`<i class="fas fa-check-circle"        style="color:#4ade80;"></i>` },
-    error   : { bg:'rgba(30,5,5,0.97)',    border:'rgba(239,68,68,0.4)',   icon:`<i class="fas fa-exclamation-circle"  style="color:#ef4444;"></i>` },
-    info    : { bg:'rgba(10,10,10,0.97)',  border:'rgba(201,168,76,0.4)',  icon:`<i class="fas fa-info-circle"         style="color:#c9a84c;"></i>` },
-    warning : { bg:'rgba(20,15,5,0.97)',   border:'rgba(251,191,36,0.4)',  icon:`<i class="fas fa-exclamation-triangle" style="color:#fbbf24;"></i>` },
+    success : { bg:'rgba(10,10,10,0.97)', border:'rgba(74,222,128,0.4)',  icon:`<i class="fas fa-check-circle" style="color:#4ade80;"></i>` },
+    error   : { bg:'rgba(30,5,5,0.97)',   border:'rgba(239,68,68,0.4)',   icon:`<i class="fas fa-exclamation-circle" style="color:#ef4444;"></i>` },
+    info    : { bg:'rgba(10,10,10,0.97)', border:'rgba(201,168,76,0.4)',  icon:`<i class="fas fa-info-circle" style="color:#c9a84c;"></i>` },
   };
   const c = colors[type] || colors.info;
   t.style.background = c.bg;
@@ -5743,66 +5403,249 @@ function showInvToast(msg, type = 'success') {
   }, 3200);
 }
 
-/* ══════════════════════════════════════════
-   Toast تزامن السلة
-══════════════════════════════════════════ */
-let _cartSyncToastTimer = null;
 
-function showCartSyncToast(iconHtml, msgHtml, type) {
-  let t = document.getElementById('cartSyncToast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'cartSyncToast';
-    t.style.cssText = `
-      position:fixed;bottom:90px;left:50%;
-      transform:translateX(-50%) translateY(20px);
-      background:rgba(10,10,10,0.97);
-      font-family:'Montserrat',sans-serif;
-      font-size:12px;font-weight:600;letter-spacing:0.5px;
-      padding:13px 20px;border-radius:14px;
-      box-shadow:0 12px 40px rgba(0,0,0,0.6);
-      backdrop-filter:blur(20px);z-index:9998;
-      display:flex;align-items:center;gap:10px;
-      opacity:0;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      pointer-events:none;max-width:90vw;line-height:1.5;`;
-    document.body.appendChild(t);
+
+
+
+
+
+/* ============================================================
+   ★ خصم المخزون عند تنزيل الطلبية ★
+============================================================ */
+async function deductStockAfterOrder(selected) {
+  const sb = await initSupabase();
+  if (!sb) {
+    console.warn('[Stock] Supabase غير متاح — تخطي الخصم');
+    return { success: false, errors: [] };
   }
-  t.style.border = `1px solid ${
-    type === 'error' ? 'rgba(239,68,68,0.45)' : 'rgba(251,191,36,0.45)'
-  }`;
-  t.innerHTML = `${iconHtml}<span>${msgHtml}</span>`;
 
-  requestAnimationFrame(() => {
-    t.style.opacity   = '1';
-    t.style.transform = 'translateX(-50%) translateY(0)';
-  });
-  clearTimeout(_cartSyncToastTimer);
-  _cartSyncToastTimer = setTimeout(() => {
-    t.style.opacity   = '0';
-    t.style.transform = 'translateX(-50%) translateY(20px)';
-  }, 4000);
+  /* بناء قائمة العناصر للخصم */
+  const items = selected
+    .filter(img => (orderCart[img.id] || 0) > 0)
+    .map(img => ({
+      id:  img.id,
+      qty: orderCart[img.id]
+    }));
+
+  if (!items.length) return { success: true, errors: [] };
+
+  try {
+    /* استدعاء الدالة الآمنة في Supabase */
+    const { data, error } = await sb.rpc('reserve_stock', {
+      p_items: items
+    });
+
+    if (error) {
+      /* تحليل أخطاء المخزون غير الكافي */
+      if (error.message?.includes('STOCK_ERROR:')) {
+        const errJson = error.message.replace('STOCK_ERROR:', '').trim();
+        try {
+          const errors = JSON.parse(errJson);
+          return { success: false, errors };
+        } catch { /* ignore */ }
+      }
+      console.error('[Stock] deductStock error:', error);
+      return { success: false, errors: [{ error: error.message }] };
+    }
+
+    console.log('[Stock] ✅ خُصم بنجاح:', data);
+
+    /* تحديث الذاكرة المحلية فوراً */
+    if (Array.isArray(data)) {
+      data.forEach(row => {
+        const id = Number(row.id);
+        inventoryData[id] = Number(row.remaining);
+        updateSingleStockBadge(id, Number(row.remaining));
+      });
+    }
+
+    return { success: true, errors: [] };
+
+  } catch(e) {
+    console.error('[Stock] deductStock exception:', e);
+    return { success: false, errors: [{ error: String(e) }] };
+  }
 }
 
-/* ══════════════════════════════════════════
-   تهيئة عند تسجيل الدخول
-══════════════════════════════════════════ */
-const _origDoLogin_sb = doLogin;
+/* ── عرض رسالة خطأ المخزون ── */
+function showStockErrorModal(errors, onContinue) {
+  /* بناء قائمة الموديلات التي نفد مخزونها */
+  const lines = errors.map(err => {
+    const img = images.find(i => i.id === Number(err.id));
+    const name = img ? img.title : `ID:${err.id}`;
+    if (err.error === 'insufficient') {
+      return `<div style="
+        display:flex;align-items:center;justify-content:space-between;
+        padding:9px 12px;background:rgba(239,68,68,0.07);
+        border:1px solid rgba(239,68,68,0.2);border-radius:9px;
+        margin-bottom:7px;">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#fff;">${name}</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);
+               letter-spacing:1px;margin-top:2px;">
+            Talep: ${orderCart[Number(err.id)]} adet
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;font-weight:700;color:#ef4444;">
+            <i class="fas fa-times-circle"></i> YETERSİZ
+          </div>
+          <div style="font-size:10px;color:#fbbf24;margin-top:2px;">
+            Mevcut: ${err.available ?? 0} adet
+          </div>
+        </div>
+      </div>`;
+    }
+    return `<div style="padding:8px 12px;color:#ef4444;font-size:12px;">
+      ${name} — ${err.error}
+    </div>`;
+  }).join('');
+
+  /* إنشاء النافذة */
+  let modal = document.getElementById('stockErrModal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'stockErrModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9000;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);backdrop-filter:blur(16px);
+    padding:16px;`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:440px;
+      background:linear-gradient(145deg,#0f0f0f,#1a0a0a);
+      border:1px solid rgba(239,68,68,0.3);
+      border-radius:20px;overflow:hidden;
+      box-shadow:0 40px 80px rgba(0,0,0,0.8),
+                 0 0 60px rgba(239,68,68,0.06);
+      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+      <!-- خط علوي أحمر -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#ef4444 30%,#ff6b6b 50%,#ef4444 70%,transparent);"></div>
+
+      <!-- هيدر -->
+      <div style="padding:18px 20px 14px;display:flex;
+           align-items:center;justify-content:space-between;
+           border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:42px;height:42px;flex-shrink:0;
+               background:rgba(239,68,68,0.12);
+               border:1px solid rgba(239,68,68,0.3);
+               border-radius:12px;display:flex;align-items:center;
+               justify-content:center;color:#ef4444;font-size:18px;">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(239,68,68,0.6);text-transform:uppercase;
+                 margin-bottom:3px;">STOK UYARISI</div>
+            <div style="font-size:16px;font-weight:900;color:#fff;">
+              Yetersiz Stok
+            </div>
+          </div>
+        </div>
+        <div onclick="closeStockErrModal()" style="
+          width:32px;height:32px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+          color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <!-- جسم -->
+      <div style="padding:16px 18px;">
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);
+             letter-spacing:1px;margin-bottom:12px;line-height:1.6;">
+          Aşağıdaki ürünler için yeterli stok bulunmuyor.
+          Miktarları güncelleyip tekrar deneyin.
+        </div>
+        ${lines}
+      </div>
+
+      <!-- أزرار -->
+      <div style="padding:12px 18px 18px;display:flex;gap:8px;">
+        <button onclick="closeStockErrModal()" style="
+          flex:1;padding:11px;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.5);
+          font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1px;
+          cursor:pointer;transition:all 0.25s;">
+          <i class="fas fa-times"></i> İPTAL
+        </button>
+        <button onclick="closeStockErrModal(true)" style="
+          flex:2;padding:11px;border-radius:10px;border:none;
+          background:linear-gradient(135deg,#ef4444,#dc2626);
+          color:#fff;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:1px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:7px;">
+          <i class="fas fa-edit"></i> MİKTARI DÜZENLE
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  window._stockErrOnContinue = onContinue || null;
+}
+
+function closeStockErrModal(goEdit = false) {
+  document.getElementById('stockErrModal')?.remove();
+  if (goEdit) {
+    /* إغلاق نافذة التأكيد والعودة لصفحة الطلبيات */
+    closeOrderConfirmModal();
+    showPage('orders');
+  }
+}
+
+
+
+
+
+
+
+
+/* ============================================================
+   Override — تهيئة عند الدخول
+============================================================ */
+/* نضيف تحميل المخزون بعد تسجيل الدخول */
+const _origDoLogin_inv = doLogin;
 doLogin = function() {
-  _origDoLogin_sb();
+  _origDoLogin_inv();
+  /* ننتظر قليلاً حتى يكتمل الـ login animation */
   setTimeout(async () => {
     const ok = await testSupabaseConnection();
     if (ok) {
       await loadInventory();
       subscribeInventory();
-      updateAdminNavVisibility();
-      /* تشغيل Realtime للأدمن مباشرة */
-      if (currentUser === ADMIN_USER) {
-        subscribeOrders();
-      }
     } else {
-      console.warn('[SB] الاتصال فشل — تحقق من المفاتيح');
+      console.warn('[Supabase] الاتصال فشل — تحقق من المفاتيح واسم الجدول');
     }
   }, 900);
+};
+
+/* تحديث buildOrderPage لإضافة الشارات */
+const _origBuildOrderPage_inv = buildOrderPage;
+buildOrderPage = function() {
+  _origBuildOrderPage_inv();
+  setTimeout(() => refreshStockBadges(), 150);
+};
+
+/* تعديل buildOrderCard لإضافة شارة المخزون */
+const _origBuildOrderCard_inv = buildOrderCard;
+buildOrderCard = function(img, idx) {
+  const html      = _origBuildOrderCard_inv(img, idx);
+  const stockHtml = buildStockBadgeHtml(img.id);
+  /* أدرج الشارة قبل آخر </div> في البطاقة */
+  const lastDiv = html.lastIndexOf('</div>');
+  return html.slice(0, lastDiv) + stockHtml + html.slice(lastDiv);
 };
 
 
