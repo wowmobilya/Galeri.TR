@@ -2120,21 +2120,40 @@ html { scroll-behavior: auto; }
     
     <input type="hidden" id="peId" value="" />
     
-    <!-- استبدل قسم الـ JSON القديم بهذا الكود -->
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-top:10px; border-top:1px solid #333;">
-      <label style="color:#c9a84c; font-size:12px; font-weight:bold;">
-        <i class="fas fa-ruler-combined"></i> Ölçüler (Parçalar)
-      </label>
-      <button onclick="addDimRow()" style="background:rgba(201,168,76,0.15); border:1px solid rgba(201,168,76,0.4); color:#c9a84c; padding:6px 12px; border-radius:8px; font-size:10px; font-weight:bold; cursor:pointer; transition:all 0.2s;">
-        <i class="fas fa-plus"></i> YENİ ÖLÇÜ EKLE
-      </button>
+    <label style="color:#aaa; font-size:11px;">Model Adı</label>
+    <input type="text" id="peTitle" style="width:100%; padding:10px; margin-bottom:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+    
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Kategori</label>
+        <select id="peCat" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;">
+          <option value="orta">Orta Sehpa</option>
+          <option value="tv">TV Ünitesi</option>
+          <option value="dresuar">Dresuar</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Etiket (Örn: SET 1+1)</label>
+        <input type="text" id="peLabel" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+      </div>
     </div>
 
-    <!-- الحاوية التي ستظهر بداخلها المقاسات -->
-    <div id="peDimsContainer" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px; max-height:220px; overflow-y:auto; padding-right:5px;">
-      <!-- سيتم إضافة المقاسات هنا برمجياً -->
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Fiyat (₺)</label>
+        <input type="number" id="pePrice" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+      </div>
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Görsel URL</label>
+        <input type="text" id="peImage" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+      </div>
     </div>
 
+    <label style="color:#aaa; font-size:11px; display:flex; justify-content:space-between;">
+      <span>Ölçüler (JSON Formatı)</span>
+      <span style="color:#c9a84c; cursor:pointer;" onclick="insertSampleDims()">Örnek Ekle</span>
+    </label>
+    <textarea id="peDims" rows="4" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px; font-family:monospace; margin-bottom:15px;"></textarea>
 
     <div style="display:flex; gap:10px;">
       <button onclick="closeProductEditor()" style="flex:1; padding:12px; background:#333; color:#fff; border:none; border-radius:8px; cursor:pointer;">İPTAL</button>
@@ -7581,12 +7600,8 @@ function buildInvList(filter) {
 }
 
 // 2. فتح نافذة التعديل/الإضافة
-// فتح نافذة التعديل/الإضافة
 function openProductEditor(id = null) {
   const modal = document.getElementById('productEditorModal');
-  const container = document.getElementById('peDimsContainer');
-  container.innerHTML = ''; // تفريغ المقاسات السابقة
-
   if(id) {
     const img = images.find(i => i.id === id);
     document.getElementById('prodEditorTitle').textContent = 'Modeli Düzenle';
@@ -7596,13 +7611,7 @@ function openProductEditor(id = null) {
     document.getElementById('peLabel').value = img.catLabel;
     document.getElementById('pePrice').value = img.price;
     document.getElementById('peImage').value = img.src;
-    
-    // جلب المقاسات ورسمها
-    if(img.dims && img.dims.length > 0) {
-      img.dims.forEach(dim => addDimRow(dim));
-    } else {
-      addDimRow(); // إضافة صف فارغ كبداية
-    }
+    document.getElementById('peDims').value = JSON.stringify(img.dims, null, 2);
   } else {
     document.getElementById('prodEditorTitle').textContent = 'Yeni Model Ekle';
     document.getElementById('peId').value = '';
@@ -7611,66 +7620,10 @@ function openProductEditor(id = null) {
     document.getElementById('peLabel').value = '';
     document.getElementById('pePrice').value = '';
     document.getElementById('peImage').value = '';
-    addDimRow(); // إضافة صف فارغ كبداية
+    document.getElementById('peDims').value = '[]';
   }
   modal.style.display = 'flex';
 }
-
-// حفظ المنتج في قاعدة البيانات
-async function saveProductToDB() {
-  const sb = await initSupabase();
-  if(!sb) return;
-
-  const id = document.getElementById('peId').value;
-  
-  // تجميع المقاسات من الحقول
-  let dims = [];
-  const rows = document.querySelectorAll('.dim-row');
-  rows.forEach(row => {
-    const name = row.querySelector('.dim-name').value.trim();
-    const l = Number(row.querySelector('.dim-l').value) || 0;
-    const w = Number(row.querySelector('.dim-w').value) || 0;
-    const h = Number(row.querySelector('.dim-h').value) || 0;
-    const kg = Number(row.querySelector('.dim-kg').value) || 0;
-    
-    // حفظ المقاس فقط إذا كان له اسم
-    if(name) {
-      dims.push({
-        name: name,
-        icon: "fa-layer-group", // الرمز الثابت الجميل
-        l: l,
-        w: w,
-        h: h,
-        kg: kg
-      });
-    }
-  });
-
-  const productData = {
-    title: document.getElementById('peTitle').value,
-    cat: document.getElementById('peCat').value,
-    cat_label: document.getElementById('peLabel').value,
-    price: Number(document.getElementById('pePrice').value) || 0,
-    image_url: document.getElementById('peImage').value,
-    dims: dims,
-    updated_at: new Date().toISOString()
-  };
-
-  if(id) productData.id = Number(id);
-  else productData.id = Date.now() % 1000000;
-
-  const { error } = await sb.from(INV_TABLE).upsert([productData], { onConflict: 'id' });
-  
-  if(error) {
-    showInvToast('Hata: ' + error.message, 'error');
-  } else {
-    showInvToast('Model kaydedildi ✓', 'success');
-    closeProductEditor();
-    await loadInventory();
-    buildInvList('');
-  }
-}
-
 
 function closeProductEditor() {
   document.getElementById('productEditorModal').style.display = 'none';
@@ -7751,66 +7704,6 @@ async function subscribeInventory() {
 
 
 
-
-
-
-// دالة لإضافة بطاقة مقاس جديدة
-function addDimRow(dim = null) {
-  const container = document.getElementById('peDimsContainer');
-  const row = document.createElement('div');
-  row.className = 'dim-row';
-  
-  // تصميم بطاقة المقاس
-  row.style.cssText = 'position:relative; background:linear-gradient(145deg, #1a1a1a, #111); border:1px solid #333; border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:10px; transition:all 0.3s;';
-  
-  const name = dim ? dim.name : '';
-  const l = dim ? dim.l : '';
-  const w = dim ? dim.w : '';
-  const h = dim ? dim.h : '';
-  const kg = dim ? dim.kg : '';
-
-  // الرمز الثابت الجميل (fa-layer-group) وزر الحذف (X)
-  row.innerHTML = `
-    <button onclick="this.parentElement.remove()" title="Bu ölçüyü sil" style="position:absolute; top:8px; right:8px; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; width:26px; height:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">
-      <i class="fas fa-times"></i>
-    </button>
-    
-    <div style="display:flex; align-items:center; gap:10px; padding-right:35px;">
-      <div style="width:32px; height:32px; background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.2); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#c9a84c; flex-shrink:0;">
-        <i class="fas fa-layer-group"></i>
-      </div>
-      <input type="text" class="dim-name" placeholder="Parça Adı (Örn: Büyük Sehpa)" value="${name}" style="flex:1; background:#0a0a0a; border:1px solid #444; color:#fff; padding:9px 12px; border-radius:8px; font-size:12px; outline:none; transition:border 0.3s;" onfocus="this.style.borderColor='#c9a84c'" onblur="this.style.borderColor='#444'">
-    </div>
-    
-    <div style="display:flex; gap:8px;">
-      <div style="flex:1; position:relative;">
-        <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#666; font-size:10px;">L</span>
-        <input type="number" class="dim-l" placeholder="Uzunluk" value="${l}" style="width:100%; background:#0a0a0a; border:1px solid #444; color:#fff; padding:8px 8px 8px 22px; border-radius:8px; font-size:11px; outline:none;">
-      </div>
-      <div style="flex:1; position:relative;">
-        <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#666; font-size:10px;">W</span>
-        <input type="number" class="dim-w" placeholder="Genişlik" value="${w}" style="width:100%; background:#0a0a0a; border:1px solid #444; color:#fff; padding:8px 8px 8px 25px; border-radius:8px; font-size:11px; outline:none;">
-      </div>
-      <div style="flex:1; position:relative;">
-        <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#666; font-size:10px;">H</span>
-        <input type="number" class="dim-h" placeholder="Yükseklik" value="${h}" style="width:100%; background:#0a0a0a; border:1px solid #444; color:#fff; padding:8px 8px 8px 22px; border-radius:8px; font-size:11px; outline:none;">
-      </div>
-      <div style="flex:1; position:relative;">
-        <span style="position:absolute; left:8px; top:50%; transform:translateY(-50%); color:#666; font-size:10px;">KG</span>
-        <input type="number" class="dim-kg" placeholder="Ağırlık" value="${kg}" style="width:100%; background:#0a0a0a; border:1px solid #444; color:#fff; padding:8px 8px 8px 26px; border-radius:8px; font-size:11px; outline:none;">
-      </div>
-    </div>
-  `;
-  container.appendChild(row);
-  
-  // التمرير التلقائي للأسفل عند إضافة مقاس جديد
-  container.scrollTop = container.scrollHeight;
-}
-
-
-
-
-  
 
   
 
