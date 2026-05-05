@@ -2114,50 +2114,64 @@ html { scroll-behavior: auto; }
 </div>
 
 <!-- نافذة إضافة/تعديل منتج -->
-<div id="productEditorModal" style="display:none; position:fixed; inset:0; z-index:8000; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; padding:16px;">
-  <div style="background:#111; border:1px solid #c9a84c; border-radius:16px; width:100%; max-width:500px; padding:20px; max-height:90vh; overflow-y:auto;">
-    <h3 style="color:#c9a84c; margin-bottom:15px;" id="prodEditorTitle">Yeni Model Ekle</h3>
+<!-- نافذة إضافة/تعديل منتج -->
+<div id="productEditorModal" style="display:none; position:fixed; inset:0; z-index:8000; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(10px);">
+  <div style="background:linear-gradient(145deg, #111, #1a1a1a); border:1px solid rgba(201,168,76,0.3); border-radius:20px; width:100%; max-width:550px; padding:24px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 50px rgba(0,0,0,0.8);">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:10px;">
+      <h3 style="color:#c9a84c; font-weight:900; letter-spacing:1px; margin:0;" id="prodEditorTitle">Yeni Model Ekle</h3>
+      <button onclick="closeProductEditor()" style="background:rgba(255,255,255,0.05); border:none; color:#aaa; width:30px; height:30px; border-radius:8px; cursor:pointer; transition:0.3s;"><i class="fas fa-times"></i></button>
+    </div>
     
     <input type="hidden" id="peId" value="" />
     
-    <label style="color:#aaa; font-size:11px;">Model Adı</label>
-    <input type="text" id="peTitle" style="width:100%; padding:10px; margin-bottom:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+    <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Model Adı</label>
+    <input type="text" id="peTitle" placeholder="Örn: W 514" style="width:100%; padding:12px; margin-bottom:15px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; outline:none;" />
     
-    <div style="display:flex; gap:10px; margin-bottom:10px;">
+    <div style="display:flex; gap:12px; margin-bottom:15px;">
       <div style="flex:1;">
-        <label style="color:#aaa; font-size:11px;">Kategori</label>
-        <select id="peCat" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;">
+        <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Kategori</label>
+        <select id="peCat" style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; outline:none;">
           <option value="orta">Orta Sehpa</option>
           <option value="tv">TV Ünitesi</option>
           <option value="dresuar">Dresuar</option>
         </select>
       </div>
       <div style="flex:1;">
-        <label style="color:#aaa; font-size:11px;">Etiket (Örn: SET 1+1)</label>
-        <input type="text" id="peLabel" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+        <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Etiket</label>
+        <input type="text" id="peLabel" placeholder="Örn: SET 1+1" style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; outline:none;" />
       </div>
     </div>
 
-    <div style="display:flex; gap:10px; margin-bottom:10px;">
+    <div style="display:flex; gap:12px; margin-bottom:20px;">
       <div style="flex:1;">
-        <label style="color:#aaa; font-size:11px;">Fiyat (₺)</label>
-        <input type="number" id="pePrice" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+        <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Fiyat (₺)</label>
+        <input type="number" id="pePrice" placeholder="Örn: 9500" style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; outline:none;" />
       </div>
-      <div style="flex:1;">
-        <label style="color:#aaa; font-size:11px;">Görsel URL</label>
-        <input type="text" id="peImage" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+      <div style="flex:2;">
+        <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Görsel URL</label>
+        <input type="text" id="peImage" placeholder="https://..." style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; outline:none;" />
       </div>
     </div>
 
-    <label style="color:#aaa; font-size:11px; display:flex; justify-content:space-between;">
-      <span>Ölçüler (JSON Formatı)</span>
-      <span style="color:#c9a84c; cursor:pointer;" onclick="insertSampleDims()">Örnek Ekle</span>
-    </label>
-    <textarea id="peDims" rows="4" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px; font-family:monospace; margin-bottom:15px;"></textarea>
+    <!-- قسم المقاسات الجديد -->
+    <div style="margin-bottom:20px; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.05); border-radius:12px; padding:15px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+        <label style="color:#c9a84c; font-size:12px; font-weight:900; letter-spacing:1px; margin:0;"><i class="fas fa-ruler-combined"></i> ÖLÇÜLER & AĞIRLIK</label>
+        <button onclick="addDimCard()" style="background:rgba(201,168,76,0.15); color:#c9a84c; border:1px solid rgba(201,168,76,0.3); padding:6px 12px; border-radius:8px; font-size:10px; font-weight:bold; cursor:pointer; transition:0.3s;">
+          <i class="fas fa-plus"></i> YENİ ÖLÇÜ EKLE
+        </button>
+      </div>
+      
+      <!-- الحاوية التي ستظهر فيها بطاقات المقاسات -->
+      <div id="peDimsContainer" style="display:flex; flex-direction:column; gap:10px;">
+        <!-- سيتم توليد البطاقات هنا بواسطة الجافاسكريبت -->
+      </div>
+    </div>
 
-    <div style="display:flex; gap:10px;">
-      <button onclick="closeProductEditor()" style="flex:1; padding:12px; background:#333; color:#fff; border:none; border-radius:8px; cursor:pointer;">İPTAL</button>
-      <button onclick="saveProductToDB()" style="flex:2; padding:12px; background:#c9a84c; color:#000; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">KAYDET</button>
+    <div style="display:flex; gap:12px;">
+      <button onclick="closeProductEditor()" style="flex:1; padding:14px; background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.1); border-radius:12px; font-weight:bold; cursor:pointer; transition:0.3s;">İPTAL</button>
+      <button onclick="saveProductToDB()" style="flex:2; padding:14px; background:linear-gradient(135deg,#c9a84c,#f0d080); color:#0a0a0a; font-weight:900; letter-spacing:1px; border:none; border-radius:12px; cursor:pointer; box-shadow:0 5px 15px rgba(201,168,76,0.3); transition:0.3s;"><i class="fas fa-save"></i> KAYDET</button>
     </div>
   </div>
 </div>
