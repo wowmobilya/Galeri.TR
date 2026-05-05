@@ -1627,10 +1627,10 @@ html { scroll-behavior: auto; }
     <i class="fas fa-code"></i>
   </button>
 
-  <!-- ✅ زر إدارة المخزون -->
-  <button class="nav-icon-btn inv-open-btn" onclick="openInventoryModal()" data-tip="Stok Yönetimi">
-    <i class="fas fa-boxes"></i>
-  </button>
+  <!-- استبدل زر المخزون الحالي بهذا الكود -->
+<button class="nav-icon-btn inv-open-btn" id="invOpenBtn" onclick="openInventoryModal()" data-tip="Stok Yönetimi" style="display:none;">
+  <i class="fas fa-boxes"></i>
+</button>
 
   <div class="nav-sep"></div>
 
@@ -2077,29 +2077,29 @@ html { scroll-behavior: auto; }
      نافذة إدارة المخزون
 ===================================================== -->
 <div id="inventoryModal" onclick="handleInvModalBg(event)">
-  <div class="inv-modal-box">
+  <div class="inv-modal-box" style="max-width: 600px;">
     <div class="inv-topline"></div>
     <div class="inv-header">
       <div class="inv-header-left">
         <div class="inv-header-icon"><i class="fas fa-boxes"></i></div>
         <div>
-          <div class="inv-header-tag">STOK YÖNETİMİ — CANLI</div>
+          <div class="inv-header-tag">STOK & MODEL YÖNETİMİ</div>
           <div class="inv-header-title">Envanter Düzenle</div>
         </div>
       </div>
       <div class="inv-close" onclick="closeInventoryModal()"><i class="fas fa-times"></i></div>
     </div>
     <div class="inv-body">
-      <div class="inv-search">
-        <i class="fas fa-search"></i>
-        <input type="text" id="invSearchInput"
-               placeholder="Model ara..."
-               oninput="filterInvList(this.value)"
-               autocomplete="off"/>
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <div class="inv-search" style="flex:1; margin-bottom:0;">
+          <i class="fas fa-search"></i>
+          <input type="text" id="invSearchInput" placeholder="Model ara..." oninput="filterInvList(this.value)" autocomplete="off"/>
+        </div>
+        <button onclick="openProductEditor()" style="padding:0 15px; background:linear-gradient(135deg,#c9a84c,#f0d080); border:none; border-radius:10px; color:#0a0a0a; font-weight:bold; cursor:pointer; font-size:12px;">
+          <i class="fas fa-plus"></i> YENİ MODEL
+        </button>
       </div>
-      <div class="inv-list" id="invList">
-        <!-- يُبنى ديناميكياً -->
-      </div>
+      <div class="inv-list" id="invList"></div>
     </div>
     <div class="inv-footer">
       <div class="inv-sync-indicator">
@@ -2107,11 +2107,61 @@ html { scroll-behavior: auto; }
         <span id="invSyncTxt">Canlı bağlantı</span>
       </div>
       <button class="inv-save-btn" id="invSaveBtn" onclick="saveAllInventory()">
-        <i class="fas fa-cloud-upload-alt"></i> KAYDET
+        <i class="fas fa-cloud-upload-alt"></i> STOK KAYDET
       </button>
     </div>
   </div>
 </div>
+
+<!-- نافذة إضافة/تعديل منتج -->
+<div id="productEditorModal" style="display:none; position:fixed; inset:0; z-index:8000; background:rgba(0,0,0,0.9); align-items:center; justify-content:center; padding:16px;">
+  <div style="background:#111; border:1px solid #c9a84c; border-radius:16px; width:100%; max-width:500px; padding:20px; max-height:90vh; overflow-y:auto;">
+    <h3 style="color:#c9a84c; margin-bottom:15px;" id="prodEditorTitle">Yeni Model Ekle</h3>
+    
+    <input type="hidden" id="peId" value="" />
+    
+    <label style="color:#aaa; font-size:11px;">Model Adı</label>
+    <input type="text" id="peTitle" style="width:100%; padding:10px; margin-bottom:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+    
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Kategori</label>
+        <select id="peCat" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;">
+          <option value="orta">Orta Sehpa</option>
+          <option value="tv">TV Ünitesi</option>
+          <option value="dresuar">Dresuar</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Etiket (Örn: SET 1+1)</label>
+        <input type="text" id="peLabel" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-bottom:10px;">
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Fiyat (₺)</label>
+        <input type="number" id="pePrice" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+      </div>
+      <div style="flex:1;">
+        <label style="color:#aaa; font-size:11px;">Görsel URL</label>
+        <input type="text" id="peImage" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px;" />
+      </div>
+    </div>
+
+    <label style="color:#aaa; font-size:11px; display:flex; justify-content:space-between;">
+      <span>Ölçüler (JSON Formatı)</span>
+      <span style="color:#c9a84c; cursor:pointer;" onclick="insertSampleDims()">Örnek Ekle</span>
+    </label>
+    <textarea id="peDims" rows="4" style="width:100%; padding:10px; background:#222; border:1px solid #444; color:#fff; border-radius:8px; font-family:monospace; margin-bottom:15px;"></textarea>
+
+    <div style="display:flex; gap:10px;">
+      <button onclick="closeProductEditor()" style="flex:1; padding:12px; background:#333; color:#fff; border:none; border-radius:8px; cursor:pointer;">İPTAL</button>
+      <button onclick="saveProductToDB()" style="flex:2; padding:12px; background:#c9a84c; color:#000; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">KAYDET</button>
+    </div>
+  </div>
+</div>
+
 
 
 
@@ -3024,401 +3074,7 @@ document.addEventListener('click',e=>{
    قاعدة بيانات الصور
 ============================================================ */
 
-const images = [
-
-  /* ──────────────────────────────────────────
-     🛋️  فئة: ORTA (طاولات وسط)
-  ────────────────────────────────────────── */
-
-
-  {
-    id: 1,
-    src: "https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg",
-    title: "W 514",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 9500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 90, w: 90, h: 45, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 50,  w: 50, h: 50, kg: 8 },
-    ],
-  },
-
-  {
-    id: 2,
-    src: "https://static.wixstatic.com/media/42e4ec_42b7e304bef34d19828650471c17de0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-20%20%D9%81%D9%8A%2017_12_edited.jpg",
-    title: "W 512",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 90, w: 90, h: 40, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 50,  w: 50, h: 45, kg: 7  },
-    ],
-  },
-
-  {
-    id: 3,
-    src: "https://static.wixstatic.com/media/42e4ec_16bac5acb59d46b3bc62e6413c75ebf0~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Product%20Staging-092e213b-8432-40b5-9462-7946cb0f6543(1).jpg",
-    title: "W 522",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 9000,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 100, w: 70, h: 30, kg: 20 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 70,  w: 55, h: 40, kg: 8  },
-    ],
-  },
-
-  {
-    id: 14,
-    src: "https://static.wixstatic.com/media/42e4ec_ac140a43aa754b4e9a67965d84c96eb0~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2014_17_09_fe525743.jpg",
-    title: "W 473",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 9000,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 110, w: 90, h: 40, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 60,  w: 45, h: 50, kg: 8  },
-    ],
-  },
-
-  {
-    id: 16,
-    src: "https://static.wixstatic.com/media/42e4ec_9a21abf2d5b84514a3af4b8f6c2d144c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-22%20%D9%81%D9%8A%2011_58_edited.jpg",
-    title: "W 400",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 9000,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 95, w: 95, h: 40, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 50,  w: 50, h: 50, kg: 8  },
-    ],
-  },
-
-  {
-    id: 21,
-    src: "https://static.wixstatic.com/media/42e4ec_f75c19132e5b4bcd9959734eb7134269~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-1c258fbe-7a1e-426a-91b8-a74fe1c1ca2b_edited.jpg",
-    title: "W 433",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 9000,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 95, w: 95, h: 40, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 55,  w: 45, h: 50, kg: 7  },
-    ],
-  },
-
-  {
-    id: 27,
-    src: "https://static.wixstatic.com/media/42e4ec_9bea4ea2c7d34810a276c9d2ce58b3c1~mv2.jpg/v1/crop/x_82,y_0,w_937,h_702/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-741b1128-21c9-4b8d-a822-215df4dd9c0a_edited_edited.jpg",
-    title: "W 509",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 9000,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 100, w: 100, h: 50, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 40,  w: 40, h: 45, kg: 7  },
-    ],
-  },
-
-  {
-    id: 22,
-    src: "https://static.wixstatic.com/media/42e4ec_0f83635cfdad45a2a77060b9f43e8032~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-47fac1de-ebfd-45a1-85aa-a73deeffb49b.jpg",
-    title: "W 472",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 9900,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 100, w: 100, h: 40, kg: 20 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 50,  w: 50, h: 50, kg: 9 },
-    ],
-  },
-
-  {
-    id: 25,
-    src: "https://static.wixstatic.com/media/42e4ec_3685f80c5728497284dd255bba7e4da3~mv2.jpg/v1/fill/w_801,h_600,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-34d466ec-5df7-4427-827f-76460fabefa9_edited.jpg",
-    title: "W 414",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 110, w: 110, h: 40, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 55,  w: 55, h: 50, kg: 8 },
-    ],
-  },
-
-  {
-    id: 29,
-    src: "https://static.wixstatic.com/media/42e4ec_ccc3ae584c824bdbb49bd494db38dee2~mv2.png/v1/crop/x_69,y_0,w_1110,h_832/fill/w_824,h_618,al_c,q_90,usm_0.66_1.00_0.01,enc_auto/1000023387.png",
-    title: "W 417",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 110, w: 110, h: 40, kg: 15 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 55,  w: 55, h: 50, kg: 8 },
-    ],
-  },
-
-  {
-    id: 18,
-    src: "https://static.wixstatic.com/media/42e4ec_f209429eb10b4cc89dcf20445de75392~mv2.jpg/v1/crop/x_278,y_0,w_2218,h_1664/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Product%20Staging-ffd30dda-90a7-4c31-887e-428983de187b%20(Product%20Staging)(1).jpg",
-    title: "W 520",
-    cat: "orta",
-    catLabel: "SET 1+1",
-    price: 12000,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 100, w: 100, h: 40, kg: 20 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 55,  w: 55, h: 50, kg: 10 },
-    ],
-  },
-
-  // ── SET 2+1 ──────────────────────────────
-
-  {
-    id: 5,
-    src: "https://static.wixstatic.com/media/42e4ec_5c9a9e2cfa1c40a99a51178c0a381466~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-f9a6db0e-9a5e-4673-b22f-ba9a19587b37_edited.jpg",
-    title: "W 506",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 90, w: 90, h: 40, kg: 10 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 90,  w: 90, h: 35, kg: 10 },
-      { name: "Yan Sehpa",   icon: "fa-arrows-alt-h",        l: 45,  w: 45, h: 45, kg: 7  },
-    ],
-  },
-
-  {
-    id: 6,
-    src: "https://static.wixstatic.com/media/42e4ec_7a0e9f68ed2b4502a52dc9abe72181fd~mv2.jpg/v1/crop/x_96,y_0,w_1057,h_792/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-24365ac3-15b9-4d32-8d99-2fe078e107ac%20(1)_edited.jpg",
-    title: "W 490C",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 8500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 90, w: 90, h: 40, kg: 10 },
-      { name: "(2×) Yan Sehpa",   icon: "fa-arrows-alt-h",        l: 40,  w: 45, h: 50, kg: 7  },
-    ],
-  },
-
-  {
-    id: 9,
-    src: "https://static.wixstatic.com/media/42e4ec_669691ffa52543f39da6168c08b1f0a3~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-f5a29568-d15d-4cb8-846d-3cff26d7c84f_edited.jpg",
-    title: "W 490",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 8000,
-    dims: [
-       { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 90, w: 90, h: 40, kg: 10 },
-      { name: "(2×) Yan Sehpa",   icon: "fa-arrows-alt-h",        l: 40,  w: 45, h: 50, kg: 7  },
-    ],
-  },
-
-  {
-    id: 11,
-    src: "https://static.wixstatic.com/media/42e4ec_cbebccf1d4c9459a90941a26041ca999~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-20%20%D9%81%D9%8A%2017_13_01_00338eb7.jpg",
-    title: "W 481",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 100, w: 45, h: 40, kg: 10 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 80,  w: 45, h: 40, kg: 10 },
-      { name: "Yan Sehpa",   icon: "fa-arrows-alt-h",        l: 55,  w: 40, h: 50, kg: 7  },
-    ],
-  },
-
-  {
-    id: 15,
-    src: "https://static.wixstatic.com/media/42e4ec_873df5329ded493b8528e37c2bdb6706~mv2.jpg/v1/crop/x_69,y_0,w_1110,h_832/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_145758712.jpg",
-    title: "W 517",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 130, w: 70, h: 40, kg: 15 },
-      { name: "(2×) Yan SehpaYan Sehpa",   icon: "fa-arrows-alt-h",        l: 50,  w: 50, h: 55, kg: 7  },
-    ],
-  },
-
-  {
-    id: 20,
-    src: "https://static.wixstatic.com/media/42e4ec_8a3215eb43ce413db059d8a6a223d48a~mv2.jpg/v1/crop/x_190,y_0,w_745,h_558/fill/w_745,h_558,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/lifestyle-shot-75a29c85-7d9f-4cb3-be0c-431126f428c4_edited.jpg",
-    title: "W 515",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 130, w: 70, h: 40, kg: 20 },
-      { name: "(2×) Yan SehpaYan Sehpa",   icon: "fa-arrows-alt-h",        l: 45,  w: 50, h: 45, kg: 8  },
-    ],
-  },
-
-  {
-    id: 23,
-    src: "https://static.wixstatic.com/media/42e4ec_1fc3e6ff35e94c218192a4c1e9a53c8a~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-f71dffbf-78b1-4428-a284-685aeecb726e_edited.jpg",
-    title: "W 444",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 9500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 120, w: 65, h: 40, kg: 10 },
-      { name: "Küçük Sehpa", icon: "fa-compress-arrows-alt", l: 70,  w: 65, h: 45, kg: 8 },
-      { name: "Yan Sehpa",   icon: "fa-arrows-alt-h",        l: 45,  w: 45, h: 50, kg: 6  },
-    ],
-  },
-
-  {
-    id: 24,
-    src: "https://static.wixstatic.com/media/42e4ec_9a30d1b3be60444f8a254489e2bd4aa8~mv2.jpg/v1/crop/x_69,y_0,w_1110,h_832/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_155519137.jpg",
-    title: "W 516",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 10500,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 130, w: 70, h: 40, kg: 20 },
-      { name: "(2×) Yan SehpaYan Sehpa",   icon: "fa-arrows-alt-h",        l: 45,  w: 50, h: 50, kg: 8  },
-    ],
-  },
-
-  {
-    id: 26,
-    src: "https://static.wixstatic.com/media/42e4ec_45e7b4f313884de4973c2a034d7bd61e~mv2.jpg/v1/crop/x_4,y_0,w_1041,h_780/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20251113_161351847-Photoroom%20(1)_edited.jpg",
-    title: "W 475",
-    cat: "orta",
-    catLabel: "SET 2+1",
-    price: 12000,
-    dims: [
-      { name: "Büyük Sehpa", icon: "fa-expand-arrows-alt",   l: 140, w: 70, h: 40, kg: 15 },
-      { name: "(2×) Yan SehpaYan Sehpa",   icon: "fa-arrows-alt-h",        l: 55,  w: 35, h: 50, kg: 7 },
-    ],
-  },
-
-  /* ──────────────────────────────────────────
-     📺  فئة: TV (وحدات تلفزيون)
-  ────────────────────────────────────────── */
-
-  {
-    id: 33,
-    src: "https://static.wixstatic.com/media/42e4ec_7557d3da2f9e4a2a8816339de74659b2~mv2.jpg/v1/fill/w_750,h_562,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2016_52_edited.jpg",
-    title: "T 415",
-    cat: "tv",
-    catLabel: "TV ÜNİTESİ",
-    price: 9500,
-    dims: [
-      { name: "TV Ünitesi",      icon: "fa-tv",          l: 180, w: 40, h: 50,  kg: 35 },
-   
-    ],
-  },
-
-  {
-    id: 35,
-    src: "https://static.wixstatic.com/media/42e4ec_400f83b2c3a143fbb37453458dfdac9b~mv2.jpg/v1/crop/x_60,y_0,w_1003,h_740/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2017_39_edited.jpg",
-    title: "T 419",
-    cat: "tv",
-    catLabel: "TV ÜNİTESİ",
-    price: 9500,
-    dims: [
-      { name: "TV Ünitesi",      icon: "fa-tv",          l: 180, w: 40, h: 50,  kg: 30 },
-    ],
-  },
-
-  {
-    id: 36,
-    src: "https://static.wixstatic.com/media/42e4ec_4d397d7f184d43699b93123bf0264c64~mv2.jpg/v1/crop/x_69,y_0,w_1110,h_832/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Product%20Staging-6459cfc6-92e7-41fd-ab81-f7a9d12ae1ab%20(1).jpg",
-    title: "T 521",
-    cat: "tv",
-    catLabel: "TV ÜNİTESİ",
-    price: 9500,
-    dims: [
-      { name: "TV Ünitesi",      icon: "fa-tv",          l: 200, w: 35, h: 45,  kg: 30 },
-    ],
-  },
-
-  /* ──────────────────────────────────────────
-     🪞  فئة: DRESUAR ( درسوار)
-  ────────────────────────────────────────── */
-
-  {
-    id: 37,
-    src: "https://static.wixstatic.com/media/42e4ec_497547faea6641019e1ece74652f9f0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_160720150_edited.jpg",
-    title: "K 518",
-    cat: "dresuar",
-    catLabel: "SET",
-    price: 10500,
-    dims: [
-      { name: "Dresuar", icon: "fa-border-all", l: 140, w: 40, h: 85,  kg: 20 },
-      { name: "Ayna",    icon: "fa-gem",        l: 100,  w: 100,  h: 5, kg: 10 },
-    ],
-  },
-
-  {
-    id: 40,
-    src: "https://static.wixstatic.com/media/42e4ec_9eab263591f34df9bad9aac1da89cdf0~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/describe-a-change-e110fd04-b2a6-40eb-b710-eeee44b2187f_edited.jpg",
-    title: "K 502",
-    cat: "dresuar",
-    catLabel: "SET",
-    price: 10500,
-    dims: [
-      { name: "Dresuar", icon: "fa-border-all", l: 140, w: 40, h: 85,  kg: 20 },
-      { name: "Ayna",    icon: "fa-gem",        l: 105,  w: 85,  h: 5, kg: 10 },
-    ],
-  },
-
-  {
-    id: 41,
-    src: "https://static.wixstatic.com/media/42e4ec_ae41071ab5c144ed8b32482d253fdc32~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_120658163_edited_edited.jpg",
-    title: "K 446",
-    cat: "dresuar",
-    catLabel: "SET (PUF SİZ)",
-    price: 9000,
-    dims: [
-      { name: "Dresuar", icon: "fa-border-all", l: 115, w: 43, h: 76,  kg: 50 },
-      { name: "Ayna",    icon: "fa-gem",        l: 85,  w: 4,  h: 105, kg: 16 },
-    ],
-  },
-
-  {
-    id: 42,
-    src: "https://static.wixstatic.com/media/42e4ec_f9604b7e81d64a79b2cfee7a9e97765e~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-20%20%D9%81%D9%8A%2017_12_58_289aa5f6.jpg",
-    title: "K 452",
-    cat: "dresuar",
-    catLabel: "SET",
-    price: 9000,
-    dims: [
-      { name: "Dresuar Ayna", icon: "fa-border-all", l: 130, w: 35, h: 180,  kg: 35 },
-    ],
-  },
-
-  {
-    id: 44,
-    src: "https://static.wixstatic.com/media/42e4ec_560c8dbeb1e34b40ab2e31dd291cb20f~mv2.jpg/v1/crop/x_0,y_8,w_1089,h_816/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-23%20%D9%81%D9%8A%2010_30_edited.jpg",
-    title: "K 451",
-    cat: "dresuar",
-    catLabel: "SET",
-    price: 9000,
-    dims: [
-      { name: "Dresuar", icon: "fa-border-all", l: 120, w: 40, h: 85,  kg: 20 },
-      { name: "Ayna",    icon: "fa-gem",        l: 85,  w: 70,  h: 5, kg: 10 },
-    ],
-  },
-
-  {
-    id: 45,
-    src: "https://static.wixstatic.com/media/42e4ec_cc23db88236343c4a729c00f3be23b27~mv2.jpg/v1/crop/x_40,y_0,w_2103,h_1576/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Product%20Staging-72dc2b90-e68f-496e-8c50-0373a5ca835b(1)_edited_edited.jpg",
-    title: "K 523",
-    cat: "dresuar",
-    catLabel: "SET",
-    price: 9500,
-    dims: [
-      { name: "Dresuar", icon: "fa-border-all", l: 125, w: 30, h: 25,  kg: 20 },
-      { name: "Ayna",    icon: "fa-gem",        l: 105,  w: 100,  h: 5, kg: 15 },
-    ],
-  },
-
-];
+let images = []; // سيتم جلبها من قاعدة البيانات
 
 
 
@@ -4947,31 +4603,41 @@ async function loadInventory() {
   try {
     const { data, error } = await sb
       .from(INV_TABLE)
-      .select('id, stock, is_active');
+      .select('*')
+      .order('id', { ascending: true });
 
-    if (error) {
-      console.error('[Supabase] loadInventory error:', error.message);
-      console.error('[Supabase] hint:', error.hint);
-      console.error('[Supabase] details:', error.details);
-      return;
-    }
+    if (error) throw error;
 
-    if (!data || !data.length) {
-      console.warn('[Supabase] الجدول فارغ — تأكد من تشغيل SQL الإدراج');
-      return;
-    }
+    // تفريغ المصفوفة وتعبئتها من قاعدة البيانات
+    images = [];
+    inventoryData = {};
 
     data.forEach(row => {
       inventoryData[Number(row.id)] = row.stock ?? 0;
+      images.push({
+        id: Number(row.id),
+        src: row.image_url || '',
+        title: row.title || '',
+        cat: row.cat || 'orta',
+        catLabel: row.cat_label || '',
+        price: row.price || 0,
+        dims: row.dims || []
+      });
     });
 
-    console.log('[Supabase] ✅ تم تحميل', data.length, 'سجل');
+    console.log('[Supabase] ✅ تم تحميل المنتجات:', images.length);
     refreshStockBadges();
+    
+    // إعادة بناء الصفحة الحالية لتظهر المنتجات الجديدة
+    if (appState === 'section' && currentPage !== 'admin' && currentPage !== 'myorders') {
+      showPage(currentPage);
+    }
 
   } catch(e) {
     console.error('[Supabase] loadInventory exception:', e);
   }
 }
+
 
 /* ── الاشتراك في التحديثات الحية ── */
 async function subscribeInventory() {
@@ -5972,14 +5638,14 @@ async function saveOrderToSupabase(orderNum, items, note) {
 
 
 
-/* ── تحديث nav link الإدارة ── */
 function updateAdminNavVisibility() {
   const isAdmin = currentUser === ADMIN_USER;
-  ['nav-admin','mob-admin'].forEach(id => {
+  ['nav-admin','mob-admin', 'invOpenBtn'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? '' : 'none';
   });
 }
+
 
 /* ── زر "طلبيتي" في الهيدر ── */
 async function updateMyOrderBtn() {
@@ -7886,6 +7552,160 @@ function triggerInstall() {
 }
 
 
+
+
+
+
+
+
+
+
+// 1. تحديث شكل القائمة في نافذة المخزون لإضافة أزرار التعديل والحذف
+function buildInvList(filter) {
+  const list = document.getElementById('invList');
+  if (!list) return;
+
+  const filtered = images.filter(img => !filter || img.title.toLowerCase().includes(filter.toLowerCase()));
+
+  if (!filtered.length) {
+    list.innerHTML = `<div style="text-align:center;padding:24px;color:rgba(255,255,255,0.2);font-size:12px;">Sonuç bulunamadı</div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(img => {
+    const stock = invPendingChanges[img.id] !== undefined ? invPendingChanges[img.id] : (inventoryData[img.id] ?? 0);
+    const s = getStockStatus(stock);
+    return `
+      <div class="inv-item" id="invitem-${img.id}">
+        <img class="inv-item-thumb" src="${img.src}" onerror="this.src='https://placehold.co/44x34/1a1a1a/c9a84c?text=W'"/>
+        <div style="flex:1;min-width:0;">
+          <div class="inv-item-name">${img.title}</div>
+          <div class="inv-item-cat">${img.catLabel}</div>
+        </div>
+        
+        <!-- أزرار التعديل والحذف -->
+        <div style="display:flex; gap:5px; margin-right:10px;">
+          <button onclick="openProductEditor(${img.id})" style="background:rgba(96,165,250,0.1); border:1px solid rgba(96,165,250,0.3); color:#60a5fa; padding:5px 8px; border-radius:6px; cursor:pointer;"><i class="fas fa-edit"></i></button>
+          <button onclick="deleteProduct(${img.id})" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); color:#ef4444; padding:5px 8px; border-radius:6px; cursor:pointer;"><i class="fas fa-trash"></i></button>
+        </div>
+
+        <div class="inv-qty-ctrl">
+          <button class="inv-qty-btn" onclick="changeInvQty(${img.id},-1)">−</button>
+          <span class="inv-qty-val" id="invqty-${img.id}">${stock}</span>
+          <button class="inv-qty-btn" onclick="changeInvQty(${img.id},+1)">+</button>
+        </div>
+        <div class="inv-status-dot ${s.dotCls}" id="invdot-${img.id}"></div>
+      </div>`;
+  }).join('');
+}
+
+// 2. فتح نافذة التعديل/الإضافة
+function openProductEditor(id = null) {
+  const modal = document.getElementById('productEditorModal');
+  if(id) {
+    const img = images.find(i => i.id === id);
+    document.getElementById('prodEditorTitle').textContent = 'Modeli Düzenle';
+    document.getElementById('peId').value = img.id;
+    document.getElementById('peTitle').value = img.title;
+    document.getElementById('peCat').value = img.cat;
+    document.getElementById('peLabel').value = img.catLabel;
+    document.getElementById('pePrice').value = img.price;
+    document.getElementById('peImage').value = img.src;
+    document.getElementById('peDims').value = JSON.stringify(img.dims, null, 2);
+  } else {
+    document.getElementById('prodEditorTitle').textContent = 'Yeni Model Ekle';
+    document.getElementById('peId').value = '';
+    document.getElementById('peTitle').value = '';
+    document.getElementById('peCat').value = 'orta';
+    document.getElementById('peLabel').value = '';
+    document.getElementById('pePrice').value = '';
+    document.getElementById('peImage').value = '';
+    document.getElementById('peDims').value = '[]';
+  }
+  modal.style.display = 'flex';
+}
+
+function closeProductEditor() {
+  document.getElementById('productEditorModal').style.display = 'none';
+}
+
+function insertSampleDims() {
+  document.getElementById('peDims').value = `[
+  { "name": "Büyük Sehpa", "icon": "fa-expand-arrows-alt", "l": 90, "w": 90, "h": 45, "kg": 15 }
+]`;
+}
+
+// 3. حفظ المنتج في قاعدة البيانات
+async function saveProductToDB() {
+  const sb = await initSupabase();
+  if(!sb) return;
+
+  const id = document.getElementById('peId').value;
+  let dims = [];
+  try { dims = JSON.parse(document.getElementById('peDims').value || '[]'); } catch(e) { alert('Ölçüler JSON formatında hatalı!'); return; }
+
+  const productData = {
+    title: document.getElementById('peTitle').value,
+    cat: document.getElementById('peCat').value,
+    cat_label: document.getElementById('peLabel').value,
+    price: Number(document.getElementById('pePrice').value) || 0,
+    image_url: document.getElementById('peImage').value,
+    dims: dims,
+    updated_at: new Date().toISOString()
+  };
+
+  if(id) productData.id = Number(id); // تحديث
+  else productData.id = Date.now() % 1000000; // إنشاء ID عشوائي جديد
+
+  const { error } = await sb.from(INV_TABLE).upsert([productData], { onConflict: 'id' });
+  
+  if(error) {
+    showInvToast('Hata: ' + error.message, 'error');
+  } else {
+    showInvToast('Model kaydedildi ✓', 'success');
+    closeProductEditor();
+    await loadInventory(); // إعادة تحميل البيانات
+    buildInvList(''); // تحديث القائمة
+  }
+}
+
+// 4. حذف المنتج
+async function deleteProduct(id) {
+  if(!confirm('Bu modeli tamamen silmek istediğinize emin misiniz?')) return;
+  const sb = await initSupabase();
+  const { error } = await sb.from(INV_TABLE).delete().eq('id', id);
+  if(error) {
+    showInvToast('Hata: ' + error.message, 'error');
+  } else {
+    showInvToast('Model silindi ✓', 'success');
+    await loadInventory();
+    buildInvList('');
+  }
+}
+
+// 5. تحديث Realtime ليشمل التعديلات على المنتجات
+// في دالة subscribeInventory() استبدل محتواها بـ:
+async function subscribeInventory() {
+  const sb = await initSupabase();
+  if (!sb || invRealtimeChannel) return;
+
+  invRealtimeChannel = sb.channel('inventory-live')
+    .on('postgres_changes', { event: '*', schema: 'public', table: INV_TABLE }, async payload => {
+      // عند حدوث أي تغيير (إضافة، تعديل، حذف)، نقوم بإعادة تحميل المخزون بالكامل لضمان مزامنة الصور والأسماء
+      await loadInventory();
+      
+      // إذا كانت نافذة المخزون مفتوحة، نحدثها
+      if(document.getElementById('inventoryModal').classList.contains('active')) {
+        buildInvList(document.getElementById('invSearchInput').value);
+      }
+    })
+    .subscribe();
+}
+
+
+
+
+  
 
 </script>
 </body>
