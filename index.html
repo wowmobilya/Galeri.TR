@@ -7614,9 +7614,13 @@ function buildInvList(filter) {
 }
 
 // 2. فتح نافذة التعديل/الإضافة
+// 1. فتح نافذة التعديل وتعبئة المقاسات كبطاقات
 function openProductEditor(id = null) {
   const modal = document.getElementById('productEditorModal');
-  if(id) {
+  const dimsContainer = document.getElementById('peDimsContainer');
+  dimsContainer.innerHTML = ''; // تفريغ الحاوية
+
+  if (id) {
     const img = images.find(i => i.id === id);
     document.getElementById('prodEditorTitle').textContent = 'Modeli Düzenle';
     document.getElementById('peId').value = img.id;
@@ -7625,7 +7629,13 @@ function openProductEditor(id = null) {
     document.getElementById('peLabel').value = img.catLabel;
     document.getElementById('pePrice').value = img.price;
     document.getElementById('peImage').value = img.src;
-    document.getElementById('peDims').value = JSON.stringify(img.dims, null, 2);
+    
+    // رسم بطاقات المقاسات الموجودة
+    if (img.dims && img.dims.length > 0) {
+      img.dims.forEach(dim => addDimCard(dim));
+    } else {
+      addDimCard(); // إضافة بطاقة فارغة افتراضياً
+    }
   } else {
     document.getElementById('prodEditorTitle').textContent = 'Yeni Model Ekle';
     document.getElementById('peId').value = '';
@@ -7634,7 +7644,7 @@ function openProductEditor(id = null) {
     document.getElementById('peLabel').value = '';
     document.getElementById('pePrice').value = '';
     document.getElementById('peImage').value = '';
-    document.getElementById('peDims').value = '[]';
+    addDimCard(); // إضافة بطاقة فارغة افتراضياً
   }
   modal.style.display = 'flex';
 }
@@ -7643,45 +7653,100 @@ function closeProductEditor() {
   document.getElementById('productEditorModal').style.display = 'none';
 }
 
-function insertSampleDims() {
-  document.getElementById('peDims').value = `[
-  { "name": "Büyük Sehpa", "icon": "fa-expand-arrows-alt", "l": 90, "w": 90, "h": 45, "kg": 15 }
-]`;
+// 2. دالة إضافة بطاقة مقاس جديدة
+function addDimCard(dim = { name: '', l: '', w: '', h: '', kg: '' }) {
+  const container = document.getElementById('peDimsContainer');
+  const card = document.createElement('div');
+  card.className = 'dim-input-card';
+  // تصميم البطاقة مع زر الحذف (X) والرمز الثابت
+  card.style.cssText = 'position:relative; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px 12px 15px; animation:cardIn 0.3s ease;';
+  
+  card.innerHTML = `
+    <!-- زر الحذف (X) -->
+    <button type="button" onclick="this.parentElement.remove()" style="position:absolute; top:8px; right:8px; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; cursor:pointer; width:26px; height:26px; display:flex; align-items:center; justify-content:center; transition:0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">
+      <i class="fas fa-times"></i>
+    </button>
+    
+    <!-- اسم القطعة مع الرمز الثابت -->
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px; padding-right:35px;">
+      <div style="width:32px; height:32px; background:rgba(201,168,76,0.1); border:1px solid rgba(201,168,76,0.3); border-radius:8px; display:flex; align-items:center; justify-content:center; color:#c9a84c; font-size:14px; flex-shrink:0;">
+        <i class="fas fa-box-open"></i>
+      </div>
+      <input type="text" class="dim-name" placeholder="Parça Adı (Örn: Büyük Sehpa)" value="${dim.name}" style="flex:1; padding:8px 12px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:8px; font-size:12px; outline:none; font-weight:bold;">
+    </div>
+    
+    <!-- حقول المقاسات -->
+    <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:8px;">
+      <div>
+        <label style="font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; display:block;">Uzunluk (U)</label>
+        <input type="number" class="dim-l" placeholder="cm" value="${dim.l}" style="width:100%; padding:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:6px; font-size:12px; text-align:center; outline:none;">
+      </div>
+      <div>
+        <label style="font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; display:block;">Genişlik (G)</label>
+        <input type="number" class="dim-w" placeholder="cm" value="${dim.w}" style="width:100%; padding:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:6px; font-size:12px; text-align:center; outline:none;">
+      </div>
+      <div>
+        <label style="font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; display:block;">Yükseklik (Y)</label>
+        <input type="number" class="dim-h" placeholder="cm" value="${dim.h}" style="width:100%; padding:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:6px; font-size:12px; text-align:center; outline:none;">
+      </div>
+      <div>
+        <label style="font-size:9px; color:rgba(255,255,255,0.4); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; display:block;">Ağırlık (Kg)</label>
+        <input type="number" class="dim-kg" placeholder="kg" value="${dim.kg}" style="width:100%; padding:8px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:6px; font-size:12px; text-align:center; outline:none;">
+      </div>
+    </div>
+  `;
+  container.appendChild(card);
 }
 
-// 3. حفظ المنتج في قاعدة البيانات
+// 3. حفظ المنتج (تجميع البيانات من البطاقات)
 async function saveProductToDB() {
   const sb = await initSupabase();
   if(!sb) return;
 
   const id = document.getElementById('peId').value;
-  let dims = [];
-  try { dims = JSON.parse(document.getElementById('peDims').value || '[]'); } catch(e) { alert('Ölçüler JSON formatında hatalı!'); return; }
+  
+  // تجميع المقاسات من البطاقات
+  let dimsArray = [];
+  const cards = document.querySelectorAll('.dim-input-card');
+  cards.forEach(card => {
+    const name = card.querySelector('.dim-name').value.trim();
+    if (name) { // نحفظ فقط إذا كان الاسم مكتوباً
+      dimsArray.push({
+        name: name,
+        icon: "fa-box-open", // الرمز الثابت للجميع
+        l: Number(card.querySelector('.dim-l').value) || 0,
+        w: Number(card.querySelector('.dim-w').value) || 0,
+        h: Number(card.querySelector('.dim-h').value) || 0,
+        kg: Number(card.querySelector('.dim-kg').value) || 0
+      });
+    }
+  });
 
   const productData = {
-    title: document.getElementById('peTitle').value,
+    title: document.getElementById('peTitle').value.trim() || 'İsimsiz Model',
     cat: document.getElementById('peCat').value,
-    cat_label: document.getElementById('peLabel').value,
+    cat_label: document.getElementById('peLabel').value.trim(),
     price: Number(document.getElementById('pePrice').value) || 0,
-    image_url: document.getElementById('peImage').value,
-    dims: dims,
+    image_url: document.getElementById('peImage').value.trim(),
+    dims: dimsArray, // المصفوفة الجاهزة
     updated_at: new Date().toISOString()
   };
 
-  if(id) productData.id = Number(id); // تحديث
-  else productData.id = Date.now() % 1000000; // إنشاء ID عشوائي جديد
+  if(id) productData.id = Number(id);
+  else productData.id = Date.now() % 1000000;
 
   const { error } = await sb.from(INV_TABLE).upsert([productData], { onConflict: 'id' });
   
   if(error) {
     showInvToast('Hata: ' + error.message, 'error');
   } else {
-    showInvToast('Model kaydedildi ✓', 'success');
+    showInvToast('Model başarıyla kaydedildi ✓', 'success');
     closeProductEditor();
-    await loadInventory(); // إعادة تحميل البيانات
-    buildInvList(''); // تحديث القائمة
+    await loadInventory();
+    buildInvList('');
   }
 }
+
 
 // 4. حذف المنتج
 async function deleteProduct(id) {
