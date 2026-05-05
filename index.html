@@ -73,33 +73,76 @@ html { scroll-behavior: auto; }
     @media print{body{display:none!important;}}
 
     /* =====================================================
-       LOGIN
-    ===================================================== */
-    #loginOverlay{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a0a,#1a1a1a,#0d0d0d);z-index:9999;display:flex;align-items:center;justify-content:center;}
-    .login-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
-    .particle{position:absolute;width:2px;height:2px;background:var(--gold);border-radius:50%;animation:floatP linear infinite;opacity:0;}
-    @keyframes floatP{0%{transform:translateY(100vh) scale(0);opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{transform:translateY(-100px) scale(1.5);opacity:0;}}
-    .login-box{position:relative;background:rgba(255,255,255,0.03);border:1px solid rgba(201,168,76,0.3);border-radius:20px;padding:50px 40px;width:90%;max-width:420px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(201,168,76,0.1),inset 0 0 60px rgba(0,0,0,0.3);animation:loginAppear 0.8s ease forwards;}
-    @keyframes loginAppear{from{opacity:0;transform:translateY(40px) scale(0.95);}to{opacity:1;transform:translateY(0) scale(1);}}
-    .login-logo{text-align:center;margin-bottom:35px;}
-    .login-logo img.logo-img{width:300px;height:120px;object-fit:contain;display:block;margin:0 auto 10px;}
-    .login-field{position:relative;margin-bottom:18px;}
-    .login-field input{width:100%;padding:14px 20px 14px 48px;background:rgba(255,255,255,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:10px;color:var(--white);font-family:'Montserrat',sans-serif;font-size:14px;outline:none;transition:all 0.3s;-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;}
-    .login-field input:focus{border-color:var(--gold);background:rgba(201,168,76,0.05);box-shadow:0 0 20px rgba(201,168,76,0.15);}
-    .login-field i.field-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:15px;}
-    .login-field .toggle-pass{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(201,168,76,0.45);font-size:14px;transition:color 0.25s;padding:4px;}
-    .login-field .toggle-pass:hover{color:var(--gold);}
-    .login-remember{display:flex;align-items:center;gap:10px;margin-bottom:18px;cursor:pointer;width:fit-content;user-select:none;}
-    .login-remember input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:18px;height:18px;flex-shrink:0;background:rgba(255,255,255,0.05);border:1.5px solid rgba(201,168,76,0.35);border-radius:5px;cursor:pointer;position:relative;transition:all 0.25s;}
-    .login-remember input[type="checkbox"]:checked{background:linear-gradient(135deg,#c9a84c,#f0d080);border-color:var(--gold);}
-    .login-remember input[type="checkbox"]:checked::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dark);}
-    .login-remember span{font-size:12px;font-weight:600;letter-spacing:1px;color:rgba(255,255,255,0.45);transition:color 0.25s;}
-    .login-remember:hover span{color:rgba(201,168,76,0.8);}
-    .login-remember input:checked + span{color:rgba(201,168,76,0.9);}
-    .login-btn{width:100%;padding:14px;background:linear-gradient(135deg,#c9a84c,#f0d080,#c9a84c);border:none;border-radius:10px;color:var(--dark);font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:3px;cursor:pointer;transition:all 0.3s;margin-top:8px;}
-    .login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(201,168,76,0.4);}
-    .login-error{color:#ff6b6b;font-size:12px;text-align:center;margin-top:12px;display:none;}
-    @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+   LOGIN — النسخة الجديدة مع Auth System
+===================================================== */
+#loginOverlay{position:fixed;inset:0;background:linear-gradient(135deg,#0a0a0a,#1a1a1a,#0d0d0d);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.login-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.particle{position:absolute;width:2px;height:2px;background:var(--gold);border-radius:50%;animation:floatP linear infinite;opacity:0;}
+@keyframes floatP{0%{transform:translateY(100vh) scale(0);opacity:0;}10%{opacity:1;}90%{opacity:1;}100%{transform:translateY(-100px) scale(1.5);opacity:0;}}
+.login-box{position:relative;background:rgba(255,255,255,0.03);border:1px solid rgba(201,168,76,0.3);border-radius:20px;padding:40px 36px;width:90%;max-width:460px;backdrop-filter:blur(20px);box-shadow:0 0 60px rgba(201,168,76,0.1),inset 0 0 60px rgba(0,0,0,0.3);animation:loginAppear 0.8s ease forwards;}
+@keyframes loginAppear{from{opacity:0;transform:translateY(40px) scale(0.95);}to{opacity:1;transform:translateY(0) scale(1);}}
+.login-logo{text-align:center;margin-bottom:24px;}
+.login-logo img.logo-img{width:260px;height:100px;object-fit:contain;display:block;margin:0 auto 10px;}
+.login-field{position:relative;margin-bottom:14px;}
+.login-field input{width:100%;padding:13px 20px 13px 46px;background:rgba(255,255,255,0.05);border:1px solid rgba(201,168,76,0.2);border-radius:10px;color:var(--white);font-family:'Montserrat',sans-serif;font-size:13px;outline:none;transition:all 0.3s;-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;}
+.login-field input:focus{border-color:var(--gold);background:rgba(201,168,76,0.05);box-shadow:0 0 20px rgba(201,168,76,0.15);}
+.login-field i.field-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:14px;}
+.login-field .toggle-pass{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(201,168,76,0.45);font-size:13px;transition:color 0.25s;padding:4px;}
+.login-field .toggle-pass:hover{color:var(--gold);}
+.login-remember{display:flex;align-items:center;gap:10px;margin-bottom:14px;cursor:pointer;width:fit-content;user-select:none;}
+.login-remember input[type="checkbox"]{appearance:none;-webkit-appearance:none;width:18px;height:18px;flex-shrink:0;background:rgba(255,255,255,0.05);border:1.5px solid rgba(201,168,76,0.35);border-radius:5px;cursor:pointer;position:relative;transition:all 0.25s;}
+.login-remember input[type="checkbox"]:checked{background:linear-gradient(135deg,#c9a84c,#f0d080);border-color:var(--gold);}
+.login-remember input[type="checkbox"]:checked::after{content:'\f00c';font-family:'Font Awesome 6 Free';font-weight:900;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--dark);}
+.login-remember span{font-size:12px;font-weight:600;letter-spacing:1px;color:rgba(255,255,255,0.45);transition:color 0.25s;}
+.login-remember:hover span{color:rgba(201,168,76,0.8);}
+.login-remember input:checked + span{color:rgba(201,168,76,0.9);}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#c9a84c,#f0d080,#c9a84c);border:none;border-radius:10px;color:var(--dark);font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;letter-spacing:3px;cursor:pointer;transition:all 0.3s;margin-top:6px;}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(201,168,76,0.4);}
+.login-btn:disabled{opacity:0.6;cursor:not-allowed;transform:none;}
+.login-error{color:#ff6b6b;font-size:11px;text-align:center;margin-top:10px;display:none;padding:8px 12px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.2);border-radius:8px;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-8px);}75%{transform:translateX(8px);}}
+
+/* ── CSS الجديد الخاص بنظام Auth ── */
+.auth-tabs{display:flex;background:rgba(255,255,255,0.03);border:1px solid rgba(201,168,76,0.15);border-radius:12px;padding:4px;margin-bottom:22px;gap:4px;}
+.auth-tab{flex:1;padding:9px;border-radius:9px;border:none;background:transparent;color:rgba(255,255,255,0.4);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:all 0.25s;text-transform:uppercase;}
+.auth-tab.active{background:linear-gradient(135deg,#c9a84c,#f0d080);color:#0a0a0a;box-shadow:0 2px 12px rgba(201,168,76,0.3);}
+.otp-container{display:flex;gap:8px;justify-content:center;margin:16px 0;}
+.otp-input{width:44px;height:52px;text-align:center;font-size:20px;font-weight:900;font-family:'Montserrat',sans-serif;background:rgba(255,255,255,0.05);border:2px solid rgba(201,168,76,0.2);border-radius:10px;color:#fff;outline:none;transition:all 0.25s;-webkit-user-select:text;user-select:text;caret-color:#c9a84c;}
+.otp-input:focus{border-color:#c9a84c;background:rgba(201,168,76,0.08);box-shadow:0 0 16px rgba(201,168,76,0.2);transform:scale(1.05);}
+.otp-input.filled{border-color:rgba(201,168,76,0.5);background:rgba(201,168,76,0.06);}
+.otp-input.error{border-color:rgba(239,68,68,0.6);background:rgba(239,68,68,0.06);animation:shake 0.4s ease;}
+.otp-timer{text-align:center;font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.otp-timer-count{font-size:18px;font-weight:900;color:#c9a84c;min-width:32px;text-align:center;transition:all 0.3s;}
+.otp-timer-count.expired{color:#ef4444;}
+#accountSettingsModal{position:fixed;inset:0;z-index:4500;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);backdrop-filter:blur(18px);padding:16px;}
+#accountSettingsModal.active{display:flex;}
+.account-modal-box{position:relative;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border-radius:22px;background:linear-gradient(145deg,#0f0f0f,#161616);border:1px solid rgba(201,168,76,0.25);box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 60px rgba(201,168,76,0.06);animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;}
+.account-modal-box::-webkit-scrollbar{width:3px;}
+.account-modal-box::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.3);border-radius:4px;}
+.account-field{position:relative;margin-bottom:14px;}
+.account-field label{display:block;font-size:9px;letter-spacing:2px;color:rgba(201,168,76,0.6);text-transform:uppercase;font-weight:700;margin-bottom:6px;}
+.account-field input{width:100%;padding:12px 16px 12px 42px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.18);border-radius:10px;color:#fff;font-family:'Montserrat',sans-serif;font-size:13px;outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;}
+.account-field input:focus{border-color:#c9a84c;box-shadow:0 0 16px rgba(201,168,76,0.12);background:rgba(201,168,76,0.04);}
+.account-field i.field-icon{position:absolute;left:14px;bottom:13px;color:rgba(201,168,76,0.5);font-size:14px;}
+.user-mgmt-card{background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:14px 16px;margin-bottom:10px;transition:all 0.25s;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.user-mgmt-card:hover{background:rgba(201,168,76,0.04);border-color:rgba(201,168,76,0.15);}
+.user-mgmt-card.blocked{border-color:rgba(239,68,68,0.25);background:rgba(239,68,68,0.04);}
+.user-avatar-big{width:46px;height:46px;border-radius:50%;background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));border:1.5px solid rgba(201,168,76,0.3);display:flex;align-items:center;justify-content:center;color:#c9a84c;font-size:18px;flex-shrink:0;}
+.user-mgmt-card.blocked .user-avatar-big{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:#ef4444;}
+.user-online-dot{width:9px;height:9px;border-radius:50%;border:2px solid #0f0f0f;position:absolute;bottom:1px;right:1px;}
+.user-online-dot.online{background:#4ade80;}
+.user-online-dot.offline{background:#6b7280;}
+.auth-step{display:none;}
+.auth-step.active{display:block;animation:pageIn 0.3s ease;}
+.auth-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(74,222,128,0.12);border:2px solid rgba(74,222,128,0.35);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#4ade80;font-size:26px;animation:devModalIn 0.5s cubic-bezier(0.34,1.56,0.64,1);}
+.forgot-link{text-align:center;margin-top:12px;font-size:11px;color:rgba(201,168,76,0.55);cursor:pointer;letter-spacing:0.5px;transition:color 0.25s;text-decoration:underline;text-underline-offset:3px;display:block;}
+.forgot-link:hover{color:#c9a84c;}
+.auth-info-banner{background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:10px 14px;font-size:11px;color:rgba(255,255,255,0.45);line-height:1.6;margin-bottom:16px;display:flex;gap:9px;align-items:flex-start;}
+.auth-info-banner i{color:#c9a84c;margin-top:2px;flex-shrink:0;}
+.pass-strength-bar{height:3px;border-radius:3px;background:rgba(255,255,255,0.06);margin-top:6px;overflow:hidden;}
+.pass-strength-fill{height:100%;border-radius:3px;transition:all 0.4s ease;width:0%;}
+@media(max-width:480px){.otp-input{width:38px;height:46px;font-size:18px;}.otp-container{gap:6px;}}
+
 
     /* =====================================================
        HOME SCREEN
@@ -1488,26 +1531,431 @@ html { scroll-behavior: auto; }
       <input type="text" id="loginUser" placeholder="Kullanıcı Adı"
              autocomplete="username" onkeydown="handleLoginKey(event,'user')"/>
     </div>
-    <div class="login-field">
-      <i class="fas fa-lock field-icon"></i>
-      <input type="password" id="loginPass" placeholder="Şifre"
-             autocomplete="current-password" onkeydown="handleLoginKey(event,'pass')"/>
-      <button class="toggle-pass" type="button" onclick="togglePassVisibility()" tabindex="-1">
-        <i class="fas fa-eye" id="togglePassIcon"></i>
+ <!-- =====================================================
+     AUTH OVERLAY — نظام المصادقة الكامل
+===================================================== -->
+<div id="loginOverlay">
+  <div class="login-particles" id="particles"></div>
+  <div class="login-box" style="max-width:460px;">
+
+    <!-- شعار -->
+    <div class="login-logo">
+      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
+    </div>
+
+    <!-- تبويبات: دخول / تسجيل -->
+    <div class="auth-tabs" id="authTabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">
+        <i class="fas fa-sign-in-alt"></i> GİRİŞ
+      </button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">
+        <i class="fas fa-user-plus"></i> KAYIT OL
       </button>
     </div>
-    <label class="login-remember">
-      <input type="checkbox" id="rememberMe"/>
-      <span>Beni Hatırla</span>
-    </label>
-    <button class="login-btn" onclick="doLogin()">
-      <i class="fas fa-sign-in-alt"></i> GİRİŞ YAP
-    </button>
-    <div class="login-error" id="loginError">
-      <i class="fas fa-exclamation-circle"></i> Kullanıcı adı veya şifre hatalı!
+
+    <!-- ══════════════════════════════════════
+         STEP: تسجيل الدخول
+    ══════════════════════════════════════ -->
+    <div class="auth-step active" id="stepLogin">
+      <div class="login-field">
+        <i class="fas fa-envelope field-icon"></i>
+        <input type="email" id="loginEmail" placeholder="E-posta Adresi"
+               autocomplete="email"
+               onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()"/>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-lock field-icon"></i>
+        <input type="password" id="loginPassword" placeholder="Şifre"
+               autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')authLogin()"/>
+        <button class="toggle-pass" type="button"
+                onclick="togglePassVis('loginPassword','loginPassIcon')">
+          <i class="fas fa-eye" id="loginPassIcon"></i>
+        </button>
+      </div>
+      <label class="login-remember">
+        <input type="checkbox" id="authRememberMe"/>
+        <span>Beni Hatırla</span>
+      </label>
+      <button class="login-btn" onclick="authLogin()" id="loginBtn">
+        <i class="fas fa-sign-in-alt"></i> GİRİŞ YAP
+      </button>
+      <a class="forgot-link" onclick="switchAuthTab('forgot')">
+        <i class="fas fa-key"></i> Şifremi Unuttum
+      </a>
+      <div class="login-error" id="loginError"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         STEP: إنشاء حساب — المعلومات
+    ══════════════════════════════════════ -->
+    <div class="auth-step" id="stepRegister">
+      <div class="auth-info-banner">
+        <i class="fas fa-info-circle"></i>
+        <span>Hesabınız oluşturulduktan sonra yönetici onayı beklemeniz gerekebilir.</span>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-building field-icon"></i>
+        <input type="text" id="regCompany" placeholder="Şirket Adı"
+               onkeydown="if(event.key==='Enter')document.getElementById('regUsername').focus()"/>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-user field-icon"></i>
+        <input type="text" id="regUsername" placeholder="Kullanıcı Adı"
+               autocomplete="username"
+               onkeydown="if(event.key==='Enter')document.getElementById('regEmail').focus()"/>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-envelope field-icon"></i>
+        <input type="email" id="regEmail" placeholder="E-posta Adresi"
+               autocomplete="email"
+               onkeydown="if(event.key==='Enter')document.getElementById('regPhone').focus()"/>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-phone field-icon"></i>
+        <input type="tel" id="regPhone" placeholder="Telefon Numarası (+90...)"
+               onkeydown="if(event.key==='Enter')document.getElementById('regPass').focus()"/>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-lock field-icon"></i>
+        <input type="password" id="regPass" placeholder="Şifre (min. 6 karakter)"
+               autocomplete="new-password"
+               oninput="checkPassStrength(this.value)"
+               onkeydown="if(event.key==='Enter')authRegister()"/>
+        <button class="toggle-pass" type="button"
+                onclick="togglePassVis('regPass','regPassIcon')">
+          <i class="fas fa-eye" id="regPassIcon"></i>
+        </button>
+      </div>
+      <div class="pass-strength-bar">
+        <div class="pass-strength-fill" id="passStrengthFill"></div>
+      </div>
+      <button class="login-btn" onclick="authRegister()" id="registerBtn"
+              style="margin-top:14px;">
+        <i class="fas fa-paper-plane"></i> DOĞRULAMA KODU GÖNDER
+      </button>
+      <div class="login-error" id="registerError"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         STEP: رمز التحقق (تسجيل)
+    ══════════════════════════════════════ -->
+    <div class="auth-step" id="stepOtpRegister">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">
+          Doğrulama Kodu
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.6;"
+             id="otpRegisterDesc">
+          E-posta adresinize 6 haneli kod gönderildi.
+        </div>
+      </div>
+      <div class="otp-container" id="otpRegisterInputs"></div>
+      <div class="otp-timer">
+        <span>Kalan süre:</span>
+        <span class="otp-timer-count" id="otpRegisterTimer">60</span>
+        <span>sn</span>
+      </div>
+      <button class="login-btn" onclick="verifyOtpRegister()" id="otpRegisterBtn">
+        <i class="fas fa-check-circle"></i> DOĞRULA & HESAP OLUŞTUR
+      </button>
+      <button onclick="resendOtp('register')" id="resendRegisterBtn"
+              style="width:100%;margin-top:10px;padding:10px;
+                     background:transparent;border:1px solid rgba(201,168,76,0.2);
+                     border-radius:10px;color:rgba(201,168,76,0.6);
+                     font-family:'Montserrat',sans-serif;font-size:11px;
+                     font-weight:700;letter-spacing:1px;cursor:pointer;
+                     transition:all 0.25s;display:none;">
+        <i class="fas fa-redo"></i> Kodu Tekrar Gönder
+      </button>
+      <div class="login-error" id="otpRegisterError"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         STEP: نسيت كلمة المرور
+    ══════════════════════════════════════ -->
+    <div class="auth-step" id="stepForgot">
+      <div class="auth-info-banner">
+        <i class="fas fa-shield-alt"></i>
+        <span>Telefon numaranız ve e-posta adresiniz eşleşirse sıfırlama kodu gönderilecektir.</span>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-envelope field-icon"></i>
+        <input type="email" id="forgotEmail" placeholder="Kayıtlı E-posta"
+               onkeydown="if(event.key==='Enter')document.getElementById('forgotPhone').focus()"/>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-phone field-icon"></i>
+        <input type="tel" id="forgotPhone" placeholder="Kayıtlı Telefon (+90...)"
+               onkeydown="if(event.key==='Enter')authForgotPassword()"/>
+      </div>
+      <button class="login-btn" onclick="authForgotPassword()" id="forgotBtn">
+        <i class="fas fa-paper-plane"></i> SIFIRLAMA KODU GÖNDER
+      </button>
+      <a class="forgot-link" onclick="switchAuthTab('login')">
+        <i class="fas fa-arrow-left"></i> Giriş Sayfasına Dön
+      </a>
+      <div class="login-error" id="forgotError"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         STEP: رمز التحقق (إعادة تعيين)
+    ══════════════════════════════════════ -->
+    <div class="auth-step" id="stepOtpReset">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:6px;">
+          Sıfırlama Kodu
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.6;"
+             id="otpResetDesc">
+          E-posta adresinize 6 haneli kod gönderildi.
+        </div>
+      </div>
+      <div class="otp-container" id="otpResetInputs"></div>
+      <div class="otp-timer">
+        <span>Kalan süre:</span>
+        <span class="otp-timer-count" id="otpResetTimer">60</span>
+        <span>sn</span>
+      </div>
+      <button class="login-btn" onclick="verifyOtpReset()" id="otpResetBtn">
+        <i class="fas fa-check-circle"></i> KODU DOĞRULA
+      </button>
+      <button onclick="resendOtp('reset')" id="resendResetBtn"
+              style="width:100%;margin-top:10px;padding:10px;
+                     background:transparent;border:1px solid rgba(201,168,76,0.2);
+                     border-radius:10px;color:rgba(201,168,76,0.6);
+                     font-family:'Montserrat',sans-serif;font-size:11px;
+                     font-weight:700;letter-spacing:1px;cursor:pointer;
+                     transition:all 0.25s;display:none;">
+        <i class="fas fa-redo"></i> Kodu Tekrar Gönder
+      </button>
+      <div class="login-error" id="otpResetError"></div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         STEP: كلمة مرور جديدة
+    ══════════════════════════════════════ -->
+    <div class="auth-step" id="stepNewPass">
+      <div style="text-align:center;margin-bottom:18px;">
+        <div class="auth-success-icon">
+          <i class="fas fa-unlock-alt"></i>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:#fff;">
+          Yeni Şifre Belirleyin
+        </div>
+      </div>
+      <div class="login-field">
+        <i class="fas fa-lock field-icon"></i>
+        <input type="password" id="newPass" placeholder="Yeni Şifre (min. 6 karakter)"
+               autocomplete="new-password"
+               oninput="checkPassStrength(this.value,'newPassStrength')"
+               onkeydown="if(event.key==='Enter')document.getElementById('newPassConfirm').focus()"/>
+        <button class="toggle-pass" type="button"
+                onclick="togglePassVis('newPass','newPassIcon')">
+          <i class="fas fa-eye" id="newPassIcon"></i>
+        </button>
+      </div>
+      <div class="pass-strength-bar">
+        <div class="pass-strength-fill" id="newPassStrength"></div>
+      </div>
+      <div class="login-field" style="margin-top:12px;">
+        <i class="fas fa-lock field-icon"></i>
+        <input type="password" id="newPassConfirm" placeholder="Şifreyi Tekrar Girin"
+               autocomplete="new-password"
+               onkeydown="if(event.key==='Enter')authSetNewPassword()"/>
+      </div>
+      <button class="login-btn" onclick="authSetNewPassword()" id="newPassBtn"
+              style="margin-top:14px;">
+        <i class="fas fa-save"></i> ŞİFREYİ KAYDET
+      </button>
+      <div class="login-error" id="newPassError"></div>
+    </div>
+
+  </div><!-- /login-box -->
+</div><!-- /loginOverlay -->
+
+
+<!-- =====================================================
+     نافذة إعدادات الحساب
+===================================================== -->
+<div id="accountSettingsModal" onclick="handleAccountModalBg(event)">
+  <div class="account-modal-box">
+    <!-- خط ذهبي -->
+    <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+    <!-- هيدر -->
+    <div style="padding:18px 20px 14px;display:flex;align-items:center;
+                justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+                    border:1px solid rgba(201,168,76,0.3);border-radius:12px;
+                    display:flex;align-items:center;justify-content:center;
+                    color:#c9a84c;font-size:17px;">
+          <i class="fas fa-user-cog"></i>
+        </div>
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,0.55);
+                      text-transform:uppercase;margin-bottom:3px;">HESAP</div>
+          <div style="font-size:16px;font-weight:900;color:#fff;">Hesap Ayarları</div>
+        </div>
+      </div>
+      <div onclick="closeAccountSettings()" style="width:32px;height:32px;
+           background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+           border-radius:8px;color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+           display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
+           onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+           onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+        <i class="fas fa-times"></i>
+      </div>
+    </div>
+
+    <!-- جسم النافذة -->
+    <div style="padding:20px;">
+
+      <!-- معلومات الحساب الحالية -->
+      <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);
+                  border-radius:14px;padding:14px 16px;margin-bottom:18px;
+                  display:flex;align-items:center;gap:14px;">
+        <div style="width:52px;height:52px;border-radius:50%;flex-shrink:0;
+                    background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
+                    border:2px solid rgba(201,168,76,0.3);
+                    display:flex;align-items:center;justify-content:center;
+                    color:#c9a84c;font-size:22px;">
+          <i class="fas fa-user"></i>
+        </div>
+        <div>
+          <div style="font-size:15px;font-weight:900;color:#fff;" id="accDisplayName">—</div>
+          <div style="font-size:10px;color:rgba(201,168,76,0.6);letter-spacing:1.5px;
+                      margin-top:3px;" id="accDisplayEmail">—</div>
+          <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:2px;"
+               id="accDisplayCompany">—</div>
+        </div>
+      </div>
+
+      <!-- حقول التعديل -->
+      <div class="account-field">
+        <label><i class="fas fa-building"></i> Şirket Adı</label>
+        <i class="fas fa-building field-icon"></i>
+        <input type="text" id="accCompany" placeholder="Şirket adınız"/>
+      </div>
+      <div class="account-field">
+        <label><i class="fas fa-user"></i> Kullanıcı Adı</label>
+        <i class="fas fa-user field-icon"></i>
+        <input type="text" id="accUsername" placeholder="Kullanıcı adınız"/>
+      </div>
+      <div class="account-field">
+        <label><i class="fas fa-phone"></i> Telefon</label>
+        <i class="fas fa-phone field-icon"></i>
+        <input type="tel" id="accPhone" placeholder="+90 5XX XXX XX XX"/>
+      </div>
+
+      <!-- فاصل -->
+      <div style="height:1px;background:rgba(255,255,255,0.05);margin:16px 0;"></div>
+
+      <!-- تغيير كلمة المرور -->
+      <div style="font-size:10px;letter-spacing:2px;color:rgba(201,168,76,0.6);
+                  font-weight:700;text-transform:uppercase;margin-bottom:12px;">
+        <i class="fas fa-key"></i> ŞİFRE DEĞİŞTİR
+      </div>
+      <div class="account-field">
+        <label><i class="fas fa-lock"></i> Yeni Şifre</label>
+        <i class="fas fa-lock field-icon"></i>
+        <input type="password" id="accNewPass" placeholder="Yeni şifre (boş bırakın = değişmez)"
+               oninput="checkPassStrength(this.value,'accPassStrength')"/>
+        <button class="toggle-pass" type="button"
+                onclick="togglePassVis('accNewPass','accPassIcon')">
+          <i class="fas fa-eye" id="accPassIcon"></i>
+        </button>
+      </div>
+      <div class="pass-strength-bar" style="margin-bottom:14px;">
+        <div class="pass-strength-fill" id="accPassStrength"></div>
+      </div>
+
+      <!-- أزرار -->
+      <div style="display:flex;gap:10px;">
+        <button onclick="closeAccountSettings()" style="flex:1;padding:12px;
+                border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+                background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.5);
+                font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;
+                letter-spacing:1px;cursor:pointer;transition:all 0.25s;">
+          İPTAL
+        </button>
+        <button onclick="saveAccountSettings()" id="accSaveBtn" style="flex:2;padding:12px;
+                border-radius:10px;border:none;
+                background:linear-gradient(135deg,#c9a84c,#f0d080);
+                color:#0a0a0a;font-family:'Montserrat',sans-serif;
+                font-size:11px;font-weight:900;letter-spacing:2px;
+                cursor:pointer;transition:all 0.25s;
+                display:flex;align-items:center;justify-content:center;gap:7px;">
+          <i class="fas fa-save"></i> KAYDET
+        </button>
+      </div>
+      <div class="login-error" id="accError" style="margin-top:10px;"></div>
     </div>
   </div>
 </div>
+
+
+<!-- =====================================================
+     نافذة إدارة المستخدمين (WOW فقط)
+===================================================== -->
+<div id="userMgmtModal" onclick="handleUserMgmtModalBg(event)"
+     style="position:fixed;inset:0;z-index:4600;display:none;
+            align-items:center;justify-content:center;
+            background:rgba(0,0,0,0.88);backdrop-filter:blur(18px);padding:16px;">
+  <div style="position:relative;width:100%;max-width:600px;max-height:90vh;
+              overflow-y:auto;border-radius:22px;
+              background:linear-gradient(145deg,#0f0f0f,#161616);
+              border:1px solid rgba(201,168,76,0.25);
+              box-shadow:0 40px 100px rgba(0,0,0,0.8);
+              animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+    <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+    <!-- هيدر -->
+    <div style="padding:18px 20px 14px;display:flex;align-items:center;
+                justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);
+                position:sticky;top:0;background:linear-gradient(145deg,#0f0f0f,#161616);z-index:2;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:42px;height:42px;background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+                    border:1px solid rgba(201,168,76,0.3);border-radius:12px;
+                    display:flex;align-items:center;justify-content:center;
+                    color:#c9a84c;font-size:17px;">
+          <i class="fas fa-users-cog"></i>
+        </div>
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,0.55);
+                      text-transform:uppercase;margin-bottom:3px;">YÖNETİM</div>
+          <div style="font-size:16px;font-weight:900;color:#fff;">Kullanıcı Yönetimi</div>
+        </div>
+      </div>
+      <div onclick="closeUserMgmt()" style="width:32px;height:32px;
+           background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+           border-radius:8px;color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+           display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
+           onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+           onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+        <i class="fas fa-times"></i>
+      </div>
+    </div>
+
+    <!-- جسم -->
+    <div style="padding:16px 18px 20px;">
+      <!-- إحصائيات سريعة -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;"
+           id="userMgmtStats">
+      </div>
+      <!-- قائمة المستخدمين -->
+      <div id="userMgmtList">
+        <div style="text-align:center;padding:30px;color:rgba(255,255,255,0.2);">
+          <i class="fas fa-spinner fa-spin" style="font-size:24px;color:rgba(201,168,76,0.3);"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- HOME SCREEN -->
 <div id="homeScreen">
@@ -7782,6 +8230,1336 @@ async function subscribeInventory() {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ نظام المصادقة الكامل — Auth System ★
+============================================================ */
+
+/* ── متغيرات عامة ── */
+let authCurrentUser  = null;   // مستخدم Supabase Auth
+let authProfile      = null;   // بيانات الـ profile
+let _otpTimerInt     = null;   // مؤقت OTP
+let _pendingRegData  = null;   // بيانات التسجيل المؤقتة
+let _pendingResetEmail = null; // إيميل إعادة التعيين
+
+/* ── تهيئة Auth عند تحميل الصفحة ── */
+(async function initAuth() {
+  await ensureSupabaseLib();
+  if (!_sb) await initSupabase();
+  if (!_sb) return;
+
+  /* استعادة الجلسة */
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session?.user) {
+    await onAuthSuccess(session.user, false);
+  }
+
+  /* الاستماع لتغييرات الجلسة */
+  _sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      if (!authCurrentUser) await onAuthSuccess(session.user, false);
+    }
+    if (event === 'SIGNED_OUT') {
+      authCurrentUser = null;
+      authProfile     = null;
+    }
+  });
+})();
+
+/* ── التبديل بين التبويبات ── */
+function switchAuthTab(tab) {
+  const steps = ['stepLogin','stepRegister','stepOtpRegister',
+                 'stepForgot','stepOtpReset','stepNewPass'];
+  steps.forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.classList.remove('active');
+  });
+
+  const tabs = document.querySelectorAll('.auth-tab');
+  tabs.forEach(t => t.classList.remove('active'));
+
+  clearAuthErrors();
+
+  if (tab === 'login') {
+    document.getElementById('stepLogin').classList.add('active');
+    tabs[0]?.classList.add('active');
+  } else if (tab === 'register') {
+    document.getElementById('stepRegister').classList.add('active');
+    tabs[1]?.classList.add('active');
+  } else if (tab === 'forgot') {
+    document.getElementById('stepForgot').classList.add('active');
+  } else if (tab === 'otpRegister') {
+    document.getElementById('stepOtpRegister').classList.add('active');
+    buildOtpInputs('otpRegisterInputs');
+    startOtpTimer('otpRegisterTimer', 'resendRegisterBtn');
+  } else if (tab === 'otpReset') {
+    document.getElementById('stepOtpReset').classList.add('active');
+    buildOtpInputs('otpResetInputs');
+    startOtpTimer('otpResetTimer', 'resendResetBtn');
+  } else if (tab === 'newPass') {
+    document.getElementById('stepNewPass').classList.add('active');
+  }
+}
+
+/* ── بناء حقول OTP ── */
+function buildOtpInputs(containerId) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  c.innerHTML = '';
+  for (let i = 0; i < 6; i++) {
+    const inp = document.createElement('input');
+    inp.type      = 'tel';
+    inp.maxLength = 1;
+    inp.className = 'otp-input';
+    inp.inputMode = 'numeric';
+    inp.pattern   = '[0-9]';
+    inp.setAttribute('autocomplete', 'one-time-code');
+
+    inp.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g,'');
+      if (e.target.value) {
+        e.target.classList.add('filled');
+        const next = c.children[i + 1];
+        if (next) next.focus();
+      } else {
+        e.target.classList.remove('filled');
+      }
+    });
+
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !e.target.value) {
+        const prev = c.children[i - 1];
+        if (prev) { prev.focus(); prev.value = ''; prev.classList.remove('filled'); }
+      }
+      if (e.key === 'Enter') {
+        if (containerId === 'otpRegisterInputs') verifyOtpRegister();
+        else verifyOtpReset();
+      }
+    });
+
+    inp.addEventListener('paste', e => {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g,'');
+      [...text.slice(0,6)].forEach((ch, idx) => {
+        const input = c.children[idx];
+        if (input) { input.value = ch; input.classList.add('filled'); }
+      });
+      const last = c.children[Math.min(text.length, 5)];
+      if (last) last.focus();
+    });
+
+    c.appendChild(inp);
+  }
+  setTimeout(() => c.children[0]?.focus(), 300);
+}
+
+/* ── الحصول على قيمة OTP ── */
+function getOtpValue(containerId) {
+  const c = document.getElementById(containerId);
+  if (!c) return '';
+  return [...c.children].map(inp => inp.value).join('');
+}
+
+/* ── مؤقت OTP ── */
+function startOtpTimer(timerId, resendBtnId, seconds = 60) {
+  clearInterval(_otpTimerInt);
+  let remaining = seconds;
+  const timerEl  = document.getElementById(timerId);
+  const resendEl = document.getElementById(resendBtnId);
+
+  if (timerEl)  { timerEl.textContent = remaining; timerEl.classList.remove('expired'); }
+  if (resendEl)   resendEl.style.display = 'none';
+
+  _otpTimerInt = setInterval(() => {
+    remaining--;
+    if (timerEl) timerEl.textContent = remaining;
+    if (remaining <= 0) {
+      clearInterval(_otpTimerInt);
+      if (timerEl)  timerEl.classList.add('expired');
+      if (resendEl) resendEl.style.display = 'block';
+    }
+  }, 1000);
+}
+
+/* ── إعادة إرسال OTP ── */
+async function resendOtp(type) {
+  if (type === 'register' && _pendingRegData) {
+    const code = await generateAndSendCode(_pendingRegData.email, 'register');
+    if (code) {
+      startOtpTimer('otpRegisterTimer', 'resendRegisterBtn');
+      document.getElementById('resendRegisterBtn').style.display = 'none';
+      showInvToast('Kod tekrar gönderildi ✓', 'success');
+    }
+  } else if (type === 'reset' && _pendingResetEmail) {
+    const code = await generateAndSendCode(_pendingResetEmail, 'reset');
+    if (code) {
+      startOtpTimer('otpResetTimer', 'resendResetBtn');
+      document.getElementById('resendResetBtn').style.display = 'none';
+      showInvToast('Kod tekrar gönderildi ✓', 'success');
+    }
+  }
+}
+
+/* ── توليد وإرسال الرمز ── */
+async function generateAndSendCode(identifier, type) {
+  const sb = await initSupabase();
+  if (!sb) return null;
+
+  const { data, error } = await sb.rpc('generate_verification_code', {
+    p_identifier: identifier,
+    p_type:       type
+  });
+
+  if (error) {
+    console.error('[Auth] generateCode error:', error);
+    return null;
+  }
+
+  /* ★ في بيئة الإنتاج: أرسل الكود عبر Supabase Edge Function أو خدمة SMS/Email
+     في بيئة التطوير: نعرضه في console فقط */
+  console.log(`[Auth] 🔑 Kod (${type}):`, data, '→', identifier);
+
+  /* ★ للتجربة: نعرض الكود في Toast */
+  showInvToast(`Test kodu: ${data}`, 'info');
+
+  return data;
+}
+
+/* ══════════════════════════════════════════════════
+   ★ تسجيل الدخول
+══════════════════════════════════════════════════ */
+async function authLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPassword').value;
+  const btn   = document.getElementById('loginBtn');
+
+  clearAuthErrors();
+
+  if (!email || !pass) {
+    showAuthError('loginError', 'E-posta ve şifre gereklidir!');
+    return;
+  }
+
+  setAuthBtnLoading(btn, true, 'Giriş yapılıyor...');
+
+  const sb = await initSupabase();
+  if (!sb) { setAuthBtnLoading(btn, false); return; }
+
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+
+  if (error) {
+    setAuthBtnLoading(btn, false);
+    const msg = error.message.includes('Invalid login')
+      ? 'E-posta veya şifre hatalı!'
+      : error.message;
+    showAuthError('loginError', msg);
+    document.getElementById('loginPassword').style.animation = 'none';
+    void document.getElementById('loginPassword').offsetWidth;
+    document.getElementById('loginPassword').style.animation = 'shake 0.4s ease';
+    return;
+  }
+
+  /* تحقق من الحظر */
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', data.user.id)
+    .single();
+
+  if (profile?.is_blocked) {
+    await sb.auth.signOut();
+    setAuthBtnLoading(btn, false);
+    showAuthError('loginError', '⛔ Hesabınız engellenmiştir. Yönetici ile iletişime geçin.');
+    return;
+  }
+
+  if (document.getElementById('authRememberMe')?.checked) {
+    try { localStorage.setItem('wow_auth_email', email); } catch(e) {}
+  }
+
+  setAuthBtnLoading(btn, false);
+  await onAuthSuccess(data.user, true);
+}
+
+/* ══════════════════════════════════════════════════
+   ★ إنشاء حساب — الخطوة 1
+══════════════════════════════════════════════════ */
+async function authRegister() {
+  const company  = document.getElementById('regCompany').value.trim();
+  const username = document.getElementById('regUsername').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const phone    = document.getElementById('regPhone').value.trim();
+  const pass     = document.getElementById('regPass').value;
+  const btn      = document.getElementById('registerBtn');
+
+  clearAuthErrors();
+
+  if (!username || !email || !pass) {
+    showAuthError('registerError', 'Kullanıcı adı, e-posta ve şifre zorunludur!');
+    return;
+  }
+  if (pass.length < 6) {
+    showAuthError('registerError', 'Şifre en az 6 karakter olmalıdır!');
+    return;
+  }
+  if (!email.includes('@')) {
+    showAuthError('registerError', 'Geçerli bir e-posta adresi girin!');
+    return;
+  }
+
+  setAuthBtnLoading(btn, true, 'Kod gönderiliyor...');
+
+  /* حفظ البيانات مؤقتاً */
+  _pendingRegData = { company, username, email, phone, pass };
+
+  /* توليد وإرسال الرمز */
+  const code = await generateAndSendCode(email, 'register');
+
+  setAuthBtnLoading(btn, false);
+
+  if (!code) {
+    showAuthError('registerError', 'Kod gönderilemedi. Tekrar deneyin.');
+    return;
+  }
+
+  document.getElementById('otpRegisterDesc').textContent =
+    `${email} adresine 6 haneli kod gönderildi.`;
+
+  switchAuthTab('otpRegister');
+}
+
+/* ── التحقق من OTP التسجيل ── */
+async function verifyOtpRegister() {
+  const code = getOtpValue('otpRegisterInputs');
+  const btn  = document.getElementById('otpRegisterBtn');
+
+  if (code.length !== 6) {
+    shakeOtpInputs('otpRegisterInputs');
+    showAuthError('otpRegisterError', '6 haneli kodu eksiksiz girin!');
+    return;
+  }
+
+  setAuthBtnLoading(btn, true, 'Doğrulanıyor...');
+
+  const sb = await initSupabase();
+  if (!sb) { setAuthBtnLoading(btn, false); return; }
+
+  /* التحقق من الرمز */
+  const { data: valid } = await sb.rpc('verify_code', {
+    p_identifier: _pendingRegData.email,
+    p_code:       code,
+    p_type:       'register'
+  });
+
+  if (!valid) {
+    setAuthBtnLoading(btn, false);
+    shakeOtpInputs('otpRegisterInputs');
+    showAuthError('otpRegisterError', 'Kod hatalı veya süresi dolmuş!');
+    return;
+  }
+
+  /* إنشاء الحساب في Supabase Auth */
+  const { data, error } = await sb.auth.signUp({
+    email:    _pendingRegData.email,
+    password: _pendingRegData.pass,
+    options: {
+      data: {
+        username:     _pendingRegData.username,
+        company_name: _pendingRegData.company,
+        phone:        _pendingRegData.phone,
+        role:         'user'
+      }
+    }
+  });
+
+  if (error) {
+    setAuthBtnLoading(btn, false);
+    showAuthError('otpRegisterError', error.message);
+    return;
+  }
+
+  setAuthBtnLoading(btn, false);
+  clearInterval(_otpTimerInt);
+
+  /* نجاح التسجيل */
+  /* نجاح التسجيل */
+  showInvToast('Hesap başarıyla oluşturuldu! ✓', 'success');
+
+  /* تسجيل الدخول تلقائياً إذا تم تأكيد الإيميل */
+  if (data.session) {
+    await onAuthSuccess(data.user, true);
+  } else {
+    /* إظهار رسالة نجاح والعودة لتسجيل الدخول */
+    document.getElementById('stepOtpRegister').innerHTML = `
+      <div style="text-align:center;padding:20px 0;">
+        <div class="auth-success-icon">
+          <i class="fas fa-check"></i>
+        </div>
+        <div style="font-size:15px;font-weight:900;color:#fff;margin-bottom:8px;">
+          Hesap Oluşturuldu!
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7;margin-bottom:20px;">
+          Hesabınız başarıyla oluşturuldu.<br/>
+          Şimdi giriş yapabilirsiniz.
+        </div>
+        <button class="login-btn" onclick="switchAuthTab('login')" style="max-width:220px;margin:0 auto;">
+          <i class="fas fa-sign-in-alt"></i> GİRİŞ YAP
+        </button>
+      </div>`;
+  }
+  _pendingRegData = null;
+}
+
+/* ══════════════════════════════════════════════════
+   ★ نسيت كلمة المرور
+══════════════════════════════════════════════════ */
+async function authForgotPassword() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  const phone = document.getElementById('forgotPhone').value.trim();
+  const btn   = document.getElementById('forgotBtn');
+
+  clearAuthErrors();
+
+  if (!email || !phone) {
+    showAuthError('forgotError', 'E-posta ve telefon numarası gereklidir!');
+    return;
+  }
+
+  setAuthBtnLoading(btn, true, 'Kontrol ediliyor...');
+
+  const sb = await initSupabase();
+  if (!sb) { setAuthBtnLoading(btn, false); return; }
+
+  /* التحقق من تطابق الإيميل والهاتف */
+  const { data: profile, error } = await sb
+    .from('profiles')
+    .select('id, email, phone')
+    .eq('email', email)
+    .single();
+
+  if (error || !profile) {
+    setAuthBtnLoading(btn, false);
+    showAuthError('forgotError', 'Bu e-posta adresi kayıtlı değil!');
+    return;
+  }
+
+  /* مقارنة رقم الهاتف — نزيل المسافات والرموز للمقارنة */
+  const cleanInput   = phone.replace(/[\s\-\(\)]/g, '');
+  const cleanProfile = (profile.phone || '').replace(/[\s\-\(\)]/g, '');
+
+  if (cleanInput !== cleanProfile) {
+    setAuthBtnLoading(btn, false);
+    showAuthError('forgotError', 'Telefon numarası eşleşmiyor!');
+    return;
+  }
+
+  /* توليد وإرسال الرمز */
+  const code = await generateAndSendCode(email, 'reset');
+
+  setAuthBtnLoading(btn, false);
+
+  if (!code) {
+    showAuthError('forgotError', 'Kod gönderilemedi. Tekrar deneyin.');
+    return;
+  }
+
+  _pendingResetEmail = email;
+
+  document.getElementById('otpResetDesc').textContent =
+    `${email} adresine 6 haneli sıfırlama kodu gönderildi.`;
+
+  switchAuthTab('otpReset');
+}
+
+/* ── التحقق من OTP إعادة التعيين ── */
+async function verifyOtpReset() {
+  const code = getOtpValue('otpResetInputs');
+  const btn  = document.getElementById('otpResetBtn');
+
+  if (code.length !== 6) {
+    shakeOtpInputs('otpResetInputs');
+    showAuthError('otpResetError', '6 haneli kodu eksiksiz girin!');
+    return;
+  }
+
+  setAuthBtnLoading(btn, true, 'Doğrulanıyor...');
+
+  const sb = await initSupabase();
+  if (!sb) { setAuthBtnLoading(btn, false); return; }
+
+  const { data: valid } = await sb.rpc('verify_code', {
+    p_identifier: _pendingResetEmail,
+    p_code:       code,
+    p_type:       'reset'
+  });
+
+  if (!valid) {
+    setAuthBtnLoading(btn, false);
+    shakeOtpInputs('otpResetInputs');
+    showAuthError('otpResetError', 'Kod hatalı veya süresi dolmuş!');
+    return;
+  }
+
+  setAuthBtnLoading(btn, false);
+  clearInterval(_otpTimerInt);
+  switchAuthTab('newPass');
+}
+
+/* ── حفظ كلمة المرور الجديدة ── */
+async function authSetNewPassword() {
+  const newPass    = document.getElementById('newPass').value;
+  const confirmPass = document.getElementById('newPassConfirm').value;
+  const btn        = document.getElementById('newPassBtn');
+
+  clearAuthErrors();
+
+  if (!newPass || newPass.length < 6) {
+    showAuthError('newPassError', 'Şifre en az 6 karakter olmalıdır!');
+    return;
+  }
+  if (newPass !== confirmPass) {
+    showAuthError('newPassError', 'Şifreler eşleşmiyor!');
+    return;
+  }
+
+  setAuthBtnLoading(btn, true, 'Kaydediliyor...');
+
+  const sb = await initSupabase();
+  if (!sb) { setAuthBtnLoading(btn, false); return; }
+
+  /* تسجيل دخول مؤقت لتغيير كلمة المرور */
+  const { error: signInErr } = await sb.auth.signInWithPassword({
+    email:    _pendingResetEmail,
+    password: 'temp_reset_placeholder_' + Date.now()
+  });
+
+  /* استخدام updateUser مباشرة */
+  const { error } = await sb.auth.admin
+    ? await sb.auth.admin.updateUserById(
+        (await sb.from('profiles').select('id').eq('email', _pendingResetEmail).single()).data?.id,
+        { password: newPass }
+      )
+    : { error: { message: 'admin_required' } };
+
+  /* ★ الطريقة البديلة: Edge Function أو OTP من Supabase */
+  /* نستخدم resetPasswordForEmail مع redirect */
+  if (error?.message === 'admin_required') {
+    /* الطريقة الأبسط: نحدّث مباشرة عبر RPC مخصصة */
+    const { error: rpcErr } = await sb.rpc('reset_user_password', {
+      p_email:    _pendingResetEmail,
+      p_password: newPass
+    }).catch(() => ({ error: { message: 'rpc_not_found' } }));
+
+    if (rpcErr) {
+      /* ★ الطريقة الأخيرة: نرسل reset email من Supabase */
+      await sb.auth.resetPasswordForEmail(_pendingResetEmail, {
+        redirectTo: window.location.href + '?reset=1'
+      });
+      setAuthBtnLoading(btn, false);
+      document.getElementById('stepNewPass').innerHTML = `
+        <div style="text-align:center;padding:20px 0;">
+          <div class="auth-success-icon" style="background:rgba(96,165,250,0.12);
+               border-color:rgba(96,165,250,0.35);color:#60a5fa;">
+            <i class="fas fa-envelope"></i>
+          </div>
+          <div style="font-size:14px;font-weight:900;color:#fff;margin-bottom:8px;">
+            Şifre Sıfırlama E-postası Gönderildi
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7;margin-bottom:20px;">
+            ${_pendingResetEmail} adresine şifre sıfırlama bağlantısı gönderildi.<br/>
+            E-postanızı kontrol edin.
+          </div>
+          <button class="login-btn" onclick="switchAuthTab('login')" style="max-width:220px;margin:0 auto;">
+            <i class="fas fa-sign-in-alt"></i> GİRİŞ YAP
+          </button>
+        </div>`;
+      _pendingResetEmail = null;
+      return;
+    }
+  }
+
+  setAuthBtnLoading(btn, false);
+
+  document.getElementById('stepNewPass').innerHTML = `
+    <div style="text-align:center;padding:20px 0;">
+      <div class="auth-success-icon">
+        <i class="fas fa-check"></i>
+      </div>
+      <div style="font-size:15px;font-weight:900;color:#fff;margin-bottom:8px;">
+        Şifre Güncellendi!
+      </div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7;margin-bottom:20px;">
+        Yeni şifrenizle giriş yapabilirsiniz.
+      </div>
+      <button class="login-btn" onclick="switchAuthTab('login')" style="max-width:220px;margin:0 auto;">
+        <i class="fas fa-sign-in-alt"></i> GİRİŞ YAP
+      </button>
+    </div>`;
+  _pendingResetEmail = null;
+}
+
+/* ══════════════════════════════════════════════════
+   ★ بعد نجاح تسجيل الدخول
+══════════════════════════════════════════════════ */
+async function onAuthSuccess(user, animate = true) {
+  authCurrentUser = user;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* جلب الـ profile */
+  const { data: profile } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  authProfile = profile;
+
+  /* تعيين currentUser للنظام القديم */
+  currentUser = profile?.username || user.email.split('@')[0];
+
+  /* تسجيل النشاط */
+  sb.rpc('log_activity', {
+    p_user_id:  user.id,
+    p_username: currentUser,
+    p_action:   'login',
+    p_page:     'home'
+  }).catch(() => {});
+
+  /* تحديث last_seen */
+  sb.rpc('update_last_seen', { p_user_id: user.id }).catch(() => {});
+
+  /* بدء تحديث last_seen كل دقيقة */
+  setInterval(() => {
+    sb.rpc('update_last_seen', { p_user_id: user.id }).catch(() => {});
+  }, 60000);
+
+  /* إخفاء شاشة الدخول */
+  const ov = document.getElementById('loginOverlay');
+  if (animate) {
+    ov.style.transition = 'opacity 0.7s';
+    ov.style.opacity    = '0';
+    await new Promise(r => setTimeout(r, 700));
+  }
+  ov.style.display = 'none';
+
+  /* تحميل البيانات */
+  loadCartFromStorage();
+  updateCartReminder(Object.values(orderCart).reduce((a,b) => a+b, 0));
+
+  /* إظهار شاشة الهوم */
+  showHomeScreen();
+  updateAuthNavButtons();
+  setTimeout(tryPlayAudio, 600);
+
+  /* تحميل المخزون */
+  setTimeout(async () => {
+    const ok = await testSupabaseConnection();
+    if (ok) {
+      await loadInventory();
+      subscribeInventory();
+    }
+  }, 900);
+}
+
+/* ══════════════════════════════════════════════════
+   ★ تسجيل الخروج
+══════════════════════════════════════════════════ */
+async function doLogout() {
+  const sb = await initSupabase();
+
+  if (sb && authCurrentUser) {
+    /* تسجيل نشاط الخروج */
+    sb.rpc('log_activity', {
+      p_user_id:  authCurrentUser.id,
+      p_username: currentUser,
+      p_action:   'logout'
+    }).catch(() => {});
+
+    await sb.auth.signOut();
+  }
+
+  authCurrentUser = null;
+  authProfile     = null;
+
+  localStorage.removeItem('wow_order_cart');
+  Object.keys(orderCart).forEach(k => delete orderCart[k]);
+
+  document.getElementById('mainSite').style.display  = 'none';
+  document.getElementById('homeScreen').style.display = 'none';
+
+  const ov = document.getElementById('loginOverlay');
+  ov.style.display    = 'flex';
+  ov.style.opacity    = '1';
+  ov.style.transition = '';
+
+  /* إعادة ضبط نموذج الدخول */
+  switchAuthTab('login');
+  const savedEmail = localStorage.getItem('wow_auth_email');
+  if (savedEmail) document.getElementById('loginEmail').value = savedEmail;
+
+  selectedIds.clear();
+  selectMode = false;
+  document.body.classList.remove('select-mode');
+  updateBulkBar();
+  pauseAudio();
+  closeMobileMenu();
+  appState = 'login';
+  replaceState('login');
+}
+
+/* ══════════════════════════════════════════════════
+   ★ إعدادات الحساب
+══════════════════════════════════════════════════ */
+function openAccountSettings() {
+  if (!authProfile) return;
+
+  /* تعبئة الحقول */
+  document.getElementById('accDisplayName').textContent    = authProfile.username    || '—';
+  document.getElementById('accDisplayEmail').textContent   = authProfile.email       || '—';
+  document.getElementById('accDisplayCompany').textContent = authProfile.company_name || '—';
+  document.getElementById('accCompany').value  = authProfile.company_name || '';
+  document.getElementById('accUsername').value = authProfile.username     || '';
+  document.getElementById('accPhone').value    = authProfile.phone        || '';
+  document.getElementById('accNewPass').value  = '';
+
+  /* إعادة ضبط شريط القوة */
+  const bar = document.getElementById('accPassStrength');
+  if (bar) { bar.style.width = '0%'; bar.style.background = ''; }
+
+  document.getElementById('accountSettingsModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAccountSettings() {
+  document.getElementById('accountSettingsModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function handleAccountModalBg(e) {
+  if (e.target === document.getElementById('accountSettingsModal'))
+    closeAccountSettings();
+}
+
+async function saveAccountSettings() {
+  const company  = document.getElementById('accCompany').value.trim();
+  const username = document.getElementById('accUsername').value.trim();
+  const phone    = document.getElementById('accPhone').value.trim();
+  const newPass  = document.getElementById('accNewPass').value;
+  const btn      = document.getElementById('accSaveBtn');
+  const errEl    = document.getElementById('accError');
+
+  errEl.style.display = 'none';
+
+  if (!username) {
+    errEl.textContent   = 'Kullanıcı adı boş olamaz!';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  setAuthBtnLoading(btn, true, 'Kaydediliyor...');
+
+  const sb = await initSupabase();
+  if (!sb) { setAuthBtnLoading(btn, false); return; }
+
+  /* تحديث الـ profile */
+  const { error: profileErr } = await sb
+    .from('profiles')
+    .update({
+      company_name: company,
+      username:     username,
+      phone:        phone,
+      updated_at:   new Date().toISOString()
+    })
+    .eq('id', authCurrentUser.id);
+
+  if (profileErr) {
+    setAuthBtnLoading(btn, false);
+    errEl.textContent   = 'Hata: ' + profileErr.message;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  /* تغيير كلمة المرور إذا أُدخلت */
+  if (newPass) {
+    if (newPass.length < 6) {
+      setAuthBtnLoading(btn, false);
+      errEl.textContent   = 'Şifre en az 6 karakter olmalıdır!';
+      errEl.style.display = 'block';
+      return;
+    }
+    const { error: passErr } = await sb.auth.updateUser({ password: newPass });
+    if (passErr) {
+      setAuthBtnLoading(btn, false);
+      errEl.textContent   = 'Şifre hatası: ' + passErr.message;
+      errEl.style.display = 'block';
+      return;
+    }
+  }
+
+  /* تحديث البيانات المحلية */
+  authProfile.company_name = company;
+  authProfile.username     = username;
+  authProfile.phone        = phone;
+  currentUser              = username;
+
+  /* تحديث العرض */
+  document.getElementById('accDisplayName').textContent    = username;
+  document.getElementById('accDisplayCompany').textContent = company;
+
+  setAuthBtnLoading(btn, false);
+  showInvToast('Hesap bilgileri güncellendi ✓', 'success');
+  setTimeout(closeAccountSettings, 800);
+}
+
+/* ══════════════════════════════════════════════════
+   ★ لوحة إدارة المستخدمين (WOW فقط)
+══════════════════════════════════════════════════ */
+async function openUserMgmt() {
+  if (authProfile?.role !== 'admin') return;
+
+  const modal = document.getElementById('userMgmtModal');
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  await loadUserMgmtData();
+}
+
+function closeUserMgmt() {
+  document.getElementById('userMgmtModal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function handleUserMgmtModalBg(e) {
+  if (e.target === document.getElementById('userMgmtModal'))
+    closeUserMgmt();
+}
+
+async function loadUserMgmtData() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: users, error } = await sb
+    .from('profiles')
+    .select('*, user_activity(action, created_at)')
+    .order('created_at', { ascending: false });
+
+  if (error || !users) return;
+
+  /* إحصائيات */
+  const total   = users.length;
+  const active  = users.filter(u => !u.is_blocked).length;
+  const blocked = users.filter(u => u.is_blocked).length;
+
+  /* last_seen: نعتبر المستخدم "متصل" إذا كان آخر نشاطه خلال 5 دقائق */
+  const now     = Date.now();
+  const online  = users.filter(u => {
+    if (!u.last_seen) return false;
+    return (now - new Date(u.last_seen).getTime()) < 5 * 60 * 1000;
+  }).length;
+
+  const statsEl = document.getElementById('userMgmtStats');
+  if (statsEl) {
+    statsEl.innerHTML = [
+      { label:'Toplam',    val: total,   color:'#c9a84c', icon:'fa-users'          },
+      { label:'Aktif',     val: active,  color:'#4ade80', icon:'fa-user-check'     },
+      { label:'Çevrimiçi', val: online,  color:'#60a5fa', icon:'fa-circle'         },
+      { label:'Engelli',   val: blocked, color:'#ef4444', icon:'fa-user-slash'     },
+    ].map(s => `
+      <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);
+                  border-radius:12px;padding:12px;text-align:center;">
+        <i class="fas ${s.icon}" style="color:${s.color};font-size:18px;display:block;margin-bottom:6px;"></i>
+        <div style="font-size:18px;font-weight:900;color:#fff;">${s.val}</div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1.5px;
+                    text-transform:uppercase;margin-top:2px;">${s.label}</div>
+      </div>`).join('');
+  }
+
+  /* قائمة المستخدمين */
+  const listEl = document.getElementById('userMgmtList');
+  if (!listEl) return;
+
+  listEl.innerHTML = users.map(u => {
+    const isOnline  = u.last_seen && (now - new Date(u.last_seen).getTime()) < 5 * 60 * 1000;
+    const lastSeen  = u.last_seen
+      ? new Date(u.last_seen).toLocaleString('tr-TR')
+      : 'Hiç giriş yapmadı';
+    const createdAt = new Date(u.created_at).toLocaleDateString('tr-TR');
+
+    /* آخر نشاط */
+    const activities = Array.isArray(u.user_activity) ? u.user_activity : [];
+    const lastAction = activities[0];
+
+    return `
+      <div class="user-mgmt-card ${u.is_blocked ? 'blocked' : ''}" id="umcard-${u.id}">
+
+        <!-- أيقونة المستخدم -->
+        <div style="position:relative;flex-shrink:0;">
+          <div class="user-avatar-big">
+            <i class="fas ${u.is_blocked ? 'fa-user-slash' : 'fa-user'}"></i>
+          </div>
+          <div class="user-online-dot ${isOnline ? 'online' : 'offline'}"></div>
+        </div>
+
+        <!-- معلومات المستخدم -->
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div style="font-size:14px;font-weight:900;color:#fff;">
+              ${u.username}
+            </div>
+            ${u.role === 'admin' ? `
+              <span style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
+                           color:#ef4444;font-size:8px;font-weight:700;letter-spacing:1.5px;
+                           padding:2px 8px;border-radius:50px;text-transform:uppercase;">
+                ADMIN
+              </span>` : ''}
+            ${u.is_blocked ? `
+              <span style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
+                           color:#ef4444;font-size:8px;font-weight:700;letter-spacing:1.5px;
+                           padding:2px 8px;border-radius:50px;">
+                ENGELLİ
+              </span>` : ''}
+          </div>
+
+          <div style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:3px;">
+            ${u.email}
+          </div>
+
+          ${u.company_name ? `
+            <div style="font-size:9px;color:rgba(201,168,76,0.5);letter-spacing:1px;margin-top:2px;">
+              <i class="fas fa-building" style="font-size:8px;"></i> ${u.company_name}
+            </div>` : ''}
+
+          ${u.phone ? `
+            <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:1px;">
+              <i class="fas fa-phone" style="font-size:8px;"></i> ${u.phone}
+            </div>` : ''}
+
+          <div style="display:flex;gap:12px;margin-top:6px;flex-wrap:wrap;">
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);letter-spacing:0.5px;">
+              <i class="fas fa-clock" style="color:rgba(201,168,76,0.3);"></i>
+              Son görülme: <span style="color:${isOnline ? '#4ade80' : 'rgba(255,255,255,0.3)'};">
+                ${isOnline ? '🟢 Çevrimiçi' : lastSeen}
+              </span>
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);">
+              <i class="fas fa-calendar" style="color:rgba(201,168,76,0.3);"></i>
+              Kayıt: ${createdAt}
+            </div>
+          </div>
+
+          ${lastAction ? `
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);margin-top:3px;">
+              <i class="fas fa-history" style="color:rgba(201,168,76,0.3);"></i>
+              Son işlem: <span style="color:rgba(255,255,255,0.35);">${lastAction.action}</span>
+              — ${new Date(lastAction.created_at).toLocaleString('tr-TR')}
+            </div>` : ''}
+        </div>
+
+        <!-- أزرار الإجراءات -->
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+          ${u.role !== 'admin' ? `
+            <button onclick="toggleUserBlock('${u.id}', ${u.is_blocked})"
+                    style="padding:7px 14px;border-radius:8px;border:none;
+                           background:${u.is_blocked
+                             ? 'linear-gradient(135deg,rgba(74,222,128,0.15),rgba(34,197,94,0.08))'
+                             : 'linear-gradient(135deg,rgba(239,68,68,0.15),rgba(185,28,28,0.08))'};
+                           color:${u.is_blocked ? '#4ade80' : '#ef4444'};
+                           font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;
+                           letter-spacing:1px;cursor:pointer;transition:all 0.25s;
+                           display:flex;align-items:center;gap:6px;
+                           border:1px solid ${u.is_blocked
+                             ? 'rgba(74,222,128,0.25)'
+                             : 'rgba(239,68,68,0.25)'};">
+              <i class="fas ${u.is_blocked ? 'fa-unlock' : 'fa-ban'}"></i>
+              ${u.is_blocked ? 'ENGELİ KALDIR' : 'ENGELLE'}
+            </button>` : ''}
+
+          <button onclick="viewUserActivity('${u.id}', '${u.username}')"
+                  style="padding:7px 14px;border-radius:8px;
+                         border:1px solid rgba(96,165,250,0.25);
+                         background:rgba(96,165,250,0.08);
+                         color:#60a5fa;font-family:'Montserrat',sans-serif;
+                         font-size:10px;font-weight:700;letter-spacing:1px;
+                         cursor:pointer;transition:all 0.25s;
+                         display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-chart-line"></i> AKTİVİTE
+          </button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── حظر / رفع الحظر ── */
+async function toggleUserBlock(userId, isBlocked) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from('profiles')
+    .update({ is_blocked: !isBlocked })
+    .eq('id', userId);
+
+  if (error) {
+    showInvToast('Hata: ' + error.message, 'error');
+    return;
+  }
+
+  showInvToast(
+    isBlocked ? 'Engel kaldırıldı ✓' : 'Kullanıcı engellendi ✓',
+    isBlocked ? 'success' : 'error'
+  );
+
+  await loadUserMgmtData();
+}
+
+/* ── عرض نشاط مستخدم ── */
+async function viewUserActivity(userId, username) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data } = await sb
+    .from('user_activity')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (!data || !data.length) {
+    showInvToast('Bu kullanıcının aktivitesi yok', 'info');
+    return;
+  }
+
+  /* إنشاء نافذة النشاط */
+  let modal = document.getElementById('activityModal');
+  if (modal) modal.remove();
+
+  modal = document.createElement('div');
+  modal.id = 'activityModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:5000;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);backdrop-filter:blur(16px);padding:16px;`;
+
+  const rows = data.map(a => `
+    <div style="display:flex;align-items:center;gap:10px;
+                padding:9px 12px;border-bottom:1px solid rgba(255,255,255,0.04);">
+      <i class="fas ${
+        a.action === 'login'  ? 'fa-sign-in-alt'  :
+        a.action === 'logout' ? 'fa-sign-out-alt' : 'fa-eye'
+      }" style="color:${
+        a.action === 'login'  ? '#4ade80' :
+        a.action === 'logout' ? '#ef4444' : '#60a5fa'
+      };font-size:12px;width:16px;flex-shrink:0;"></i>
+      <div style="flex:1;">
+        <div style="font-size:11px;font-weight:700;color:#fff;text-transform:capitalize;">
+          ${a.action}${a.page ? ' → ' + a.page : ''}
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:1px;">
+          ${new Date(a.created_at).toLocaleString('tr-TR')}
+        </div>
+      </div>
+    </div>`).join('');
+
+  modal.innerHTML = `
+    <div style="width:100%;max-width:420px;max-height:80vh;overflow-y:auto;
+                border-radius:20px;background:linear-gradient(145deg,#0f0f0f,#161616);
+                border:1px solid rgba(201,168,76,0.25);
+                box-shadow:0 40px 80px rgba(0,0,0,0.8);
+                animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+      <div style="padding:16px 18px;display:flex;align-items:center;justify-content:space-between;
+                  border-bottom:1px solid rgba(255,255,255,0.05);
+                  position:sticky;top:0;background:linear-gradient(145deg,#0f0f0f,#161616);z-index:2;">
+        <div style="font-size:14px;font-weight:900;color:#fff;">
+          <i class="fas fa-chart-line" style="color:#c9a84c;margin-right:8px;"></i>
+          ${username} — Aktivite
+        </div>
+        <div onclick="document.getElementById('activityModal').remove()"
+             style="width:30px;height:30px;background:rgba(255,255,255,0.04);
+                    border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+                    color:rgba(255,255,255,0.3);cursor:pointer;
+                    display:flex;align-items:center;justify-content:center;">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+      <div>${rows}</div>
+      <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.04);">
+        <button onclick="document.getElementById('activityModal').remove()"
+                style="width:100%;padding:10px;border-radius:10px;border:none;
+                       background:linear-gradient(135deg,#c9a84c,#f0d080);
+                       color:#0a0a0a;font-family:'Montserrat',sans-serif;
+                       font-size:11px;font-weight:900;letter-spacing:2px;cursor:pointer;">
+          KAPAT
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+/* ══════════════════════════════════════════════════
+   ★ تحديث أزرار الهيدر بعد الدخول
+══════════════════════════════════════════════════ */
+function updateAuthNavButtons() {
+  const isAdmin = authProfile?.role === 'admin';
+
+  /* إظهار/إخفاء عناصر الأدمن */
+  updateAdminNavVisibility();
+
+  /* إضافة زر إعدادات الحساب في الهيدر */
+  if (!document.getElementById('accountSettingsBtn')) {
+    const navTools = document.querySelector('.nav-tools');
+    if (navTools) {
+      const btn = document.createElement('button');
+      btn.id        = 'accountSettingsBtn';
+      btn.className = 'nav-icon-btn';
+      btn.setAttribute('data-tip', 'Hesap Ayarları');
+      btn.innerHTML = '<i class="fas fa-user-cog"></i>';
+      btn.onclick   = openAccountSettings;
+      /* أضفه قبل زر تسجيل الخروج */
+      const logoutBtn = navTools.querySelector('.logout-btn');
+      if (logoutBtn) navTools.insertBefore(btn, logoutBtn);
+      else navTools.appendChild(btn);
+    }
+  }
+
+  /* إضافة زر إدارة المستخدمين للأدمن */
+  if (isAdmin && !document.getElementById('userMgmtBtn')) {
+    const navTools = document.querySelector('.nav-tools');
+    if (navTools) {
+      const btn = document.createElement('button');
+      btn.id        = 'userMgmtBtn';
+      btn.className = 'nav-icon-btn inv-open-btn';
+      btn.setAttribute('data-tip', 'Kullanıcı Yönetimi');
+      btn.innerHTML = '<i class="fas fa-users-cog"></i>';
+      btn.onclick   = openUserMgmt;
+      const invBtn = document.getElementById('invOpenBtn');
+      if (invBtn) navTools.insertBefore(btn, invBtn);
+      else navTools.appendChild(btn);
+    }
+  }
+
+  /* تحديث زر المخزون */
+  const invBtn = document.getElementById('invOpenBtn');
+  if (invBtn) invBtn.style.display = isAdmin ? '' : 'none';
+
+  /* إضافة للقائمة الجانبية */
+  const mobMenu = document.querySelector('.mobile-menu-inner');
+  if (mobMenu && !document.getElementById('mobAccountBtn')) {
+    const btn = document.createElement('a');
+    btn.id        = 'mobAccountBtn';
+    btn.href      = '#';
+    btn.innerHTML = '<i class="fas fa-user-cog"></i> HESAP AYARLARI';
+    btn.onclick   = e => { e.preventDefault(); openAccountSettings(); closeMobileMenu(); };
+    const divider = mobMenu.querySelector('.mob-divider');
+    if (divider) mobMenu.insertBefore(btn, divider);
+  }
+
+  if (isAdmin && mobMenu && !document.getElementById('mobUserMgmtBtn')) {
+    const btn = document.createElement('a');
+    btn.id        = 'mobUserMgmtBtn';
+    btn.href      = '#';
+    btn.innerHTML = '<i class="fas fa-users-cog"></i> KULLANICI YÖNETİMİ';
+    btn.onclick   = e => { e.preventDefault(); openUserMgmt(); closeMobileMenu(); };
+    const divider = mobMenu.querySelector('.mob-divider');
+    if (divider) mobMenu.insertBefore(btn, divider);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   ★ دوال مساعدة
+══════════════════════════════════════════════════ */
+
+/* ── إظهار خطأ ── */
+function showAuthError(elId, msg) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+  el.style.display = 'block';
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'shake 0.4s ease';
+}
+
+/* ── مسح الأخطاء ── */
+function clearAuthErrors() {
+  ['loginError','registerError','otpRegisterError',
+   'forgotError','otpResetError','newPassError','accError']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+}
+
+/* ── تحميل زر ── */
+function setAuthBtnLoading(btn, loading, text = '') {
+  if (!btn) return;
+  btn.disabled = loading;
+  if (loading) {
+    btn._origHTML   = btn.innerHTML;
+    btn.innerHTML   = `<i class="fas fa-spinner fa-spin"></i> ${text}`;
+  } else {
+    btn.innerHTML   = btn._origHTML || btn.innerHTML;
+  }
+}
+
+/* ── اهتزاز حقول OTP ── */
+function shakeOtpInputs(containerId) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  [...c.children].forEach(inp => {
+    inp.classList.add('error');
+    setTimeout(() => inp.classList.remove('error'), 600);
+  });
+}
+
+/* ── إظهار/إخفاء كلمة المرور ── */
+function togglePassVis(inputId, iconId) {
+  const inp = document.getElementById(inputId);
+  const ico = document.getElementById(iconId);
+  if (!inp || !ico) return;
+  if (inp.type === 'password') {
+    inp.type      = 'text';
+    ico.className = 'fas fa-eye-slash';
+  } else {
+    inp.type      = 'password';
+    ico.className = 'fas fa-eye';
+  }
+}
+
+/* ── قوة كلمة المرور ── */
+function checkPassStrength(pass, barId = 'passStrengthFill') {
+  const bar = document.getElementById(barId);
+  if (!bar) return;
+
+  let score = 0;
+  if (pass.length >= 6)  score++;
+  if (pass.length >= 10) score++;
+  if (/[A-Z]/.test(pass)) score++;
+  if (/[0-9]/.test(pass)) score++;
+  if (/[^A-Za-z0-9]/.test(pass)) score++;
+
+  const levels = [
+    { pct: '0%',   color: 'transparent'                               },
+    { pct: '25%',  color: '#ef4444'                                   },
+    { pct: '50%',  color: '#fbbf24'                                   },
+    { pct: '75%',  color: '#60a5fa'                                   },
+    { pct: '100%', color: 'linear-gradient(90deg,#4ade80,#22c55e)'    },
+  ];
+
+  const level = levels[Math.min(score, 4)];
+  bar.style.width      = level.pct;
+  bar.style.background = level.color;
+}
+
+/* ── استعادة الإيميل المحفوظ ── */
+(function restoreSavedEmail() {
+  try {
+    const saved = localStorage.getItem('wow_auth_email');
+    if (saved) {
+      const el = document.getElementById('loginEmail');
+      if (el) el.value = saved;
+    }
+  } catch(e) {}
+})();
+
+/* ══════════════════════════════════════════════════
+   ★ Override doLogout القديمة
+══════════════════════════════════════════════════ */
+/* نستبدل doLogout القديمة بالجديدة التي تدعم Supabase Auth */
+/* (الدالة الجديدة معرّفة أعلاه وتُغطي الدالة القديمة تلقائياً) */
+
+/* ══════════════════════════════════════════════════
+   ★ تسجيل النشاط عند التنقل بين الصفحات
+══════════════════════════════════════════════════ */
+const _origShowPageForActivity = showPage;
+showPage = function(cat) {
+  _origShowPageForActivity(cat);
+  /* تسجيل نشاط مشاهدة الصفحة */
+  if (authCurrentUser && _sb) {
+    _sb.rpc('log_activity', {
+      p_user_id:  authCurrentUser.id,
+      p_username: currentUser,
+      p_action:   'page_view',
+      p_page:     cat
+    }).catch(() => {});
+  }
+};
+
+/* ══════════════════════════════════════════════════
+   ★ Realtime: مراقبة الحظر في الوقت الفعلي
+══════════════════════════════════════════════════ */
+async function subscribeProfileChanges() {
+  const sb = await initSupabase();
+  if (!sb || !authCurrentUser) return;
+
+  sb.channel('profile-watch')
+    .on(
+      'postgres_changes',
+      {
+        event:  'UPDATE',
+        schema: 'public',
+        table:  'profiles',
+        filter: `id=eq.${authCurrentUser.id}`
+      },
+      payload => {
+        const updated = payload.new;
+        if (updated.is_blocked) {
+          /* المستخدم تم حظره أثناء الجلسة */
+          showBlockedAlert();
+        }
+        /* تحديث الـ profile المحلي */
+        authProfile = { ...authProfile, ...updated };
+      }
+    )
+    .subscribe();
+}
+
+function showBlockedAlert() {
+  const el = document.createElement('div');
+  el.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
+    background:rgba(0,0,0,0.95);
+    display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:16px;font-family:'Montserrat',sans-serif;`;
+  el.innerHTML = `
+    <div style="width:80px;height:80px;border-radius:50%;
+                background:rgba(239,68,68,0.15);
+                border:2px solid rgba(239,68,68,0.4);
+                display:flex;align-items:center;justify-content:center;
+                color:#ef4444;font-size:32px;">
+      <i class="fas fa-ban"></i>
+    </div>
+    <div style="font-size:18px;font-weight:900;color:#fff;letter-spacing:1px;">
+      Hesabınız Engellendi
+    </div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-align:center;">
+      Yönetici tarafından erişiminiz kısıtlandı.<br/>
+      Daha fazla bilgi için iletişime geçin.
+    </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => doLogout(), 3000);
+}
+
+/* ── تفعيل مراقبة الـ profile بعد الدخول ── */
+const _origOnAuthSuccess = onAuthSuccess;
+onAuthSuccess = async function(user, animate) {
+  await _origOnAuthSuccess(user, animate);
+  subscribeProfileChanges();
+};
 
 
   
