@@ -1522,19 +1522,7 @@ html { scroll-behavior: auto; }
   <source src="https://cdn.pixabay.com/download/audio/2021/08/08/audio_dc39bde808.mp3" type="audio/mpeg"/>
 </audio>
 
-<!-- LOGIN -->
-<div id="loginOverlay">
-  <div class="login-particles" id="particles"></div>
-  <div class="login-box">
-    <div class="login-logo">
-      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
-           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
-    </div>
-    <div class="login-field">
-      <i class="fas fa-user field-icon"></i>
-      <input type="text" id="loginUser" placeholder="Kullanıcı Adı"
-             autocomplete="username" onkeydown="handleLoginKey(event,'user')"/>
-    </div>
+
  <!-- =====================================================
      AUTH OVERLAY — نظام المصادقة الكامل
 ===================================================== -->
@@ -3102,23 +3090,11 @@ function goHomeFromBack(){
   setTimeout(()=>{ms.style.opacity='1';ms.style.transition='';showHomeScreen();selectedIds.clear();selectMode=false;document.body.classList.remove('select-mode');updateBulkBar();},350);
 }
 function doLogoutFromBack(){
-  document.getElementById('mainSite').style.display='none';
-  document.getElementById('homeScreen').style.display='none';
-  const ov=document.getElementById('loginOverlay');
-  ov.style.display='flex';ov.style.opacity='1';ov.style.transition='';
-  loadSavedCredentials();selectedIds.clear();selectMode=false;
-  document.body.classList.remove('select-mode');updateBulkBar();pauseAudio();appState='login';replaceState('login');
+  doLogout();
 }
-function doLogout(){
-  localStorage.removeItem('wow_order_cart'); /* ← أضف هذا */
-  Object.keys(orderCart).forEach(k => delete orderCart[k]);
-  document.getElementById('mainSite').style.display='none';
-  document.getElementById('homeScreen').style.display='none';
-  const ov=document.getElementById('loginOverlay');
-  ov.style.display='flex';ov.style.opacity='1';ov.style.transition='';
-  loadSavedCredentials();selectedIds.clear();selectMode=false;
-  document.body.classList.remove('select-mode');updateBulkBar();pauseAudio();closeMobileMenu();appState='login';replaceState('login');
-}
+
+
+
 
 /* ============================================================
    بناء الصفحة
