@@ -8414,24 +8414,39 @@ async function generateAndSendCode(identifier, type) {
   const sb = await initSupabase();
   if (!sb) return null;
 
-  const { data, error } = await sb.rpc('generate_verification_code', {
-    p_identifier: identifier,
-    p_type:       type
-  });
+  try {
+    /* استدعاء Edge Function لتوليد الرمز وإرساله */
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/send-otp`,
+      {
+        method:  "POST",
+        headers: {
+          "Content-Type":  "application/json",
+          "Authorization": `Bearer ${SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({ email: identifier, type }),
+      }
+    );
 
-  if (error) {
-    console.error('[Auth] generateCode error:', error);
+    const result = await res.json();
+
+    if (!res.ok || result.error) {
+      console.error("[OTP] إرسال فشل:", result.error);
+      showInvToast("Kod gönderilemedi: " + (result.error || "Hata"), "error");
+      return null;
+    }
+
+    console.log("[OTP] ✅ تم الإرسال إلى:", identifier);
+    showInvToast("Doğrulama kodu e-postanıza gönderildi ✓", "success");
+
+    /* نُعيد قيمة وهمية — الرمز الحقيقي في قاعدة البيانات */
+    return "SENT";
+
+  } catch (e) {
+    console.error("[OTP] exception:", e);
+    showInvToast("Bağlantı hatası!", "error");
     return null;
   }
-
-  /* ★ في بيئة الإنتاج: أرسل الكود عبر Supabase Edge Function أو خدمة SMS/Email
-     في بيئة التطوير: نعرضه في console فقط */
-  console.log(`[Auth] 🔑 Kod (${type}):`, data, '→', identifier);
-
-  /* ★ للتجربة: نعرض الكود في Toast */
-  showInvToast(`Test kodu: ${data}`, 'info');
-
-  return data;
 }
 
 /* ══════════════════════════════════════════════════
