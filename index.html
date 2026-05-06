@@ -8233,20 +8233,54 @@ let _pendingResetEmail = null; // إيميل إعادة التعيين
 
 /* ── تهيئة Auth عند تحميل الصفحة ── */
 (async function initAuth() {
-  await ensureSupabaseLib();
-  if (!_sb) await initSupabase();
-  if (!_sb) return;
+  /* ننتظر تحميل DOM أولاً */
+  if (document.readyState === 'loading') {
+    await new Promise(r => document.addEventListener('DOMContentLoaded', r, { once: true }));
+  }
 
-  /* استعادة الجلسة */
-  const { data: { session } } = await _sb.auth.getSession();
-  if (session?.user) {
-    await onAuthSuccess(session.user, false);
+  /* تهيئة Supabase */
+  await ensureSupabaseLib();
+  const sb = await initSupabase();
+
+  if (!sb) {
+    console.warn('[initAuth] Supabase غير متاح — إظهار شاشة الدخول');
+    showLoginScreen();
+    return;
+  }
+
+  try {
+    const { data, error } = await sb.auth.getSession();
+
+    if (error || !data?.session?.user) {
+      showLoginScreen();
+      return;
+    }
+
+    /* ★ التحقق من الحظر قبل الدخول */
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('is_blocked')
+      .eq('id', data.session.user.id)
+      .single();
+
+    if (profile?.is_blocked) {
+      await sb.auth.signOut();
+      showLoginScreen();
+      return;
+    }
+
+    /* جلسة صالحة → ادخل مباشرة */
+    await onAuthSuccess(data.session.user, false);
+
+  } catch(e) {
+    console.error('[initAuth] خطأ:', e);
+    showLoginScreen();
   }
 
   /* الاستماع لتغييرات الجلسة */
-  _sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      if (!authCurrentUser) await onAuthSuccess(session.user, false);
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user && !authCurrentUser) {
+      await onAuthSuccess(session.user, false);
     }
     if (event === 'SIGNED_OUT') {
       authCurrentUser = null;
@@ -8254,6 +8288,18 @@ let _pendingResetEmail = null; // إيميل إعادة التعيين
     }
   });
 })();
+
+/* ── دالة إظهار شاشة الدخول ── */
+function showLoginScreen() {
+  const ov = document.getElementById('loginOverlay');
+  if (ov) {
+    ov.style.display = 'flex';
+    ov.style.opacity = '1';
+  }
+  document.getElementById('homeScreen').style.display  = 'none';
+  document.getElementById('mainSite').style.display    = 'none';
+}
+
 
 /* ── التبديل بين التبويبات ── */
 function switchAuthTab(tab) {
@@ -8924,19 +8970,25 @@ setInterval(async () => {
   setTimeout(tryPlayAudio, 600);
 
   /* ── تحميل المخزون في الخلفية ── */
-  setTimeout(async () => {
-    try {
-      const ok = await testSupabaseConnection();
-      if (ok) {
-        await loadInventory();
-        subscribeInventory();
-        subscribeProfileChanges();
+  /* ── تحميل المخزون في الخلفية ── */
+setTimeout(async () => {
+  try {
+    const ok = await testSupabaseConnection();
+    if (ok) {
+      await loadInventory();        // ← ننتظر اكتمال التحميل
+      subscribeInventory();
+      subscribeProfileChanges();
+
+      /* ★ بعد تحميل المخزون — تحديث الصفحة إذا كان المستخدم في قسم */
+      if (appState === 'section' && currentPage && currentPage !== 'admin') {
+        showPage(currentPage);
       }
-    } catch(e) {
-      console.warn('[initData]', e);
     }
-  }, 900);
-}
+  } catch(e) {
+    console.warn('[initData]', e);
+  }
+}, 900);
+
 
 
 /* ══════════════════════════════════════════════════
@@ -9553,7 +9605,6 @@ function checkPassStrength(pass, barId = 'passStrengthFill') {
 ══════════════════════════════════════════════════ */
 const _origShowPageForActivity = showPage;
 showPage = function(cat) {
-  _origShowPageForActivity(cat);
   /* تسجيل نشاط مشاهدة الصفحة */
   if (authCurrentUser && _sb) {
     _sb.rpc('log_activity', {
@@ -9563,7 +9614,10 @@ showPage = function(cat) {
       p_page:     cat
     }).catch(() => {});
   }
+  /* ★ استدعاء الدالة الأصلية بعد التسجيل */
+  _origShowPageForActivity(cat);
 };
+
 
 /* ══════════════════════════════════════════════════
    ★ Realtime: مراقبة الحظر في الوقت الفعلي
