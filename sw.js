@@ -2,7 +2,7 @@
    WOW MOBİLYA — Service Worker
    ⚠️ غيّر VERSION عند كل تحديث لـ index.html
 ============================================================ */
-const VERSION    = 'v43';
+const VERSION    = 'v44';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 
 const CORE_ASSETS = ['./', './index.html'];
