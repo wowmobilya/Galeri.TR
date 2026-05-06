@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <!-- Supabase Client -->
    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  emailjs.init("VCnjcO1Br8kR7hZDL");
+</script>
 
 <!-- =====================================================
      PWA — تثبيت كتطبيق
@@ -8415,39 +8419,37 @@ async function generateAndSendCode(identifier, type) {
   if (!sb) return null;
 
   try {
-    /* استدعاء Edge Function لتوليد الرمز وإرساله */
-    const res = await fetch(
-      `${SUPABASE_URL}/functions/v1/send-otp`,
-      {
-        method:  "POST",
-        headers: {
-          "Content-Type":  "application/json",
-          "Authorization": `Bearer ${SUPABASE_KEY}`,
-        },
-        body: JSON.stringify({ email: identifier, type }),
-      }
+    // توليد الرمز وحفظه في قاعدة البيانات
+    const { data: code, error } = await sb.rpc(
+      'generate_verification_code',
+      { p_identifier: identifier, p_type: type }
     );
 
-    const result = await res.json();
-
-    if (!res.ok || result.error) {
-      console.error("[OTP] إرسال فشل:", result.error);
-      showInvToast("Kod gönderilemedi: " + (result.error || "Hata"), "error");
+    if (error || !code) {
+      showInvToast('Kod oluşturulamadı!', 'error');
       return null;
     }
 
-    console.log("[OTP] ✅ تم الإرسال إلى:", identifier);
-    showInvToast("Doğrulama kodu e-postanıza gönderildi ✓", "success");
+    // إرسال الإيميل عبر EmailJS
+    await emailjs.send(
+      'service_3rhndww',
+      'template_fj5wmvn',
+      {
+        to_email: identifier,
+        otp_code: code,
+      }
+    );
 
-    /* نُعيد قيمة وهمية — الرمز الحقيقي في قاعدة البيانات */
-    return "SENT";
+    showInvToast('Doğrulama kodu e-postanıza gönderildi ✓', 'success');
+    return code;
 
   } catch (e) {
-    console.error("[OTP] exception:", e);
-    showInvToast("Bağlantı hatası!", "error");
+    console.error('[OTP Email Error]', e);
+    showInvToast('E-posta gönderilemedi!', 'error');
     return null;
   }
 }
+
 
 /* ══════════════════════════════════════════════════
    ★ تسجيل الدخول
