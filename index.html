@@ -8875,20 +8875,31 @@ async function onAuthSuccess(user, animate = true) {
   console.log('[onAuthSuccess] ✅ currentUser:', currentUser, '| role:', profile?.role);
 
   /* ── تسجيل النشاط (بدون await لتجنب التأخير) ── */
-  sb.rpc('log_activity', {
+// ★ استخدام try/catch بدلاً من .catch()
+try {
+  await sb.rpc('log_activity', {
     p_user_id:  user.id,
     p_username: currentUser,
     p_action:   'login',
     p_page:     'home'
-  }).catch(e => console.warn('[log_activity]', e));
+  });
+} catch(e) {
+  console.warn('[log_activity]', e);
+}
 
-  sb.rpc('update_last_seen', { p_user_id: user.id })
-    .catch(e => console.warn('[update_last_seen]', e));
+try {
+  await sb.rpc('update_last_seen', { p_user_id: user.id });
+} catch(e) {
+  console.warn('[update_last_seen]', e);
+}
+
 
   /* ── تحديث last_seen دورياً ── */
-  setInterval(() => {
-    sb.rpc('update_last_seen', { p_user_id: user.id }).catch(() => {});
-  }, 60000);
+setInterval(async () => {
+  try {
+    await sb.rpc('update_last_seen', { p_user_id: user.id });
+  } catch(e) {}
+}, 60000);
 
   /* ── إخفاء شاشة الدخول ── */
   const ov = document.getElementById('loginOverlay');
