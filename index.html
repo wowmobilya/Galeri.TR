@@ -8444,43 +8444,75 @@ async function authLogin() {
 
   setAuthBtnLoading(btn, true, 'Giriş yapılıyor...');
 
+  /* ── تهيئة Supabase ── */
   const sb = await initSupabase();
-  if (!sb) { setAuthBtnLoading(btn, false); return; }
-
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-
-  if (error) {
+  if (!sb) {
     setAuthBtnLoading(btn, false);
-    const msg = error.message.includes('Invalid login')
-      ? 'E-posta veya şifre hatalı!'
-      : error.message;
-    showAuthError('loginError', msg);
-    document.getElementById('loginPassword').style.animation = 'none';
-    void document.getElementById('loginPassword').offsetWidth;
-    document.getElementById('loginPassword').style.animation = 'shake 0.4s ease';
+    showAuthError('loginError', 'Sunucu bağlantısı kurulamadı!');
     return;
   }
 
-  /* تحقق من الحظر */
-  const { data: profile } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('id', data.user.id)
-    .single();
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({
+      email,
+      password: pass
+    });
 
-  if (profile?.is_blocked) {
-    await sb.auth.signOut();
+    if (error) {
+      setAuthBtnLoading(btn, false);
+      const msg = (error.message.includes('Invalid login') || error.message.includes('invalid_credentials'))
+        ? 'E-posta veya şifre hatalı!'
+        : error.message;
+      showAuthError('loginError', msg);
+      const passField = document.getElementById('loginPassword');
+      if (passField) {
+        passField.style.animation = 'none';
+        void passField.offsetWidth;
+        passField.style.animation = 'shake 0.4s ease';
+      }
+      return;
+    }
+
+    if (!data?.user) {
+      setAuthBtnLoading(btn, false);
+      showAuthError('loginError', 'Kullanıcı bilgisi alınamadı!');
+      return;
+    }
+
+    /* ── التحقق من الحظر ── */
+    const { data: profile, error: profileErr } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileErr) {
+      console.warn('[Login] Profile fetch error:', profileErr.message);
+      /* نكمل حتى لو فشل جلب الـ profile */
+    }
+
+    if (profile?.is_blocked) {
+      await sb.auth.signOut();
+      setAuthBtnLoading(btn, false);
+      showAuthError('loginError', '⛔ Hesabınız engellenmiştir. Yönetici ile iletişime geçin.');
+      return;
+    }
+
+    /* ── حفظ الإيميل ── */
+    if (document.getElementById('authRememberMe')?.checked) {
+      try { localStorage.setItem('wow_auth_email', email); } catch(e) {}
+    }
+
     setAuthBtnLoading(btn, false);
-    showAuthError('loginError', '⛔ Hesabınız engellenmiştir. Yönetici ile iletişime geçin.');
-    return;
-  }
 
-  if (document.getElementById('authRememberMe')?.checked) {
-    try { localStorage.setItem('wow_auth_email', email); } catch(e) {}
-  }
+    /* ── الدخول للتطبيق ── */
+    await onAuthSuccess(data.user, true);
 
-  setAuthBtnLoading(btn, false);
-  await onAuthSuccess(data.user, true);
+  } catch (err) {
+    console.error('[Login] Unexpected error:', err);
+    setAuthBtnLoading(btn, false);
+    showAuthError('loginError', 'Beklenmeyen hata: ' + (err.message || String(err)));
+  }
 }
 
 /* ══════════════════════════════════════════════════
@@ -8804,66 +8836,97 @@ async function authSetNewPassword() {
    ★ بعد نجاح تسجيل الدخول
 ══════════════════════════════════════════════════ */
 async function onAuthSuccess(user, animate = true) {
+  if (!user) {
+    console.error('[onAuthSuccess] user is null!');
+    return;
+  }
+
   authCurrentUser = user;
 
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* جلب الـ profile */
-  const { data: profile } = await sb
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  /* ── جلب الـ profile ── */
+  let profile = null;
+  try {
+    const { data, error } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (error) {
+      console.warn('[onAuthSuccess] Profile error:', error.message);
+    } else {
+      profile = data;
+    }
+  } catch(e) {
+    console.warn('[onAuthSuccess] Profile fetch exception:', e);
+  }
 
   authProfile = profile;
 
-  /* تعيين currentUser للنظام القديم */
-  currentUser = profile?.username || user.email.split('@')[0];
+  /* ── تعيين currentUser ── */
+  currentUser = profile?.username
+    || user.user_metadata?.username
+    || user.email?.split('@')[0]
+    || 'user';
 
-  /* تسجيل النشاط */
+  console.log('[onAuthSuccess] ✅ currentUser:', currentUser, '| role:', profile?.role);
+
+  /* ── تسجيل النشاط (بدون await لتجنب التأخير) ── */
   sb.rpc('log_activity', {
     p_user_id:  user.id,
     p_username: currentUser,
     p_action:   'login',
     p_page:     'home'
-  }).catch(() => {});
+  }).catch(e => console.warn('[log_activity]', e));
 
-  /* تحديث last_seen */
-  sb.rpc('update_last_seen', { p_user_id: user.id }).catch(() => {});
+  sb.rpc('update_last_seen', { p_user_id: user.id })
+    .catch(e => console.warn('[update_last_seen]', e));
 
-  /* بدء تحديث last_seen كل دقيقة */
+  /* ── تحديث last_seen دورياً ── */
   setInterval(() => {
     sb.rpc('update_last_seen', { p_user_id: user.id }).catch(() => {});
   }, 60000);
 
-  /* إخفاء شاشة الدخول */
+  /* ── إخفاء شاشة الدخول ── */
   const ov = document.getElementById('loginOverlay');
-  if (animate) {
-    ov.style.transition = 'opacity 0.7s';
-    ov.style.opacity    = '0';
-    await new Promise(r => setTimeout(r, 700));
+  if (ov) {
+    if (animate) {
+      ov.style.transition = 'opacity 0.7s';
+      ov.style.opacity    = '0';
+      await new Promise(r => setTimeout(r, 700));
+    }
+    ov.style.display = 'none';
   }
-  ov.style.display = 'none';
 
-  /* تحميل البيانات */
+  /* ── تحميل السلة ── */
   loadCartFromStorage();
-  updateCartReminder(Object.values(orderCart).reduce((a,b) => a+b, 0));
+  updateCartReminder(
+    Object.values(orderCart).reduce((a, b) => a + b, 0)
+  );
 
-  /* إظهار شاشة الهوم */
+  /* ── إظهار الهوم ── */
   showHomeScreen();
   updateAuthNavButtons();
   setTimeout(tryPlayAudio, 600);
 
-  /* تحميل المخزون */
+  /* ── تحميل المخزون في الخلفية ── */
   setTimeout(async () => {
-    const ok = await testSupabaseConnection();
-    if (ok) {
-      await loadInventory();
-      subscribeInventory();
+    try {
+      const ok = await testSupabaseConnection();
+      if (ok) {
+        await loadInventory();
+        subscribeInventory();
+        subscribeProfileChanges();
+      }
+    } catch(e) {
+      console.warn('[initData]', e);
     }
   }, 900);
 }
+
 
 /* ══════════════════════════════════════════════════
    ★ تسجيل الخروج
