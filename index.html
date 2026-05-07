@@ -8557,70 +8557,146 @@ async function doRegister() {
 ============================================================ */
 async function verifyOtp() {
   const code = [0,1,2,3,4,5].map(i =>
-    document.getElementById('otp'+i)?.value || ''
+    (document.getElementById('otp'+i)?.value || '').trim()
   ).join('');
 
-  if (code.length !== 6) {
+  hideError('otpError');
+
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
     showError('otpError', '6 haneli kodu eksiksiz girin!');
     markOtpError('otp');
     return;
   }
 
   const sb = await initSupabase();
-  if (!sb) return;
+  if (!sb) { showError('otpError', 'Bağlantı hatası!'); return; }
 
-  /* التحقق من الكود في Supabase */
-  const { data: otpRow } = await sb
-    .from('otp_codes')
-    .select('*')
-    .eq('email', _otpPending.email)
-    .eq('code', code)
-    .eq('type', 'register')
-    .eq('used', false)
-    .gte('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!otpRow) {
-    showError('otpError', 'Kod hatalı veya süresi dolmuş!');
-    markOtpError('otp');
-    return;
-  }
-
-  /* ✅ كود صحيح — إنشاء الحساب */
   const btn = document.getElementById('otpVerifyBtn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Hesap oluşturuluyor...'; }
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Doğrulanıyor...'; }
 
   try {
-    const rd = _otpPending.regData;
-    const hashed = await hashPassword(rd.pass1);
+    /* ── جلب آخر كود للإيميل بدون فلترة صارمة ── */
+    const { data: rows, error: fetchErr } = await sb
+      .from('otp_codes')
+      .select('*')
+      .eq('email', _otpPending.email)
+      .eq('type', 'register')
+      .eq('used', false)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    const { error } = await sb.from('users').insert([{
-      company_name  : rd.company,
-      username      : rd.username,
-      email         : rd.email,
-      phone         : rd.phone,
-      password_hash : hashed,
-      is_active     : true,
-      is_blocked    : false,
-    }]);
+    /* ── DEBUG: اطبع ما وجده في Console ── */
+    console.log('🔍 OTP Debug:', {
+      enteredCode  : code,
+      pendingCode  : _otpPending.code,
+      email        : _otpPending.email,
+      foundRows    : rows,
+      fetchError   : fetchErr,
+      currentTime  : new Date().toISOString(),
+    });
 
-    if (error) {
-      showError('otpError', 'Hesap oluşturulamadı: ' + error.message);
+    if (fetchErr || !rows || rows.length === 0) {
+      showError('otpError', 'Kod bulunamadı! Lütfen tekrar deneyin.');
+      markOtpError('otp');
       return;
     }
 
-    /* تعليم OTP كمستخدم */
-    await sb.from('otp_codes').update({ used: true }).eq('id', otpRow.id);
+    /* ── أولاً: تحقق من الكود المحفوظ محلياً (أسرع وأموثق) ── */
+    if (_otpPending.code && code === _otpPending.code) {
+      const now = new Date();
+      if (_otpPending.expiresAt && now > _otpPending.expiresAt) {
+        showError('otpError', 'Kodun süresi doldu! Lütfen tekrar kayıt olun.');
+        markOtpError('otp');
+        return;
+      }
 
-    clearOtpTimer();
-    showLoginSuccessToast('Hesabınız başarıyla oluşturuldu! Giriş yapabilirsiniz.');
-    showLoginBox();
+      /* ✅ كود صحيح من الذاكرة المحلية */
+      const matchRow = rows.find(r => r.code === code);
+      if (matchRow) {
+        await sb.from('otp_codes').update({ used: true }).eq('id', matchRow.id);
+      }
+      await completeRegistration();
+      return;
+    }
+
+    /* ── ثانياً: تحقق من قاعدة البيانات (بدون فلتر expires_at) ── */
+    const matchRow = rows.find(r => r.code === code);
+
+    if (!matchRow) {
+      showError('otpError', 'Kod hatalı! Lütfen tekrar kontrol edin.');
+      markOtpError('otp');
+      return;
+    }
+
+    /* فحص انتهاء الصلاحية يدوياً */
+    const expiresAt = new Date(matchRow.expires_at);
+    const now       = new Date();
+
+    console.log('⏱ Expiry check:', {
+      expiresAt : expiresAt.toISOString(),
+      now       : now.toISOString(),
+      isExpired : now > expiresAt,
+      diffSec   : Math.round((now - expiresAt) / 1000),
+    });
+
+    if (now > expiresAt) {
+      showError('otpError', 'Kodun süresi doldu! Lütfen tekrar deneyin.');
+      markOtpError('otp');
+      /* تفعيل زر إعادة الإرسال */
+      const resendBtn = document.getElementById('otpResendBtn');
+      if (resendBtn) {
+        resendBtn.disabled     = false;
+        resendBtn.style.color  = 'rgba(201,168,76,0.8)';
+        resendBtn.style.cursor = 'pointer';
+      }
+      return;
+    }
+
+    /* ✅ كود صحيح من DB */
+    await sb.from('otp_codes').update({ used: true }).eq('id', matchRow.id);
+    await completeRegistration();
 
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> DOĞRULA'; }
   }
+}
+
+/* ── دالة إتمام التسجيل (مشتركة) ── */
+async function completeRegistration() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const rd = _otpPending.regData;
+  if (!rd) {
+    showError('otpError', 'Kayıt verisi bulunamadı!');
+    return;
+  }
+
+  const hashed = await hashPassword(rd.pass1);
+
+  const { error } = await sb.from('users').insert([{
+    company_name  : rd.company,
+    username      : rd.username,
+    email         : rd.email,
+    phone         : rd.phone,
+    password_hash : hashed,
+    is_active     : true,
+    is_blocked    : false,
+  }]);
+
+  if (error) {
+    /* إذا كان المستخدم موجوداً مسبقاً */
+    if (error.code === '23505') {
+      showError('otpError', 'Bu kullanıcı adı veya e-posta zaten kayıtlı!');
+    } else {
+      showError('otpError', 'Hesap oluşturulamadı: ' + error.message);
+    }
+    return;
+  }
+
+  clearOtpTimer();
+  showLoginSuccessToast('✅ Hesabınız başarıyla oluşturuldu! Giriş yapabilirsiniz.');
+  showLoginBox();
 }
 
 /* ============================================================
@@ -8710,10 +8786,12 @@ async function doForgotPassword() {
 /* ── التحقق من OTP (إعادة التعيين) ── */
 async function verifyResetOtp() {
   const code = [0,1,2,3,4,5].map(i =>
-    document.getElementById('rotp'+i)?.value || ''
+    (document.getElementById('rotp'+i)?.value || '').trim()
   ).join('');
 
-  if (code.length !== 6) {
+  hideError('resetOtpError');
+
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) {
     showError('resetOtpError', '6 haneli kodu eksiksiz girin!');
     markOtpError('rotp');
     return;
@@ -8722,72 +8800,75 @@ async function verifyResetOtp() {
   const sb = await initSupabase();
   if (!sb) return;
 
-  const { data: otpRow } = await sb
-    .from('otp_codes')
-    .select('*')
-    .eq('email', _otpPending.email)
-    .eq('code', code)
-    .eq('type', 'reset')
-    .eq('used', false)
-    .gte('expires_at', new Date().toISOString())
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (!otpRow) {
-    showError('resetOtpError', 'Kod hatalı veya süresi dolmuş!');
-    markOtpError('rotp');
-    return;
-  }
-
-  /* ✅ كود صحيح */
-  await sb.from('otp_codes').update({ used: true }).eq('id', otpRow.id);
-  clearOtpTimer();
-
-  document.getElementById('resetOtpBox').style.display = 'none';
-  document.getElementById('newPassBox').style.display  = 'block';
-}
-
-/* ── حفظ كلمة المرور الجديدة ── */
-async function saveNewPassword() {
-  const pass1 = document.getElementById('newPass1').value;
-  const pass2 = document.getElementById('newPass2').value;
-
-  hideError('newPassError');
-
-  if (pass1.length < 6) {
-    showError('newPassError', 'Şifre en az 6 karakter olmalıdır!');
-    return;
-  }
-  if (pass1 !== pass2) {
-    showError('newPassError', 'Şifreler eşleşmiyor!');
-    return;
-  }
-
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  const btn = document.querySelector('#newPassBox .login-btn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...'; }
-
   try {
-    const hashed = await hashPassword(pass1);
-    const { error } = await sb.from('users')
-      .update({ password_hash: hashed })
-      .eq('id', _otpPending.resetUserId);
-
-    if (error) {
-      showError('newPassError', 'Şifre güncellenemedi!');
+    /* ── أولاً: تحقق محلي ── */
+    if (_otpPending.code && code === _otpPending.code) {
+      const now = new Date();
+      if (_otpPending.expiresAt && now > _otpPending.expiresAt) {
+        showError('resetOtpError', 'Kodun süresi doldu! Lütfen tekrar deneyin.');
+        markOtpError('rotp');
+        return;
+      }
+      /* ✅ صحيح */
+      const { data: rows } = await sb
+        .from('otp_codes')
+        .select('id')
+        .eq('email', _otpPending.email)
+        .eq('code', code)
+        .eq('type', 'reset')
+        .eq('used', false)
+        .limit(1);
+      if (rows?.length) {
+        await sb.from('otp_codes').update({ used: true }).eq('id', rows[0].id);
+      }
+      clearOtpTimer();
+      document.getElementById('resetOtpBox').style.display = 'none';
+      document.getElementById('newPassBox').style.display  = 'block';
       return;
     }
 
-    showLoginSuccessToast('Şifreniz başarıyla güncellendi!');
-    showLoginBox();
+    /* ── ثانياً: تحقق من DB ── */
+    const { data: rows } = await sb
+      .from('otp_codes')
+      .select('*')
+      .eq('email', _otpPending.email)
+      .eq('type', 'reset')
+      .eq('used', false)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> ŞİFREYİ KAYDET'; }
+    console.log('🔍 Reset OTP Debug:', {
+      enteredCode : code,
+      pendingCode : _otpPending.code,
+      foundRows   : rows,
+    });
+
+    const matchRow = rows?.find(r => r.code === code);
+
+    if (!matchRow) {
+      showError('resetOtpError', 'Kod hatalı! Lütfen tekrar kontrol edin.');
+      markOtpError('rotp');
+      return;
+    }
+
+    const now = new Date();
+    if (now > new Date(matchRow.expires_at)) {
+      showError('resetOtpError', 'Kodun süresi doldu! Lütfen tekrar deneyin.');
+      markOtpError('rotp');
+      return;
+    }
+
+    await sb.from('otp_codes').update({ used: true }).eq('id', matchRow.id);
+    clearOtpTimer();
+    document.getElementById('resetOtpBox').style.display = 'none';
+    document.getElementById('newPassBox').style.display  = 'block';
+
+  } catch(e) {
+    console.error('Reset OTP Error:', e);
+    showError('resetOtpError', 'Bir hata oluştu!');
   }
 }
+
 
 /* ============================================================
    أدوات OTP
