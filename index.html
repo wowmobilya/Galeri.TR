@@ -4308,19 +4308,26 @@ async function sendOrderViaWhatsApp() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 3000);
 
-  setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
-    setTimeout(async () => {
-      setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
-      
-      /* ★ احفظ الطلبية قبل تفريغ السلة */
-      const selectedForSave = images.filter(img => (orderCart[img.id]||0) > 0);
-      const noteForSave     = document.getElementById('orderNoteInput')?.value || '';
-      await saveOrderToSupabase(orderNum, selectedForSave, noteForSave);
-      
-      closeOrderConfirmModal();
-      clearOrderCart();
-      showOrderSuccessToast(orderNum);
-    }, 2000);
+  // ابحث عن هذا الجزء في sendOrderViaWhatsApp:
+setBtn('<i class="fas fa-check-circle"></i> DOSYA İNDİRİLDİ ✓', false);
+setTimeout(async () => {
+  setBtn('<i class="fas fa-file-excel"></i> SİPARİŞ DOSYASI İNDİR', false);
+  
+  // ★ احفظ الكميات قبل تفريغ السلة
+  const selectedForSave = images.filter(img => (orderCart[img.id]||0) > 0);
+  const itemsWithQty = selectedForSave.map(img => ({
+    ...img,
+    qty: orderCart[img.id] || 0  // ← حفظ الكمية صراحةً
+  }));
+  const noteForSave = document.getElementById('orderNoteInput')?.value || '';
+  
+  await saveOrderToSupabase(orderNum, itemsWithQty, noteForSave);
+  
+  closeOrderConfirmModal();
+  clearOrderCart();
+  showOrderSuccessToast(orderNum);
+}, 2000);
+
 
 
   } catch(excelErr) {
@@ -4530,15 +4537,20 @@ async function downloadOrderPdf() {
 
     pdf.save(`WOW_Siparis_${_pdfOrderNum}.pdf`);
 setTimeout(async () => {
-  /* ★ احفظ الطلبية قبل تفريغ السلة */
-  const selectedForSave = images.filter(img => (orderCart[img.id]||0) > 0);
-  const noteForSave     = document.getElementById('orderNoteInput')?.value || '';
+  // ★ احفظ الكميات قبل تفريغ السلة
+  const selectedForSave = _pdfSelected.map(img => ({
+    ...img,
+    qty: orderCart[img.id] || 0  // ← حفظ الكمية صراحةً
+  }));
+  const noteForSave = document.getElementById('orderNoteInput')?.value || '';
+  
   await saveOrderToSupabase(_pdfOrderNum, selectedForSave, noteForSave);
   
   closeOrderPdfModal();
   clearOrderCart();
   showOrderSuccessToast(_pdfOrderNum);
 }, 800);
+
 
   } finally {
     document.body.removeChild(wrapper);
@@ -6014,38 +6026,57 @@ async function saveOrderToSupabase(orderNum, items, note) {
     return null;
   }
 
-  /* ★ تحقق من البيانات قبل الحفظ */
-  console.log('[Orders] جاري الحفظ:', {
-    user: currentUser,
-    orderNum,
-    itemsCount: items.length,
-    items: items.map(i => ({ id:i.id, title:i.title, qty:orderCart[i.id] }))
-  });
-
   if (!currentUser) {
     console.error('[Orders] currentUser فارغ!');
     return null;
   }
 
-  if (!items.length) {
+  if (!items || !items.length) {
     console.error('[Orders] items فارغة!');
     return null;
   }
 
+  /* ★ جلب user_id من قاعدة البيانات إذا لم يكن محفوظاً ★ */
+  let userId = _currentUserData?.id || null;
+
+  if (!userId && currentUser !== ADMIN_USER) {
+    const { data: userRow } = await sb
+      .from('users')
+      .select('id, company_name')
+      .eq('username', currentUser)
+      .maybeSingle();
+    if (userRow) {
+      userId = userRow.id;
+      if (_currentUserData) _currentUserData.id = userRow.id;
+    }
+  }
+
+  const companyName = _currentUserData?.company_name || currentUser;
+
+  /* ★ بناء بيانات الطلبية الكاملة ★ */
   const orderData = {
-    username:     currentUser,
-    order_number: orderNum,
-    items:        items.map(img => ({
-      id:       img.id,
-      title:    img.title,
-      catLabel: img.catLabel,
-      qty:      orderCart[img.id] || 0,
-      price:    img.price || 0,
-      src:      img.src,
+    user_id      : userId,
+    username     : currentUser,
+    order_number : orderNum,
+    company_name : companyName,
+    items        : items.map(img => ({
+      id       : img.id,
+      title    : img.title,
+      catLabel : img.catLabel,
+      qty      : img.qty ?? orderCart[img.id] ?? 0,
+      price    : img.price || 0,
+      src      : img.src,
     })),
-    note:   note || '',
-    status: 'pending',
+    note   : note || '',
+    status : 'pending',
   };
+
+  console.log('[Orders] جاري الحفظ:', {
+    username     : orderData.username,
+    user_id      : orderData.user_id,
+    order_number : orderData.order_number,
+    itemsCount   : orderData.items.length,
+  });
 
   try {
     const { data, error } = await sb
@@ -6056,6 +6087,7 @@ async function saveOrderToSupabase(orderNum, items, note) {
 
     if (error) {
       console.error('[Orders] حفظ فشل:', error.message, error.hint);
+      showInvToast('Sipariş kaydedilemedi: ' + error.message, 'error');
       return null;
     }
 
@@ -6068,6 +6100,7 @@ async function saveOrderToSupabase(orderNum, items, note) {
     return null;
   }
 }
+
 
 
 
