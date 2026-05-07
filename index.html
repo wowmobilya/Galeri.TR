@@ -11429,16 +11429,25 @@ async function sendBrowserNotif(title, body, tag, pageType) {
 }
 
 /* ============================================================
-   § 6 — إشعار Service Worker (خلفية / شاشة مقفلة)
+   § 6 — إرسال إشعار عبر SW (الطريقة الصحيحة)
 ============================================================ */
-function sendSwNotif(data) {
-  if (!navigator.serviceWorker?.controller) return;
+async function sendSwNotif(data) {
   try {
-    navigator.serviceWorker.controller.postMessage(data);
+    /* ★ الطريقة الصحيحة: استخدم registration مباشرة ★ */
+    const reg = await navigator.serviceWorker.ready;
+
+    if (reg?.active) {
+      /* أرسل للـ SW النشط مباشرة */
+      reg.active.postMessage(data);
+      console.log('[SW Notif] ✅ أُرسل للـ SW:', data.type);
+    } else {
+      console.warn('[SW Notif] SW غير نشط');
+    }
   } catch(e) {
-    console.warn('[SW Notif]', e);
+    console.error('[SW Notif] خطأ:', e);
   }
 }
+
 
 /* ============================================================
    § 7 — الدالة الرئيسية: WOW يستقبل إشعار طلب جديد
@@ -11673,16 +11682,27 @@ if (navigator.serviceWorker) {
    § 13 — تشغيل كل شيء بعد تسجيل الدخول
 ============================================================ */
 async function initNotifications() {
-  /* طلب إذن الإشعارات */
-  await requestNotifPermission();
+
+  /* 1. انتظر حتى يكون SW جاهزاً تماماً */
+  if ('serviceWorker' in navigator) {
+    try {
+      await navigator.serviceWorker.ready;
+      console.log('[Notif] ✅ SW جاهز');
+    } catch(e) {
+      console.warn('[Notif] ⚠️ SW غير متاح:', e);
+    }
+  }
+
+  /* 2. طلب إذن الإشعارات */
+  const perm = await requestNotifPermission();
+  console.log('[Notif] إذن الإشعارات:', perm);
   initNotifSound();
 
   if (currentUser === ADMIN_USER) {
-    /* WOW */
+    /* ── WOW ── */
     await subscribeToNewOrders();
     await updateAdminOrderBadge();
 
-    /* إشعار ترحيبي */
     setTimeout(() => {
       if (typeof showInvToast === 'function') {
         showInvToast(
@@ -11693,9 +11713,41 @@ async function initNotifications() {
     }, 2000);
 
   } else {
-    /* المستخدم العادي */
+    /* ── المستخدم العادي ── */
     await subscribeMyOrderStatus();
   }
+}
+
+/* ============================================================
+   § 6 — إرسال إشعار عبر SW (نسخة مصححة)
+============================================================ */
+async function sendSwNotif(data) {
+  try {
+    /* انتظر حتى يكون SW نشطاً — يحل مشكلة controller = null */
+    const reg = await navigator.serviceWorker.ready;
+
+    if (reg?.active) {
+      reg.active.postMessage(data);
+      console.log('[SW Notif] ✅ أُرسل:', data.type);
+    } else {
+      console.warn('[SW Notif] ⚠️ SW غير نشط');
+    }
+  } catch(e) {
+    console.error('[SW Notif] ❌ خطأ:', e);
+  }
+}
+
+/* ============================================================
+   § 12 — استقبال رسائل SW (فتح الصفحة عند النقر على الإشعار)
+============================================================ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'OPEN_PAGE') {
+      const page = e.data.page;
+      if (page === 'admin')    showPage('admin');
+      if (page === 'myorders') showPage('myorders');
+    }
+  });
 }
 
 /* ── Hook على finishLogin ── */
