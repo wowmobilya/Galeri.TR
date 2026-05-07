@@ -1,25 +1,25 @@
 /* ============================================================
-   WOW MOBİLYA — Service Worker v14
+   WOW MOBİLYA — Service Worker v18
    ⚠️ غيّر VERSION عند كل تحديث لـ index.html
 ============================================================ */
-const VERSION    = 'v17';
+const VERSION    = 'v18';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
 /* ─── Install ───────────────────────────────────────────── */
 self.addEventListener('install', event => {
-  console.log('[SW] Installing version:', VERSION);
+  console.log('[SW] Installing:', VERSION);
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.addAll(CORE_ASSETS).catch(() => {})
+    caches.open(CACHE_NAME).then(c =>
+      c.addAll(CORE_ASSETS).catch(() => {})
     )
   );
 });
 
 /* ─── Activate ──────────────────────────────────────────── */
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating version:', VERSION);
+  console.log('[SW] Activating:', VERSION);
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
@@ -29,20 +29,19 @@ self.addEventListener('activate', event => {
   );
 });
 
-/* ─── Fetch: Network First ──────────────────────────────── */
+/* ─── Fetch ─────────────────────────────────────────────── */
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (event.request.url.includes('supabase.co')) return;
 
   event.respondWith(
     fetch(event.request, { cache: 'no-cache' })
-      .then(response => {
-        if (response.ok) {
-          caches.open(CACHE_NAME).then(cache =>
-            cache.put(event.request, response.clone())
-          );
+      .then(res => {
+        if (res.ok) {
+          caches.open(CACHE_NAME)
+            .then(c => c.put(event.request, res.clone()));
         }
-        return response;
+        return res;
       })
       .catch(() => caches.match(event.request))
   );
@@ -51,87 +50,72 @@ self.addEventListener('fetch', event => {
 /* ─── Message ───────────────────────────────────────────── */
 self.addEventListener('message', event => {
 
-  /* تحديث SW */
   if (event.data === 'SKIP_WAITING') {
-    console.log('[SW] Skip waiting triggered');
     self.skipWaiting();
+    return;
   }
 
-  /* إرجاع الإصدار */
   if (event.data === 'GET_VERSION') {
-    event.source.postMessage({ type: 'VERSION', version: VERSION });
+    event.source?.postMessage({ type: 'VERSION', version: VERSION });
+    return;
   }
 
-  /* ★ إشعار طلب جديد — لـ WOW ★ */
+  /* ★ طلب جديد — لـ WOW ★ */
   if (event.data?.type === 'NEW_ORDER_NOTIFY') {
     const d = event.data;
-    const icons = { new: '🛒' };
-    self.registration.showNotification('🛒 WOW MOBİLYA — Yeni Sipariş!', {
-      body            : `👤 ${d.username}\n📋 ${d.orderNum}  ·  📦 ${d.itemCount} ürün`,
-      icon            : 'https://up6.cc/2026/04/177695590342861.png',
-      badge           : 'https://up6.cc/2026/04/177695590342861.png',
-      tag             : 'wow-new-order',
-      renotify        : true,
-      requireInteraction: true,
-      vibrate         : [200, 100, 200, 100, 400],
-      data            : {
-        url  : self.location.origin + self.location.pathname + '?page=admin',
-        type : 'admin'
-      },
-      actions: [
-        { action: 'open',    title: '📋 Siparişi Gör' },
-        { action: 'dismiss', title: '✕ Kapat'         },
-      ],
-    });
+    event.waitUntil(
+      self.registration.showNotification(
+        '🛒 WOW MOBİLYA — Yeni Sipariş!',
+        {
+          body             : `👤 ${d.username}\n📋 ${d.orderNum}  ·  📦 ${d.itemCount} ürün`,
+          icon             : 'https://up6.cc/2026/04/177695590342861.png',
+          badge            : 'https://up6.cc/2026/04/177695590342861.png',
+          tag              : 'wow-new-order',
+          renotify         : true,
+          requireInteraction: true,
+          vibrate          : [200, 100, 200, 100, 400],
+          data             : {
+            url : self.location.origin + self.location.pathname + '?page=admin',
+            page: 'admin'
+          },
+          actions: [
+            { action: 'open',    title: '📋 Siparişi Gör' },
+            { action: 'dismiss', title: '✕ Kapat'         },
+          ],
+        }
+      )
+    );
+    return;
   }
 
-  /* ★ إشعار تغيير حالة الطلبية — للمستخدم العادي ★ */
+  /* ★ تغيير حالة الطلبية — للمستخدم العادي ★ */
   if (event.data?.type === 'MY_ORDER_STATUS') {
     const d = event.data;
-    const statusIcons = {
-      manufacturing : '🏭',
-      ready         : '🎉',
-      cancelled     : '❌',
-      pending       : '⏳',
-      delivered     : '✅',
+    const icons = {
+      manufacturing: '🏭', ready: '🎉',
+      cancelled: '❌', pending: '⏳', delivered: '✅'
     };
-    const icon = statusIcons[d.statusKey] || '📋';
+    const icon = icons[d.statusKey] || '📋';
 
-    self.registration.showNotification(
-      `${icon} Sipariş Durumu: ${d.statusLabel}`,
-      {
-        body    : `📋 ${d.orderNum}`,
-        icon    : 'https://up6.cc/2026/04/177695590342861.png',
-        badge   : 'https://up6.cc/2026/04/177695590342861.png',
-        tag     : 'my-order-status',
-        renotify: true,
-        vibrate : [100, 50, 100, 50, 200],
-        data    : {
-          url  : self.location.origin + self.location.pathname + '?page=myorders',
-          type : 'myorders'
-        },
-      }
+    event.waitUntil(
+      self.registration.showNotification(
+        `${icon} Sipariş Durumu Güncellendi`,
+        {
+          body    : `${d.statusLabel}\n📋 ${d.orderNum}`,
+          icon    : 'https://up6.cc/2026/04/177695590342861.png',
+          badge   : 'https://up6.cc/2026/04/177695590342861.png',
+          tag     : 'my-order-status',
+          renotify: true,
+          vibrate : [100, 50, 100, 50, 200],
+          data    : {
+            url : self.location.origin + self.location.pathname + '?page=myorders',
+            page: 'myorders'
+          },
+        }
+      )
     );
+    return;
   }
-});
-
-/* ─── Push (مستقبلاً من خادم) ───────────────────────────── */
-self.addEventListener('push', event => {
-  let data = { type: 'new_order', username: 'Müşteri', orderNum: '—', itemCount: 0 };
-  try { data = event.data?.json() || data; } catch {}
-
-  event.waitUntil(
-    self.registration.showNotification('🛒 WOW MOBİLYA', {
-      body   : `👤 ${data.username}  ·  📋 ${data.orderNum}`,
-      icon   : 'https://up6.cc/2026/04/177695590342861.png',
-      badge  : 'https://up6.cc/2026/04/177695590342861.png',
-      tag    : 'wow-push',
-      renotify: true,
-      requireInteraction: true,
-      vibrate: [200, 100, 200],
-      data   : { url: self.location.origin + self.location.pathname },
-    })
-  );
 });
 
 /* ─── Notification Click ────────────────────────────────── */
@@ -140,21 +124,21 @@ self.addEventListener('notificationclick', event => {
   if (event.action === 'dismiss') return;
 
   const targetUrl = event.notification.data?.url
-    || self.location.origin + self.location.pathname;
-  const pageType  = event.notification.data?.type || 'admin';
+    || (self.location.origin + self.location.pathname);
+  const page = event.notification.data?.page || 'admin';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(list => {
-        /* إذا كان التطبيق مفتوحاً → focus + إرسال رسالة */
+        /* التطبيق مفتوح → focus + فتح الصفحة */
         for (const client of list) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.focus();
-            client.postMessage({ type: 'OPEN_PAGE', page: pageType });
+            client.postMessage({ type: 'OPEN_PAGE', page });
             return;
           }
         }
-        /* مغلق → افتح نافذة جديدة */
+        /* مغلق → افتح */
         if (clients.openWindow) return clients.openWindow(targetUrl);
       })
   );
