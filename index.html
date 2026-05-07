@@ -11063,64 +11063,22 @@ function showDeleteUserConfirm(username) {
 
 
 
-
- /* ============================================================
+/* ============================================================
    ★ WOW MOBİLYA — نظام الإشعارات الكامل ★
-   - WOW  : إشعار عند كل طلب جديد (4 طبقات)
-   - User : إشعار عند تغيير حالة طلبيته (4 طبقات)
+   - WOW (أدمن): يستقبل إشعار كل طلب جديد
+   - المستخدم العادي: يستقبل إشعار تغيير حالة طلبيته
 ============================================================ */
 
-/* ─── متغيرات عامة ──────────────────────────────────────── */
-let _notifAudio        = null;
-let _notifPermission   = Notification?.permission || 'default';
-let _orderSubChannel   = null;
-let _myOrderSubChannel = null;
-let _lastOrderIds      = new Set();
-
-/* ─── حالات الطلبية ─────────────────────────────────────── */
-const ORDER_STATUSES = {
-  pending: {
-    label  : 'Beklemede',
-    icon   : 'fa-clock',
-    color  : '#f59e0b',
-    bg     : 'rgba(245,158,11,0.1)',
-    border : 'rgba(245,158,11,0.3)',
-  },
-  manufacturing: {
-    label  : 'Üretimde',
-    icon   : 'fa-industry',
-    color  : '#3b82f6',
-    bg     : 'rgba(59,130,246,0.1)',
-    border : 'rgba(59,130,246,0.3)',
-  },
-  ready: {
-    label  : 'Teslime Hazır',
-    icon   : 'fa-check-circle',
-    color  : '#22c55e',
-    bg     : 'rgba(34,197,94,0.1)',
-    border : 'rgba(34,197,94,0.3)',
-  },
-  cancelled: {
-    label  : 'İptal Edildi',
-    icon   : 'fa-times-circle',
-    color  : '#ef4444',
-    bg     : 'rgba(239,68,68,0.1)',
-    border : 'rgba(239,68,68,0.3)',
-  },
-};
+/* ── متغيرات عامة ── */
+let _notifAudio      = null;
+let _notifPermission = Notification?.permission || 'default';
+let _orderSubChannel = null;
+let _myOrderChannel  = null;
+let _lastOrderIds    = new Set();
 
 /* ============================================================
-   ★ 1. تهيئة الصوت والإذن
+   § 1 — طلب إذن الإشعارات
 ============================================================ */
-function initNotifSound() {
-  if (_notifAudio) return;
-  _notifAudio = new Audio(
-    'https://cdn.pixabay.com/download/audio/2022/03/15/audio_1e5a6c8b3d.mp3'
-  );
-  _notifAudio.volume  = 0.7;
-  _notifAudio.preload = 'auto';
-}
-
 async function requestNotifPermission() {
   if (!('Notification' in window)) return 'denied';
   if (Notification.permission === 'granted') {
@@ -11137,109 +11095,120 @@ async function requestNotifPermission() {
 }
 
 /* ============================================================
-   ★ 2. الصوت — نغمات مختلفة حسب النوع
+   § 2 — الصوت
 ============================================================ */
-function playNotifSound(type = 'new-order') {
+function initNotifSound() {
+  if (_notifAudio) return;
+  _notifAudio        = new Audio();
+  _notifAudio.volume = 0.7;
+  _notifAudio.preload = 'auto';
+}
+
+/* صوت WOW — طلب جديد */
+function playNewOrderSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    /* 3 نبضات تصاعدية */
+    [[523, 0.0], [659, 0.18], [784, 0.36], [1047, 0.54]].forEach(([freq, t]) => {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = 'sine';
+      g.gain.setValueAtTime(0, ctx.currentTime + t);
+      g.gain.linearRampToValueAtTime(0.4, ctx.currentTime + t + 0.02);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + t + 0.2);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.25);
+    });
+  } catch(e) {}
+}
+
+/* صوت المستخدم — حسب الحالة */
+function playStatusSound(statusKey) {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-    const schemes = {
-      'new-order'     : { notes:[523,659,784],     type:'sine',     vol:0.4,  gap:0.18 },
-      'ready'         : { notes:[523,659,784,1047], type:'sine',     vol:0.35, gap:0.15 },
-      'manufacturing' : { notes:[523,659],          type:'sine',     vol:0.3,  gap:0.20 },
-      'cancelled'     : { notes:[523,415,330],      type:'sawtooth', vol:0.25, gap:0.18 },
-      'pending'       : { notes:[523,523],          type:'sine',     vol:0.25, gap:0.22 },
+    const patterns = {
+      ready: {
+        /* 🎉 احتفالي صاعد */
+        notes: [[523,0],[659,0.15],[784,0.30],[1047,0.45]],
+        type: 'sine', vol: 0.35
+      },
+      cancelled: {
+        /* ❌ تنازلي حزين */
+        notes: [[523,0],[415,0.18],[330,0.36]],
+        type: 'sawtooth', vol: 0.25
+      },
+      manufacturing: {
+        /* 🏭 نبضتان */
+        notes: [[659,0],[784,0.2]],
+        type: 'sine', vol: 0.3
+      },
+      pending: {
+        /* ⏳ نبضة واحدة */
+        notes: [[523,0]],
+        type: 'sine', vol: 0.3
+      },
+      delivered: {
+        /* ✅ ثلاث نبضات سريعة */
+        notes: [[784,0],[784,0.12],[1047,0.24]],
+        type: 'sine', vol: 0.35
+      },
     };
 
-    const s = schemes[type] || schemes['new-order'];
-
-    s.notes.forEach((freq, i) => {
-      const osc  = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = freq;
-      osc.type = s.type;
-      const t = ctx.currentTime + i * s.gap;
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(s.vol, t + 0.02);
-      gain.gain.linearRampToValueAtTime(0, t + 0.18);
-      osc.start(t);
-      osc.stop(t + 0.22);
+    const p = patterns[statusKey] || patterns.pending;
+    p.notes.forEach(([freq, t]) => {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = p.type;
+      g.gain.setValueAtTime(0, ctx.currentTime + t);
+      g.gain.linearRampToValueAtTime(p.vol, ctx.currentTime + t + 0.02);
+      g.gain.linearRampToValueAtTime(0, ctx.currentTime + t + 0.2);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + 0.25);
     });
-
-  } catch(e) {
-    /* fallback: ملف صوتي */
-    try {
-      initNotifSound();
-      _notifAudio.currentTime = 0;
-      _notifAudio.play().catch(() => {});
-    } catch {}
-  }
+  } catch(e) {}
 }
 
 /* ============================================================
-   ★ 3. CSS المشترك للإشعارات (يُضاف مرة واحدة)
-============================================================ */
-function injectNotifStyles() {
-  if (document.getElementById('notifStyles')) return;
-  const style = document.createElement('style');
-  style.id = 'notifStyles';
-  style.textContent = `
-    @keyframes notifSlideIn {
-      from { opacity:0; transform:translateX(120%) scale(0.9); }
-      to   { opacity:1; transform:translateX(0)   scale(1);   }
-    }
-    @keyframes notifSlideOut {
-      from { opacity:1; transform:translateX(0)   scale(1);   }
-      to   { opacity:0; transform:translateX(120%) scale(0.9); }
-    }
-    @keyframes notifProgress {
-      from { width:100%; }
-      to   { width:0%;   }
-    }
-    @keyframes notifPulse {
-      0%,100% { box-shadow:0 0 0 0   rgba(201,168,76,0.5); }
-      50%     { box-shadow:0 0 0 12px rgba(201,168,76,0);   }
-    }
-    @keyframes iconPulse {
-      0%,100% { transform:scale(1);   }
-      50%     { transform:scale(1.08);}
-    }
-    .notif-toast {
-      position:fixed;
-      top:80px;
-      right:20px;
-      z-index:99998;
-      width:min(360px, calc(100vw - 40px));
-      background:linear-gradient(145deg,#0f0f0f,#161616);
-      border-radius:18px;
-      overflow:hidden;
-      box-shadow:0 20px 60px rgba(0,0,0,0.8);
-      animation:notifSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      font-family:'Montserrat',sans-serif;
-      cursor:pointer;
-    }
-    .notif-toast.hide {
-      animation:notifSlideOut 0.4s ease forwards;
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-/* ============================================================
-   ★ 4. Toast — طلب جديد (لـ WOW)
+   § 3 — Toast WOW: طلب جديد
 ============================================================ */
 function showNewOrderToast(username, orderNum, itemCount) {
-  injectNotifStyles();
-  document.getElementById('newOrderToast')?.remove();
+  document.getElementById('wowNewOrderToast')?.remove();
 
   const toast = document.createElement('div');
-  toast.id        = 'newOrderToast';
-  toast.className = 'notif-toast';
-  toast.style.border = '1px solid rgba(201,168,76,0.4)';
+  toast.id = 'wowNewOrderToast';
+  toast.style.cssText = `
+    position:fixed; top:80px; right:20px; z-index:99999;
+    width:min(360px,calc(100vw - 40px));
+    background:linear-gradient(145deg,#0f0f0f,#161616);
+    border:1px solid rgba(201,168,76,0.4);
+    border-radius:18px; overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.85),0 0 40px rgba(201,168,76,0.08);
+    animation:notifSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    font-family:'Montserrat',sans-serif; cursor:pointer;
+  `;
 
   toast.innerHTML = `
+    <style>
+      @keyframes notifSlideIn {
+        from{opacity:0;transform:translateX(120%) scale(0.9)}
+        to  {opacity:1;transform:translateX(0)   scale(1)  }
+      }
+      @keyframes notifSlideOut {
+        from{opacity:1;transform:translateX(0)   scale(1)  }
+        to  {opacity:0;transform:translateX(120%) scale(0.9)}
+      }
+      @keyframes notifProgress {
+        from{width:100%} to{width:0%}
+      }
+      @keyframes wowPulse {
+        0%,100%{box-shadow:0 0 0 0   rgba(201,168,76,0.5)}
+        50%    {box-shadow:0 0 0 12px rgba(201,168,76,0)  }
+      }
+    </style>
+
     <div style="height:3px;background:linear-gradient(90deg,
       transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
 
@@ -11247,36 +11216,34 @@ function showNewOrderToast(username, orderNum, itemCount) {
 
       <div style="
         width:50px;height:50px;flex-shrink:0;
-        background:rgba(201,168,76,0.12);
+        background:rgba(201,168,76,0.1);
         border:1.5px solid rgba(201,168,76,0.4);
         border-radius:14px;
         display:flex;align-items:center;justify-content:center;
-        font-size:22px;
-        animation:notifPulse 1.5s ease infinite;
+        font-size:24px;
+        animation:wowPulse 1.5s ease infinite;
       ">🛒</div>
 
       <div style="flex:1;min-width:0;">
-        <div style="
-          font-size:9px;letter-spacing:3px;
-          color:rgba(201,168,76,0.7);
-          text-transform:uppercase;font-weight:700;margin-bottom:4px;
-        ">YENİ SİPARİŞ GELDİ!</div>
-
-        <div style="
-          font-size:14px;font-weight:900;color:#fff;margin-bottom:3px;
-          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        ">👤 ${username}</div>
-
-        <div style="font-size:11px;color:rgba(255,255,255,0.4);
-             display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="font-size:9px;letter-spacing:3px;
+             color:rgba(201,168,76,0.65);text-transform:uppercase;
+             font-weight:700;margin-bottom:4px;">
+          YENİ SİPARİŞ GELDİ!
+        </div>
+        <div style="font-size:14px;font-weight:900;color:#fff;
+             margin-bottom:4px;white-space:nowrap;
+             overflow:hidden;text-overflow:ellipsis;">
+          👤 ${username}
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,0.35);
+             display:flex;align-items:center;gap:8px;">
           <span>📋 ${orderNum}</span>
-          <span style="color:rgba(255,255,255,0.2);">·</span>
+          <span style="color:rgba(255,255,255,0.15);">·</span>
           <span>📦 ${itemCount} ürün</span>
         </div>
       </div>
 
-      <div onclick="event.stopPropagation();_dismissToast('newOrderToast')"
-           style="
+      <div id="wowToastClose" style="
         width:26px;height:26px;flex-shrink:0;
         background:rgba(255,255,255,0.05);
         border:1px solid rgba(255,255,255,0.08);
@@ -11286,10 +11253,9 @@ function showNewOrderToast(username, orderNum, itemCount) {
       ">✕</div>
     </div>
 
-    <div onclick="goToAdminFromNotif()"
-         style="
+    <div id="wowToastGoAdmin" style="
       margin:0 14px 14px;padding:10px;
-      background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));
+      background:rgba(201,168,76,0.08);
       border:1px solid rgba(201,168,76,0.25);
       border-radius:10px;text-align:center;
       font-size:11px;font-weight:700;
@@ -11300,74 +11266,92 @@ function showNewOrderToast(username, orderNum, itemCount) {
     </div>
 
     <div style="height:3px;background:rgba(255,255,255,0.05);">
-      <div style="height:100%;background:linear-gradient(90deg,#c9a84c,#f0d080);
+      <div style="height:100%;
+           background:linear-gradient(90deg,#c9a84c,#f0d080);
            animation:notifProgress 8s linear forwards;"></div>
     </div>
   `;
 
-  toast.addEventListener('click', () => goToAdminFromNotif());
+  /* أحداث */
+  toast.querySelector('#wowToastClose').onclick = e => {
+    e.stopPropagation();
+    _dismissToast('wowNewOrderToast');
+  };
+  toast.querySelector('#wowToastGoAdmin').onclick = () => {
+    _dismissToast('wowNewOrderToast');
+    showPage('admin');
+  };
+  toast.onclick = () => {
+    _dismissToast('wowNewOrderToast');
+    showPage('admin');
+  };
+
   document.body.appendChild(toast);
-  setTimeout(() => _dismissToast('newOrderToast'), 8000);
+  setTimeout(() => _dismissToast('wowNewOrderToast'), 8000);
 }
 
 /* ============================================================
-   ★ 5. Toast — تغيير حالة الطلبية (للمستخدم العادي)
+   § 4 — Toast المستخدم العادي: تغيير حالة الطلبية
 ============================================================ */
-function showMyOrderStatusToast(order, statusKey) {
-  injectNotifStyles();
+function showMyOrderStatusToast(order, status, statusKey) {
   document.getElementById('myOrderStatusToast')?.remove();
-
-  const st = ORDER_STATUSES[statusKey] || ORDER_STATUSES.pending;
 
   const messages = {
     manufacturing : 'Siparişiniz üretime alındı 🏭',
     ready         : 'Siparişiniz teslime hazır! 🎉',
     cancelled     : 'Siparişiniz iptal edildi 😔',
     pending       : 'Siparişiniz beklemeye alındı ⏳',
+    delivered     : 'Siparişiniz teslim edildi ✅',
   };
   const msg = messages[statusKey] || 'Sipariş durumu güncellendi';
 
   const toast = document.createElement('div');
-  toast.id        = 'myOrderStatusToast';
-  toast.className = 'notif-toast';
-  toast.style.border = `1px solid ${st.border}`;
+  toast.id = 'myOrderStatusToast';
+  toast.style.cssText = `
+    position:fixed; top:80px; right:20px; z-index:99999;
+    width:min(360px,calc(100vw - 40px));
+    background:linear-gradient(145deg,#0f0f0f,#161616);
+    border:1px solid ${status.border};
+    border-radius:18px; overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.85),0 0 30px ${status.bg};
+    animation:notifSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    font-family:'Montserrat',sans-serif; cursor:pointer;
+  `;
 
   toast.innerHTML = `
-    <div style="height:3px;background:${st.color};"></div>
+    <div style="height:3px;background:${status.color};"></div>
 
-    <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:13px;">
+    <div style="padding:14px 16px;display:flex;
+         align-items:flex-start;gap:13px;">
 
       <div style="
         width:50px;height:50px;flex-shrink:0;
-        background:${st.bg};
-        border:1.5px solid ${st.border};
+        background:${status.bg};
+        border:1.5px solid ${status.border};
         border-radius:14px;
         display:flex;align-items:center;justify-content:center;
-        font-size:20px;color:${st.color};
+        font-size:22px;color:${status.color};
         animation:iconPulse 1.5s ease infinite;
-      "><i class="fas ${st.icon}"></i></div>
+      "><i class="fas ${status.icon}"></i></div>
 
       <div style="flex:1;min-width:0;">
-        <div style="
-          font-size:9px;letter-spacing:3px;
-          color:${st.color};opacity:0.8;
-          text-transform:uppercase;font-weight:700;margin-bottom:4px;
-        ">SİPARİŞ DURUMU</div>
-
-        <div style="
-          font-size:13px;font-weight:900;color:#fff;
-          margin-bottom:3px;line-height:1.3;
-        ">${msg}</div>
-
-        <div style="font-size:10px;color:rgba(255,255,255,0.35);
+        <div style="font-size:9px;letter-spacing:3px;
+             color:${status.color};opacity:0.75;
+             text-transform:uppercase;font-weight:700;margin-bottom:4px;">
+          SİPARİŞ DURUMU GÜNCELLENDİ
+        </div>
+        <div style="font-size:13px;font-weight:900;
+             color:#fff;margin-bottom:4px;line-height:1.3;">
+          ${msg}
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);
              display:flex;align-items:center;gap:5px;">
           <i class="fas fa-hashtag" style="font-size:9px;"></i>
-          ${order.order_number || '—'}
+          ${order.order_number}
         </div>
       </div>
 
-      <div onclick="event.stopPropagation();_dismissToast('myOrderStatusToast')"
-           style="
+      <div id="myToastClose" style="
         width:26px;height:26px;flex-shrink:0;
         background:rgba(255,255,255,0.05);
         border:1px solid rgba(255,255,255,0.08);
@@ -11377,98 +11361,105 @@ function showMyOrderStatusToast(order, statusKey) {
       ">✕</div>
     </div>
 
-    <div onclick="showPage('myorders');_dismissToast('myOrderStatusToast')"
-         style="
+    <div id="myToastGoOrders" style="
       margin:0 14px 14px;padding:10px;
-      background:${st.bg};
-      border:1px solid ${st.border};
+      background:${status.bg};
+      border:1px solid ${status.border};
       border-radius:10px;text-align:center;
       font-size:11px;font-weight:700;
-      color:${st.color};letter-spacing:1.5px;cursor:pointer;
+      color:${status.color};letter-spacing:1.5px;cursor:pointer;
     ">
       <i class="fas fa-box" style="margin-right:6px;"></i>
       SİPARİŞLERİMİ GÖR
     </div>
 
     <div style="height:3px;background:rgba(255,255,255,0.05);">
-      <div style="height:100%;background:${st.color};
+      <div style="height:100%;background:${status.color};
            animation:notifProgress 7s linear forwards;"></div>
     </div>
   `;
 
-  toast.addEventListener('click', () => {
-    showPage('myorders');
+  toast.querySelector('#myToastClose').onclick = e => {
+    e.stopPropagation();
     _dismissToast('myOrderStatusToast');
-  });
+  };
+  toast.querySelector('#myToastGoOrders').onclick = () => {
+    _dismissToast('myOrderStatusToast');
+    showPage('myorders');
+  };
+  toast.onclick = () => {
+    _dismissToast('myOrderStatusToast');
+    showPage('myorders');
+  };
 
   document.body.appendChild(toast);
   setTimeout(() => _dismissToast('myOrderStatusToast'), 7000);
 }
 
-/* ─── مساعد إخفاء Toast ─────────────────────────────────── */
+/* helper إغلاق Toast */
 function _dismissToast(id) {
   const t = document.getElementById(id);
   if (!t) return;
-  t.classList.add('hide');
+  t.style.animation = 'notifSlideOut 0.4s ease forwards';
   setTimeout(() => t.remove(), 400);
 }
 
 /* ============================================================
-   ★ 6. إشعار المتصفح (Notification API)
+   § 5 — إشعار المتصفح (Notification API)
 ============================================================ */
-async function sendBrowserNotif(title, body, tag, targetPage) {
+async function sendBrowserNotif(title, body, tag, pageType) {
   if (_notifPermission !== 'granted') return;
   if (!('Notification' in window)) return;
 
-  const notif = new Notification(title, {
+  const n = new Notification(title, {
     body,
-    icon     : 'https://up6.cc/2026/04/177695590342861.png',
+    icon    : 'https://up6.cc/2026/04/177695590342861.png',
     tag,
-    renotify : true,
+    renotify: true,
   });
 
-  notif.onclick = () => {
+  n.onclick = () => {
     window.focus();
-    notif.close();
-    if (targetPage === 'admin')    goToAdminFromNotif();
-    if (targetPage === 'myorders') showPage('myorders');
+    n.close();
+    if (pageType === 'admin')    showPage('admin');
+    if (pageType === 'myorders') showPage('myorders');
   };
 
-  setTimeout(() => notif.close(), 10000);
+  setTimeout(() => n.close(), 10000);
 }
 
 /* ============================================================
-   ★ 7. إشعار Service Worker (خلفية / شاشة مقفلة)
+   § 6 — إشعار Service Worker (خلفية / شاشة مقفلة)
 ============================================================ */
-async function sendSwNotif(payload) {
+function sendSwNotif(data) {
   if (!navigator.serviceWorker?.controller) return;
   try {
-    navigator.serviceWorker.controller.postMessage(payload);
+    navigator.serviceWorker.controller.postMessage(data);
   } catch(e) {
     console.warn('[SW Notif]', e);
   }
 }
 
 /* ============================================================
-   ★ 8. الدالة الرئيسية — WOW: طلب جديد
+   § 7 — الدالة الرئيسية: WOW يستقبل إشعار طلب جديد
 ============================================================ */
-async function triggerNewOrderNotif(username, orderNum, itemCount) {
-  /* صوت */
-  playNotifSound('new-order');
+async function triggerNewOrderNotification(username, orderNum, itemCount) {
+  /* 1. صوت */
+  playNewOrderSound();
 
-  /* Toast */
+  /* 2. Toast */
   showNewOrderToast(username, orderNum, itemCount);
 
-  /* إشعار المتصفح */
+  /* 3. إشعار المتصفح */
   await sendBrowserNotif(
     '🛒 WOW MOBİLYA — Yeni Sipariş!',
-    `👤 ${username}  |  📋 ${orderNum}  ·  📦 ${itemCount} ürün`,
+    `👤 ${username}  ·  📋 ${orderNum}  ·  📦 ${itemCount} ürün`,
     'wow-new-order',
     'admin'
   );
 
-  /* إشعار SW */
-  await sendSwNotif({
+  /* 4. إشعار SW */
+  sendSwNotif({
     type      : 'NEW_ORDER_NOTIFY',
     username,
     orderNum,
@@ -11477,40 +11468,48 @@ async function triggerNewOrderNotif(username, orderNum, itemCount) {
 }
 
 /* ============================================================
-   ★ 9. الدالة الرئيسية — User: تغيير حالة الطلبية
+   § 8 — الدالة الرئيسية: المستخدم يستقبل تغيير حالة طلبيته
 ============================================================ */
-async function triggerOrderStatusNotif(order, statusKey) {
-  /* صوت */
-  playNotifSound(statusKey);
-
-  /* Toast */
-  showMyOrderStatusToast(order, statusKey);
-
-  /* إشعار المتصفح */
-  const st = ORDER_STATUSES[statusKey] || ORDER_STATUSES.pending;
-  const bodyMap = {
-    manufacturing : 'Siparişiniz üretime alındı 🏭',
-    ready         : 'Siparişiniz teslime hazır! 🎉',
-    cancelled     : 'Siparişiniz iptal edildi 😔',
-    pending       : 'Siparişiniz beklemeye alındı ⏳',
+async function triggerOrderStatusNotification(order, statusKey) {
+  const status = ORDER_STATUSES?.[statusKey] || {
+    label  : statusKey,
+    icon   : 'fa-circle',
+    color  : '#c9a84c',
+    bg     : 'rgba(201,168,76,0.1)',
+    border : 'rgba(201,168,76,0.3)',
   };
+
+  const statusIcons = {
+    manufacturing:'🏭', ready:'🎉', cancelled:'❌',
+    pending:'⏳', delivered:'✅'
+  };
+  const icon = statusIcons[statusKey] || '📋';
+
+  /* 1. صوت */
+  playStatusSound(statusKey);
+
+  /* 2. Toast */
+  showMyOrderStatusToast(order, status, statusKey);
+
+  /* 3. إشعار المتصفح */
   await sendBrowserNotif(
-    `${st.label} — WOW MOBİLYA`,
-    `${bodyMap[statusKey] || st.label}\n📋 ${order.order_number}`,
+    `${icon} Sipariş Durumu: ${status.label}`,
+    `📋 ${order.order_number}`,
     'my-order-status',
     'myorders'
   );
 
-  /* إشعار SW */
-  await sendSwNotif({
-    type      : 'MY_ORDER_STATUS',
-    orderNum  : order.order_number,
+  /* 4. إشعار SW */
+  sendSwNotif({
+    type       : 'MY_ORDER_STATUS',
+    orderNum   : order.order_number,
+    statusLabel: status.label,
     statusKey,
   });
 }
 
 /* ============================================================
-   ★ 10. الاشتراك في الطلبيات الجديدة (WOW فقط)
+   § 9 — Supabase Realtime: WOW يراقب الطلبيات الجديدة
 ============================================================ */
 async function subscribeToNewOrders() {
   if (currentUser !== ADMIN_USER) return;
@@ -11518,7 +11517,7 @@ async function subscribeToNewOrders() {
   const sb = await initSupabase();
   if (!sb || _orderSubChannel) return;
 
-  /* تحميل IDs الموجودة لتجنب إشعار كاذب */
+  /* تحميل IDs الموجودة لتجنب إشعار كاذب عند الدخول */
   const { data: existing } = await sb
     .from('orders')
     .select('id')
@@ -11541,9 +11540,10 @@ async function subscribeToNewOrders() {
         const orderNum  = order.order_number  || `#${order.id}`;
         const itemCount = Array.isArray(order.items) ? order.items.length : 0;
 
-        console.log('[WOW Notif] 🛒 طلب جديد:', username, orderNum);
+        console.log('[WOW] 🛒 طلب جديد:', username, orderNum);
 
-        await triggerNewOrderNotif(username, orderNum, itemCount);
+        /* تشغيل الإشعار */
+        await triggerNewOrderNotification(username, orderNum, itemCount);
 
         /* تحديث لوحة الإدارة إذا كانت مفتوحة */
         if (typeof currentPage !== 'undefined' && currentPage === 'admin') {
@@ -11552,24 +11552,26 @@ async function subscribeToNewOrders() {
           }, 1000);
         }
 
-        /* تحديث شارة الهيدر */
+        /* تحديث شارة الطلبيات */
         updateAdminOrderBadge();
       }
     )
-    .subscribe(status => console.log('[WOW Orders Channel]', status));
+    .subscribe(status => {
+      console.log('[WOW Orders Realtime]', status);
+    });
 }
 
 /* ============================================================
-   ★ 11. الاشتراك في تغييرات حالة الطلبية (المستخدم العادي)
+   § 10 — Supabase Realtime: المستخدم يراقب حالة طلبياته
 ============================================================ */
 async function subscribeMyOrderStatus() {
   if (currentUser === ADMIN_USER) return;
 
   const sb = await initSupabase();
-  if (!sb || _myOrderSubChannel) return;
+  if (!sb || _myOrderChannel) return;
 
-  _myOrderSubChannel = sb
-    .channel('my-order-status-' + currentUser)
+  _myOrderChannel = sb
+    .channel('my-orders-' + currentUser)
     .on(
       'postgres_changes',
       {
@@ -11585,11 +11587,12 @@ async function subscribeMyOrderStatus() {
 
         if (!order || oldStatus === newStatus) return;
 
-        console.log('[MyOrder] حالة جديدة:', newStatus, 'للطلب:', order.order_number);
+        console.log('[MyOrder] حالة جديدة:', newStatus, '←', oldStatus);
 
-        await triggerOrderStatusNotif(order, newStatus);
+        /* تشغيل الإشعار */
+        await triggerOrderStatusNotification(order, newStatus);
 
-        /* تحديث صفحة "طلبياتي" إذا كانت مفتوحة */
+        /* تحديث صفحة "طلبيتي" إذا كانت مفتوحة */
         if (typeof currentPage !== 'undefined' && currentPage === 'myorders') {
           setTimeout(() => {
             if (typeof buildMyOrdersPage === 'function') buildMyOrdersPage();
@@ -11600,11 +11603,13 @@ async function subscribeMyOrderStatus() {
         if (typeof updateMyOrderBtn === 'function') updateMyOrderBtn();
       }
     )
-    .subscribe(status => console.log('[MyOrder Channel]', status));
+    .subscribe(status => {
+      console.log('[MyOrder Realtime]', status);
+    });
 }
 
 /* ============================================================
-   ★ 12. شارة الطلبيات المعلقة في الهيدر (WOW)
+   § 11 — شارة عدد الطلبيات المعلقة (للهيدر)
 ============================================================ */
 let _pendingOrdersCount = 0;
 
@@ -11619,72 +11624,61 @@ async function updateAdminOrderBadge() {
     .eq('status', 'pending');
 
   _pendingOrdersCount = count || 0;
-  _renderBadge('adminOrderBadge',    'nav-admin',  _pendingOrdersCount);
-  _renderBadge('adminOrderBadgeMob', 'mob-admin',  _pendingOrdersCount);
+  _renderAdminBadge(_pendingOrdersCount);
 }
 
-function _renderBadge(badgeId, parentId, count) {
-  let badge = document.getElementById(badgeId);
-  if (!badge) {
-    const parent = document.getElementById(parentId);
-    if (!parent) return;
-    badge = document.createElement('span');
-    badge.id = badgeId;
-    badge.style.cssText = `
-      display:inline-flex;align-items:center;justify-content:center;
-      min-width:18px;height:18px;
-      background:#ef4444;color:#fff;
-      font-size:10px;font-weight:900;
-      border-radius:50%;padding:0 4px;
-      margin-left:5px;
-      border:2px solid rgba(8,8,8,0.96);
-      vertical-align:middle;
-      line-height:1;
-    `;
-    parent.appendChild(badge);
-  }
-  badge.textContent   = count > 99 ? '99+' : count;
-  badge.style.display = count > 0 ? 'inline-flex' : 'none';
-}
+function _renderAdminBadge(count) {
+  ['nav-admin', 'mob-admin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
 
-/* ============================================================
-   ★ 13. الانتقال للصفحات من الإشعار
-============================================================ */
-function goToAdminFromNotif() {
-  _dismissToast('newOrderToast');
-  if (typeof showPage === 'function') showPage('admin');
+    let badge = el.querySelector('.wow-order-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'wow-order-badge';
+      badge.style.cssText = `
+        display:inline-flex;align-items:center;justify-content:center;
+        min-width:18px;height:18px;
+        background:#ef4444;color:#fff;
+        font-size:10px;font-weight:900;
+        border-radius:50%;padding:0 4px;
+        margin-left:5px;
+        border:2px solid rgba(8,8,8,0.96);
+        vertical-align:middle;
+        animation:iconPulse 2s infinite;
+        line-height:1;
+      `;
+      el.appendChild(badge);
+    }
+
+    badge.textContent  = count > 99 ? '99+' : count;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+  });
 }
 
 /* ============================================================
-   ★ 14. استقبال رسائل SW (عند النقر على الإشعار)
+   § 12 — استقبال رسائل SW (فتح الصفحة عند النقر على الإشعار)
 ============================================================ */
-if ('serviceWorker' in navigator) {
+if (navigator.serviceWorker) {
   navigator.serviceWorker.addEventListener('message', e => {
-    if (e.data?.type === 'OPEN_ADMIN_PAGE')  goToAdminFromNotif();
-    if (e.data?.type === 'OPEN_MY_ORDERS')   showPage('myorders');
+    if (e.data?.type === 'OPEN_PAGE') {
+      const page = e.data.page;
+      if (page === 'admin')    showPage('admin');
+      if (page === 'myorders') showPage('myorders');
+    }
   });
 }
 
 /* ============================================================
-   ★ 15. تشغيل كل شيء بعد تسجيل الدخول
+   § 13 — تشغيل كل شيء بعد تسجيل الدخول
 ============================================================ */
-document.addEventListener('DOMContentLoaded', () => {
-  /* نستمع لحدث مخصص يُطلق بعد نجاح تسجيل الدخول */
-  document.addEventListener('wow:loginSuccess', async () => {
-    await _initNotifSystem();
-  });
-});
-
-async function _initNotifSystem() {
-  /* طلب إذن الإشعارات للجميع */
-  const perm = await requestNotifPermission();
-  console.log('[Notif] إذن الإشعارات:', perm);
-
-  /* تهيئة الصوت */
+async function initNotifications() {
+  /* طلب إذن الإشعارات */
+  await requestNotifPermission();
   initNotifSound();
 
   if (currentUser === ADMIN_USER) {
-    /* WOW: اشترك في الطلبيات الجديدة */
+    /* WOW */
     await subscribeToNewOrders();
     await updateAdminOrderBadge();
 
@@ -11699,40 +11693,40 @@ async function _initNotifSystem() {
     }, 2000);
 
   } else {
-    /* User: اشترك في تغييرات حالة طلبياته */
+    /* المستخدم العادي */
     await subscribeMyOrderStatus();
   }
 }
 
-/* ============================================================
-   ★ 16. Hook على finishLogin
-   ← استدعِ هذا بعد نجاح تسجيل الدخول في كودك الحالي
-============================================================ */
-const _origFinishLogin_notif = typeof finishLogin === 'function' ? finishLogin : null;
-if (_origFinishLogin_notif) {
-  finishLogin = function(...args) {
-    _origFinishLogin_notif.apply(this, args);
-    setTimeout(() => _initNotifSystem(), 1500);
+/* ── Hook على finishLogin ── */
+(function() {
+  const _orig = window.finishLogin;
+  if (typeof _orig !== 'function') {
+    console.warn('[Notif] finishLogin غير موجودة — تأكد من ترتيب الكود');
+    return;
+  }
+  window.finishLogin = function(...args) {
+    _orig.apply(this, args);
+    setTimeout(() => initNotifications(), 1500);
   };
-}
+})();
+
+/* ── Hook على buildAdminPage لتحديث الشارة ── */
+(function() {
+  const _orig = window.buildAdminPage;
+  if (typeof _orig !== 'function') return;
+  window.buildAdminPage = async function(...args) {
+    await _orig.apply(this, args);
+    setTimeout(() => updateAdminOrderBadge(), 500);
+  };
+})();
 
 /* ============================================================
-   ★ 17. زر اختبار الإشعارات (أزله بعد التجربة)
+   § 14 — دالة اختبار (استخدمها من Console)
+   triggerNewOrderNotification('Test Müşteri','WOW-TEST-001',5)
+   triggerOrderStatusNotification({order_number:'WOW-001'},'ready')
 ============================================================ */
-window._testNewOrderNotif = () =>
-  triggerNewOrderNotif('Test Müşteri', 'WOW-TEST-001', 5);
-
-window._testStatusNotif = (status = 'ready') =>
-  triggerOrderStatusNotif(
-    { order_number: 'WOW-TEST-001' },
-    status
-  );
-
-/* في Console المتصفح:
-   _testNewOrderNotif()          ← اختبار إشعار WOW
-   _testStatusNotif('ready')     ← اختبار إشعار جاهز
-   _testStatusNotif('cancelled') ← اختبار إشعار ملغي
-*/
+console.log('[WOW Notif] ✅ نظام الإشعارات جاهز');
 
 
   
