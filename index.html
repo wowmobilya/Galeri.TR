@@ -11064,29 +11064,63 @@ function showDeleteUserConfirm(username) {
 
 
 
-  /* ============================================================
-   ★ نظام الإشعارات الكامل — WOW + المستخدم العادي ★
+ /* ============================================================
+   ★ WOW MOBİLYA — نظام الإشعارات الكامل ★
+   - WOW  : إشعار عند كل طلب جديد (4 طبقات)
+   - User : إشعار عند تغيير حالة طلبيته (4 طبقات)
 ============================================================ */
 
-let _notifAudio      = null;
-let _notifPermission = Notification?.permission || 'default';
-let _orderSubChannel = null;
-let _myOrderChannel  = null;
-let _lastOrderIds    = new Set();
+/* ─── متغيرات عامة ──────────────────────────────────────── */
+let _notifAudio        = null;
+let _notifPermission   = Notification?.permission || 'default';
+let _orderSubChannel   = null;
+let _myOrderSubChannel = null;
+let _lastOrderIds      = new Set();
+
+/* ─── حالات الطلبية ─────────────────────────────────────── */
+const ORDER_STATUSES = {
+  pending: {
+    label  : 'Beklemede',
+    icon   : 'fa-clock',
+    color  : '#f59e0b',
+    bg     : 'rgba(245,158,11,0.1)',
+    border : 'rgba(245,158,11,0.3)',
+  },
+  manufacturing: {
+    label  : 'Üretimde',
+    icon   : 'fa-industry',
+    color  : '#3b82f6',
+    bg     : 'rgba(59,130,246,0.1)',
+    border : 'rgba(59,130,246,0.3)',
+  },
+  ready: {
+    label  : 'Teslime Hazır',
+    icon   : 'fa-check-circle',
+    color  : '#22c55e',
+    bg     : 'rgba(34,197,94,0.1)',
+    border : 'rgba(34,197,94,0.3)',
+  },
+  cancelled: {
+    label  : 'İptal Edildi',
+    icon   : 'fa-times-circle',
+    color  : '#ef4444',
+    bg     : 'rgba(239,68,68,0.1)',
+    border : 'rgba(239,68,68,0.3)',
+  },
+};
 
 /* ============================================================
-   أدوات أساسية
+   ★ 1. تهيئة الصوت والإذن
 ============================================================ */
-
-/* ── تهيئة الصوت ── */
 function initNotifSound() {
   if (_notifAudio) return;
-  _notifAudio        = new Audio();
-  _notifAudio.volume = 0.6;
+  _notifAudio = new Audio(
+    'https://cdn.pixabay.com/download/audio/2022/03/15/audio_1e5a6c8b3d.mp3'
+  );
+  _notifAudio.volume  = 0.7;
   _notifAudio.preload = 'auto';
 }
 
-/* ── طلب إذن الإشعارات ── */
 async function requestNotifPermission() {
   if (!('Notification' in window)) return 'denied';
   if (Notification.permission === 'granted') {
@@ -11097,65 +11131,61 @@ async function requestNotifPermission() {
     _notifPermission = 'denied';
     return 'denied';
   }
-  const result     = await Notification.requestPermission();
+  const result = await Notification.requestPermission();
   _notifPermission = result;
   return result;
 }
 
-/* ── صوت حسب الحالة (Web Audio API) ── */
-function playStatusSound(type) {
+/* ============================================================
+   ★ 2. الصوت — نغمات مختلفة حسب النوع
+============================================================ */
+function playNotifSound(type = 'new-order') {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
 
-    const play = (freq, start, dur, wave = 'sine', vol = 0.35) => {
+    const schemes = {
+      'new-order'     : { notes:[523,659,784],     type:'sine',     vol:0.4,  gap:0.18 },
+      'ready'         : { notes:[523,659,784,1047], type:'sine',     vol:0.35, gap:0.15 },
+      'manufacturing' : { notes:[523,659],          type:'sine',     vol:0.3,  gap:0.20 },
+      'cancelled'     : { notes:[523,415,330],      type:'sawtooth', vol:0.25, gap:0.18 },
+      'pending'       : { notes:[523,523],          type:'sine',     vol:0.25, gap:0.22 },
+    };
+
+    const s = schemes[type] || schemes['new-order'];
+
+    s.notes.forEach((freq, i) => {
       const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.type            = wave;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, ctx.currentTime + start);
-      gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.02);
-      gain.gain.linearRampToValueAtTime(0,   ctx.currentTime + start + dur);
-      osc.start(ctx.currentTime + start);
-      osc.stop(ctx.currentTime  + start + dur + 0.05);
-    };
+      osc.type = s.type;
+      const t = ctx.currentTime + i * s.gap;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(s.vol, t + 0.02);
+      gain.gain.linearRampToValueAtTime(0, t + 0.18);
+      osc.start(t);
+      osc.stop(t + 0.22);
+    });
 
-    if (type === 'new_order') {
-      /* WOW — طلب جديد: 3 نبضات تصاعدية */
-      play(523, 0.0, 0.15);
-      play(659, 0.2, 0.15);
-      play(784, 0.4, 0.25);
-
-    } else if (type === 'ready') {
-      /* المستخدم — جاهز للتسليم: نغمة احتفالية */
-      play(523,  0.0,  0.15);
-      play(659,  0.18, 0.15);
-      play(784,  0.36, 0.15);
-      play(1047, 0.54, 0.3, 'sine', 0.4);
-
-    } else if (type === 'cancelled') {
-      /* المستخدم — ملغي: نغمة تنازلية */
-      play(523, 0.0,  0.2, 'sawtooth', 0.25);
-      play(415, 0.22, 0.2, 'sawtooth', 0.2);
-      play(330, 0.44, 0.3, 'sawtooth', 0.15);
-
-    } else {
-      /* باقي الحالات: نبضتان */
-      play(523, 0.0, 0.15);
-      play(659, 0.2, 0.15);
-    }
-  } catch(e) {}
+  } catch(e) {
+    /* fallback: ملف صوتي */
+    try {
+      initNotifSound();
+      _notifAudio.currentTime = 0;
+      _notifAudio.play().catch(() => {});
+    } catch {}
+  }
 }
 
 /* ============================================================
-   ★ CSS الإشعارات — يُضاف مرة واحدة ★
+   ★ 3. CSS المشترك للإشعارات (يُضاف مرة واحدة)
 ============================================================ */
-(function injectNotifCSS() {
-  if (document.getElementById('notifCSS')) return;
-  const s = document.createElement('style');
-  s.id = 'notifCSS';
-  s.textContent = `
+function injectNotifStyles() {
+  if (document.getElementById('notifStyles')) return;
+  const style = document.createElement('style');
+  style.id = 'notifStyles';
+  style.textContent = `
     @keyframes notifSlideIn {
       from { opacity:0; transform:translateX(120%) scale(0.9); }
       to   { opacity:1; transform:translateX(0)   scale(1);   }
@@ -11168,9 +11198,13 @@ function playStatusSound(type) {
       from { width:100%; }
       to   { width:0%;   }
     }
-    @keyframes notifRing {
+    @keyframes notifPulse {
       0%,100% { box-shadow:0 0 0 0   rgba(201,168,76,0.5); }
       50%     { box-shadow:0 0 0 12px rgba(201,168,76,0);   }
+    }
+    @keyframes iconPulse {
+      0%,100% { transform:scale(1);   }
+      50%     { transform:scale(1.08);}
     }
     .notif-toast {
       position:fixed;
@@ -11190,21 +11224,22 @@ function playStatusSound(type) {
       animation:notifSlideOut 0.4s ease forwards;
     }
   `;
-  document.head.appendChild(s);
-})();
+  document.head.appendChild(style);
+}
 
 /* ============================================================
-   ★ WOW — Toast طلب جديد ★
+   ★ 4. Toast — طلب جديد (لـ WOW)
 ============================================================ */
 function showNewOrderToast(username, orderNum, itemCount) {
+  injectNotifStyles();
   document.getElementById('newOrderToast')?.remove();
 
-  const t = document.createElement('div');
-  t.id        = 'newOrderToast';
-  t.className = 'notif-toast';
-  t.style.border = '1px solid rgba(201,168,76,0.45)';
+  const toast = document.createElement('div');
+  toast.id        = 'newOrderToast';
+  toast.className = 'notif-toast';
+  toast.style.border = '1px solid rgba(201,168,76,0.4)';
 
-  t.innerHTML = `
+  toast.innerHTML = `
     <div style="height:3px;background:linear-gradient(90deg,
       transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
 
@@ -11216,55 +11251,50 @@ function showNewOrderToast(username, orderNum, itemCount) {
         border:1.5px solid rgba(201,168,76,0.4);
         border-radius:14px;
         display:flex;align-items:center;justify-content:center;
-        font-size:24px;
-        animation:notifRing 1.5s ease infinite;
+        font-size:22px;
+        animation:notifPulse 1.5s ease infinite;
       ">🛒</div>
 
       <div style="flex:1;min-width:0;">
-        <div style="font-size:9px;letter-spacing:3px;
-             color:rgba(201,168,76,0.7);text-transform:uppercase;
-             font-weight:700;margin-bottom:4px;">
-          YENİ SİPARİŞ GELDİ!
-        </div>
-        <div style="font-size:14px;font-weight:900;color:#fff;
-             margin-bottom:3px;white-space:nowrap;
-             overflow:hidden;text-overflow:ellipsis;">
-          👤 ${username}
-        </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.35);
-             display:flex;align-items:center;gap:8px;">
+        <div style="
+          font-size:9px;letter-spacing:3px;
+          color:rgba(201,168,76,0.7);
+          text-transform:uppercase;font-weight:700;margin-bottom:4px;
+        ">YENİ SİPARİŞ GELDİ!</div>
+
+        <div style="
+          font-size:14px;font-weight:900;color:#fff;margin-bottom:3px;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        ">👤 ${username}</div>
+
+        <div style="font-size:11px;color:rgba(255,255,255,0.4);
+             display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span>📋 ${orderNum}</span>
-          <span style="color:rgba(255,255,255,0.15);">·</span>
+          <span style="color:rgba(255,255,255,0.2);">·</span>
           <span>📦 ${itemCount} ürün</span>
         </div>
       </div>
 
-      <div onclick="dismissToast('newOrderToast')" style="
+      <div onclick="event.stopPropagation();_dismissToast('newOrderToast')"
+           style="
         width:26px;height:26px;flex-shrink:0;
         background:rgba(255,255,255,0.05);
         border:1px solid rgba(255,255,255,0.08);
-        border-radius:7px;display:flex;align-items:center;
-        justify-content:center;color:rgba(255,255,255,0.3);
-        font-size:11px;cursor:pointer;transition:all 0.2s;
-      "
-      onmouseover="this.style.background='rgba(255,70,70,0.15)';this.style.color='#ff6b6b';"
-      onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='rgba(255,255,255,0.3)';">
-        ✕
-      </div>
+        border-radius:7px;
+        display:flex;align-items:center;justify-content:center;
+        color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;
+      ">✕</div>
     </div>
 
     <div onclick="goToAdminFromNotif()"
          style="
       margin:0 14px 14px;padding:10px;
-      background:rgba(201,168,76,0.1);
+      background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));
       border:1px solid rgba(201,168,76,0.25);
       border-radius:10px;text-align:center;
       font-size:11px;font-weight:700;
-      color:#c9a84c;letter-spacing:1.5px;
-      transition:all 0.25s;
-    "
-    onmouseover="this.style.background='rgba(201,168,76,0.2)';"
-    onmouseout="this.style.background='rgba(201,168,76,0.1)';">
+      color:#c9a84c;letter-spacing:1.5px;cursor:pointer;
+    ">
       <i class="fas fa-arrow-right" style="margin-right:6px;"></i>
       SİPARİŞ PANELİNE GİT
     </div>
@@ -11275,166 +11305,170 @@ function showNewOrderToast(username, orderNum, itemCount) {
     </div>
   `;
 
-  document.body.appendChild(t);
-  setTimeout(() => dismissToast('newOrderToast'), 8000);
+  toast.addEventListener('click', () => goToAdminFromNotif());
+  document.body.appendChild(toast);
+  setTimeout(() => _dismissToast('newOrderToast'), 8000);
 }
 
 /* ============================================================
-   ★ المستخدم العادي — Toast تغيير الحالة ★
+   ★ 5. Toast — تغيير حالة الطلبية (للمستخدم العادي)
 ============================================================ */
-function showMyOrderStatusToast(order, status, statusKey) {
+function showMyOrderStatusToast(order, statusKey) {
+  injectNotifStyles();
   document.getElementById('myOrderStatusToast')?.remove();
 
+  const st = ORDER_STATUSES[statusKey] || ORDER_STATUSES.pending;
+
   const messages = {
-    manufacturing : '🏭 Siparişiniz üretime alındı',
-    ready         : '🎉 Siparişiniz teslime hazır!',
-    cancelled     : '❌ Siparişiniz iptal edildi',
-    pending       : '⏳ Siparişiniz beklemeye alındı',
+    manufacturing : 'Siparişiniz üretime alındı 🏭',
+    ready         : 'Siparişiniz teslime hazır! 🎉',
+    cancelled     : 'Siparişiniz iptal edildi 😔',
+    pending       : 'Siparişiniz beklemeye alındı ⏳',
   };
-  const msg = messages[statusKey] || '📋 Sipariş durumu güncellendi';
+  const msg = messages[statusKey] || 'Sipariş durumu güncellendi';
 
-  const t = document.createElement('div');
-  t.id        = 'myOrderStatusToast';
-  t.className = 'notif-toast';
-  t.style.border = `1px solid ${status.border}`;
+  const toast = document.createElement('div');
+  toast.id        = 'myOrderStatusToast';
+  toast.className = 'notif-toast';
+  toast.style.border = `1px solid ${st.border}`;
 
-  t.innerHTML = `
-    <div style="height:3px;background:${status.color};"></div>
+  toast.innerHTML = `
+    <div style="height:3px;background:${st.color};"></div>
 
     <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:13px;">
 
       <div style="
         width:50px;height:50px;flex-shrink:0;
-        background:${status.bg};
-        border:1.5px solid ${status.border};
+        background:${st.bg};
+        border:1.5px solid ${st.border};
         border-radius:14px;
         display:flex;align-items:center;justify-content:center;
-        font-size:22px;color:${status.color};
+        font-size:20px;color:${st.color};
         animation:iconPulse 1.5s ease infinite;
-      "><i class="fas ${status.icon}"></i></div>
+      "><i class="fas ${st.icon}"></i></div>
 
       <div style="flex:1;min-width:0;">
-        <div style="font-size:9px;letter-spacing:3px;
-             color:${status.color};opacity:0.8;
-             text-transform:uppercase;font-weight:700;margin-bottom:4px;">
-          SİPARİŞ DURUMU
-        </div>
-        <div style="font-size:13px;font-weight:900;color:#fff;
-             margin-bottom:3px;line-height:1.3;">
-          ${msg}
-        </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);
+        <div style="
+          font-size:9px;letter-spacing:3px;
+          color:${st.color};opacity:0.8;
+          text-transform:uppercase;font-weight:700;margin-bottom:4px;
+        ">SİPARİŞ DURUMU</div>
+
+        <div style="
+          font-size:13px;font-weight:900;color:#fff;
+          margin-bottom:3px;line-height:1.3;
+        ">${msg}</div>
+
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);
              display:flex;align-items:center;gap:5px;">
           <i class="fas fa-hashtag" style="font-size:9px;"></i>
-          ${order.order_number}
+          ${order.order_number || '—'}
         </div>
       </div>
 
-      <div onclick="dismissToast('myOrderStatusToast')" style="
+      <div onclick="event.stopPropagation();_dismissToast('myOrderStatusToast')"
+           style="
         width:26px;height:26px;flex-shrink:0;
         background:rgba(255,255,255,0.05);
         border:1px solid rgba(255,255,255,0.08);
-        border-radius:7px;display:flex;align-items:center;
-        justify-content:center;color:rgba(255,255,255,0.3);
-        font-size:11px;cursor:pointer;
+        border-radius:7px;
+        display:flex;align-items:center;justify-content:center;
+        color:rgba(255,255,255,0.3);font-size:12px;cursor:pointer;
       ">✕</div>
     </div>
 
-    <div onclick="showPage('myorders');dismissToast('myOrderStatusToast');"
+    <div onclick="showPage('myorders');_dismissToast('myOrderStatusToast')"
          style="
       margin:0 14px 14px;padding:10px;
-      background:${status.bg};
-      border:1px solid ${status.border};
+      background:${st.bg};
+      border:1px solid ${st.border};
       border-radius:10px;text-align:center;
       font-size:11px;font-weight:700;
-      color:${status.color};letter-spacing:1.5px;
-      cursor:pointer;transition:all 0.25s;
-    "
-    onmouseover="this.style.opacity='0.75';"
-    onmouseout="this.style.opacity='1';">
+      color:${st.color};letter-spacing:1.5px;cursor:pointer;
+    ">
       <i class="fas fa-box" style="margin-right:6px;"></i>
       SİPARİŞLERİMİ GÖR
     </div>
 
     <div style="height:3px;background:rgba(255,255,255,0.05);">
-      <div style="height:100%;background:${status.color};
+      <div style="height:100%;background:${st.color};
            animation:notifProgress 7s linear forwards;"></div>
     </div>
   `;
 
-  document.body.appendChild(t);
-  setTimeout(() => dismissToast('myOrderStatusToast'), 7000);
+  toast.addEventListener('click', () => {
+    showPage('myorders');
+    _dismissToast('myOrderStatusToast');
+  });
+
+  document.body.appendChild(toast);
+  setTimeout(() => _dismissToast('myOrderStatusToast'), 7000);
 }
 
-/* ── إغلاق Toast ── */
-function dismissToast(id) {
+/* ─── مساعد إخفاء Toast ─────────────────────────────────── */
+function _dismissToast(id) {
   const t = document.getElementById(id);
   if (!t) return;
   t.classList.add('hide');
   setTimeout(() => t.remove(), 400);
 }
 
-/* ── الانتقال للأدمن من الإشعار ── */
-function goToAdminFromNotif() {
-  dismissToast('newOrderToast');
-  if (document.getElementById('homeScreen').style.display !== 'none') {
-    enterSection('admin');
-  } else {
-    showPage('admin');
+/* ============================================================
+   ★ 6. إشعار المتصفح (Notification API)
+============================================================ */
+async function sendBrowserNotif(title, body, tag, targetPage) {
+  if (_notifPermission !== 'granted') return;
+  if (!('Notification' in window)) return;
+
+  const notif = new Notification(title, {
+    body,
+    icon     : 'https://up6.cc/2026/04/177695590342861.png',
+    tag,
+    renotify : true,
+  });
+
+  notif.onclick = () => {
+    window.focus();
+    notif.close();
+    if (targetPage === 'admin')    goToAdminFromNotif();
+    if (targetPage === 'myorders') showPage('myorders');
+  };
+
+  setTimeout(() => notif.close(), 10000);
+}
+
+/* ============================================================
+   ★ 7. إشعار Service Worker (خلفية / شاشة مقفلة)
+============================================================ */
+async function sendSwNotif(payload) {
+  if (!navigator.serviceWorker?.controller) return;
+  try {
+    navigator.serviceWorker.controller.postMessage(payload);
+  } catch(e) {
+    console.warn('[SW Notif]', e);
   }
 }
 
 /* ============================================================
-   ★ إشعار المتصفح ★
+   ★ 8. الدالة الرئيسية — WOW: طلب جديد
 ============================================================ */
-async function sendBrowserNotif(title, body, page) {
-  if (_notifPermission !== 'granted') return;
-  if (!('Notification' in window)) return;
+async function triggerNewOrderNotif(username, orderNum, itemCount) {
+  /* صوت */
+  playNotifSound('new-order');
 
-  const n = new Notification(title, {
-    body,
-    icon     : 'https://up6.cc/2026/04/177695590342861.png',
-    tag      : page,
-    renotify : true,
-  });
-
-  n.onclick = () => {
-    window.focus();
-    n.close();
-    if (page === 'admin')    goToAdminFromNotif();
-    if (page === 'myorders') showPage('myorders');
-  };
-
-  setTimeout(() => n.close(), 10000);
-}
-
-/* ============================================================
-   ★ إشعار Service Worker ★
-============================================================ */
-function sendSwNotif(data) {
-  if (!swRegistration?.active) return;
-  try { swRegistration.active.postMessage(data); } catch(e) {}
-}
-
-/* ============================================================
-   ★ الدالة الرئيسية — WOW: طلب جديد ★
-============================================================ */
-async function triggerOrderNotification(username, orderNum, itemCount) {
-  /* 1. صوت */
-  playStatusSound('new_order');
-
-  /* 2. Toast */
+  /* Toast */
   showNewOrderToast(username, orderNum, itemCount);
 
-  /* 3. إشعار المتصفح */
+  /* إشعار المتصفح */
   await sendBrowserNotif(
     '🛒 WOW MOBİLYA — Yeni Sipariş!',
-    `👤 ${username}  ·  📋 ${orderNum}  ·  📦 ${itemCount} ürün`,
+    `👤 ${username}  |  📋 ${orderNum}  ·  📦 ${itemCount} ürün`,
+    'wow-new-order',
     'admin'
   );
 
-  /* 4. إشعار SW */
-  sendSwNotif({
+  /* إشعار SW */
+  await sendSwNotif({
     type      : 'NEW_ORDER_NOTIFY',
     username,
     orderNum,
@@ -11443,53 +11477,54 @@ async function triggerOrderNotification(username, orderNum, itemCount) {
 }
 
 /* ============================================================
-   ★ الدالة الرئيسية — المستخدم: تغيير الحالة ★
+   ★ 9. الدالة الرئيسية — User: تغيير حالة الطلبية
 ============================================================ */
-async function triggerStatusNotification(order, statusKey) {
+async function triggerOrderStatusNotif(order, statusKey) {
+  /* صوت */
+  playNotifSound(statusKey);
+
+  /* Toast */
+  showMyOrderStatusToast(order, statusKey);
+
+  /* إشعار المتصفح */
   const st = ORDER_STATUSES[statusKey] || ORDER_STATUSES.pending;
-
-  /* 1. صوت */
-  playStatusSound(statusKey);
-
-  /* 2. Toast */
-  showMyOrderStatusToast(order, st, statusKey);
-
-  /* 3. إشعار المتصفح */
-  const titles = {
-    manufacturing : '🏭 Siparişiniz Üretime Alındı',
-    ready         : '🎉 Siparişiniz Teslime Hazır!',
-    cancelled     : '❌ Siparişiniz İptal Edildi',
-    pending       : '⏳ Sipariş Beklemeye Alındı',
+  const bodyMap = {
+    manufacturing : 'Siparişiniz üretime alındı 🏭',
+    ready         : 'Siparişiniz teslime hazır! 🎉',
+    cancelled     : 'Siparişiniz iptal edildi 😔',
+    pending       : 'Siparişiniz beklemeye alındı ⏳',
   };
   await sendBrowserNotif(
-    titles[statusKey] || '📋 Sipariş Durumu Güncellendi',
-    `📋 ${order.order_number}`,
+    `${st.label} — WOW MOBİLYA`,
+    `${bodyMap[statusKey] || st.label}\n📋 ${order.order_number}`,
+    'my-order-status',
     'myorders'
   );
 
-  /* 4. إشعار SW */
-  sendSwNotif({
-    type       : 'MY_ORDER_STATUS',
-    orderNum   : order.order_number,
+  /* إشعار SW */
+  await sendSwNotif({
+    type      : 'MY_ORDER_STATUS',
+    orderNum  : order.order_number,
     statusKey,
-    statusLabel: st.label,
   });
 }
 
 /* ============================================================
-   ★ Realtime — WOW يستقبل الطلبيات الجديدة ★
+   ★ 10. الاشتراك في الطلبيات الجديدة (WOW فقط)
 ============================================================ */
 async function subscribeToNewOrders() {
   if (currentUser !== ADMIN_USER) return;
+
   const sb = await initSupabase();
   if (!sb || _orderSubChannel) return;
 
-  /* تحميل الطلبيات الموجودة لتجنب إشعار كاذب */
+  /* تحميل IDs الموجودة لتجنب إشعار كاذب */
   const { data: existing } = await sb
     .from('orders')
     .select('id')
     .order('created_at', { ascending: false })
     .limit(100);
+
   if (existing) existing.forEach(o => _lastOrderIds.add(o.id));
 
   _orderSubChannel = sb
@@ -11502,36 +11537,38 @@ async function subscribeToNewOrders() {
         if (!order || _lastOrderIds.has(order.id)) return;
         _lastOrderIds.add(order.id);
 
-        const username  = order.username  || order.company_name || 'Müşteri';
-        const orderNum  = order.order_number || `#${order.id}`;
+        const username  = order.company_name || order.username || 'Müşteri';
+        const orderNum  = order.order_number  || `#${order.id}`;
         const itemCount = Array.isArray(order.items) ? order.items.length : 0;
 
         console.log('[WOW Notif] 🛒 طلب جديد:', username, orderNum);
 
-        /* تشغيل الإشعار */
-        await triggerOrderNotification(username, orderNum, itemCount);
+        await triggerNewOrderNotif(username, orderNum, itemCount);
 
         /* تحديث لوحة الإدارة إذا كانت مفتوحة */
-        if (currentPage === 'admin') {
-          setTimeout(() => loadAdminOrders(), 1200);
+        if (typeof currentPage !== 'undefined' && currentPage === 'admin') {
+          setTimeout(() => {
+            if (typeof loadAdminOrders === 'function') loadAdminOrders();
+          }, 1000);
         }
 
         /* تحديث شارة الهيدر */
         updateAdminOrderBadge();
       }
     )
-    .subscribe(s => console.log('[WOW Orders Realtime]', s));
+    .subscribe(status => console.log('[WOW Orders Channel]', status));
 }
 
 /* ============================================================
-   ★ Realtime — المستخدم يتابع حالة طلبيته ★
+   ★ 11. الاشتراك في تغييرات حالة الطلبية (المستخدم العادي)
 ============================================================ */
 async function subscribeMyOrderStatus() {
   if (currentUser === ADMIN_USER) return;
-  const sb = await initSupabase();
-  if (!sb || _myOrderChannel) return;
 
-  _myOrderChannel = sb
+  const sb = await initSupabase();
+  if (!sb || _myOrderSubChannel) return;
+
+  _myOrderSubChannel = sb
     .channel('my-order-status-' + currentUser)
     .on(
       'postgres_changes',
@@ -11548,25 +11585,26 @@ async function subscribeMyOrderStatus() {
 
         if (!order || oldStatus === newStatus) return;
 
-        console.log('[MyOrder] حالة جديدة:', newStatus, order.order_number);
+        console.log('[MyOrder] حالة جديدة:', newStatus, 'للطلب:', order.order_number);
 
-        /* تشغيل الإشعار */
-        await triggerStatusNotification(order, newStatus);
+        await triggerOrderStatusNotif(order, newStatus);
 
-        /* تحديث الصفحة إذا كانت مفتوحة */
-        if (currentPage === 'myorders') {
-          setTimeout(() => buildMyOrdersPage(), 800);
+        /* تحديث صفحة "طلبياتي" إذا كانت مفتوحة */
+        if (typeof currentPage !== 'undefined' && currentPage === 'myorders') {
+          setTimeout(() => {
+            if (typeof buildMyOrdersPage === 'function') buildMyOrdersPage();
+          }, 800);
         }
 
         /* تحديث زر "طلبيتي" */
-        updateMyOrderBtn();
+        if (typeof updateMyOrderBtn === 'function') updateMyOrderBtn();
       }
     )
-    .subscribe(s => console.log('[MyOrder Realtime]', s));
+    .subscribe(status => console.log('[MyOrder Channel]', status));
 }
 
 /* ============================================================
-   ★ شارة الطلبيات المعلقة في هيدر WOW ★
+   ★ 12. شارة الطلبيات المعلقة في الهيدر (WOW)
 ============================================================ */
 let _pendingOrdersCount = 0;
 
@@ -11581,219 +11619,120 @@ async function updateAdminOrderBadge() {
     .eq('status', 'pending');
 
   _pendingOrdersCount = count || 0;
-  renderAdminOrderBadge(_pendingOrdersCount);
+  _renderBadge('adminOrderBadge',    'nav-admin',  _pendingOrdersCount);
+  _renderBadge('adminOrderBadgeMob', 'mob-admin',  _pendingOrdersCount);
 }
 
-function renderAdminOrderBadge(count) {
-  /* ── ديسكتوب ── */
-  let badge = document.getElementById('adminOrderBadge');
+function _renderBadge(badgeId, parentId, count) {
+  let badge = document.getElementById(badgeId);
   if (!badge) {
-    const navLink = document.getElementById('nav-admin');
-    if (navLink) {
-      badge    = document.createElement('span');
-      badge.id = 'adminOrderBadge';
-      badge.style.cssText = `
-        display:inline-flex;align-items:center;justify-content:center;
-        min-width:18px;height:18px;
-        background:#ef4444;color:#fff;
-        font-size:10px;font-weight:900;
-        border-radius:50%;padding:0 4px;
-        margin-left:5px;vertical-align:middle;
-        border:2px solid rgba(8,8,8,0.96);
-        animation:iconPulse 2s infinite;
-        line-height:1;
-      `;
-      navLink.appendChild(badge);
-    }
+    const parent = document.getElementById(parentId);
+    if (!parent) return;
+    badge = document.createElement('span');
+    badge.id = badgeId;
+    badge.style.cssText = `
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:18px;height:18px;
+      background:#ef4444;color:#fff;
+      font-size:10px;font-weight:900;
+      border-radius:50%;padding:0 4px;
+      margin-left:5px;
+      border:2px solid rgba(8,8,8,0.96);
+      vertical-align:middle;
+      line-height:1;
+    `;
+    parent.appendChild(badge);
   }
-  if (badge) {
-    badge.textContent   = count > 99 ? '99+' : count;
-    badge.style.display = count > 0 ? 'inline-flex' : 'none';
-  }
-
-  /* ── موبايل ── */
-  let mobBadge = document.getElementById('adminOrderBadgeMob');
-  if (!mobBadge) {
-    const mobLink = document.getElementById('mob-admin');
-    if (mobLink) {
-      mobBadge    = document.createElement('span');
-      mobBadge.id = 'adminOrderBadgeMob';
-      mobBadge.style.cssText = `
-        display:inline-flex;align-items:center;justify-content:center;
-        min-width:18px;height:18px;
-        background:#ef4444;color:#fff;
-        font-size:10px;font-weight:900;
-        border-radius:50%;padding:0 4px;
-        margin-left:auto;
-        border:2px solid rgba(8,8,8,0.96);
-        line-height:1;
-      `;
-      mobLink.appendChild(mobBadge);
-    }
-  }
-  if (mobBadge) {
-    mobBadge.textContent   = count > 99 ? '99+' : count;
-    mobBadge.style.display = count > 0 ? 'inline-flex' : 'none';
-  }
+  badge.textContent   = count > 99 ? '99+' : count;
+  badge.style.display = count > 0 ? 'inline-flex' : 'none';
 }
 
 /* ============================================================
-   ★ بانر طلب إذن الإشعارات ★
+   ★ 13. الانتقال للصفحات من الإشعار
 ============================================================ */
-function showNotifPermBanner() {
-  if (_notifPermission === 'granted') return;
-  if (document.getElementById('notifPermBanner')) return;
-
-  const banner = document.createElement('div');
-  banner.id = 'notifPermBanner';
-  banner.style.cssText = `
-    margin:0 22px 16px;
-    padding:12px 16px;
-    background:rgba(201,168,76,0.07);
-    border:1px solid rgba(201,168,76,0.25);
-    border-radius:12px;
-    display:flex;align-items:center;
-    justify-content:space-between;
-    gap:12px;flex-wrap:wrap;
-    font-family:'Montserrat',sans-serif;
-  `;
-
-  if (_notifPermission === 'denied') {
-    banner.style.background = 'rgba(239,68,68,0.07)';
-    banner.style.border     = '1px solid rgba(239,68,68,0.2)';
-    banner.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;">
-        <i class="fas fa-bell-slash" style="color:#ef4444;font-size:18px;flex-shrink:0;"></i>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:#ff8a80;margin-bottom:2px;">
-            Bildirimler Engellendi
-          </div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.3);">
-            Tarayıcı ayarlarından bildirimlere izin verin.
-          </div>
-        </div>
-      </div>
-      <div onclick="document.getElementById('notifPermBanner').remove()"
-           style="color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;
-                  padding:4px;flex-shrink:0;">✕</div>
-    `;
-  } else {
-    banner.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;">
-        <i class="fas fa-bell" style="color:#c9a84c;font-size:18px;flex-shrink:0;
-           animation:iconPulse 2s infinite;"></i>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:2px;">
-            Bildirim İzni Gerekli
-          </div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.3);">
-            Yeni sipariş bildirimlerini almak için izin verin.
-          </div>
-        </div>
-      </div>
-      <button onclick="enableNotifications()" style="
-        padding:8px 16px;border-radius:8px;border:none;
-        background:linear-gradient(135deg,#c9a84c,#f0d080);
-        color:#0a0a0a;font-family:'Montserrat',sans-serif;
-        font-size:11px;font-weight:900;letter-spacing:1px;
-        cursor:pointer;transition:all 0.25s;
-        display:flex;align-items:center;gap:6px;flex-shrink:0;
-      ">
-        <i class="fas fa-bell"></i> İZİN VER
-      </button>
-    `;
-  }
-
-  /* أدرجه في بداية pageContent */
-  const pc = document.getElementById('pageContent');
-  if (pc) pc.prepend(banner);
-}
-
-async function enableNotifications() {
-  const perm = await requestNotifPermission();
-  document.getElementById('notifPermBanner')?.remove();
-  if (perm === 'granted') {
-    showInvToast('Bildirimler etkinleştirildi ✓', 'success');
-    /* إشعار تجريبي */
-    setTimeout(() => {
-      if (currentUser === ADMIN_USER) {
-        triggerOrderNotification('Test Müşteri', 'WOW-TEST', 3);
-      } else {
-        triggerStatusNotification(
-          { order_number: 'WOW-TEST' },
-          'ready'
-        );
-      }
-    }, 600);
-  } else {
-    showInvToast('Bildirim izni reddedildi!', 'error');
-  }
+function goToAdminFromNotif() {
+  _dismissToast('newOrderToast');
+  if (typeof showPage === 'function') showPage('admin');
 }
 
 /* ============================================================
-   ★ استقبال رسائل SW (فتح الصفحة عند النقر على الإشعار) ★
+   ★ 14. استقبال رسائل SW (عند النقر على الإشعار)
 ============================================================ */
-navigator.serviceWorker?.addEventListener('message', e => {
-  if (e.data?.type === 'OPEN_PAGE') {
-    const page = e.data.page;
-    if (page === 'admin')    goToAdminFromNotif();
-    if (page === 'myorders') {
-      if (document.getElementById('homeScreen').style.display !== 'none') {
-        enterSection('myorders');
-      } else {
-        showPage('myorders');
-      }
-    }
-  }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'OPEN_ADMIN_PAGE')  goToAdminFromNotif();
+    if (e.data?.type === 'OPEN_MY_ORDERS')   showPage('myorders');
+  });
+}
+
+/* ============================================================
+   ★ 15. تشغيل كل شيء بعد تسجيل الدخول
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  /* نستمع لحدث مخصص يُطلق بعد نجاح تسجيل الدخول */
+  document.addEventListener('wow:loginSuccess', async () => {
+    await _initNotifSystem();
+  });
 });
 
-/* ============================================================
-   ★ Hook — تشغيل كل شيء بعد تسجيل الدخول ★
-============================================================ */
-const _origFinishLogin_NOTIF = finishLogin;
-finishLogin = function() {
-  _origFinishLogin_NOTIF();
+async function _initNotifSystem() {
+  /* طلب إذن الإشعارات للجميع */
+  const perm = await requestNotifPermission();
+  console.log('[Notif] إذن الإشعارات:', perm);
 
-  setTimeout(async () => {
+  /* تهيئة الصوت */
+  initNotifSound();
 
-    /* ── طلب إذن الإشعارات للجميع ── */
-    await requestNotifPermission();
-    initNotifSound();
+  if (currentUser === ADMIN_USER) {
+    /* WOW: اشترك في الطلبيات الجديدة */
+    await subscribeToNewOrders();
+    await updateAdminOrderBadge();
 
-    if (currentUser === ADMIN_USER) {
-      /* ── WOW ── */
-      await subscribeToNewOrders();
-      await updateAdminOrderBadge();
+    /* إشعار ترحيبي */
+    setTimeout(() => {
+      if (typeof showInvToast === 'function') {
+        showInvToast(
+          '<i class="fas fa-bell"></i> Sipariş bildirimleri aktif ✓',
+          'success'
+        );
+      }
+    }, 2000);
 
-      showInvToast(
-        '<i class="fas fa-bell"></i> Sipariş bildirimleri aktif ✓',
-        'success'
-      );
-
-    } else {
-      /* ── المستخدم العادي ── */
-      await subscribeMyOrderStatus();
-
-      showInvToast(
-        '<i class="fas fa-bell"></i> Sipariş takibi aktif ✓',
-        'success'
-      );
-    }
-
-  }, 1500);
-};
+  } else {
+    /* User: اشترك في تغييرات حالة طلبياته */
+    await subscribeMyOrderStatus();
+  }
+}
 
 /* ============================================================
-   ★ Hook — إظهار بانر الإذن في لوحة الإدارة ★
+   ★ 16. Hook على finishLogin
+   ← استدعِ هذا بعد نجاح تسجيل الدخول في كودك الحالي
 ============================================================ */
-const _origBuildAdminPage_NOTIF = buildAdminPage;
-buildAdminPage = async function() {
-  await _origBuildAdminPage_NOTIF();
-  setTimeout(() => {
-    showNotifPermBanner();
-    updateAdminOrderBadge();
-  }, 300);
-};
+const _origFinishLogin_notif = typeof finishLogin === 'function' ? finishLogin : null;
+if (_origFinishLogin_notif) {
+  finishLogin = function(...args) {
+    _origFinishLogin_notif.apply(this, args);
+    setTimeout(() => _initNotifSystem(), 1500);
+  };
+}
+
+/* ============================================================
+   ★ 17. زر اختبار الإشعارات (أزله بعد التجربة)
+============================================================ */
+window._testNewOrderNotif = () =>
+  triggerNewOrderNotif('Test Müşteri', 'WOW-TEST-001', 5);
+
+window._testStatusNotif = (status = 'ready') =>
+  triggerOrderStatusNotif(
+    { order_number: 'WOW-TEST-001' },
+    status
+  );
+
+/* في Console المتصفح:
+   _testNewOrderNotif()          ← اختبار إشعار WOW
+   _testStatusNotif('ready')     ← اختبار إشعار جاهز
+   _testStatusNotif('cancelled') ← اختبار إشعار ملغي
+*/
 
 
   
