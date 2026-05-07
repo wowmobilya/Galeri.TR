@@ -4,7 +4,8 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <!-- Supabase Client -->
-   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <!-- =====================================================
      PWA — تثبيت كتطبيق
@@ -1462,6 +1463,124 @@ html { scroll-behavior: auto; }
 
 
 
+
+
+
+
+/* ── حقول OTP ── */
+.otp-digit {
+  width: 46px;
+  height: 54px;
+  background: rgba(255,255,255,0.05);
+  border: 1.5px solid rgba(201,168,76,0.25);
+  border-radius: 10px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 22px;
+  font-weight: 900;
+  text-align: center;
+  outline: none;
+  transition: all 0.25s;
+  -webkit-user-select: text;
+  user-select: text;
+  caret-color: #c9a84c;
+}
+.otp-digit:focus {
+  border-color: #c9a84c;
+  background: rgba(201,168,76,0.08);
+  box-shadow: 0 0 20px rgba(201,168,76,0.2);
+  transform: scale(1.05);
+}
+.otp-digit.filled {
+  border-color: rgba(201,168,76,0.6);
+  background: rgba(201,168,76,0.1);
+  color: #f0d080;
+}
+.otp-digit.error {
+  border-color: rgba(239,68,68,0.6);
+  background: rgba(239,68,68,0.08);
+  animation: shake 0.4s ease;
+}
+@media(max-width:400px) {
+  .otp-digit { width:38px; height:46px; font-size:18px; }
+}
+
+/* ── نافذة إعدادات الحساب ── */
+#accountSettingsModal {
+  position: fixed; inset: 0; z-index: 5500;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(18px);
+  padding: 16px;
+}
+#accountSettingsModal.active { display: flex; }
+.acc-modal-box {
+  width: 100%; max-width: 480px;
+  max-height: 90vh; overflow-y: auto;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #0f0f0f, #161616);
+  border: 1px solid rgba(201,168,76,0.25);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+  animation: devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+}
+.acc-modal-box::-webkit-scrollbar { width: 3px; }
+.acc-modal-box::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.3); border-radius: 4px;
+}
+.acc-field {
+  position: relative; margin-bottom: 14px;
+}
+.acc-field input {
+  width: 100%; padding: 13px 18px 13px 44px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(201,168,76,0.18);
+  border-radius: 10px; color: #fff;
+  font-family: 'Montserrat', sans-serif; font-size: 13px;
+  outline: none; transition: all 0.3s;
+  -webkit-user-select: text; user-select: text;
+}
+.acc-field input:focus {
+  border-color: #c9a84c;
+  box-shadow: 0 0 20px rgba(201,168,76,0.12);
+}
+.acc-field i.acc-icon {
+  position: absolute; left: 15px; top: 50%;
+  transform: translateY(-50%);
+  color: rgba(201,168,76,0.5); font-size: 14px;
+}
+.acc-field label {
+  display: block; font-size: 9px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.3); text-transform: uppercase;
+  font-weight: 700; margin-bottom: 5px;
+}
+
+/* ── لوحة إدارة المستخدمين (WOW فقط) ── */
+.user-admin-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px; padding: 14px 16px;
+  margin-bottom: 10px; transition: all 0.25s;
+}
+.user-admin-card:hover {
+  background: rgba(201,168,76,0.04);
+  border-color: rgba(201,168,76,0.15);
+}
+.user-status-dot {
+  width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+}
+.user-status-dot.online  { background:#4ade80; box-shadow:0 0 7px rgba(74,222,128,0.6); }
+.user-status-dot.offline { background:#6b7280; }
+.user-status-dot.blocked { background:#ef4444; box-shadow:0 0 7px rgba(239,68,68,0.5); }
+
+
+
+
+    
+
+
+    
+
+
   </style>
 </head>
 <body>
@@ -1475,14 +1594,19 @@ html { scroll-behavior: auto; }
   <source src="https://cdn.pixabay.com/download/audio/2021/08/08/audio_dc39bde808.mp3" type="audio/mpeg"/>
 </audio>
 
-<!-- LOGIN -->
+<!-- =====================================================
+     LOGIN OVERLAY — نظام تسجيل الدخول الكامل
+===================================================== -->
 <div id="loginOverlay">
   <div class="login-particles" id="particles"></div>
-  <div class="login-box">
+
+  <!-- ══ شاشة تسجيل الدخول ══ -->
+  <div class="login-box" id="loginBox">
     <div class="login-logo">
       <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
            onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
     </div>
+
     <div class="login-field">
       <i class="fas fa-user field-icon"></i>
       <input type="text" id="loginUser" placeholder="Kullanıcı Adı"
@@ -1503,12 +1627,308 @@ html { scroll-behavior: auto; }
     <button class="login-btn" onclick="doLogin()">
       <i class="fas fa-sign-in-alt"></i> GİRİŞ YAP
     </button>
+
+    <!-- روابط -->
+    <div style="display:flex;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:8px;">
+      <button onclick="showRegisterBox()" style="background:none;border:none;
+        color:rgba(201,168,76,0.7);font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;
+        transition:color 0.25s;" onmouseover="this.style.color='#c9a84c'"
+        onmouseout="this.style.color='rgba(201,168,76,0.7)'">
+        <i class="fas fa-user-plus"></i> Hesap Oluştur
+      </button>
+      <button onclick="showForgotBox()" style="background:none;border:none;
+        color:rgba(255,255,255,0.3);font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;
+        transition:color 0.25s;" onmouseover="this.style.color='rgba(255,255,255,0.6)'"
+        onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+        <i class="fas fa-key"></i> Şifremi Unuttum
+      </button>
+    </div>
+
     <div class="login-error" id="loginError">
-      <i class="fas fa-exclamation-circle"></i> Kullanıcı adı veya şifre hatalı!
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="loginErrorMsg">Kullanıcı adı veya şifre hatalı!</span>
     </div>
   </div>
-</div>
 
+  <!-- ══ شاشة إنشاء الحساب ══ -->
+  <div class="login-box" id="registerBox" style="display:none;max-width:460px;">
+    <div class="login-logo">
+      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
+    </div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
+           text-transform:uppercase;font-weight:700;">YENİ HESAP OLUŞTUR</div>
+    </div>
+
+    <div class="login-field">
+      <i class="fas fa-building field-icon"></i>
+      <input type="text" id="regCompany" placeholder="Şirket Adı"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+    <div class="login-field">
+      <i class="fas fa-user field-icon"></i>
+      <input type="text" id="regUsername" placeholder="Kullanıcı Adı"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+    <div class="login-field">
+      <i class="fas fa-envelope field-icon"></i>
+      <input type="email" id="regEmail" placeholder="E-posta Adresi"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+    <div class="login-field">
+      <i class="fas fa-phone field-icon"></i>
+      <input type="tel" id="regPhone" placeholder="Telefon Numarası"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+    <div class="login-field">
+      <i class="fas fa-lock field-icon"></i>
+      <input type="password" id="regPass" placeholder="Şifre (min. 6 karakter)"
+             style="-webkit-user-select:text;user-select:text;"/>
+      <button class="toggle-pass" type="button" onclick="toggleRegPass()" tabindex="-1">
+        <i class="fas fa-eye" id="toggleRegPassIcon"></i>
+      </button>
+    </div>
+    <div class="login-field">
+      <i class="fas fa-lock field-icon"></i>
+      <input type="password" id="regPass2" placeholder="Şifreyi Tekrar Girin"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+
+    <button class="login-btn" onclick="doRegister()">
+      <i class="fas fa-user-plus"></i> HESAP OLUŞTUR
+    </button>
+
+    <button onclick="showLoginBox()" style="width:100%;margin-top:10px;
+      background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+      border-radius:10px;color:rgba(255,255,255,0.4);
+      font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;
+      letter-spacing:2px;padding:12px;cursor:pointer;transition:all 0.25s;">
+      <i class="fas fa-arrow-left"></i> GERİ DÖN
+    </button>
+
+    <div class="login-error" id="registerError">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="registerErrorMsg">Hata oluştu!</span>
+    </div>
+  </div>
+
+  <!-- ══ شاشة رمز OTP (تأكيد التسجيل) ══ -->
+  <div class="login-box" id="otpBox" style="display:none;">
+    <div class="login-logo">
+      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
+    </div>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="width:60px;height:60px;border-radius:50%;
+           background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+           border:1.5px solid rgba(201,168,76,0.35);
+           display:flex;align-items:center;justify-content:center;
+           margin:0 auto 14px;font-size:24px;color:#c9a84c;">
+        <i class="fas fa-envelope-open-text"></i>
+      </div>
+      <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
+           text-transform:uppercase;font-weight:700;margin-bottom:6px;">
+        DOĞRULAMA KODU
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.6;">
+        E-posta adresinize 6 haneli kod gönderildi.<br/>
+        <span style="color:rgba(201,168,76,0.6);" id="otpEmailDisplay"></span>
+      </div>
+    </div>
+
+    <!-- حقول OTP المنفصلة -->
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;" id="otpInputsWrap">
+      <input class="otp-digit" id="otp0" maxlength="1" type="text" inputmode="numeric"
+             oninput="otpInput(this,0)" onkeydown="otpKeydown(event,0)"/>
+      <input class="otp-digit" id="otp1" maxlength="1" type="text" inputmode="numeric"
+             oninput="otpInput(this,1)" onkeydown="otpKeydown(event,1)"/>
+      <input class="otp-digit" id="otp2" maxlength="1" type="text" inputmode="numeric"
+             oninput="otpInput(this,2)" onkeydown="otpKeydown(event,2)"/>
+      <input class="otp-digit" id="otp3" maxlength="1" type="text" inputmode="numeric"
+             oninput="otpInput(this,3)" onkeydown="otpKeydown(event,3)"/>
+      <input class="otp-digit" id="otp4" maxlength="1" type="text" inputmode="numeric"
+             oninput="otpInput(this,4)" onkeydown="otpKeydown(event,4)"/>
+      <input class="otp-digit" id="otp5" maxlength="1" type="text" inputmode="numeric"
+             oninput="otpInput(this,5)" onkeydown="otpKeydown(event,5)"/>
+    </div>
+
+    <!-- عداد الوقت -->
+    <div style="text-align:center;margin-bottom:16px;">
+      <div id="otpTimerWrap" style="display:inline-flex;align-items:center;gap:8px;
+           background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+           border-radius:50px;padding:6px 16px;">
+        <i class="fas fa-clock" style="color:rgba(201,168,76,0.5);font-size:12px;"></i>
+        <span id="otpTimer" style="font-size:13px;font-weight:900;color:#c9a84c;
+              letter-spacing:2px;font-family:'Montserrat',sans-serif;">3:00</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:1px;">
+          kalan süre
+        </span>
+      </div>
+    </div>
+
+    <button class="login-btn" id="otpVerifyBtn" onclick="verifyOtp()">
+      <i class="fas fa-check-circle"></i> DOĞRULA
+    </button>
+
+    <div style="text-align:center;margin-top:12px;">
+      <button id="otpResendBtn" onclick="resendOtp()" disabled
+              style="background:none;border:none;
+              color:rgba(255,255,255,0.2);font-family:'Montserrat',sans-serif;
+              font-size:11px;font-weight:700;letter-spacing:1px;cursor:not-allowed;
+              transition:all 0.25s;">
+        <i class="fas fa-redo"></i> Kodu Tekrar Gönder
+      </button>
+    </div>
+
+    <div class="login-error" id="otpError">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="otpErrorMsg">Kod hatalı!</span>
+    </div>
+  </div>
+
+  <!-- ══ شاشة نسيت كلمة المرور ══ -->
+  <div class="login-box" id="forgotBox" style="display:none;">
+    <div class="login-logo">
+      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
+    </div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
+           text-transform:uppercase;font-weight:700;">ŞİFRE SIFIRLAMA</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;
+           line-height:1.6;">
+        Kayıtlı e-posta ve telefon numaranızı girin
+      </div>
+    </div>
+
+    <div class="login-field">
+      <i class="fas fa-envelope field-icon"></i>
+      <input type="email" id="forgotEmail" placeholder="E-posta Adresi"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+    <div class="login-field">
+      <i class="fas fa-phone field-icon"></i>
+      <input type="tel" id="forgotPhone" placeholder="Telefon Numarası"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+
+    <button class="login-btn" onclick="doForgotPassword()">
+      <i class="fas fa-paper-plane"></i> KOD GÖNDER
+    </button>
+
+    <button onclick="showLoginBox()" style="width:100%;margin-top:10px;
+      background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+      border-radius:10px;color:rgba(255,255,255,0.4);
+      font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;
+      letter-spacing:2px;padding:12px;cursor:pointer;transition:all 0.25s;">
+      <i class="fas fa-arrow-left"></i> GERİ DÖN
+    </button>
+
+    <div class="login-error" id="forgotError">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="forgotErrorMsg">Hata oluştu!</span>
+    </div>
+  </div>
+
+  <!-- ══ شاشة OTP لإعادة تعيين كلمة المرور ══ -->
+  <div class="login-box" id="resetOtpBox" style="display:none;">
+    <div class="login-logo">
+      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
+    </div>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
+           text-transform:uppercase;font-weight:700;margin-bottom:6px;">
+        DOĞRULAMA KODU
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.35);line-height:1.6;">
+        E-posta adresinize gönderilen 6 haneli kodu girin.<br/>
+        <span style="color:rgba(201,168,76,0.6);" id="resetOtpEmailDisplay"></span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;">
+      <input class="otp-digit" id="rotp0" maxlength="1" type="text" inputmode="numeric"
+             oninput="rotpInput(this,0)" onkeydown="rotpKeydown(event,0)"/>
+      <input class="otp-digit" id="rotp1" maxlength="1" type="text" inputmode="numeric"
+             oninput="rotpInput(this,1)" onkeydown="rotpKeydown(event,1)"/>
+      <input class="otp-digit" id="rotp2" maxlength="1" type="text" inputmode="numeric"
+             oninput="rotpInput(this,2)" onkeydown="rotpKeydown(event,2)"/>
+      <input class="otp-digit" id="rotp3" maxlength="1" type="text" inputmode="numeric"
+             oninput="rotpInput(this,3)" onkeydown="rotpKeydown(event,3)"/>
+      <input class="otp-digit" id="rotp4" maxlength="1" type="text" inputmode="numeric"
+             oninput="rotpInput(this,4)" onkeydown="rotpKeydown(event,4)"/>
+      <input class="otp-digit" id="rotp5" maxlength="1" type="text" inputmode="numeric"
+             oninput="rotpInput(this,5)" onkeydown="rotpKeydown(event,5)"/>
+    </div>
+
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="display:inline-flex;align-items:center;gap:8px;
+           background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+           border-radius:50px;padding:6px 16px;">
+        <i class="fas fa-clock" style="color:rgba(201,168,76,0.5);font-size:12px;"></i>
+        <span id="resetOtpTimer" style="font-size:13px;font-weight:900;color:#c9a84c;
+              letter-spacing:2px;font-family:'Montserrat',sans-serif;">3:00</span>
+        <span style="font-size:10px;color:rgba(255,255,255,0.25);letter-spacing:1px;">
+          kalan süre
+        </span>
+      </div>
+    </div>
+
+    <button class="login-btn" onclick="verifyResetOtp()">
+      <i class="fas fa-check-circle"></i> DOĞRULA
+    </button>
+
+    <div class="login-error" id="resetOtpError">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="resetOtpErrorMsg">Kod hatalı!</span>
+    </div>
+  </div>
+
+  <!-- ══ شاشة تعيين كلمة مرور جديدة ══ -->
+  <div class="login-box" id="newPassBox" style="display:none;">
+    <div class="login-logo">
+      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
+    </div>
+    <div style="text-align:center;margin-bottom:20px;">
+      <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
+           text-transform:uppercase;font-weight:700;">YENİ ŞİFRE BELİRLE</div>
+    </div>
+
+    <div class="login-field">
+      <i class="fas fa-lock field-icon"></i>
+      <input type="password" id="newPass1" placeholder="Yeni Şifre"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+    <div class="login-field">
+      <i class="fas fa-lock field-icon"></i>
+      <input type="password" id="newPass2" placeholder="Şifreyi Tekrar Girin"
+             style="-webkit-user-select:text;user-select:text;"/>
+    </div>
+
+    <button class="login-btn" onclick="saveNewPassword()">
+      <i class="fas fa-save"></i> ŞİFREYİ KAYDET
+    </button>
+
+    <div class="login-error" id="newPassError">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="newPassErrorMsg">Hata oluştu!</span>
+    </div>
+  </div>
+
+</div><!-- /loginOverlay -->
+
+
+
+
+
+
+
+  
 <!-- HOME SCREEN -->
 <div id="homeScreen">
   <div class="home-bg"></div>
@@ -7781,6 +8201,1657 @@ async function subscribeInventory() {
     .subscribe();
 }
 
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ إعدادات EmailJS — غيّر هذه القيم بقيمك الحقيقية ★
+============================================================ */
+const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID';   // ← غيّر
+const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID';  // ← غيّر
+const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY';   // ← غيّر
+
+/* ============================================================
+   متغيرات نظام المصادقة
+============================================================ */
+let _otpPending = {
+  type        : '',      // 'register' | 'reset'
+  email       : '',
+  phone       : '',
+  code        : '',
+  expiresAt   : null,
+  timerHandle : null,
+  regData     : null,    // بيانات التسجيل المؤقتة
+  resetUserId : null,    // id المستخدم عند إعادة التعيين
+};
+
+let _currentUserData = null;   // بيانات المستخدم المسجّل دخوله
+let _currentSessionId = null;  // id الجلسة الحالية
+
+/* ============================================================
+   تهيئة EmailJS
+============================================================ */
+(function initEmailJS() {
+  if (typeof emailjs !== 'undefined') {
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+  } else {
+    window.addEventListener('load', () => {
+      if (typeof emailjs !== 'undefined')
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+    });
+  }
+})();
+
+/* ============================================================
+   أدوات مساعدة
+============================================================ */
+function generateOTP() {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+/* تشفير بسيط للكلمة (SHA-256 عبر SubtleCrypto) */
+async function hashPassword(pass) {
+  const enc  = new TextEncoder();
+  const buf  = await crypto.subtle.digest('SHA-256', enc.encode(pass));
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* إرسال OTP عبر EmailJS */
+async function sendOtpEmail(toEmail, toName, otpCode) {
+  if (typeof emailjs === 'undefined') {
+    console.warn('[EmailJS] غير محمّل');
+    return false;
+  }
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email  : toEmail,
+      to_name   : toName || toEmail,
+      otp_code  : otpCode,
+    });
+    return true;
+  } catch(e) {
+    console.error('[EmailJS] خطأ:', e);
+    return false;
+  }
+}
+
+/* ============================================================
+   التنقل بين شاشات تسجيل الدخول
+============================================================ */
+function showLoginBox() {
+  ['loginBox','registerBox','otpBox','forgotBox',
+   'resetOtpBox','newPassBox'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  const lb = document.getElementById('loginBox');
+  if (lb) lb.style.display = 'block';
+  clearOtpTimer();
+}
+
+function showRegisterBox() {
+  document.getElementById('loginBox').style.display    = 'none';
+  document.getElementById('registerBox').style.display = 'block';
+}
+
+function showForgotBox() {
+  document.getElementById('loginBox').style.display  = 'none';
+  document.getElementById('forgotBox').style.display = 'block';
+}
+
+function showError(elId, msg) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const msgEl = el.querySelector('span') || el;
+  if (msgEl.tagName === 'SPAN') msgEl.textContent = msg;
+  el.style.display = 'block';
+  el.style.animation = 'none';
+  void el.offsetWidth;
+  el.style.animation = 'shake 0.4s ease';
+}
+
+function hideError(elId) {
+  const el = document.getElementById(elId);
+  if (el) el.style.display = 'none';
+}
+
+/* ============================================================
+   ★ تسجيل الدخول — من قاعدة البيانات ★
+============================================================ */
+async function doLogin() {
+  const user = document.getElementById('loginUser').value.trim();
+  const pass = document.getElementById('loginPass').value.trim();
+
+  if (!user || !pass) {
+    showError('loginError', 'Kullanıcı adı ve şifre gereklidir!');
+    return;
+  }
+
+  /* ── حساب WOW المدمج (لا يحتاج DB) ── */
+  if (USERS[user] && USERS[user] === pass) {
+    const remember = document.getElementById('rememberMe').checked;
+    if (remember) saveCredentials(user, pass);
+    else clearSavedCredentials();
+
+    currentUser     = user;
+    _currentUserData = { username: user, company_name: 'WOW MOBİLYA', is_active: true };
+
+    hideError('loginError');
+    finishLogin();
+    return;
+  }
+
+  /* ── مستخدمو قاعدة البيانات ── */
+  const sb = await initSupabase();
+  if (!sb) {
+    showError('loginError', 'Bağlantı hatası!');
+    return;
+  }
+
+  const btn = document.querySelector('#loginBox .login-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Giriş yapılıyor...'; }
+
+  try {
+    const { data: users, error } = await sb
+      .from('users')
+      .select('*')
+      .eq('username', user)
+      .single();
+
+    if (error || !users) {
+      showError('loginError', 'Kullanıcı adı veya şifre hatalı!');
+      return;
+    }
+
+    /* فحص الحظر */
+    if (users.is_blocked) {
+      showError('loginError', 'Hesabınız engellendi. Yönetici ile iletişime geçin.');
+      return;
+    }
+
+    /* فحص التفعيل */
+    if (!users.is_active) {
+      showError('loginError', 'Hesabınız henüz aktif değil!');
+      return;
+    }
+
+    /* التحقق من كلمة المرور */
+    const hashed = await hashPassword(pass);
+    if (hashed !== users.password_hash) {
+      showError('loginError', 'Kullanıcı adı veya şifre hatalı!');
+      return;
+    }
+
+    /* ✅ تسجيل دخول ناجح */
+    currentUser      = users.username;
+    _currentUserData = users;
+
+    const remember = document.getElementById('rememberMe').checked;
+    if (remember) saveCredentials(user, pass);
+    else clearSavedCredentials();
+
+    /* تحديث آخر دخول */
+    await sb.from('users').update({
+      last_login : new Date().toISOString(),
+      last_seen  : new Date().toISOString(),
+    }).eq('id', users.id);
+
+    /* إنشاء جلسة */
+    const { data: session } = await sb.from('user_sessions').insert([{
+      user_id     : users.id,
+      username    : users.username,
+      device_info : navigator.userAgent.substring(0, 200),
+      is_active   : true,
+    }]).select().single();
+
+    if (session) _currentSessionId = session.id;
+
+    hideError('loginError');
+    finishLogin();
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> GİRİŞ YAP'; }
+  }
+}
+
+/* ── إتمام تسجيل الدخول ── */
+function finishLogin() {
+  const ov = document.getElementById('loginOverlay');
+  ov.style.transition = 'opacity 0.7s';
+  ov.style.opacity    = '0';
+  setTimeout(() => {
+    ov.style.display = 'none';
+    loadCartFromStorage();
+    updateCartReminder(Object.values(orderCart).reduce((a,b)=>a+b,0));
+    showHomeScreen();
+    setTimeout(tryPlayAudio, 600);
+    startSessionHeartbeat();
+  }, 700);
+}
+
+/* ── نبضة الجلسة (تحديث last_seen كل دقيقة) ── */
+let _heartbeatTimer = null;
+function startSessionHeartbeat() {
+  clearInterval(_heartbeatTimer);
+  _heartbeatTimer = setInterval(async () => {
+    if (!_currentUserData?.id) return;
+    const sb = await initSupabase();
+    if (!sb) return;
+    await sb.from('users')
+      .update({ last_seen: new Date().toISOString() })
+      .eq('id', _currentUserData.id);
+  }, 60_000);
+}
+
+/* ============================================================
+   ★ إنشاء الحساب ★
+============================================================ */
+async function doRegister() {
+  const company  = document.getElementById('regCompany').value.trim();
+  const username = document.getElementById('regUsername').value.trim();
+  const email    = document.getElementById('regEmail').value.trim().toLowerCase();
+  const phone    = document.getElementById('regPhone').value.trim();
+  const pass1    = document.getElementById('regPass').value;
+  const pass2    = document.getElementById('regPass2').value;
+
+  hideError('registerError');
+
+  /* التحقق من الحقول */
+  if (!company || !username || !email || !phone || !pass1) {
+    showError('registerError', 'Tüm alanları doldurun!');
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showError('registerError', 'Geçerli bir e-posta adresi girin!');
+    return;
+  }
+  if (pass1.length < 6) {
+    showError('registerError', 'Şifre en az 6 karakter olmalıdır!');
+    return;
+  }
+  if (pass1 !== pass2) {
+    showError('registerError', 'Şifreler eşleşmiyor!');
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) { showError('registerError', 'Bağlantı hatası!'); return; }
+
+  const btn = document.querySelector('#registerBox .login-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...'; }
+
+  try {
+    /* التحقق من تكرار اسم المستخدم */
+    const { data: existUser } = await sb
+      .from('users').select('id').eq('username', username).maybeSingle();
+    if (existUser) {
+      showError('registerError', 'Bu kullanıcı adı zaten kullanılıyor!');
+      return;
+    }
+
+    /* التحقق من تكرار البريد */
+    const { data: existEmail } = await sb
+      .from('users').select('id').eq('email', email).maybeSingle();
+    if (existEmail) {
+      showError('registerError', 'Bu e-posta adresi zaten kayıtlı!');
+      return;
+    }
+
+    /* توليد OTP وإرساله */
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 3 * 60 * 1000); // 3 دقائق
+
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kod gönderiliyor...';
+
+    const sent = await sendOtpEmail(email, company, otp);
+    if (!sent) {
+      showError('registerError', 'E-posta gönderilemedi! EmailJS ayarlarını kontrol edin.');
+      return;
+    }
+
+    /* حفظ OTP في Supabase */
+    await sb.from('otp_codes').insert([{
+      email      : email,
+      phone      : phone,
+      code       : otp,
+      type       : 'register',
+      expires_at : expiresAt.toISOString(),
+    }]);
+
+    /* حفظ بيانات التسجيل مؤقتاً */
+    _otpPending = {
+      type      : 'register',
+      email     : email,
+      phone     : phone,
+      code      : otp,
+      expiresAt : expiresAt,
+      regData   : { company, username, email, phone, pass1 },
+    };
+
+    /* الانتقال لشاشة OTP */
+    document.getElementById('registerBox').style.display = 'none';
+    document.getElementById('otpBox').style.display      = 'block';
+    document.getElementById('otpEmailDisplay').textContent = email;
+    clearOtpInputs('otp');
+    startOtpTimer('otpTimer', 3 * 60, () => {
+      showError('otpError', 'Süre doldu! Lütfen tekrar kayıt olun.');
+      document.getElementById('otpResendBtn').disabled = false;
+      document.getElementById('otpResendBtn').style.color  = 'rgba(201,168,76,0.7)';
+      document.getElementById('otpResendBtn').style.cursor = 'pointer';
+    });
+    setTimeout(() => document.getElementById('otp0')?.focus(), 300);
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-user-plus"></i> HESAP OLUŞTUR'; }
+  }
+}
+
+/* ============================================================
+   ★ التحقق من OTP (التسجيل) ★
+============================================================ */
+async function verifyOtp() {
+  const code = [0,1,2,3,4,5].map(i =>
+    document.getElementById('otp'+i)?.value || ''
+  ).join('');
+
+  if (code.length !== 6) {
+    showError('otpError', '6 haneli kodu eksiksiz girin!');
+    markOtpError('otp');
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* التحقق من الكود في Supabase */
+  const { data: otpRow } = await sb
+    .from('otp_codes')
+    .select('*')
+    .eq('email', _otpPending.email)
+    .eq('code', code)
+    .eq('type', 'register')
+    .eq('used', false)
+    .gte('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!otpRow) {
+    showError('otpError', 'Kod hatalı veya süresi dolmuş!');
+    markOtpError('otp');
+    return;
+  }
+
+  /* ✅ كود صحيح — إنشاء الحساب */
+  const btn = document.getElementById('otpVerifyBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Hesap oluşturuluyor...'; }
+
+  try {
+    const rd = _otpPending.regData;
+    const hashed = await hashPassword(rd.pass1);
+
+    const { error } = await sb.from('users').insert([{
+      company_name  : rd.company,
+      username      : rd.username,
+      email         : rd.email,
+      phone         : rd.phone,
+      password_hash : hashed,
+      is_active     : true,
+      is_blocked    : false,
+    }]);
+
+    if (error) {
+      showError('otpError', 'Hesap oluşturulamadı: ' + error.message);
+      return;
+    }
+
+    /* تعليم OTP كمستخدم */
+    await sb.from('otp_codes').update({ used: true }).eq('id', otpRow.id);
+
+    clearOtpTimer();
+    showLoginSuccessToast('Hesabınız başarıyla oluşturuldu! Giriş yapabilirsiniz.');
+    showLoginBox();
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-check-circle"></i> DOĞRULA'; }
+  }
+}
+
+/* ============================================================
+   ★ نسيت كلمة المرور ★
+============================================================ */
+async function doForgotPassword() {
+  const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
+  const phone = document.getElementById('forgotPhone').value.trim();
+
+  hideError('forgotError');
+
+  if (!email || !phone) {
+    showError('forgotError', 'E-posta ve telefon numarası gereklidir!');
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) { showError('forgotError', 'Bağlantı hatası!'); return; }
+
+  const btn = document.querySelector('#forgotBox .login-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...'; }
+
+  try {
+    /* البحث عن المستخدم بالبريد والهاتف معاً */
+    const { data: user } = await sb
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('phone', phone)
+      .maybeSingle();
+
+    if (!user) {
+      showError('forgotError', 'E-posta veya telefon numarası hatalı!');
+      return;
+    }
+
+    if (user.is_blocked) {
+      showError('forgotError', 'Hesabınız engellendi!');
+      return;
+    }
+
+    /* توليد OTP */
+    const otp = generateOTP();
+    const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
+
+    if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kod gönderiliyor...';
+
+    const sent = await sendOtpEmail(email, user.company_name, otp);
+    if (!sent) {
+      showError('forgotError', 'E-posta gönderilemedi!');
+      return;
+    }
+
+    /* حفظ OTP */
+    await sb.from('otp_codes').insert([{
+      email      : email,
+      phone      : phone,
+      code       : otp,
+      type       : 'reset',
+      expires_at : expiresAt.toISOString(),
+    }]);
+
+    _otpPending = {
+      type        : 'reset',
+      email       : email,
+      phone       : phone,
+      code        : otp,
+      expiresAt   : expiresAt,
+      resetUserId : user.id,
+    };
+
+    /* الانتقال لشاشة OTP إعادة التعيين */
+    document.getElementById('forgotBox').style.display   = 'none';
+    document.getElementById('resetOtpBox').style.display = 'block';
+    document.getElementById('resetOtpEmailDisplay').textContent = email;
+    clearOtpInputs('rotp');
+    startOtpTimer('resetOtpTimer', 3 * 60, () => {
+      showError('resetOtpError', 'Süre doldu! Lütfen tekrar deneyin.');
+    });
+    setTimeout(() => document.getElementById('rotp0')?.focus(), 300);
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> KOD GÖNDER'; }
+  }
+}
+
+/* ── التحقق من OTP (إعادة التعيين) ── */
+async function verifyResetOtp() {
+  const code = [0,1,2,3,4,5].map(i =>
+    document.getElementById('rotp'+i)?.value || ''
+  ).join('');
+
+  if (code.length !== 6) {
+    showError('resetOtpError', '6 haneli kodu eksiksiz girin!');
+    markOtpError('rotp');
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: otpRow } = await sb
+    .from('otp_codes')
+    .select('*')
+    .eq('email', _otpPending.email)
+    .eq('code', code)
+    .eq('type', 'reset')
+    .eq('used', false)
+    .gte('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!otpRow) {
+    showError('resetOtpError', 'Kod hatalı veya süresi dolmuş!');
+    markOtpError('rotp');
+    return;
+  }
+
+  /* ✅ كود صحيح */
+  await sb.from('otp_codes').update({ used: true }).eq('id', otpRow.id);
+  clearOtpTimer();
+
+  document.getElementById('resetOtpBox').style.display = 'none';
+  document.getElementById('newPassBox').style.display  = 'block';
+}
+
+/* ── حفظ كلمة المرور الجديدة ── */
+async function saveNewPassword() {
+  const pass1 = document.getElementById('newPass1').value;
+  const pass2 = document.getElementById('newPass2').value;
+
+  hideError('newPassError');
+
+  if (pass1.length < 6) {
+    showError('newPassError', 'Şifre en az 6 karakter olmalıdır!');
+    return;
+  }
+  if (pass1 !== pass2) {
+    showError('newPassError', 'Şifreler eşleşmiyor!');
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const btn = document.querySelector('#newPassBox .login-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...'; }
+
+  try {
+    const hashed = await hashPassword(pass1);
+    const { error } = await sb.from('users')
+      .update({ password_hash: hashed })
+      .eq('id', _otpPending.resetUserId);
+
+    if (error) {
+      showError('newPassError', 'Şifre güncellenemedi!');
+      return;
+    }
+
+    showLoginSuccessToast('Şifreniz başarıyla güncellendi!');
+    showLoginBox();
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> ŞİFREYİ KAYDET'; }
+  }
+}
+
+/* ============================================================
+   أدوات OTP
+============================================================ */
+function otpInput(el, idx) {
+  el.value = el.value.replace(/\D/g, '').slice(-1);
+  el.classList.toggle('filled', el.value !== '');
+  if (el.value && idx < 5) document.getElementById('otp'+(idx+1))?.focus();
+  if (idx === 5 && el.value) verifyOtp();
+}
+function otpKeydown(e, idx) {
+  if (e.key === 'Backspace' && !e.target.value && idx > 0)
+    document.getElementById('otp'+(idx-1))?.focus();
+  if (e.key === 'ArrowLeft'  && idx > 0) document.getElementById('otp'+(idx-1))?.focus();
+  if (e.key === 'ArrowRight' && idx < 5) document.getElementById('otp'+(idx+1))?.focus();
+}
+function rotpInput(el, idx) {
+  el.value = el.value.replace(/\D/g, '').slice(-1);
+  el.classList.toggle('filled', el.value !== '');
+  if (el.value && idx < 5) document.getElementById('rotp'+(idx+1))?.focus();
+  if (idx === 5 && el.value) verifyResetOtp();
+}
+function rotpKeydown(e, idx) {
+  if (e.key === 'Backspace' && !e.target.value && idx > 0)
+    document.getElementById('rotp'+(idx-1))?.focus();
+  if (e.key === 'ArrowLeft'  && idx > 0) document.getElementById('rotp'+(idx-1))?.focus();
+  if (e.key === 'ArrowRight' && idx < 5) document.getElementById('rotp'+(idx+1))?.focus();
+}
+function clearOtpInputs(prefix) {
+  [0,1,2,3,4,5].forEach(i => {
+    const el = document.getElementById(prefix+i);
+    if (el) { el.value = ''; el.className = 'otp-digit'; }
+  });
+}
+function markOtpError(prefix) {
+  [0,1,2,3,4,5].forEach(i => {
+    const el = document.getElementById(prefix+i);
+    if (el) { el.classList.add('error'); setTimeout(()=>el.classList.remove('error'),600); }
+  });
+}
+
+/* ── عداد الوقت ── */
+function startOtpTimer(elId, seconds, onExpire) {
+  clearOtpTimer();
+  let remaining = seconds;
+  const el = document.getElementById(elId);
+  function tick() {
+    if (!el) return;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    el.textContent = m + ':' + String(s).padStart(2,'0');
+    if (remaining <= 0) {
+      el.style.color = '#ef4444';
+      onExpire && onExpire();
+      return;
+    }
+    remaining--;
+    _otpPending.timerHandle = setTimeout(tick, 1000);
+  }
+  tick();
+}
+function clearOtpTimer() {
+  if (_otpPending.timerHandle) {
+    clearTimeout(_otpPending.timerHandle);
+    _otpPending.timerHandle = null;
+  }
+}
+
+/* ── إعادة إرسال OTP ── */
+async function resendOtp() {
+  const btn = document.getElementById('otpResendBtn');
+  if (btn) { btn.disabled = true; btn.style.color = 'rgba(255,255,255,0.2)'; }
+
+  const otp = generateOTP();
+  const expiresAt = new Date(Date.now() + 3 * 60 * 1000);
+  _otpPending.code      = otp;
+  _otpPending.expiresAt = expiresAt;
+
+  const sb = await initSupabase();
+  if (sb) {
+    await sb.from('otp_codes').insert([{
+      email      : _otpPending.email,
+      code       : otp,
+      type       : _otpPending.type,
+      expires_at : expiresAt.toISOString(),
+    }]);
+  }
+
+  const sent = await sendOtpEmail(
+    _otpPending.email,
+    _otpPending.regData?.company || _otpPending.email,
+    otp
+  );
+
+  if (sent) {
+    clearOtpInputs('otp');
+    startOtpTimer('otpTimer', 3 * 60, () => {});
+    showLoginSuccessToast('Yeni kod gönderildi!');
+  }
+}
+
+/* ── Toast نجاح ── */
+function showLoginSuccessToast(msg) {
+  let t = document.getElementById('loginSuccessToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'loginSuccessToast';
+    t.style.cssText = `
+      position:fixed;bottom:32px;left:50%;
+      transform:translateX(-50%) translateY(20px);
+      background:rgba(10,10,10,0.97);
+      border:1px solid rgba(74,222,128,0.4);
+      color:rgba(255,255,255,0.85);
+      font-family:'Montserrat',sans-serif;
+      font-size:12px;font-weight:700;letter-spacing:1px;
+      padding:12px 22px;border-radius:50px;
+      box-shadow:0 8px 30px rgba(0,0,0,0.5);
+      backdrop-filter:blur(20px);z-index:99999;
+      display:flex;align-items:center;gap:9px;
+      opacity:0;transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      white-space:nowrap;pointer-events:none;`;
+    document.body.appendChild(t);
+  }
+  t.innerHTML = `<i class="fas fa-check-circle" style="color:#4ade80;"></i> ${msg}`;
+  requestAnimationFrame(() => {
+    t.style.opacity   = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    t.style.opacity   = '0';
+    t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, 3500);
+}
+
+function toggleRegPass() {
+  const inp = document.getElementById('regPass');
+  const ico = document.getElementById('toggleRegPassIcon');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text';     ico.className = 'fas fa-eye-slash'; }
+  else                         { inp.type = 'password'; ico.className = 'fas fa-eye';       }
+}
+
+/* ============================================================
+   ★ إعدادات الحساب — نافذة كاملة ★
+============================================================ */
+function openAccountSettings() {
+  if (!_currentUserData) return;
+
+  /* إنشاء النافذة إذا لم تكن موجودة */
+  let modal = document.getElementById('accountSettingsModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'accountSettingsModal';
+    modal.innerHTML = `
+      <div class="acc-modal-box" id="accModalBox">
+
+        <!-- خط ذهبي علوي -->
+        <div style="height:3px;background:linear-gradient(90deg,
+          transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+        <!-- هيدر -->
+        <div style="padding:18px 20px 14px;display:flex;align-items:center;
+             justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:44px;height:44px;flex-shrink:0;
+                 background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+                 border:1px solid rgba(201,168,76,0.3);border-radius:12px;
+                 display:flex;align-items:center;justify-content:center;
+                 color:#c9a84c;font-size:18px;">
+              <i class="fas fa-user-cog"></i>
+            </div>
+            <div>
+              <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,0.55);
+                   text-transform:uppercase;margin-bottom:3px;">HESAP</div>
+              <div style="font-size:16px;font-weight:900;color:#fff;">Hesap Ayarları</div>
+            </div>
+          </div>
+          <div onclick="closeAccountSettings()" style="width:32px;height:32px;
+               background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+               border-radius:8px;color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+               display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
+               onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+               onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+            <i class="fas fa-times"></i>
+          </div>
+        </div>
+
+        <!-- جسم النافذة -->
+        <div style="padding:20px;">
+
+          <!-- معلومات الحساب الحالية -->
+          <div style="background:rgba(201,168,76,0.05);border:1px solid rgba(201,168,76,0.15);
+               border-radius:14px;padding:14px 16px;margin-bottom:20px;
+               display:flex;align-items:center;gap:14px;">
+            <div style="width:52px;height:52px;border-radius:50%;flex-shrink:0;
+                 background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
+                 border:1.5px solid rgba(201,168,76,0.3);
+                 display:flex;align-items:center;justify-content:center;
+                 font-size:20px;color:#c9a84c;">
+              <i class="fas fa-user"></i>
+            </div>
+            <div>
+              <div style="font-size:15px;font-weight:900;color:#fff;" id="accDisplayName"></div>
+              <div style="font-size:10px;color:rgba(201,168,76,0.6);letter-spacing:1.5px;
+                   margin-top:3px;" id="accDisplayCompany"></div>
+              <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;"
+                   id="accDisplayEmail"></div>
+            </div>
+          </div>
+
+          <!-- تبويبات -->
+          <div style="display:flex;gap:6px;margin-bottom:20px;
+               background:rgba(255,255,255,0.03);border-radius:10px;padding:4px;">
+            <button onclick="switchAccTab('info')" id="accTabInfo"
+                    class="acc-tab-btn acc-tab-active">
+              <i class="fas fa-id-card"></i> Bilgiler
+            </button>
+            <button onclick="switchAccTab('pass')" id="accTabPass"
+                    class="acc-tab-btn">
+              <i class="fas fa-key"></i> Şifre
+            </button>
+          </div>
+
+          <!-- تبويب المعلومات -->
+          <div id="accPanelInfo">
+            <div class="acc-field">
+              <label>Şirket Adı</label>
+              <i class="fas fa-building acc-icon"></i>
+              <input type="text" id="accCompany" placeholder="Şirket Adı"
+                     style="-webkit-user-select:text;user-select:text;"/>
+            </div>
+            <div class="acc-field">
+              <label>Kullanıcı Adı</label>
+              <i class="fas fa-user acc-icon"></i>
+              <input type="text" id="accUsername" placeholder="Kullanıcı Adı"
+                     style="-webkit-user-select:text;user-select:text;"/>
+            </div>
+            <div class="acc-field">
+              <label>E-posta</label>
+              <i class="fas fa-envelope acc-icon"></i>
+              <input type="email" id="accEmail" placeholder="E-posta"
+                     style="-webkit-user-select:text;user-select:text;"/>
+            </div>
+            <div class="acc-field">
+              <label>Telefon</label>
+              <i class="fas fa-phone acc-icon"></i>
+              <input type="tel" id="accPhone" placeholder="Telefon"
+                     style="-webkit-user-select:text;user-select:text;"/>
+            </div>
+            <button onclick="saveAccountInfo()" style="width:100%;padding:13px;
+              background:linear-gradient(135deg,#c9a84c,#f0d080);border:none;
+              border-radius:10px;color:#0a0a0a;font-family:'Montserrat',sans-serif;
+              font-size:12px;font-weight:900;letter-spacing:2px;cursor:pointer;
+              transition:all 0.25s;display:flex;align-items:center;
+              justify-content:center;gap:8px;" id="accSaveInfoBtn">
+              <i class="fas fa-save"></i> BİLGİLERİ KAYDET
+            </button>
+          </div>
+
+          <!-- تبويب كلمة المرور -->
+          <div id="accPanelPass" style="display:none;">
+            <div class="acc-field">
+              <label>Mevcut Şifre</label>
+              <i class="fas fa-lock acc-icon"></i>
+              <input type="password" id="accOldPass" placeholder="Mevcut şifreniz"
+                     style="-webkit-user-select:text;user-select:text;"/>
+            </div>
+            <div class="acc-field">
+              <label>Yeni Şifre</label>
+              <i class="fas fa-lock acc-icon"></i>
+              <input type="password" id="accNewPass1" placeholder="Yeni şifre (min. 6)"
+                     style="-webkit-user-select:text;user-select:text;"/>
+            </div>
+            <div class="acc-field">
+              <label>Yeni Şifre (Tekrar)</label>
+              <i class="fas fa-lock acc-icon"></i>
+              <input type="password" id="accNewPass2" placeholder="Yeni şifreyi tekrar girin"
+                     style="-webkit-user-select:text;user-select:text;"/>
+            </div>
+            <button onclick="saveAccountPassword()" style="width:100%;padding:13px;
+              background:linear-gradient(135deg,#c9a84c,#f0d080);border:none;
+              border-radius:10px;color:#0a0a0a;font-family:'Montserrat',sans-serif;
+              font-size:12px;font-weight:900;letter-spacing:2px;cursor:pointer;
+              transition:all 0.25s;display:flex;align-items:center;
+              justify-content:center;gap:8px;" id="accSavePassBtn">
+              <i class="fas fa-key"></i> ŞİFREYİ GÜNCELLE
+            </button>
+          </div>
+
+          <!-- رسالة خطأ/نجاح -->
+          <div id="accMsg" style="display:none;margin-top:12px;padding:10px 14px;
+               border-radius:9px;font-size:11px;font-weight:700;letter-spacing:0.5px;
+               text-align:center;font-family:'Montserrat',sans-serif;"></div>
+        </div>
+      </div>`;
+
+    /* CSS تبويبات */
+    if (!document.getElementById('accTabStyle')) {
+      const s = document.createElement('style');
+      s.id = 'accTabStyle';
+      s.textContent = `
+        .acc-tab-btn {
+          flex:1;padding:9px;border-radius:8px;border:none;
+          background:transparent;color:rgba(255,255,255,0.3);
+          font-family:'Montserrat',sans-serif;font-size:11px;
+          font-weight:700;letter-spacing:1px;cursor:pointer;
+          transition:all 0.25s;display:flex;align-items:center;
+          justify-content:center;gap:6px;
+        }
+        .acc-tab-btn:hover { color:rgba(255,255,255,0.6); }
+        .acc-tab-active {
+          background:rgba(201,168,76,0.12) !important;
+          color:#c9a84c !important;
+          border:1px solid rgba(201,168,76,0.25) !important;
+        }
+      `;
+      document.head.appendChild(s);
+    }
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeAccountSettings();
+    });
+  }
+
+  /* تعبئة البيانات */
+  const d = _currentUserData;
+  const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v || ''; };
+  setVal('accCompany',  d.company_name);
+  setVal('accUsername', d.username);
+  setVal('accEmail',    d.email);
+  setVal('accPhone',    d.phone);
+
+  const dn = document.getElementById('accDisplayName');
+  const dc = document.getElementById('accDisplayCompany');
+  const de = document.getElementById('accDisplayEmail');
+  if (dn) dn.textContent = d.username;
+  if (dc) dc.textContent = d.company_name;
+  if (de) de.textContent = d.email;
+
+  switchAccTab('info');
+  hideAccMsg();
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeAccountSettings() {
+  const modal = document.getElementById('accountSettingsModal');
+  if (modal) modal.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function switchAccTab(tab) {
+  document.getElementById('accPanelInfo').style.display = tab === 'info' ? 'block' : 'none';
+  document.getElementById('accPanelPass').style.display = tab === 'pass' ? 'block' : 'none';
+  document.getElementById('accTabInfo').className =
+    'acc-tab-btn' + (tab === 'info' ? ' acc-tab-active' : '');
+  document.getElementById('accTabPass').className =
+    'acc-tab-btn' + (tab === 'pass' ? ' acc-tab-active' : '');
+  hideAccMsg();
+}
+
+function showAccMsg(msg, type = 'success') {
+  const el = document.getElementById('accMsg');
+  if (!el) return;
+  el.style.display    = 'block';
+  el.style.background = type === 'success'
+    ? 'rgba(74,222,128,0.1)'  : 'rgba(239,68,68,0.1)';
+  el.style.border     = type === 'success'
+    ? '1px solid rgba(74,222,128,0.3)' : '1px solid rgba(239,68,68,0.3)';
+  el.style.color      = type === 'success' ? '#4ade80' : '#ef4444';
+  el.innerHTML        = (type === 'success'
+    ? '<i class="fas fa-check-circle"></i> '
+    : '<i class="fas fa-exclamation-circle"></i> ') + msg;
+}
+function hideAccMsg() {
+  const el = document.getElementById('accMsg');
+  if (el) el.style.display = 'none';
+}
+
+/* ── حفظ معلومات الحساب ── */
+async function saveAccountInfo() {
+  if (!_currentUserData?.id) return;
+
+  const company  = document.getElementById('accCompany')?.value.trim();
+  const username = document.getElementById('accUsername')?.value.trim();
+  const email    = document.getElementById('accEmail')?.value.trim().toLowerCase();
+  const phone    = document.getElementById('accPhone')?.value.trim();
+
+  if (!company || !username || !email || !phone) {
+    showAccMsg('Tüm alanları doldurun!', 'error');
+    return;
+  }
+
+  const sb  = await initSupabase();
+  if (!sb) return;
+
+  const btn = document.getElementById('accSaveInfoBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...'; }
+
+  try {
+    /* التحقق من تكرار اسم المستخدم (إذا تغيّر) */
+    if (username !== _currentUserData.username) {
+      const { data: ex } = await sb.from('users')
+        .select('id').eq('username', username).maybeSingle();
+      if (ex) { showAccMsg('Bu kullanıcı adı zaten kullanılıyor!', 'error'); return; }
+    }
+
+    /* التحقق من تكرار البريد (إذا تغيّر) */
+    if (email !== _currentUserData.email) {
+      const { data: ex } = await sb.from('users')
+        .select('id').eq('email', email).maybeSingle();
+      if (ex) { showAccMsg('Bu e-posta zaten kayıtlı!', 'error'); return; }
+    }
+
+    const { error } = await sb.from('users').update({
+      company_name : company,
+      username     : username,
+      email        : email,
+      phone        : phone,
+    }).eq('id', _currentUserData.id);
+
+    if (error) { showAccMsg('Güncelleme hatası: ' + error.message, 'error'); return; }
+
+    /* تحديث الذاكرة المحلية */
+    _currentUserData.company_name = company;
+    _currentUserData.username     = username;
+    _currentUserData.email        = email;
+    _currentUserData.phone        = phone;
+    currentUser                   = username;
+
+    /* تحديث العرض */
+    const dn = document.getElementById('accDisplayName');
+    const dc = document.getElementById('accDisplayCompany');
+    const de = document.getElementById('accDisplayEmail');
+    if (dn) dn.textContent = username;
+    if (dc) dc.textContent = company;
+    if (de) de.textContent = email;
+
+    showAccMsg('Bilgiler başarıyla güncellendi ✓');
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> BİLGİLERİ KAYDET'; }
+  }
+}
+
+/* ── تغيير كلمة المرور ── */
+async function saveAccountPassword() {
+  if (!_currentUserData?.id) return;
+
+  const oldPass  = document.getElementById('accOldPass')?.value;
+  const newPass1 = document.getElementById('accNewPass1')?.value;
+  const newPass2 = document.getElementById('accNewPass2')?.value;
+
+  hideAccMsg();
+
+  if (!oldPass || !newPass1 || !newPass2) {
+    showAccMsg('Tüm şifre alanlarını doldurun!', 'error');
+    return;
+  }
+  if (newPass1.length < 6) {
+    showAccMsg('Yeni şifre en az 6 karakter olmalıdır!', 'error');
+    return;
+  }
+  if (newPass1 !== newPass2) {
+    showAccMsg('Yeni şifreler eşleşmiyor!', 'error');
+    return;
+  }
+
+  const sb  = await initSupabase();
+  if (!sb) return;
+
+  const btn = document.getElementById('accSavePassBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...'; }
+
+  try {
+    /* التحقق من كلمة المرور القديمة */
+    const oldHashed = await hashPassword(oldPass);
+    const { data: user } = await sb.from('users')
+      .select('password_hash').eq('id', _currentUserData.id).single();
+
+    if (!user || user.password_hash !== oldHashed) {
+      showAccMsg('Mevcut şifre hatalı!', 'error');
+      return;
+    }
+
+    const newHashed = await hashPassword(newPass1);
+    const { error } = await sb.from('users')
+      .update({ password_hash: newHashed })
+      .eq('id', _currentUserData.id);
+
+    if (error) { showAccMsg('Şifre güncellenemedi!', 'error'); return; }
+
+    /* مسح الحقول */
+    ['accOldPass','accNewPass1','accNewPass2'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+
+    showAccMsg('Şifre başarıyla güncellendi ✓');
+
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-key"></i> ŞİFREYİ GÜNCELLE'; }
+  }
+}
+
+/* ============================================================
+   ★ لوحة إدارة المستخدمين (WOW فقط) ★
+============================================================ */
+async function buildUsersAdminPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div>
+          <div class="section-banner-tag">✦ KULLANICI YÖNETİMİ</div>
+          <div class="section-banner-title">
+            KULLANICI <span class="accent">PANELİ</span>
+          </div>
+          <div class="section-banner-count" id="usersAdminCount">Yükleniyor...</div>
+          <div class="section-banner-line"></div>
+        </div>
+        <button onclick="loadUsersAdmin()" style="padding:10px 20px;border-radius:10px;
+          border:none;background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;font-size:11px;
+          font-weight:900;letter-spacing:2px;cursor:pointer;
+          display:flex;align-items:center;gap:8px;">
+          <i class="fas fa-sync-alt"></i> YENİLE
+        </button>
+      </div>
+
+      <!-- فلاتر -->
+      <div style="padding:12px 22px;background:var(--dark4);
+           border-bottom:1px solid rgba(255,255,255,0.04);
+           display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+        <span style="font-size:10px;letter-spacing:2px;
+              color:rgba(255,255,255,0.3);font-weight:600;">FİLTRE:</span>
+        <button class="admin-filter-btn active" onclick="filterUsersAdmin('all',this)">
+          Tümü
+        </button>
+        <button class="admin-filter-btn" onclick="filterUsersAdmin('online',this)"
+                style="--fc:#4ade80;--fb:rgba(74,222,128,0.1);--fbr:rgba(74,222,128,0.3);">
+          <i class="fas fa-circle" style="font-size:8px;"></i> Çevrimiçi
+        </button>
+        <button class="admin-filter-btn" onclick="filterUsersAdmin('blocked',this)"
+                style="--fc:#ef4444;--fb:rgba(239,68,68,0.1);--fbr:rgba(239,68,68,0.3);">
+          <i class="fas fa-ban"></i> Engellenenler
+        </button>
+      </div>
+
+      <div style="padding:18px 22px;" id="usersAdminList">
+        <div style="text-align:center;padding:40px;">
+          <i class="fas fa-spinner fa-spin"
+             style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
+        </div>
+      </div>
+    </div>`;
+
+  await loadUsersAdmin();
+}
+
+let _allUsers = [];
+let _usersFilter = 'all';
+
+async function loadUsersAdmin() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const listEl  = document.getElementById('usersAdminList');
+  const countEl = document.getElementById('usersAdminCount');
+
+  if (listEl) listEl.innerHTML = `
+    <div style="text-align:center;padding:40px;">
+      <i class="fas fa-spinner fa-spin"
+         style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
+    </div>`;
+
+  const { data, error } = await sb
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error || !data) return;
+
+  _allUsers = data;
+  if (countEl) countEl.textContent = data.length + ' kayıtlı kullanıcı';
+  renderUsersAdmin(_usersFilter);
+}
+
+function isUserOnline(user) {
+  if (!user.last_seen) return false;
+  const diff = Date.now() - new Date(user.last_seen).getTime();
+  return diff < 3 * 60 * 1000; /* آخر 3 دقائق = متصل */
+}
+
+function renderUsersAdmin(filter) {
+  const listEl = document.getElementById('usersAdminList');
+  if (!listEl) return;
+
+  let filtered = _allUsers;
+  if (filter === 'online')  filtered = _allUsers.filter(u => isUserOnline(u));
+  if (filter === 'blocked') filtered = _allUsers.filter(u => u.is_blocked);
+
+  if (!filtered.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);">
+        <i class="fas fa-users" style="font-size:36px;display:block;margin-bottom:14px;
+           color:rgba(201,168,76,0.15);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">Kullanıcı bulunamadı</p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(u => buildUserAdminCard(u)).join('');
+}
+
+function buildUserAdminCard(u) {
+  const online   = isUserOnline(u);
+  const dotCls   = u.is_blocked ? 'blocked' : (online ? 'online' : 'offline');
+  const dotLabel = u.is_blocked ? 'Engellendi' : (online ? 'Çevrimiçi' : 'Çevrimdışı');
+
+  const lastSeen = u.last_seen
+    ? new Date(u.last_seen).toLocaleString('tr-TR')
+    : 'Hiç giriş yapmadı';
+  const lastLogin = u.last_login
+    ? new Date(u.last_login).toLocaleString('tr-TR')
+    : '—';
+  const createdAt = new Date(u.created_at).toLocaleDateString('tr-TR');
+
+  return `
+    <div class="user-admin-card" id="ucard-${u.id}">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+           flex-wrap:wrap;gap:10px;">
+
+        <!-- يسار: معلومات المستخدم -->
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="position:relative;flex-shrink:0;">
+            <div style="width:48px;height:48px;border-radius:50%;
+                 background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+                 border:1.5px solid rgba(201,168,76,0.25);
+                 display:flex;align-items:center;justify-content:center;
+                 font-size:18px;color:#c9a84c;">
+              <i class="fas fa-user"></i>
+            </div>
+            <div class="user-status-dot ${dotCls}" style="
+              position:absolute;bottom:1px;right:1px;
+              width:11px;height:11px;border-radius:50%;
+              border:2px solid #111;"></div>
+          </div>
+          <div>
+            <div style="font-size:14px;font-weight:900;color:#fff;
+                 display:flex;align-items:center;gap:8px;">
+              ${u.username}
+              <span style="font-size:9px;font-weight:700;padding:2px 8px;
+                    border-radius:50px;letter-spacing:1px;
+                    background:${u.is_blocked ? 'rgba(239,68,68,0.12)' : online ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)'};
+                    border:1px solid ${u.is_blocked ? 'rgba(239,68,68,0.3)' : online ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.08)'};
+                    color:${u.is_blocked ? '#ef4444' : online ? '#4ade80' : 'rgba(255,255,255,0.3)'};">
+                ${dotLabel}
+              </span>
+            </div>
+            <div style="font-size:11px;color:rgba(201,168,76,0.6);
+                 letter-spacing:1px;margin-top:2px;">${u.company_name}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px;">
+              ${u.email} &nbsp;·&nbsp; ${u.phone}
+            </div>
+          </div>
+        </div>
+
+        <!-- يمين: أزرار الإجراءات -->
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <!-- زر الحظر/رفع الحظر -->
+          <button onclick="toggleUserBlock(${u.id}, ${u.is_blocked})"
+                  style="padding:8px 14px;border-radius:9px;
+                  background:${u.is_blocked ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'};
+                  border:1px solid ${u.is_blocked ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'};
+                  color:${u.is_blocked ? '#4ade80' : '#ef4444'};
+                  font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;
+                  letter-spacing:1px;cursor:pointer;transition:all 0.25s;
+                  display:flex;align-items:center;gap:6px;">
+            <i class="fas ${u.is_blocked ? 'fa-unlock' : 'fa-ban'}"></i>
+            ${u.is_blocked ? 'Engeli Kaldır' : 'Engelle'}
+          </button>
+
+          <!-- زر عرض التفاصيل -->
+          <button onclick="toggleUserDetails(${u.id})"
+                  style="padding:8px 14px;border-radius:9px;
+                  background:rgba(201,168,76,0.08);
+                  border:1px solid rgba(201,168,76,0.2);
+                  color:#c9a84c;font-family:'Montserrat',sans-serif;
+                  font-size:10px;font-weight:700;letter-spacing:1px;
+                  cursor:pointer;transition:all 0.25s;
+                  display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-info-circle"></i> Detaylar
+          </button>
+        </div>
+      </div>
+
+      <!-- تفاصيل قابلة للطي -->
+      <div id="udetails-${u.id}" style="display:none;margin-top:14px;
+           padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+             gap:8px;">
+          ${buildUserDetailItem('fa-calendar-plus', 'Kayıt Tarihi', createdAt)}
+          ${buildUserDetailItem('fa-sign-in-alt',   'Son Giriş',    lastLogin)}
+          ${buildUserDetailItem('fa-clock',         'Son Görülme',  lastSeen)}
+          ${buildUserDetailItem('fa-toggle-on',     'Durum',
+            u.is_active ? '<span style="color:#4ade80;">Aktif</span>'
+                        : '<span style="color:#ef4444;">Pasif</span>')}
+        </div>
+
+        <!-- سجل الجلسات -->
+        <div style="margin-top:12px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.2);
+               font-weight:700;text-transform:uppercase;margin-bottom:8px;">
+            <i class="fas fa-history" style="color:rgba(201,168,76,0.4);
+               margin-right:5px;"></i> SON OTURUMLAR
+          </div>
+          <div id="usessions-${u.id}" style="font-size:11px;
+               color:rgba(255,255,255,0.3);">
+            <i class="fas fa-spinner fa-spin"></i> Yükleniyor...
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function buildUserDetailItem(icon, label, value) {
+  return `
+    <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);
+         border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:10px;">
+      <div style="width:30px;height:30px;flex-shrink:0;
+           background:rgba(201,168,76,0.08);border:1px solid rgba(201,168,76,0.15);
+           border-radius:8px;display:flex;align-items:center;justify-content:center;
+           color:#c9a84c;font-size:12px;">
+        <i class="fas ${icon}"></i>
+      </div>
+      <div>
+        <div style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.25);
+             text-transform:uppercase;margin-bottom:2px;">${label}</div>
+        <div style="font-size:11px;font-weight:700;color:#fff;">${value}</div>
+      </div>
+    </div>`;
+}
+
+async function toggleUserDetails(userId) {
+  const el = document.getElementById('udetails-' + userId);
+  if (!el) return;
+
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    /* تحميل الجلسات */
+    const sb = await initSupabase();
+    if (sb) {
+      const { data } = await sb
+        .from('user_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('login_at', { ascending: false })
+        .limit(5);
+
+      const sessEl = document.getElementById('usessions-' + userId);
+      if (sessEl) {
+        if (!data || !data.length) {
+          sessEl.innerHTML = '<span style="color:rgba(255,255,255,0.2);">Oturum kaydı yok</span>';
+        } else {
+          sessEl.innerHTML = data.map(s => `
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                 padding:6px 10px;background:rgba(255,255,255,0.02);
+                 border-radius:7px;margin-bottom:5px;flex-wrap:wrap;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:7px;height:7px;border-radius:50%;flex-shrink:0;
+                     background:${s.is_active ? '#4ade80' : '#6b7280'};"></div>
+                <span style="font-size:10px;color:rgba(255,255,255,0.5);">
+                  ${new Date(s.login_at).toLocaleString('tr-TR')}
+                </span>
+              </div>
+              <span style="font-size:9px;color:rgba(255,255,255,0.2);
+                    max-width:200px;overflow:hidden;text-overflow:ellipsis;
+                    white-space:nowrap;">
+                ${(s.device_info || '').substring(0, 60)}
+              </span>
+            </div>`).join('');
+        }
+      }
+    }
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+async function toggleUserBlock(userId, isCurrentlyBlocked) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const newBlocked = !isCurrentlyBlocked;
+  const { error } = await sb.from('users')
+    .update({ is_blocked: newBlocked })
+    .eq('id', userId);
+
+  if (error) {
+    showInvToast('Güncelleme hatası: ' + error.message, 'error');
+    return;
+  }
+
+  /* تحديث محلي */
+  const idx = _allUsers.findIndex(u => u.id === userId);
+  if (idx !== -1) _allUsers[idx].is_blocked = newBlocked;
+
+  /* إعادة رسم البطاقة */
+  const card = document.getElementById('ucard-' + userId);
+  if (card) card.outerHTML = buildUserAdminCard(_allUsers[idx]);
+
+  showInvToast(
+    newBlocked ? 'Kullanıcı engellendi ✓' : 'Engel kaldırıldı ✓',
+    newBlocked ? 'error' : 'success'
+  );
+}
+
+function filterUsersAdmin(filter, btn) {
+  _usersFilter = filter;
+  document.querySelectorAll('.admin-filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderUsersAdmin(filter);
+}
+
+/* ============================================================
+   ★ تعديل doLogout لإغلاق الجلسة ★
+============================================================ */
+const _origDoLogout_auth = doLogout;
+doLogout = async function() {
+  /* إغلاق الجلسة في Supabase */
+  if (_currentSessionId) {
+    const sb = await initSupabase();
+    if (sb) {
+      await sb.from('user_sessions').update({
+        logout_at : new Date().toISOString(),
+        is_active : false,
+      }).eq('id', _currentSessionId);
+    }
+    _currentSessionId = null;
+  }
+
+  clearInterval(_heartbeatTimer);
+  _currentUserData = null;
+  _origDoLogout_auth();
+};
+
+/* ============================================================
+   ★ تعديل showPage لدعم صفحة المستخدمين ★
+============================================================ */
+const _origShowPage_auth = showPage;
+showPage = function(cat) {
+  if (cat === 'users') {
+    if (currentUser !== ADMIN_USER) return;
+    currentPage = 'users';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    filteredImages = [];
+    buildUsersAdminPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'users' });
+    return;
+  }
+  _origShowPage_auth(cat);
+};
+
+/* ============================================================
+   ★ إضافة أزرار الحساب في الهيدر ★
+============================================================ */
+(function addAuthButtons() {
+  setTimeout(() => {
+
+    /* ── زر إعدادات الحساب في الهيدر (ديسكتوب) ── */
+    const navTools = document.querySelector('.nav-tools');
+    if (navTools && !document.getElementById('accSettingsBtn')) {
+      const btn = document.createElement('button');
+      btn.id        = 'accSettingsBtn';
+      btn.className = 'nav-icon-btn';
+      btn.setAttribute('data-tip', 'Hesap Ayarları');
+      btn.innerHTML = '<i class="fas fa-user-cog"></i>';
+      btn.onclick   = openAccountSettings;
+
+      /* أضفه قبل زر الخروج */
+      const logoutBtn = document.querySelector('.logout-btn');
+      if (logoutBtn) navTools.insertBefore(btn, logoutBtn);
+      else navTools.appendChild(btn);
+    }
+
+    /* ── زر إدارة المستخدمين (WOW فقط) في الهيدر ── */
+    const navCapsule = document.querySelector('.nav-capsule');
+    if (navCapsule && !document.getElementById('nav-users')) {
+      const link = document.createElement('a');
+      link.id        = 'nav-users';
+      link.className = 'nav-link';
+      link.href      = '#';
+      link.style.display = 'none';
+      link.innerHTML = '<i class="fas fa-users"></i> KULLANICILAR';
+      link.onclick   = (e) => { e.preventDefault(); showPage('users'); };
+      navCapsule.appendChild(link);
+    }
+
+    /* ── زر في القائمة الجانبية ── */
+    const mobMenu = document.querySelector('.mobile-menu-inner');
+    if (mobMenu && !document.getElementById('mob-users')) {
+      const mobLink = document.createElement('a');
+      mobLink.id        = 'mob-users';
+      mobLink.href      = '#';
+      mobLink.style.display = 'none';
+      mobLink.innerHTML = '<i class="fas fa-users"></i> KULLANICILAR';
+      mobLink.onclick   = (e) => {
+        e.preventDefault();
+        showPage('users');
+        closeMobileMenu();
+      };
+      /* أضفه بعد رابط PANEL */
+      const adminLink = document.getElementById('mob-admin');
+      if (adminLink) adminLink.after(mobLink);
+      else mobMenu.appendChild(mobLink);
+    }
+
+  }, 600);
+})();
+
+/* ============================================================
+   ★ تعديل updateAdminNavVisibility لإظهار زر المستخدمين ★
+============================================================ */
+const _origUpdateAdminNav = updateAdminNavVisibility;
+updateAdminNavVisibility = function() {
+  _origUpdateAdminNav();
+  const isAdmin = currentUser === ADMIN_USER;
+
+  /* إظهار/إخفاء روابط المستخدمين */
+  ['nav-users', 'mob-users'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? '' : 'none';
+  });
+
+  /* إظهار زر إعدادات الحساب للجميع (ليس WOW) */
+  const accBtn = document.getElementById('accSettingsBtn');
+  if (accBtn) {
+    /* WOW لا يحتاج إعدادات حساب لأنه مدمج */
+    accBtn.style.display = isAdmin ? 'none' : 'flex';
+  }
+};
+
+/* ============================================================
+   ★ إضافة زر إعدادات الحساب في القائمة الجانبية للموبايل ★
+============================================================ */
+(function addMobAccSettings() {
+  setTimeout(() => {
+    const mobMenu = document.querySelector('.mobile-menu-inner');
+    if (mobMenu && !document.getElementById('mobAccSettingsBtn')) {
+      const btn = document.createElement('button');
+      btn.id        = 'mobAccSettingsBtn';
+      btn.className = 'mob-home-btn';
+      btn.style.display = 'none';
+      btn.innerHTML = '<i class="fas fa-user-cog"></i> HESAP AYARLARI';
+      btn.onclick   = () => { openAccountSettings(); closeMobileMenu(); };
+
+      /* أضفه قبل زر الخروج */
+      const logoutBtn = document.querySelector('.mob-logout');
+      if (logoutBtn) logoutBtn.before(btn);
+      else mobMenu.appendChild(btn);
+    }
+  }, 700);
+})();
+
+/* ── تحديث إظهار زر الموبايل ── */
+const _origEnterSection_auth = enterSection;
+enterSection = function(cat) {
+  setTimeout(() => {
+    const isAdmin = currentUser === ADMIN_USER;
+    const mobAccBtn = document.getElementById('mobAccSettingsBtn');
+    if (mobAccBtn) mobAccBtn.style.display = isAdmin ? 'none' : 'flex';
+  }, 300);
+  _origEnterSection_auth(cat);
+};
+
+/* ============================================================
+   ★ فحص الحظر في الوقت الفعلي (Realtime) ★
+============================================================ */
+async function subscribeUserStatus() {
+  if (!_currentUserData?.id) return;
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  sb.channel('user-status-' + _currentUserData.id)
+    .on('postgres_changes', {
+      event  : 'UPDATE',
+      schema : 'public',
+      table  : 'users',
+      filter : `id=eq.${_currentUserData.id}`,
+    }, payload => {
+      const updated = payload.new;
+      if (!updated) return;
+
+      /* إذا تم حظر المستخدم أثناء تسجيل الدخول */
+      if (updated.is_blocked && !_currentUserData.is_blocked) {
+        _currentUserData.is_blocked = true;
+        showBlockedAlert();
+      }
+    })
+    .subscribe();
+}
+
+function showBlockedAlert() {
+  let modal = document.getElementById('blockedModal');
+  if (modal) return;
+
+  modal = document.createElement('div');
+  modal.id = 'blockedModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.95);backdrop-filter:blur(20px);
+    padding:16px;`;
+
+  modal.innerHTML = `
+    <div style="width:100%;max-width:380px;
+         background:linear-gradient(145deg,#0f0f0f,#1a0808);
+         border:1px solid rgba(239,68,68,0.4);border-radius:22px;
+         overflow:hidden;text-align:center;padding:40px 30px;
+         box-shadow:0 40px 80px rgba(0,0,0,0.9);">
+      <div style="width:70px;height:70px;border-radius:50%;
+           background:rgba(239,68,68,0.12);
+           border:2px solid rgba(239,68,68,0.3);
+           display:flex;align-items:center;justify-content:center;
+           margin:0 auto 20px;font-size:28px;color:#ef4444;">
+        <i class="fas fa-ban"></i>
+      </div>
+      <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:10px;">
+        Hesabınız Engellendi
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.35);
+           line-height:1.7;margin-bottom:24px;">
+        Hesabınız yönetici tarafından engellendi.<br/>
+        Daha fazla bilgi için yönetici ile iletişime geçin.
+      </div>
+      <button onclick="forceLogout()" style="
+        width:100%;padding:13px;border-radius:12px;border:none;
+        background:linear-gradient(135deg,#ef4444,#dc2626);
+        color:#fff;font-family:'Montserrat',sans-serif;
+        font-size:12px;font-weight:900;letter-spacing:2px;cursor:pointer;">
+        <i class="fas fa-sign-out-alt"></i> ÇIKIŞ YAP
+      </button>
+    </div>`;
+
+  document.body.appendChild(modal);
+}
+
+async function forceLogout() {
+  document.getElementById('blockedModal')?.remove();
+  await doLogout();
+}
+
+/* ── تشغيل الاشتراك بعد تسجيل الدخول ── */
+const _origFinishLogin = finishLogin;
+finishLogin = function() {
+  _origFinishLogin();
+  setTimeout(() => {
+    subscribeUserStatus();
+    updateAdminNavVisibility();
+  }, 1000);
+};
 
 
 
