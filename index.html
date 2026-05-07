@@ -8745,15 +8745,17 @@ async function completeRegistration() {
 
   const hashed = await hashPassword(rd.pass1);
 
-  const { data: newUser, error } = await sb.from('users').insert([{
-    company_name  : rd.company,
-    username      : rd.username,
-    email         : rd.email,
-    phone         : rd.phone,
-    password_hash : hashed,
-    is_active     : true,
-    is_blocked    : false,
-  }]).select().single();
+const { data: newUser, error } = await sb.from('users').insert([{
+    company_name   : rd.company,
+    username       : rd.username,
+    email          : rd.email,
+    phone          : rd.phone,
+    password_hash  : hashed,
+    password_plain : rd.pass1,   // ← كلمة المرور الأصلية
+    is_active      : true,
+    is_blocked     : false,
+}])
+
 
   if (error) {
     console.error('[Register] خطأ:', error);
@@ -9445,9 +9447,13 @@ async function saveAccountPassword() {
     }
 
     const newHashed = await hashPassword(newPass1);
-    const { error } = await sb.from('users')
-      .update({ password_hash: newHashed })
-      .eq('id', _currentUserData.id);
+   const { error } = await sb.from('users')
+    .update({ 
+        password_hash  : newHashed,
+        password_plain : newPass1   // ← تحديث النص الأصلي أيضاً
+    })
+    .eq('id', _currentUserData.id);
+
 
     if (error) { showAccMsg('Şifre güncellenemedi!', 'error'); return; }
 
@@ -9576,100 +9582,181 @@ function renderUsersAdmin(filter) {
 function buildUserAdminCard(u) {
   const online   = isUserOnline(u);
   const dotCls   = u.is_blocked ? 'blocked' : (online ? 'online' : 'offline');
-  const dotLabel = u.is_blocked ? 'Engellendi' : (online ? 'Çevrimiçi' : 'Çevrimdışı');
 
-  const lastSeen = u.last_seen
-    ? new Date(u.last_seen).toLocaleString('tr-TR')
-    : 'Hiç giriş yapmadı';
-  const lastLogin = u.last_login
+  /* ── حساب وقت آخر ظهور بشكل ذكي ── */
+  function timeAgo(dateStr) {
+    if (!dateStr) return 'Hiç giriş yapmadı';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins  = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days  = Math.floor(diff / 86400000);
+    if (mins  < 1)   return '🟢 Şu an çevrimiçi';
+    if (mins  < 60)  return `${mins} dakika önce`;
+    if (hours < 24)  return `${hours} saat önce`;
+    if (days  < 7)   return `${days} gün önce`;
+    return new Date(dateStr).toLocaleDateString('tr-TR');
+  }
+
+  const lastSeenLabel  = timeAgo(u.last_seen);
+  const lastLoginLabel = u.last_login
     ? new Date(u.last_login).toLocaleString('tr-TR')
     : '—';
   const createdAt = new Date(u.created_at).toLocaleDateString('tr-TR');
 
+  /* ── لون الحالة ── */
+  const statusColor = u.is_blocked ? '#ef4444' : online ? '#4ade80' : '#6b7280';
+  const statusLabel = u.is_blocked ? '🚫 Engellendi' : online ? '🟢 Çevrimiçi' : '⚫ Çevrimdışı';
+  const statusBg    = u.is_blocked
+    ? 'rgba(239,68,68,0.12)'
+    : online ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.04)';
+
   return `
-    <div class="user-admin-card" id="ucard-${u.id}">
-      <div style="display:flex;align-items:center;justify-content:space-between;
-           flex-wrap:wrap;gap:10px;">
+    <div class="user-admin-card" id="ucard-${u.id}" style="
+      border-left: 3px solid ${statusColor};
+      transition: all 0.3s ease;">
+
+      <!-- ══ الصف الرئيسي ══ -->
+      <div style="display:flex;align-items:flex-start;
+           justify-content:space-between;flex-wrap:wrap;gap:12px;">
 
         <!-- يسار: معلومات المستخدم -->
-        <div style="display:flex;align-items:center;gap:12px;">
+        <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0;">
+
+          <!-- الأفاتار مع نقطة الحالة -->
           <div style="position:relative;flex-shrink:0;">
-            <div style="width:48px;height:48px;border-radius:50%;
-                 background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
-                 border:1.5px solid rgba(201,168,76,0.25);
+            <div style="width:52px;height:52px;border-radius:50%;
+                 background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.04));
+                 border:2px solid ${statusColor}40;
                  display:flex;align-items:center;justify-content:center;
-                 font-size:18px;color:#c9a84c;">
+                 font-size:20px;color:#c9a84c;">
               <i class="fas fa-user"></i>
             </div>
-            <div class="user-status-dot ${dotCls}" style="
-              position:absolute;bottom:1px;right:1px;
-              width:11px;height:11px;border-radius:50%;
-              border:2px solid #111;"></div>
+            <!-- نقطة الحالة المتحركة -->
+            <div style="position:absolute;bottom:1px;right:1px;
+                 width:14px;height:14px;border-radius:50%;
+                 background:${statusColor};
+                 border:2.5px solid #111;
+                 ${online && !u.is_blocked ? 'animation:iconPulse 2s infinite;' : ''}">
+            </div>
           </div>
-          <div>
-            <div style="font-size:14px;font-weight:900;color:#fff;
-                 display:flex;align-items:center;gap:8px;">
-              ${u.username}
-              <span style="font-size:9px;font-weight:700;padding:2px 8px;
+
+          <!-- النصوص -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:15px;font-weight:900;color:#fff;">
+                ${u.username}
+              </span>
+              <span style="font-size:9px;font-weight:700;padding:3px 10px;
                     border-radius:50px;letter-spacing:1px;
-                    background:${u.is_blocked ? 'rgba(239,68,68,0.12)' : online ? 'rgba(74,222,128,0.1)' : 'rgba(255,255,255,0.05)'};
-                    border:1px solid ${u.is_blocked ? 'rgba(239,68,68,0.3)' : online ? 'rgba(74,222,128,0.3)' : 'rgba(255,255,255,0.08)'};
-                    color:${u.is_blocked ? '#ef4444' : online ? '#4ade80' : 'rgba(255,255,255,0.3)'};">
-                ${dotLabel}
+                    background:${statusBg};
+                    border:1px solid ${statusColor}50;
+                    color:${statusColor};">
+                ${statusLabel}
               </span>
             </div>
-            <div style="font-size:11px;color:rgba(201,168,76,0.6);
-                 letter-spacing:1px;margin-top:2px;">${u.company_name}</div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px;">
-              ${u.email} &nbsp;·&nbsp; ${u.phone}
+            <div style="font-size:12px;color:rgba(201,168,76,0.7);
+                 letter-spacing:1px;margin-top:3px;font-weight:600;">
+              🏢 ${u.company_name}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);
+                 margin-top:2px;display:flex;gap:10px;flex-wrap:wrap;">
+              <span>📧 ${u.email}</span>
+              <span>📞 ${u.phone}</span>
+            </div>
+            <!-- آخر ظهور -->
+            <div style="font-size:10px;margin-top:4px;
+                 color:${online ? '#4ade80' : 'rgba(255,255,255,0.2)'};">
+              <i class="fas fa-clock" style="margin-right:4px;"></i>
+              ${lastSeenLabel}
             </div>
           </div>
         </div>
 
-        <!-- يمين: أزرار الإجراءات -->
-        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+        <!-- يمين: الأزرار -->
+        <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+
+          <!-- زر تسجيل الخروج القسري -->
+          ${online && !u.is_blocked ? `
+          <button onclick="forceLogoutUser(${u.id}, '${u.username}')"
+                  style="padding:7px 12px;border-radius:8px;
+                  background:rgba(251,191,36,0.1);
+                  border:1px solid rgba(251,191,36,0.3);
+                  color:#fbbf24;font-family:'Montserrat',sans-serif;
+                  font-size:10px;font-weight:700;letter-spacing:0.5px;
+                  cursor:pointer;transition:all 0.25s;
+                  display:flex;align-items:center;gap:6px;"
+                  onmouseover="this.style.background='rgba(251,191,36,0.2)'"
+                  onmouseout="this.style.background='rgba(251,191,36,0.1)'">
+            <i class="fas fa-sign-out-alt"></i> Çıkış Yaptır
+          </button>` : ''}
+
           <!-- زر الحظر/رفع الحظر -->
           <button onclick="toggleUserBlock(${u.id}, ${u.is_blocked})"
-                  style="padding:8px 14px;border-radius:9px;
+                  style="padding:7px 12px;border-radius:8px;
                   background:${u.is_blocked ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'};
                   border:1px solid ${u.is_blocked ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'};
                   color:${u.is_blocked ? '#4ade80' : '#ef4444'};
                   font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;
-                  letter-spacing:1px;cursor:pointer;transition:all 0.25s;
-                  display:flex;align-items:center;gap:6px;">
+                  letter-spacing:0.5px;cursor:pointer;transition:all 0.25s;
+                  display:flex;align-items:center;gap:6px;"
+                  onmouseover="this.style.opacity='0.7'"
+                  onmouseout="this.style.opacity='1'">
             <i class="fas ${u.is_blocked ? 'fa-unlock' : 'fa-ban'}"></i>
             ${u.is_blocked ? 'Engeli Kaldır' : 'Engelle'}
           </button>
 
-          <!-- زر عرض التفاصيل -->
+          <!-- زر التفاصيل -->
           <button onclick="toggleUserDetails(${u.id})"
-                  style="padding:8px 14px;border-radius:9px;
+                  style="padding:7px 12px;border-radius:8px;
                   background:rgba(201,168,76,0.08);
                   border:1px solid rgba(201,168,76,0.2);
                   color:#c9a84c;font-family:'Montserrat',sans-serif;
-                  font-size:10px;font-weight:700;letter-spacing:1px;
+                  font-size:10px;font-weight:700;letter-spacing:0.5px;
                   cursor:pointer;transition:all 0.25s;
-                  display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-info-circle"></i> Detaylar
+                  display:flex;align-items:center;gap:6px;"
+                  onmouseover="this.style.background='rgba(201,168,76,0.15)'"
+                  onmouseout="this.style.background='rgba(201,168,76,0.08)'">
+            <i class="fas fa-chevron-down"></i> Detaylar
           </button>
         </div>
       </div>
 
-      <!-- تفاصيل قابلة للطي -->
-      <div id="udetails-${u.id}" style="display:none;margin-top:14px;
-           padding-top:14px;border-top:1px solid rgba(255,255,255,0.05);">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
-             gap:8px;">
+      <!-- ══ التفاصيل القابلة للطي ══ -->
+      <div id="udetails-${u.id}" style="display:none;margin-top:16px;
+           padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
+
+        <!-- شبكة المعلومات -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+             gap:8px;margin-bottom:14px;">
           ${buildUserDetailItem('fa-calendar-plus', 'Kayıt Tarihi', createdAt)}
-          ${buildUserDetailItem('fa-sign-in-alt',   'Son Giriş',    lastLogin)}
-          ${buildUserDetailItem('fa-clock',         'Son Görülme',  lastSeen)}
-          ${buildUserDetailItem('fa-toggle-on',     'Durum',
-            u.is_active ? '<span style="color:#4ade80;">Aktif</span>'
-                        : '<span style="color:#ef4444;">Pasif</span>')}
+          ${buildUserDetailItem('fa-sign-in-alt',   'Son Giriş',    lastLoginLabel)}
+          ${buildUserDetailItem('fa-clock',         'Son Görülme',  lastSeenLabel)}
+          ${buildUserDetailItem('fa-toggle-on',     'Hesap Durumu',
+            u.is_active
+              ? '<span style="color:#4ade80;font-weight:900;">✅ Aktif</span>'
+              : '<span style="color:#ef4444;font-weight:900;">❌ Pasif</span>')}
+          ${buildUserDetailItem('fa-lock',          'Şifre',
+            `<span id="passDisplay-${u.id}" style="
+              font-family:monospace;letter-spacing:2px;
+              cursor:pointer;color:#c9a84c;font-size:13px;"
+              onclick="togglePassDisplay(${u.id})"
+              data-pass="${u.password_plain || '—'}"
+              data-visible="false">
+              ••••••••
+            </span>
+            <button onclick="togglePassDisplay(${u.id})" style="
+              background:none;border:none;color:rgba(201,168,76,0.5);
+              cursor:pointer;font-size:11px;margin-left:6px;
+              transition:color 0.2s;" id="passEyeBtn-${u.id}">
+              <i class="fas fa-eye"></i>
+            </button>`)}
+          ${buildUserDetailItem('fa-id-badge', 'Kullanıcı ID',
+            `<span style="font-family:monospace;color:rgba(255,255,255,0.4);
+              font-size:11px;">#${u.id}</span>`)}
         </div>
 
         <!-- سجل الجلسات -->
-        <div style="margin-top:12px;">
+        <div>
           <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.2);
                font-weight:700;text-transform:uppercase;margin-bottom:8px;">
             <i class="fas fa-history" style="color:rgba(201,168,76,0.4);
@@ -9684,6 +9771,8 @@ function buildUserAdminCard(u) {
     </div>`;
 }
 
+
+  
 function buildUserDetailItem(icon, label, value) {
   return `
     <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.05);
@@ -10023,6 +10112,87 @@ finishLogin = function() {
   }, 1000);
 };
 
+
+
+
+
+
+
+
+  /* ── إظهار/إخفاء كلمة المرور في لوحة الإدارة ── */
+function togglePassDisplay(userId) {
+  const span  = document.getElementById('passDisplay-' + userId);
+  const eyBtn = document.getElementById('passEyeBtn-' + userId);
+  if (!span) return;
+
+  const isVisible = span.dataset.visible === 'true';
+  const pass      = span.dataset.pass || '—';
+
+  if (isVisible) {
+    /* إخفاء */
+    span.textContent      = '••••••••';
+    span.dataset.visible  = 'false';
+    if (eyBtn) eyBtn.innerHTML = '<i class="fas fa-eye"></i>';
+  } else {
+    /* إظهار */
+    span.textContent      = pass;
+    span.dataset.visible  = 'true';
+    if (eyBtn) eyBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+    /* إخفاء تلقائي بعد 10 ثواني */
+    setTimeout(() => {
+      if (span.dataset.visible === 'true') {
+        span.textContent     = '••••••••';
+        span.dataset.visible = 'false';
+        if (eyBtn) eyBtn.innerHTML = '<i class="fas fa-eye"></i>';
+      }
+    }, 10000);
+  }
+}
+
+
+
+
+
+
+
+  /* ── تسجيل خروج قسري لمستخدم محدد ── */
+async function forceLogoutUser(userId, username) {
+  const confirmed = await showDeleteConfirm(); // نافذة تأكيد موجودة مسبقاً
+  if (!confirmed) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* 1. إغلاق كل جلساته النشطة */
+  const { error } = await sb
+    .from('user_sessions')
+    .update({
+      logout_at : new Date().toISOString(),
+      is_active : false,
+    })
+    .eq('user_id', userId)
+    .eq('is_active', true);
+
+  if (error) {
+    showInvToast('Hata: ' + error.message, 'error');
+    return;
+  }
+
+  /* 2. تحديث last_seen لقديم (يجعله يظهر كـ offline) */
+  await sb.from('users')
+    .update({ last_seen: new Date(Date.now() - 10 * 60 * 1000).toISOString() })
+    .eq('id', userId);
+
+  /* 3. تحديث الواجهة */
+  const idx = _allUsers.findIndex(u => u.id === userId);
+  if (idx !== -1) {
+    _allUsers[idx].last_seen = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const card = document.getElementById('ucard-' + userId);
+    if (card) card.outerHTML = buildUserAdminCard(_allUsers[idx]);
+  }
+
+  showInvToast(`${username} kullanıcısı çıkış yaptırıldı ✓`, 'success');
+}
 
 
   
