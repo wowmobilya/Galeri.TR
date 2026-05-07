@@ -11052,6 +11052,750 @@ function showDeleteUserConfirm(username) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ نظام الإشعارات الكامل — WOW + المستخدم العادي ★
+============================================================ */
+
+let _notifAudio      = null;
+let _notifPermission = Notification?.permission || 'default';
+let _orderSubChannel = null;
+let _myOrderChannel  = null;
+let _lastOrderIds    = new Set();
+
+/* ============================================================
+   أدوات أساسية
+============================================================ */
+
+/* ── تهيئة الصوت ── */
+function initNotifSound() {
+  if (_notifAudio) return;
+  _notifAudio        = new Audio();
+  _notifAudio.volume = 0.6;
+  _notifAudio.preload = 'auto';
+}
+
+/* ── طلب إذن الإشعارات ── */
+async function requestNotifPermission() {
+  if (!('Notification' in window)) return 'denied';
+  if (Notification.permission === 'granted') {
+    _notifPermission = 'granted';
+    return 'granted';
+  }
+  if (Notification.permission === 'denied') {
+    _notifPermission = 'denied';
+    return 'denied';
+  }
+  const result     = await Notification.requestPermission();
+  _notifPermission = result;
+  return result;
+}
+
+/* ── صوت حسب الحالة (Web Audio API) ── */
+function playStatusSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const play = (freq, start, dur, wave = 'sine', vol = 0.35) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type            = wave;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, ctx.currentTime + start);
+      gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + start + 0.02);
+      gain.gain.linearRampToValueAtTime(0,   ctx.currentTime + start + dur);
+      osc.start(ctx.currentTime + start);
+      osc.stop(ctx.currentTime  + start + dur + 0.05);
+    };
+
+    if (type === 'new_order') {
+      /* WOW — طلب جديد: 3 نبضات تصاعدية */
+      play(523, 0.0, 0.15);
+      play(659, 0.2, 0.15);
+      play(784, 0.4, 0.25);
+
+    } else if (type === 'ready') {
+      /* المستخدم — جاهز للتسليم: نغمة احتفالية */
+      play(523,  0.0,  0.15);
+      play(659,  0.18, 0.15);
+      play(784,  0.36, 0.15);
+      play(1047, 0.54, 0.3, 'sine', 0.4);
+
+    } else if (type === 'cancelled') {
+      /* المستخدم — ملغي: نغمة تنازلية */
+      play(523, 0.0,  0.2, 'sawtooth', 0.25);
+      play(415, 0.22, 0.2, 'sawtooth', 0.2);
+      play(330, 0.44, 0.3, 'sawtooth', 0.15);
+
+    } else {
+      /* باقي الحالات: نبضتان */
+      play(523, 0.0, 0.15);
+      play(659, 0.2, 0.15);
+    }
+  } catch(e) {}
+}
+
+/* ============================================================
+   ★ CSS الإشعارات — يُضاف مرة واحدة ★
+============================================================ */
+(function injectNotifCSS() {
+  if (document.getElementById('notifCSS')) return;
+  const s = document.createElement('style');
+  s.id = 'notifCSS';
+  s.textContent = `
+    @keyframes notifSlideIn {
+      from { opacity:0; transform:translateX(120%) scale(0.9); }
+      to   { opacity:1; transform:translateX(0)   scale(1);   }
+    }
+    @keyframes notifSlideOut {
+      from { opacity:1; transform:translateX(0)   scale(1);   }
+      to   { opacity:0; transform:translateX(120%) scale(0.9); }
+    }
+    @keyframes notifProgress {
+      from { width:100%; }
+      to   { width:0%;   }
+    }
+    @keyframes notifRing {
+      0%,100% { box-shadow:0 0 0 0   rgba(201,168,76,0.5); }
+      50%     { box-shadow:0 0 0 12px rgba(201,168,76,0);   }
+    }
+    .notif-toast {
+      position:fixed;
+      top:80px;
+      right:20px;
+      z-index:99998;
+      width:min(360px, calc(100vw - 40px));
+      background:linear-gradient(145deg,#0f0f0f,#161616);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 20px 60px rgba(0,0,0,0.8);
+      animation:notifSlideIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      font-family:'Montserrat',sans-serif;
+      cursor:pointer;
+    }
+    .notif-toast.hide {
+      animation:notifSlideOut 0.4s ease forwards;
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
+/* ============================================================
+   ★ WOW — Toast طلب جديد ★
+============================================================ */
+function showNewOrderToast(username, orderNum, itemCount) {
+  document.getElementById('newOrderToast')?.remove();
+
+  const t = document.createElement('div');
+  t.id        = 'newOrderToast';
+  t.className = 'notif-toast';
+  t.style.border = '1px solid rgba(201,168,76,0.45)';
+
+  t.innerHTML = `
+    <div style="height:3px;background:linear-gradient(90deg,
+      transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+    <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:13px;">
+
+      <div style="
+        width:50px;height:50px;flex-shrink:0;
+        background:rgba(201,168,76,0.12);
+        border:1.5px solid rgba(201,168,76,0.4);
+        border-radius:14px;
+        display:flex;align-items:center;justify-content:center;
+        font-size:24px;
+        animation:notifRing 1.5s ease infinite;
+      ">🛒</div>
+
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:9px;letter-spacing:3px;
+             color:rgba(201,168,76,0.7);text-transform:uppercase;
+             font-weight:700;margin-bottom:4px;">
+          YENİ SİPARİŞ GELDİ!
+        </div>
+        <div style="font-size:14px;font-weight:900;color:#fff;
+             margin-bottom:3px;white-space:nowrap;
+             overflow:hidden;text-overflow:ellipsis;">
+          👤 ${username}
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.35);
+             display:flex;align-items:center;gap:8px;">
+          <span>📋 ${orderNum}</span>
+          <span style="color:rgba(255,255,255,0.15);">·</span>
+          <span>📦 ${itemCount} ürün</span>
+        </div>
+      </div>
+
+      <div onclick="dismissToast('newOrderToast')" style="
+        width:26px;height:26px;flex-shrink:0;
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:7px;display:flex;align-items:center;
+        justify-content:center;color:rgba(255,255,255,0.3);
+        font-size:11px;cursor:pointer;transition:all 0.2s;
+      "
+      onmouseover="this.style.background='rgba(255,70,70,0.15)';this.style.color='#ff6b6b';"
+      onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='rgba(255,255,255,0.3)';">
+        ✕
+      </div>
+    </div>
+
+    <div onclick="goToAdminFromNotif()"
+         style="
+      margin:0 14px 14px;padding:10px;
+      background:rgba(201,168,76,0.1);
+      border:1px solid rgba(201,168,76,0.25);
+      border-radius:10px;text-align:center;
+      font-size:11px;font-weight:700;
+      color:#c9a84c;letter-spacing:1.5px;
+      transition:all 0.25s;
+    "
+    onmouseover="this.style.background='rgba(201,168,76,0.2)';"
+    onmouseout="this.style.background='rgba(201,168,76,0.1)';">
+      <i class="fas fa-arrow-right" style="margin-right:6px;"></i>
+      SİPARİŞ PANELİNE GİT
+    </div>
+
+    <div style="height:3px;background:rgba(255,255,255,0.05);">
+      <div style="height:100%;background:linear-gradient(90deg,#c9a84c,#f0d080);
+           animation:notifProgress 8s linear forwards;"></div>
+    </div>
+  `;
+
+  document.body.appendChild(t);
+  setTimeout(() => dismissToast('newOrderToast'), 8000);
+}
+
+/* ============================================================
+   ★ المستخدم العادي — Toast تغيير الحالة ★
+============================================================ */
+function showMyOrderStatusToast(order, status, statusKey) {
+  document.getElementById('myOrderStatusToast')?.remove();
+
+  const messages = {
+    manufacturing : '🏭 Siparişiniz üretime alındı',
+    ready         : '🎉 Siparişiniz teslime hazır!',
+    cancelled     : '❌ Siparişiniz iptal edildi',
+    pending       : '⏳ Siparişiniz beklemeye alındı',
+  };
+  const msg = messages[statusKey] || '📋 Sipariş durumu güncellendi';
+
+  const t = document.createElement('div');
+  t.id        = 'myOrderStatusToast';
+  t.className = 'notif-toast';
+  t.style.border = `1px solid ${status.border}`;
+
+  t.innerHTML = `
+    <div style="height:3px;background:${status.color};"></div>
+
+    <div style="padding:14px 16px;display:flex;align-items:flex-start;gap:13px;">
+
+      <div style="
+        width:50px;height:50px;flex-shrink:0;
+        background:${status.bg};
+        border:1.5px solid ${status.border};
+        border-radius:14px;
+        display:flex;align-items:center;justify-content:center;
+        font-size:22px;color:${status.color};
+        animation:iconPulse 1.5s ease infinite;
+      "><i class="fas ${status.icon}"></i></div>
+
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:9px;letter-spacing:3px;
+             color:${status.color};opacity:0.8;
+             text-transform:uppercase;font-weight:700;margin-bottom:4px;">
+          SİPARİŞ DURUMU
+        </div>
+        <div style="font-size:13px;font-weight:900;color:#fff;
+             margin-bottom:3px;line-height:1.3;">
+          ${msg}
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);
+             display:flex;align-items:center;gap:5px;">
+          <i class="fas fa-hashtag" style="font-size:9px;"></i>
+          ${order.order_number}
+        </div>
+      </div>
+
+      <div onclick="dismissToast('myOrderStatusToast')" style="
+        width:26px;height:26px;flex-shrink:0;
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.08);
+        border-radius:7px;display:flex;align-items:center;
+        justify-content:center;color:rgba(255,255,255,0.3);
+        font-size:11px;cursor:pointer;
+      ">✕</div>
+    </div>
+
+    <div onclick="showPage('myorders');dismissToast('myOrderStatusToast');"
+         style="
+      margin:0 14px 14px;padding:10px;
+      background:${status.bg};
+      border:1px solid ${status.border};
+      border-radius:10px;text-align:center;
+      font-size:11px;font-weight:700;
+      color:${status.color};letter-spacing:1.5px;
+      cursor:pointer;transition:all 0.25s;
+    "
+    onmouseover="this.style.opacity='0.75';"
+    onmouseout="this.style.opacity='1';">
+      <i class="fas fa-box" style="margin-right:6px;"></i>
+      SİPARİŞLERİMİ GÖR
+    </div>
+
+    <div style="height:3px;background:rgba(255,255,255,0.05);">
+      <div style="height:100%;background:${status.color};
+           animation:notifProgress 7s linear forwards;"></div>
+    </div>
+  `;
+
+  document.body.appendChild(t);
+  setTimeout(() => dismissToast('myOrderStatusToast'), 7000);
+}
+
+/* ── إغلاق Toast ── */
+function dismissToast(id) {
+  const t = document.getElementById(id);
+  if (!t) return;
+  t.classList.add('hide');
+  setTimeout(() => t.remove(), 400);
+}
+
+/* ── الانتقال للأدمن من الإشعار ── */
+function goToAdminFromNotif() {
+  dismissToast('newOrderToast');
+  if (document.getElementById('homeScreen').style.display !== 'none') {
+    enterSection('admin');
+  } else {
+    showPage('admin');
+  }
+}
+
+/* ============================================================
+   ★ إشعار المتصفح ★
+============================================================ */
+async function sendBrowserNotif(title, body, page) {
+  if (_notifPermission !== 'granted') return;
+  if (!('Notification' in window)) return;
+
+  const n = new Notification(title, {
+    body,
+    icon     : 'https://up6.cc/2026/04/177695590342861.png',
+    tag      : page,
+    renotify : true,
+  });
+
+  n.onclick = () => {
+    window.focus();
+    n.close();
+    if (page === 'admin')    goToAdminFromNotif();
+    if (page === 'myorders') showPage('myorders');
+  };
+
+  setTimeout(() => n.close(), 10000);
+}
+
+/* ============================================================
+   ★ إشعار Service Worker ★
+============================================================ */
+function sendSwNotif(data) {
+  if (!swRegistration?.active) return;
+  try { swRegistration.active.postMessage(data); } catch(e) {}
+}
+
+/* ============================================================
+   ★ الدالة الرئيسية — WOW: طلب جديد ★
+============================================================ */
+async function triggerOrderNotification(username, orderNum, itemCount) {
+  /* 1. صوت */
+  playStatusSound('new_order');
+
+  /* 2. Toast */
+  showNewOrderToast(username, orderNum, itemCount);
+
+  /* 3. إشعار المتصفح */
+  await sendBrowserNotif(
+    '🛒 WOW MOBİLYA — Yeni Sipariş!',
+    `👤 ${username}  ·  📋 ${orderNum}  ·  📦 ${itemCount} ürün`,
+    'admin'
+  );
+
+  /* 4. إشعار SW */
+  sendSwNotif({
+    type      : 'NEW_ORDER_NOTIFY',
+    username,
+    orderNum,
+    itemCount,
+  });
+}
+
+/* ============================================================
+   ★ الدالة الرئيسية — المستخدم: تغيير الحالة ★
+============================================================ */
+async function triggerStatusNotification(order, statusKey) {
+  const st = ORDER_STATUSES[statusKey] || ORDER_STATUSES.pending;
+
+  /* 1. صوت */
+  playStatusSound(statusKey);
+
+  /* 2. Toast */
+  showMyOrderStatusToast(order, st, statusKey);
+
+  /* 3. إشعار المتصفح */
+  const titles = {
+    manufacturing : '🏭 Siparişiniz Üretime Alındı',
+    ready         : '🎉 Siparişiniz Teslime Hazır!',
+    cancelled     : '❌ Siparişiniz İptal Edildi',
+    pending       : '⏳ Sipariş Beklemeye Alındı',
+  };
+  await sendBrowserNotif(
+    titles[statusKey] || '📋 Sipariş Durumu Güncellendi',
+    `📋 ${order.order_number}`,
+    'myorders'
+  );
+
+  /* 4. إشعار SW */
+  sendSwNotif({
+    type       : 'MY_ORDER_STATUS',
+    orderNum   : order.order_number,
+    statusKey,
+    statusLabel: st.label,
+  });
+}
+
+/* ============================================================
+   ★ Realtime — WOW يستقبل الطلبيات الجديدة ★
+============================================================ */
+async function subscribeToNewOrders() {
+  if (currentUser !== ADMIN_USER) return;
+  const sb = await initSupabase();
+  if (!sb || _orderSubChannel) return;
+
+  /* تحميل الطلبيات الموجودة لتجنب إشعار كاذب */
+  const { data: existing } = await sb
+    .from('orders')
+    .select('id')
+    .order('created_at', { ascending: false })
+    .limit(100);
+  if (existing) existing.forEach(o => _lastOrderIds.add(o.id));
+
+  _orderSubChannel = sb
+    .channel('wow-new-orders')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'orders' },
+      async payload => {
+        const order = payload.new;
+        if (!order || _lastOrderIds.has(order.id)) return;
+        _lastOrderIds.add(order.id);
+
+        const username  = order.username  || order.company_name || 'Müşteri';
+        const orderNum  = order.order_number || `#${order.id}`;
+        const itemCount = Array.isArray(order.items) ? order.items.length : 0;
+
+        console.log('[WOW Notif] 🛒 طلب جديد:', username, orderNum);
+
+        /* تشغيل الإشعار */
+        await triggerOrderNotification(username, orderNum, itemCount);
+
+        /* تحديث لوحة الإدارة إذا كانت مفتوحة */
+        if (currentPage === 'admin') {
+          setTimeout(() => loadAdminOrders(), 1200);
+        }
+
+        /* تحديث شارة الهيدر */
+        updateAdminOrderBadge();
+      }
+    )
+    .subscribe(s => console.log('[WOW Orders Realtime]', s));
+}
+
+/* ============================================================
+   ★ Realtime — المستخدم يتابع حالة طلبيته ★
+============================================================ */
+async function subscribeMyOrderStatus() {
+  if (currentUser === ADMIN_USER) return;
+  const sb = await initSupabase();
+  if (!sb || _myOrderChannel) return;
+
+  _myOrderChannel = sb
+    .channel('my-order-status-' + currentUser)
+    .on(
+      'postgres_changes',
+      {
+        event  : 'UPDATE',
+        schema : 'public',
+        table  : 'orders',
+        filter : `username=eq.${currentUser}`,
+      },
+      async payload => {
+        const order     = payload.new;
+        const oldStatus = payload.old?.status;
+        const newStatus = order?.status;
+
+        if (!order || oldStatus === newStatus) return;
+
+        console.log('[MyOrder] حالة جديدة:', newStatus, order.order_number);
+
+        /* تشغيل الإشعار */
+        await triggerStatusNotification(order, newStatus);
+
+        /* تحديث الصفحة إذا كانت مفتوحة */
+        if (currentPage === 'myorders') {
+          setTimeout(() => buildMyOrdersPage(), 800);
+        }
+
+        /* تحديث زر "طلبيتي" */
+        updateMyOrderBtn();
+      }
+    )
+    .subscribe(s => console.log('[MyOrder Realtime]', s));
+}
+
+/* ============================================================
+   ★ شارة الطلبيات المعلقة في هيدر WOW ★
+============================================================ */
+let _pendingOrdersCount = 0;
+
+async function updateAdminOrderBadge() {
+  if (currentUser !== ADMIN_USER) return;
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { count } = await sb
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending');
+
+  _pendingOrdersCount = count || 0;
+  renderAdminOrderBadge(_pendingOrdersCount);
+}
+
+function renderAdminOrderBadge(count) {
+  /* ── ديسكتوب ── */
+  let badge = document.getElementById('adminOrderBadge');
+  if (!badge) {
+    const navLink = document.getElementById('nav-admin');
+    if (navLink) {
+      badge    = document.createElement('span');
+      badge.id = 'adminOrderBadge';
+      badge.style.cssText = `
+        display:inline-flex;align-items:center;justify-content:center;
+        min-width:18px;height:18px;
+        background:#ef4444;color:#fff;
+        font-size:10px;font-weight:900;
+        border-radius:50%;padding:0 4px;
+        margin-left:5px;vertical-align:middle;
+        border:2px solid rgba(8,8,8,0.96);
+        animation:iconPulse 2s infinite;
+        line-height:1;
+      `;
+      navLink.appendChild(badge);
+    }
+  }
+  if (badge) {
+    badge.textContent   = count > 99 ? '99+' : count;
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+
+  /* ── موبايل ── */
+  let mobBadge = document.getElementById('adminOrderBadgeMob');
+  if (!mobBadge) {
+    const mobLink = document.getElementById('mob-admin');
+    if (mobLink) {
+      mobBadge    = document.createElement('span');
+      mobBadge.id = 'adminOrderBadgeMob';
+      mobBadge.style.cssText = `
+        display:inline-flex;align-items:center;justify-content:center;
+        min-width:18px;height:18px;
+        background:#ef4444;color:#fff;
+        font-size:10px;font-weight:900;
+        border-radius:50%;padding:0 4px;
+        margin-left:auto;
+        border:2px solid rgba(8,8,8,0.96);
+        line-height:1;
+      `;
+      mobLink.appendChild(mobBadge);
+    }
+  }
+  if (mobBadge) {
+    mobBadge.textContent   = count > 99 ? '99+' : count;
+    mobBadge.style.display = count > 0 ? 'inline-flex' : 'none';
+  }
+}
+
+/* ============================================================
+   ★ بانر طلب إذن الإشعارات ★
+============================================================ */
+function showNotifPermBanner() {
+  if (_notifPermission === 'granted') return;
+  if (document.getElementById('notifPermBanner')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'notifPermBanner';
+  banner.style.cssText = `
+    margin:0 22px 16px;
+    padding:12px 16px;
+    background:rgba(201,168,76,0.07);
+    border:1px solid rgba(201,168,76,0.25);
+    border-radius:12px;
+    display:flex;align-items:center;
+    justify-content:space-between;
+    gap:12px;flex-wrap:wrap;
+    font-family:'Montserrat',sans-serif;
+  `;
+
+  if (_notifPermission === 'denied') {
+    banner.style.background = 'rgba(239,68,68,0.07)';
+    banner.style.border     = '1px solid rgba(239,68,68,0.2)';
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-bell-slash" style="color:#ef4444;font-size:18px;flex-shrink:0;"></i>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#ff8a80;margin-bottom:2px;">
+            Bildirimler Engellendi
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);">
+            Tarayıcı ayarlarından bildirimlere izin verin.
+          </div>
+        </div>
+      </div>
+      <div onclick="document.getElementById('notifPermBanner').remove()"
+           style="color:rgba(255,255,255,0.3);cursor:pointer;font-size:14px;
+                  padding:4px;flex-shrink:0;">✕</div>
+    `;
+  } else {
+    banner.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-bell" style="color:#c9a84c;font-size:18px;flex-shrink:0;
+           animation:iconPulse 2s infinite;"></i>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:2px;">
+            Bildirim İzni Gerekli
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);">
+            Yeni sipariş bildirimlerini almak için izin verin.
+          </div>
+        </div>
+      </div>
+      <button onclick="enableNotifications()" style="
+        padding:8px 16px;border-radius:8px;border:none;
+        background:linear-gradient(135deg,#c9a84c,#f0d080);
+        color:#0a0a0a;font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:900;letter-spacing:1px;
+        cursor:pointer;transition:all 0.25s;
+        display:flex;align-items:center;gap:6px;flex-shrink:0;
+      ">
+        <i class="fas fa-bell"></i> İZİN VER
+      </button>
+    `;
+  }
+
+  /* أدرجه في بداية pageContent */
+  const pc = document.getElementById('pageContent');
+  if (pc) pc.prepend(banner);
+}
+
+async function enableNotifications() {
+  const perm = await requestNotifPermission();
+  document.getElementById('notifPermBanner')?.remove();
+  if (perm === 'granted') {
+    showInvToast('Bildirimler etkinleştirildi ✓', 'success');
+    /* إشعار تجريبي */
+    setTimeout(() => {
+      if (currentUser === ADMIN_USER) {
+        triggerOrderNotification('Test Müşteri', 'WOW-TEST', 3);
+      } else {
+        triggerStatusNotification(
+          { order_number: 'WOW-TEST' },
+          'ready'
+        );
+      }
+    }, 600);
+  } else {
+    showInvToast('Bildirim izni reddedildi!', 'error');
+  }
+}
+
+/* ============================================================
+   ★ استقبال رسائل SW (فتح الصفحة عند النقر على الإشعار) ★
+============================================================ */
+navigator.serviceWorker?.addEventListener('message', e => {
+  if (e.data?.type === 'OPEN_PAGE') {
+    const page = e.data.page;
+    if (page === 'admin')    goToAdminFromNotif();
+    if (page === 'myorders') {
+      if (document.getElementById('homeScreen').style.display !== 'none') {
+        enterSection('myorders');
+      } else {
+        showPage('myorders');
+      }
+    }
+  }
+});
+
+/* ============================================================
+   ★ Hook — تشغيل كل شيء بعد تسجيل الدخول ★
+============================================================ */
+const _origFinishLogin_NOTIF = finishLogin;
+finishLogin = function() {
+  _origFinishLogin_NOTIF();
+
+  setTimeout(async () => {
+
+    /* ── طلب إذن الإشعارات للجميع ── */
+    await requestNotifPermission();
+    initNotifSound();
+
+    if (currentUser === ADMIN_USER) {
+      /* ── WOW ── */
+      await subscribeToNewOrders();
+      await updateAdminOrderBadge();
+
+      showInvToast(
+        '<i class="fas fa-bell"></i> Sipariş bildirimleri aktif ✓',
+        'success'
+      );
+
+    } else {
+      /* ── المستخدم العادي ── */
+      await subscribeMyOrderStatus();
+
+      showInvToast(
+        '<i class="fas fa-bell"></i> Sipariş takibi aktif ✓',
+        'success'
+      );
+    }
+
+  }, 1500);
+};
+
+/* ============================================================
+   ★ Hook — إظهار بانر الإذن في لوحة الإدارة ★
+============================================================ */
+const _origBuildAdminPage_NOTIF = buildAdminPage;
+buildAdminPage = async function() {
+  await _origBuildAdminPage_NOTIF();
+  setTimeout(() => {
+    showNotifPermBanner();
+    updateAdminOrderBadge();
+  }, 300);
+};
+
+
   
 
 </script>
