@@ -1,8 +1,8 @@
 /* ============================================================
-   WOW MOBİLYA — Service Worker v15
+   WOW MOBİLYA — Service Worker v14
    ⚠️ غيّر VERSION عند كل تحديث لـ index.html
 ============================================================ */
-const VERSION    = 'v15';
+const VERSION    = 'v17';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -55,112 +55,82 @@ self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') {
     console.log('[SW] Skip waiting triggered');
     self.skipWaiting();
-    return;
   }
 
   /* إرجاع الإصدار */
   if (event.data === 'GET_VERSION') {
-    event.source?.postMessage({ type: 'VERSION', version: VERSION });
-    return;
+    event.source.postMessage({ type: 'VERSION', version: VERSION });
   }
 
-  /* ★ إشعار طلب جديد — لـ WOW فقط ★ */
+  /* ★ إشعار طلب جديد — لـ WOW ★ */
   if (event.data?.type === 'NEW_ORDER_NOTIFY') {
     const d = event.data;
-    event.waitUntil(
-      self.registration.showNotification('🛒 WOW MOBİLYA — Yeni Sipariş!', {
-        body             : `👤 ${d.username}\n📋 ${d.orderNum}  ·  📦 ${d.itemCount} ürün`,
-        icon             : 'https://up6.cc/2026/04/177695590342861.png',
-        badge            : 'https://up6.cc/2026/04/177695590342861.png',
-        tag              : 'wow-new-order',
-        renotify         : true,
-        requireInteraction: true,
-        vibrate          : [200, 100, 200, 100, 400],
-        data             : {
-          url  : self.location.origin + self.location.pathname + '?page=admin',
-          type : 'new-order',
-        },
-        actions: [
-          { action: 'open',    title: '📋 Siparişi Gör' },
-          { action: 'dismiss', title: '✕ Kapat'         },
-        ],
-      })
-    );
-    return;
+    const icons = { new: '🛒' };
+    self.registration.showNotification('🛒 WOW MOBİLYA — Yeni Sipariş!', {
+      body            : `👤 ${d.username}\n📋 ${d.orderNum}  ·  📦 ${d.itemCount} ürün`,
+      icon            : 'https://up6.cc/2026/04/177695590342861.png',
+      badge           : 'https://up6.cc/2026/04/177695590342861.png',
+      tag             : 'wow-new-order',
+      renotify        : true,
+      requireInteraction: true,
+      vibrate         : [200, 100, 200, 100, 400],
+      data            : {
+        url  : self.location.origin + self.location.pathname + '?page=admin',
+        type : 'admin'
+      },
+      actions: [
+        { action: 'open',    title: '📋 Siparişi Gör' },
+        { action: 'dismiss', title: '✕ Kapat'         },
+      ],
+    });
   }
 
   /* ★ إشعار تغيير حالة الطلبية — للمستخدم العادي ★ */
   if (event.data?.type === 'MY_ORDER_STATUS') {
     const d = event.data;
-
-    const iconMap = {
+    const statusIcons = {
       manufacturing : '🏭',
       ready         : '🎉',
       cancelled     : '❌',
       pending       : '⏳',
+      delivered     : '✅',
     };
-    const icon = iconMap[d.statusKey] || '📋';
+    const icon = statusIcons[d.statusKey] || '📋';
 
-    const bodyMap = {
-      manufacturing : 'Siparişiniz üretime alındı',
-      ready         : 'Siparişiniz teslime hazır!',
-      cancelled     : 'Siparişiniz iptal edildi',
-      pending       : 'Siparişiniz beklemeye alındı',
-    };
-    const body = bodyMap[d.statusKey] || 'Sipariş durumu güncellendi';
-
-    event.waitUntil(
-      self.registration.showNotification(
-        `${icon} ${body}`,
-        {
-          body    : `📋 ${d.orderNum}`,
-          icon    : 'https://up6.cc/2026/04/177695590342861.png',
-          badge   : 'https://up6.cc/2026/04/177695590342861.png',
-          tag     : 'my-order-status',
-          renotify: true,
-          vibrate : [100, 50, 200],
-          data    : {
-            url  : self.location.origin + self.location.pathname + '?page=myorders',
-            type : 'order-status',
-          },
-        }
-      )
+    self.registration.showNotification(
+      `${icon} Sipariş Durumu: ${d.statusLabel}`,
+      {
+        body    : `📋 ${d.orderNum}`,
+        icon    : 'https://up6.cc/2026/04/177695590342861.png',
+        badge   : 'https://up6.cc/2026/04/177695590342861.png',
+        tag     : 'my-order-status',
+        renotify: true,
+        vibrate : [100, 50, 100, 50, 200],
+        data    : {
+          url  : self.location.origin + self.location.pathname + '?page=myorders',
+          type : 'myorders'
+        },
+      }
     );
-    return;
   }
 });
 
-/* ─── Push (مستقبلاً من الخادم) ────────────────────────── */
+/* ─── Push (مستقبلاً من خادم) ───────────────────────────── */
 self.addEventListener('push', event => {
-  let data = { type: 'new-order', username: 'Müşteri', orderNum: '—', itemCount: 0 };
+  let data = { type: 'new_order', username: 'Müşteri', orderNum: '—', itemCount: 0 };
   try { data = event.data?.json() || data; } catch {}
 
-  const isNewOrder = data.type === 'new-order';
-
   event.waitUntil(
-    self.registration.showNotification(
-      isNewOrder ? '🛒 WOW MOBİLYA — Yeni Sipariş!' : '📋 Sipariş Durumu Güncellendi',
-      {
-        body             : isNewOrder
-          ? `👤 ${data.username}\n📋 ${data.orderNum}  ·  📦 ${data.itemCount} ürün`
-          : `📋 ${data.orderNum}`,
-        icon             : 'https://up6.cc/2026/04/177695590342861.png',
-        badge            : 'https://up6.cc/2026/04/177695590342861.png',
-        tag              : isNewOrder ? 'wow-new-order' : 'my-order-status',
-        renotify         : true,
-        requireInteraction: isNewOrder,
-        vibrate          : isNewOrder ? [200, 100, 200, 100, 400] : [100, 50, 200],
-        data             : {
-          url  : self.location.origin + self.location.pathname +
-                 (isNewOrder ? '?page=admin' : '?page=myorders'),
-          type : data.type,
-        },
-        actions: isNewOrder ? [
-          { action: 'open',    title: '📋 Siparişi Gör' },
-          { action: 'dismiss', title: '✕ Kapat'         },
-        ] : [],
-      }
-    )
+    self.registration.showNotification('🛒 WOW MOBİLYA', {
+      body   : `👤 ${data.username}  ·  📋 ${data.orderNum}`,
+      icon   : 'https://up6.cc/2026/04/177695590342861.png',
+      badge  : 'https://up6.cc/2026/04/177695590342861.png',
+      tag    : 'wow-push',
+      renotify: true,
+      requireInteraction: true,
+      vibrate: [200, 100, 200],
+      data   : { url: self.location.origin + self.location.pathname },
+    })
   );
 });
 
@@ -171,18 +141,16 @@ self.addEventListener('notificationclick', event => {
 
   const targetUrl = event.notification.data?.url
     || self.location.origin + self.location.pathname;
-  const notifType = event.notification.data?.type || 'new-order';
+  const pageType  = event.notification.data?.type || 'admin';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(list => {
-        /* إذا التطبيق مفتوح → focus وأرسل رسالة */
+        /* إذا كان التطبيق مفتوحاً → focus + إرسال رسالة */
         for (const client of list) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.focus();
-            client.postMessage({
-              type : notifType === 'new-order' ? 'OPEN_ADMIN_PAGE' : 'OPEN_MY_ORDERS',
-            });
+            client.postMessage({ type: 'OPEN_PAGE', page: pageType });
             return;
           }
         }
