@@ -9675,20 +9675,19 @@ function buildUserAdminCard(u) {
         <!-- يمين: الأزرار -->
         <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
 
-          <!-- زر تسجيل الخروج القسري -->
-          ${online && !u.is_blocked ? `
-          <button onclick="forceLogoutUser(${u.id}, '${u.username}')"
-                  style="padding:7px 12px;border-radius:8px;
-                  background:rgba(251,191,36,0.1);
-                  border:1px solid rgba(251,191,36,0.3);
-                  color:#fbbf24;font-family:'Montserrat',sans-serif;
-                  font-size:10px;font-weight:700;letter-spacing:0.5px;
-                  cursor:pointer;transition:all 0.25s;
-                  display:flex;align-items:center;gap:6px;"
-                  onmouseover="this.style.background='rgba(251,191,36,0.2)'"
-                  onmouseout="this.style.background='rgba(251,191,36,0.1)'">
-            <i class="fas fa-sign-out-alt"></i> Çıkış Yaptır
-          </button>` : ''}
+         <!-- زر حذف الحساب -->
+<button onclick="forceLogoutUser(${u.id}, '${u.username}')"
+        style="padding:7px 12px;border-radius:8px;
+        background:rgba(239,68,68,0.1);
+        border:1px solid rgba(239,68,68,0.3);
+        color:#ef4444;font-family:'Montserrat',sans-serif;
+        font-size:10px;font-weight:700;letter-spacing:0.5px;
+        cursor:pointer;transition:all 0.25s;
+        display:flex;align-items:center;gap:6px;"
+        onmouseover="this.style.background='rgba(239,68,68,0.2)'"
+        onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+  <i class="fas fa-user-slash"></i> Hesabı Sil
+</button>
 
           <!-- زر الحظر/رفع الحظر -->
           <button onclick="toggleUserBlock(${u.id}, ${u.is_blocked})"
@@ -10155,44 +10154,395 @@ function togglePassDisplay(userId) {
 
 
 
-  /* ── تسجيل خروج قسري لمستخدم محدد ── */
+/* ── حذف حساب المستخدم نهائياً ── */
 async function forceLogoutUser(userId, username) {
-  const confirmed = await showDeleteConfirm(); // نافذة تأكيد موجودة مسبقاً
+
+  /* ══════════════════════════════════════════
+     نافذة تأكيد الحذف مع كتابة اسم المستخدم
+  ══════════════════════════════════════════ */
+  const confirmed = await showDeleteUserConfirm(username);
   if (!confirmed) return;
 
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* 1. إغلاق كل جلساته النشطة */
-  const { error } = await sb
-    .from('user_sessions')
-    .update({
-      logout_at : new Date().toISOString(),
-      is_active : false,
-    })
-    .eq('user_id', userId)
-    .eq('is_active', true);
-
-  if (error) {
-    showInvToast('Hata: ' + error.message, 'error');
-    return;
+  /* تأثير بصري على البطاقة */
+  const card = document.getElementById('ucard-' + userId);
+  if (card) {
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity    = '0.4';
+    card.style.transform  = 'scale(0.98)';
   }
 
-  /* 2. تحديث last_seen لقديم (يجعله يظهر كـ offline) */
-  await sb.from('users')
-    .update({ last_seen: new Date(Date.now() - 10 * 60 * 1000).toISOString() })
-    .eq('id', userId);
+  try {
+    /* 1. حذف جلسات المستخدم */
+    await sb.from('user_sessions').delete().eq('user_id', userId);
 
-  /* 3. تحديث الواجهة */
-  const idx = _allUsers.findIndex(u => u.id === userId);
-  if (idx !== -1) {
-    _allUsers[idx].last_seen = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const card = document.getElementById('ucard-' + userId);
-    if (card) card.outerHTML = buildUserAdminCard(_allUsers[idx]);
+    /* 2. حذف رموز OTP المرتبطة بالبريد */
+    const user = _allUsers.find(u => u.id === userId);
+    if (user?.email) {
+      await sb.from('otp_codes').delete().eq('email', user.email);
+    }
+
+    /* 3. حذف طلبياته */
+    await sb.from('orders').delete().eq('username', username);
+
+    /* 4. حذف الحساب نهائياً */
+    const { error } = await sb.from('users').delete().eq('id', userId);
+
+    if (error) {
+      console.error('[Delete User] فشل:', error.message);
+      if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
+      showInvToast('Silme hatası: ' + error.message, 'error');
+      return;
+    }
+
+    /* 5. إزالة من المصفوفة المحلية */
+    _allUsers = _allUsers.filter(u => u.id !== userId);
+
+    /* 6. إزالة البطاقة بأنيميشن */
+    if (card) {
+      card.style.maxHeight    = card.offsetHeight + 'px';
+      card.style.overflow     = 'hidden';
+      card.style.marginBottom = card.style.marginBottom || '10px';
+      requestAnimationFrame(() => {
+        card.style.transition   = 'all 0.45s ease';
+        card.style.maxHeight    = '0';
+        card.style.opacity      = '0';
+        card.style.marginBottom = '0';
+        card.style.padding      = '0';
+        card.style.border       = 'none';
+        setTimeout(() => card.remove(), 460);
+      });
+    }
+
+    /* 7. تحديث العداد */
+    const countEl = document.getElementById('usersAdminCount');
+    if (countEl) {
+      countEl.textContent = _allUsers.length + ' kayıtlı kullanıcı';
+    }
+
+    showInvToast(`"${username}" hesabı kalıcı olarak silindi ✓`, 'success');
+
+  } catch(e) {
+    console.error('[Delete User] exception:', e);
+    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
+    showInvToast('Beklenmeyen hata: ' + String(e), 'error');
   }
-
-  showInvToast(`${username} kullanıcısı çıkış yaptırıldı ✓`, 'success');
 }
+
+
+/* ══════════════════════════════════════════════════════
+   نافذة تأكيد حذف الحساب — يجب كتابة اسم المستخدم
+══════════════════════════════════════════════════════ */
+function showDeleteUserConfirm(username) {
+  return new Promise(resolve => {
+
+    /* إزالة أي نافذة سابقة */
+    document.getElementById('deleteUserModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'deleteUserModal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:9000;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.92);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+      padding:16px;
+      animation:updBgIn 0.3s ease forwards;
+    `;
+
+    modal.innerHTML = `
+      <div style="
+        width:100%;max-width:420px;
+        background:linear-gradient(145deg,#0f0f0f,#1a0808);
+        border:1px solid rgba(239,68,68,0.35);
+        border-radius:22px;overflow:hidden;
+        box-shadow:
+          0 40px 80px rgba(0,0,0,0.9),
+          0 0 0 1px rgba(239,68,68,0.08),
+          0 0 60px rgba(239,68,68,0.06);
+        animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      ">
+
+        <!-- خط أحمر علوي -->
+        <div style="height:3px;background:linear-gradient(90deg,
+          transparent,#ef4444 30%,#ff6b6b 50%,#ef4444 70%,transparent);"></div>
+
+        <!-- هيدر -->
+        <div style="padding:22px 22px 16px;text-align:center;">
+          <!-- أيقونة التحذير -->
+          <div style="
+            width:68px;height:68px;border-radius:50%;
+            background:rgba(239,68,68,0.1);
+            border:2px solid rgba(239,68,68,0.3);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 16px;
+            position:relative;
+          ">
+            <i class="fas fa-user-slash" style="font-size:26px;color:#ef4444;"></i>
+            <!-- نبضة حمراء -->
+            <div style="
+              position:absolute;inset:-6px;border-radius:50%;
+              border:2px solid rgba(239,68,68,0.2);
+              animation:avatarRing 2s ease infinite;
+            "></div>
+          </div>
+
+          <div style="
+            font-size:9px;letter-spacing:4px;
+            color:rgba(239,68,68,0.6);
+            text-transform:uppercase;font-weight:700;
+            margin-bottom:8px;
+          ">KALİCİ SİLME İŞLEMİ</div>
+
+          <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:10px;">
+            Hesabı Sil
+          </div>
+
+          <!-- اسم المستخدم المراد حذفه -->
+          <div style="
+            display:inline-flex;align-items:center;gap:8px;
+            background:rgba(239,68,68,0.08);
+            border:1px solid rgba(239,68,68,0.25);
+            border-radius:50px;padding:6px 16px;
+            margin-bottom:14px;
+          ">
+            <i class="fas fa-user" style="color:#ef4444;font-size:12px;"></i>
+            <span style="
+              font-size:14px;font-weight:900;
+              color:#ff8a80;letter-spacing:1px;
+            ">${username}</span>
+          </div>
+
+          <div style="
+            font-size:11px;color:rgba(255,255,255,0.35);
+            line-height:1.8;letter-spacing:0.3px;
+          ">
+            Bu işlem <strong style="color:#ff8a80;">geri alınamaz.</strong><br/>
+            Kullanıcıya ait tüm veriler silinecektir:<br/>
+            <span style="color:rgba(255,255,255,0.2);font-size:10px;">
+              oturumlar · siparişler · OTP kayıtları
+            </span>
+          </div>
+        </div>
+
+        <!-- حقل التأكيد -->
+        <div style="padding:0 22px 20px;">
+          <div style="
+            background:rgba(239,68,68,0.06);
+            border:1px solid rgba(239,68,68,0.15);
+            border-radius:14px;padding:16px;
+            margin-bottom:16px;
+          ">
+            <div style="
+              font-size:10px;letter-spacing:2px;
+              color:rgba(255,255,255,0.3);
+              text-transform:uppercase;font-weight:700;
+              margin-bottom:10px;
+              display:flex;align-items:center;gap:7px;
+            ">
+              <i class="fas fa-keyboard" style="color:rgba(239,68,68,0.5);"></i>
+              Onaylamak için kullanıcı adını yazın:
+            </div>
+
+            <!-- حقل الإدخال -->
+            <div style="position:relative;">
+              <input
+                type="text"
+                id="deleteUserInput"
+                placeholder="${username}"
+                autocomplete="off"
+                spellcheck="false"
+                style="
+                  width:100%;
+                  padding:12px 44px 12px 14px;
+                  background:rgba(0,0,0,0.4);
+                  border:1.5px solid rgba(239,68,68,0.25);
+                  border-radius:10px;
+                  color:#fff;
+                  font-family:'Montserrat',sans-serif;
+                  font-size:14px;font-weight:700;
+                  letter-spacing:1px;
+                  outline:none;
+                  transition:all 0.3s;
+                  -webkit-user-select:text;user-select:text;
+                "
+                oninput="checkDeleteInput('${username}')"
+                onfocus="this.style.borderColor='rgba(239,68,68,0.6)';
+                         this.style.boxShadow='0 0 20px rgba(239,68,68,0.1)';"
+                onfocusout="this.style.boxShadow='none';"
+              />
+              <!-- أيقونة التحقق -->
+              <div id="deleteInputIcon" style="
+                position:absolute;right:12px;top:50%;
+                transform:translateY(-50%);
+                font-size:16px;color:rgba(255,255,255,0.15);
+                transition:all 0.3s;pointer-events:none;
+              ">
+                <i class="fas fa-times"></i>
+              </div>
+            </div>
+
+            <!-- رسالة التطابق -->
+            <div id="deleteMatchMsg" style="
+              font-size:10px;margin-top:8px;
+              letter-spacing:1px;font-weight:700;
+              color:rgba(255,255,255,0.2);
+              display:flex;align-items:center;gap:6px;
+              transition:all 0.3s;
+            ">
+              <i class="fas fa-info-circle"></i>
+              Kullanıcı adını tam olarak girin
+            </div>
+          </div>
+
+          <!-- أزرار الإجراء -->
+          <div style="display:flex;gap:10px;">
+
+            <!-- زر الإلغاء -->
+            <button id="delUserCancelBtn" style="
+              flex:1;padding:13px;border-radius:12px;
+              border:1px solid rgba(255,255,255,0.1);
+              background:rgba(255,255,255,0.04);
+              color:rgba(255,255,255,0.5);
+              font-family:'Montserrat',sans-serif;
+              font-size:11px;font-weight:700;letter-spacing:1.5px;
+              cursor:pointer;transition:all 0.25s;
+              display:flex;align-items:center;justify-content:center;gap:7px;
+            "
+            onmouseover="this.style.background='rgba(255,255,255,0.08)';this.style.color='#fff';"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.5)';">
+              <i class="fas fa-arrow-left"></i> İPTAL
+            </button>
+
+            <!-- زر الحذف — معطّل حتى يكتب الاسم -->
+            <button id="delUserConfirmBtn" disabled style="
+              flex:2;padding:13px;border-radius:12px;border:none;
+              background:rgba(255,255,255,0.05);
+              color:rgba(255,255,255,0.2);
+              font-family:'Montserrat',sans-serif;
+              font-size:11px;font-weight:900;letter-spacing:1.5px;
+              cursor:not-allowed;transition:all 0.35s ease;
+              display:flex;align-items:center;justify-content:center;gap:8px;
+            ">
+              <i class="fas fa-trash-alt"></i> HESABI SİL
+            </button>
+          </div>
+        </div>
+
+        <!-- خط أحمر سفلي -->
+        <div style="height:3px;background:linear-gradient(90deg,
+          transparent,#ef4444 30%,#ff6b6b 50%,#ef4444 70%,transparent);"></div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    /* ── التركيز على حقل الإدخال ── */
+    setTimeout(() => document.getElementById('deleteUserInput')?.focus(), 350);
+
+    /* ── دالة التحقق من التطابق ── */
+    window.checkDeleteInput = function(expectedName) {
+      const input    = document.getElementById('deleteUserInput');
+      const icon     = document.getElementById('deleteInputIcon');
+      const msg      = document.getElementById('deleteMatchMsg');
+      const confirmBtn = document.getElementById('delUserConfirmBtn');
+      if (!input) return;
+
+      const val     = input.value.trim();
+      const isMatch = val === expectedName;
+
+      if (isMatch) {
+        /* ✅ تطابق */
+        input.style.borderColor = 'rgba(74,222,128,0.6)';
+        input.style.background  = 'rgba(74,222,128,0.05)';
+        if (icon) {
+          icon.innerHTML = '<i class="fas fa-check"></i>';
+          icon.style.color = '#4ade80';
+        }
+        if (msg) {
+          msg.innerHTML = '<i class="fas fa-check-circle"></i> Kullanıcı adı eşleşti';
+          msg.style.color = '#4ade80';
+        }
+        /* تفعيل زر الحذف */
+        confirmBtn.disabled          = false;
+        confirmBtn.style.background  = 'linear-gradient(135deg,#ef4444,#dc2626)';
+        confirmBtn.style.color       = '#fff';
+        confirmBtn.style.cursor      = 'pointer';
+        confirmBtn.style.boxShadow   = '0 8px 24px rgba(239,68,68,0.35)';
+
+      } else if (val.length > 0) {
+        /* ❌ لا يتطابق */
+        input.style.borderColor = 'rgba(239,68,68,0.5)';
+        input.style.background  = 'rgba(239,68,68,0.04)';
+        if (icon) {
+          icon.innerHTML = '<i class="fas fa-times"></i>';
+          icon.style.color = 'rgba(239,68,68,0.6)';
+        }
+        if (msg) {
+          msg.innerHTML = '<i class="fas fa-times-circle"></i> Kullanıcı adı eşleşmiyor';
+          msg.style.color = 'rgba(239,68,68,0.7)';
+        }
+        confirmBtn.disabled        = true;
+        confirmBtn.style.background = 'rgba(255,255,255,0.05)';
+        confirmBtn.style.color      = 'rgba(255,255,255,0.2)';
+        confirmBtn.style.cursor     = 'not-allowed';
+        confirmBtn.style.boxShadow  = 'none';
+
+      } else {
+        /* فارغ */
+        input.style.borderColor = 'rgba(239,68,68,0.25)';
+        input.style.background  = 'rgba(0,0,0,0.4)';
+        if (icon) {
+          icon.innerHTML = '<i class="fas fa-times"></i>';
+          icon.style.color = 'rgba(255,255,255,0.15)';
+        }
+        if (msg) {
+          msg.innerHTML = '<i class="fas fa-info-circle"></i> Kullanıcı adını tam olarak girin';
+          msg.style.color = 'rgba(255,255,255,0.2)';
+        }
+        confirmBtn.disabled        = true;
+        confirmBtn.style.background = 'rgba(255,255,255,0.05)';
+        confirmBtn.style.color      = 'rgba(255,255,255,0.2)';
+        confirmBtn.style.cursor     = 'not-allowed';
+        confirmBtn.style.boxShadow  = 'none';
+      }
+    };
+
+    /* ── Enter للتأكيد ── */
+    document.getElementById('deleteUserInput')
+      ?.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          const btn = document.getElementById('delUserConfirmBtn');
+          if (!btn.disabled) btn.click();
+        }
+      });
+
+    /* ── أزرار ── */
+    document.getElementById('delUserConfirmBtn').onclick = () => {
+      modal.remove();
+      delete window.checkDeleteInput;
+      resolve(true);
+    };
+    document.getElementById('delUserCancelBtn').onclick = () => {
+      modal.remove();
+      delete window.checkDeleteInput;
+      resolve(false);
+    };
+
+    /* ── إغلاق بالضغط على الخلفية ── */
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        modal.remove();
+        delete window.checkDeleteInput;
+        resolve(false);
+      }
+    });
+  });
+}
+
 
 
   
