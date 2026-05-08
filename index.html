@@ -1578,6 +1578,266 @@ html { scroll-behavior: auto; }
     
 
 
+
+
+
+
+
+    /* =====================================================
+   SETTINGS PAGE — صفحة الإعدادات
+===================================================== */
+.settings-page-wrap {
+  padding: 24px 22px 48px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.settings-section-title {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: rgba(201,168,76,0.6);
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.settings-btn-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
+}
+.settings-btn-card:hover {
+  background: rgba(201,168,76,0.06);
+  border-color: rgba(201,168,76,0.25);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+.settings-btn-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.04));
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-size: 20px;
+}
+.settings-btn-info { flex: 1; min-width: 0; }
+.settings-btn-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.settings-btn-desc {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 1px;
+  line-height: 1.5;
+}
+.settings-btn-arrow {
+  color: rgba(201,168,76,0.4);
+  font-size: 16px;
+  transition: transform 0.3s, color 0.3s;
+}
+.settings-btn-card:hover .settings-btn-arrow {
+  transform: translateX(4px);
+  color: var(--gold);
+}
+
+/* =====================================================
+   HOME CARDS MANAGER — نافذة إدارة البطاقات
+===================================================== */
+#homeCardsModal {
+  position: fixed; inset: 0; z-index: 7000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(18px);
+  padding: 16px;
+}
+#homeCardsModal.active { display: flex; }
+
+.hcm-box {
+  width: 100%; max-width: 640px;
+  max-height: 92vh;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #0f0f0f, #161616);
+  border: 1px solid rgba(201,168,76,0.25);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 60px rgba(201,168,76,0.06);
+  animation: devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.hcm-topline {
+  height: 3px; flex-shrink: 0;
+  background: linear-gradient(90deg, transparent, #c9a84c 30%, #f0d080 50%, #c9a84c 70%, transparent);
+}
+.hcm-header {
+  padding: 16px 20px 14px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.hcm-body {
+  flex: 1; overflow-y: auto; padding: 16px 18px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,168,76,0.3) transparent;
+}
+.hcm-body::-webkit-scrollbar { width: 4px; }
+.hcm-body::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.3); border-radius: 4px;
+}
+.hcm-footer {
+  padding: 12px 18px 16px; flex-shrink: 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  display: flex; gap: 10px; align-items: center;
+}
+
+/* بطاقة واحدة في القائمة */
+.hcm-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 13px 14px;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+.hcm-card:hover {
+  background: rgba(201,168,76,0.04);
+  border-color: rgba(201,168,76,0.15);
+}
+.hcm-card-thumb {
+  width: 64px; height: 50px;
+  object-fit: cover; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+}
+.hcm-card-order {
+  width: 28px; height: 28px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.04));
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; color: var(--gold);
+}
+.hcm-card-info { flex: 1; min-width: 0; }
+.hcm-card-title {
+  font-size: 13px; font-weight: 900; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.hcm-card-sub {
+  font-size: 9px; color: rgba(201,168,76,0.6);
+  letter-spacing: 1.5px; margin-top: 2px; text-transform: uppercase;
+}
+.hcm-card-desc {
+  font-size: 10px; color: rgba(255,255,255,0.25);
+  margin-top: 3px; letter-spacing: 0.5px;
+}
+.hcm-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.hcm-action-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.35);
+  font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s; font-family: 'Montserrat', sans-serif;
+}
+.hcm-action-btn.edit:hover {
+  background: rgba(96,165,250,0.15);
+  border-color: rgba(96,165,250,0.35);
+  color: #60a5fa;
+}
+.hcm-action-btn.del:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
+  color: #ef4444;
+}
+.hcm-action-btn.up:hover, .hcm-action-btn.dn:hover {
+  background: rgba(201,168,76,0.15);
+  border-color: rgba(201,168,76,0.35);
+  color: var(--gold);
+}
+
+/* نافذة تعديل/إضافة بطاقة */
+#hcmEditModal {
+  position: fixed; inset: 0; z-index: 8000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(20px);
+  padding: 16px;
+}
+#hcmEditModal.active { display: flex; }
+.hcme-box {
+  width: 100%; max-width: 520px;
+  max-height: 92vh; overflow-y: auto;
+  border-radius: 20px;
+  background: linear-gradient(145deg, #0f0f0f, #1a1a1a);
+  border: 1px solid rgba(201,168,76,0.25);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.9);
+  animation: devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201,168,76,0.3) transparent;
+}
+.hcme-box::-webkit-scrollbar { width: 3px; }
+.hcme-box::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.3); border-radius: 4px;
+}
+
+/* رفع الصورة */
+.img-upload-area {
+  border: 2px dashed rgba(201,168,76,0.25);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: rgba(255,255,255,0.02);
+  position: relative;
+}
+.img-upload-area:hover {
+  border-color: rgba(201,168,76,0.5);
+  background: rgba(201,168,76,0.04);
+}
+.img-upload-area.drag-over {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.08);
+}
+.img-preview-wrap {
+  position: relative; display: inline-block;
+}
+.img-preview {
+  width: 100%; max-height: 160px;
+  object-fit: cover; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,0.1);
+  display: block;
+}
+.img-remove-btn {
+  position: absolute; top: 6px; right: 6px;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(239,68,68,0.85);
+  border: none; color: #fff; font-size: 11px;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.img-remove-btn:hover { background: #ef4444; transform: scale(1.1); }
+
+
     
 
 
@@ -2944,6 +3204,406 @@ html { scroll-behavior: auto; }
 
 
 
+
+
+
+
+
+
+
+  <!-- =====================================================
+     نافذة إدارة بطاقات الصفحة الرئيسية
+===================================================== -->
+<div id="homeCardsModal" onclick="handleHcmBg(event)">
+  <div class="hcm-box">
+    <div class="hcm-topline"></div>
+    <div class="hcm-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:42px;height:42px;flex-shrink:0;
+             background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+             border:1px solid rgba(201,168,76,0.3);border-radius:12px;
+             display:flex;align-items:center;justify-content:center;
+             color:var(--gold);font-size:18px;">
+          <i class="fas fa-th-large"></i>
+        </div>
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:3px;">
+            ANA SAYFA YÖNETİMİ
+          </div>
+          <div style="font-size:16px;font-weight:900;color:#fff;">
+            Kart Düzeni & Sıralaması
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:7px;align-items:center;">
+        <button onclick="openHcmEdit(null)" style="
+          padding:8px 14px;border-radius:9px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:10px;font-weight:900;letter-spacing:1.5px;
+          cursor:pointer;display:flex;align-items:center;gap:6px;
+          transition:all 0.25s;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform=''">
+          <i class="fas fa-plus"></i> YENİ KART
+        </button>
+        <div onclick="closeHomeCardsModal()" style="
+          width:32px;height:32px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);
+          border-radius:8px;color:rgba(255,255,255,0.3);
+          font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+    </div>
+
+    <div class="hcm-body" id="hcmCardsList">
+      <div style="text-align:center;padding:40px;">
+        <i class="fas fa-spinner fa-spin"
+           style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
+      </div>
+    </div>
+
+    <div class="hcm-footer">
+      <div style="font-size:10px;color:rgba(255,255,255,0.2);
+           letter-spacing:1px;display:flex;align-items:center;gap:6px;">
+        <div style="width:7px;height:7px;border-radius:50%;
+             background:rgba(74,222,128,0.6);
+             animation:iconPulse 2s infinite;"></div>
+        Değişiklikler anında uygulanır
+      </div>
+      <button onclick="closeHomeCardsModal()" style="
+        padding:9px 20px;border-radius:9px;
+        border:1px solid rgba(255,255,255,0.1);
+        background:rgba(255,255,255,0.04);
+        color:rgba(255,255,255,0.4);
+        font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1.5px;
+        cursor:pointer;transition:all 0.25s;"
+        onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+        onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+        KAPAT
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- نافذة تعديل/إضافة بطاقة -->
+<div id="hcmEditModal" onclick="handleHcmEditBg(event)">
+  <div class="hcme-box">
+    <div style="height:3px;background:linear-gradient(90deg,
+      transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+    <div style="padding:16px 20px 14px;display:flex;align-items:center;
+         justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);
+         position:sticky;top:0;background:linear-gradient(145deg,#0f0f0f,#1a1a1a);z-index:2;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;flex-shrink:0;
+             background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+             border:1px solid rgba(201,168,76,0.3);border-radius:11px;
+             display:flex;align-items:center;justify-content:center;
+             color:var(--gold);font-size:16px;">
+          <i class="fas fa-edit"></i>
+        </div>
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:2px;">
+            KART DÜZENLE
+          </div>
+          <div style="font-size:15px;font-weight:900;color:#fff;" id="hcmeTitle">
+            Yeni Kart Ekle
+          </div>
+        </div>
+      </div>
+      <div onclick="closeHcmEdit()" style="
+        width:30px;height:30px;
+        background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.07);
+        border-radius:8px;color:rgba(255,255,255,0.3);
+        font-size:13px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
+        transition:all 0.25s;"
+        onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+        onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+        <i class="fas fa-times"></i>
+      </div>
+    </div>
+
+    <div style="padding:18px 20px 22px;display:flex;flex-direction:column;gap:15px;">
+      <input type="hidden" id="hcmeId"/>
+
+      <!-- الترتيب والقسم -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-sort-numeric-up" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+            SIRA NO
+          </label>
+          <input type="number" id="hcmeOrder" min="1" max="20" placeholder="1"
+            style="width:100%;padding:11px 13px;background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;
+            outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        </div>
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-link" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+            BAĞLI BÖLÜM
+          </label>
+          <select id="hcmeSectionKey" style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;cursor:pointer;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'">
+            <option value="tv">TV Ünitesi</option>
+            <option value="orta">Orta Sehpa</option>
+            <option value="dresuar">Dresuar</option>
+            <option value="orders">Sipariş Ver</option>
+            <option value="admin">Admin Panel</option>
+            <option value="settings">Ayarlar</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- العنوان والعنوان الفرعي -->
+      <div>
+        <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+             text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+          <i class="fas fa-heading" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+          BAŞLIK (Büyük)
+        </label>
+        <input type="text" id="hcmeTitle2" placeholder="Örn: TV"
+          style="width:100%;padding:11px 13px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+          font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;
+          letter-spacing:1px;outline:none;transition:all 0.3s;
+          -webkit-user-select:text;user-select:text;"
+          onfocus="this.style.borderColor='#c9a84c'"
+          onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+      </div>
+
+      <div>
+        <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+             text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+          <i class="fas fa-text-height" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+          ALT BAŞLIK (Altın Renk)
+        </label>
+        <input type="text" id="hcmeSubtitle" placeholder="Örn: ÜNİTESİ"
+          style="width:100%;padding:11px 13px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+          font-family:'Montserrat',sans-serif;font-size:13px;
+          outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;"
+          onfocus="this.style.borderColor='#c9a84c'"
+          onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+      </div>
+
+      <!-- الوصف وعدد النماذج -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-align-left" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+            AÇIKLAMA
+          </label>
+          <input type="text" id="hcmeDesc" placeholder="Örn: Fonksiyonel & Zarif"
+            style="width:100%;padding:11px 13px;background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        </div>
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-tag" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+            SAYAÇ ETİKETİ
+          </label>
+          <input type="text" id="hcmeCount" placeholder="Örn: 20 MODEL"
+            style="width:100%;padding:11px 13px;background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        </div>
+      </div>
+
+      <!-- نص الزر -->
+      <div>
+        <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+             text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+          <i class="fas fa-hand-pointer" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+          BUTON METNİ
+        </label>
+        <input type="text" id="hcmeBtnText" placeholder="Örn: Koleksiyonu Gör"
+          style="width:100%;padding:11px 13px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+          font-family:'Montserrat',sans-serif;font-size:12px;
+          outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;"
+          onfocus="this.style.borderColor='#c9a84c'"
+          onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+      </div>
+
+      <!-- رفع الصورة -->
+      <div>
+        <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+             text-transform:uppercase;font-weight:700;margin-bottom:8px;display:block;">
+          <i class="fas fa-image" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+          KART GÖRSELİ
+        </label>
+
+        <!-- معاينة الصورة الحالية -->
+        <div id="hcmeImgPreviewWrap" style="display:none;margin-bottom:10px;">
+          <div class="img-preview-wrap" style="width:100%;">
+            <img id="hcmeImgPreview" src="" alt="Preview" class="img-preview"/>
+            <button onclick="clearHcmeImage()" class="img-remove-btn">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- خيارات الرفع -->
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <!-- رابط URL -->
+          <div style="position:relative;">
+            <i class="fas fa-link" style="position:absolute;left:12px;top:50%;
+               transform:translateY(-50%);color:rgba(201,168,76,0.5);font-size:13px;"></i>
+            <input type="url" id="hcmeImageUrl"
+              placeholder="https://... (Görsel URL)"
+              oninput="onHcmeUrlInput(this.value)"
+              style="width:100%;padding:11px 13px 11px 36px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;font-size:11px;
+              outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          </div>
+
+          <!-- أو -->
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
+            <span style="font-size:9px;color:rgba(255,255,255,0.2);
+                  letter-spacing:2px;font-weight:700;">VEYA</span>
+            <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
+          </div>
+
+          <!-- أزرار الرفع -->
+          <div style="display:flex;gap:8px;">
+
+            <!-- معرض الصور -->
+            <label style="flex:1;cursor:pointer;">
+              <input type="file" id="hcmeFileGallery"
+                accept="image/*"
+                onchange="handleHcmeFileUpload(this,'gallery')"
+                style="display:none;"/>
+              <div style="
+                padding:10px 8px;border-radius:9px;
+                border:1px solid rgba(201,168,76,0.2);
+                background:rgba(201,168,76,0.06);
+                color:rgba(201,168,76,0.7);
+                font-family:'Montserrat',sans-serif;
+                font-size:9px;font-weight:700;letter-spacing:1px;
+                text-align:center;transition:all 0.25s;
+                display:flex;flex-direction:column;align-items:center;gap:5px;"
+                onmouseover="this.style.background='rgba(201,168,76,0.14)'"
+                onmouseout="this.style.background='rgba(201,168,76,0.06)'">
+                <i class="fas fa-images" style="font-size:18px;"></i>
+                GALERİ
+              </div>
+            </label>
+
+            <!-- الكاميرا -->
+            <label style="flex:1;cursor:pointer;">
+              <input type="file" id="hcmeFileCamera"
+                accept="image/*" capture="environment"
+                onchange="handleHcmeFileUpload(this,'camera')"
+                style="display:none;"/>
+              <div style="
+                padding:10px 8px;border-radius:9px;
+                border:1px solid rgba(96,165,250,0.2);
+                background:rgba(96,165,250,0.06);
+                color:rgba(96,165,250,0.7);
+                font-family:'Montserrat',sans-serif;
+                font-size:9px;font-weight:700;letter-spacing:1px;
+                text-align:center;transition:all 0.25s;
+                display:flex;flex-direction:column;align-items:center;gap:5px;"
+                onmouseover="this.style.background='rgba(96,165,250,0.14)'"
+                onmouseout="this.style.background='rgba(96,165,250,0.06)'">
+                <i class="fas fa-camera" style="font-size:18px;"></i>
+                KAMERA
+              </div>
+            </label>
+
+          </div>
+
+          <!-- شريط تقدم الرفع -->
+          <div id="hcmeUploadProgress" style="display:none;">
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                 margin-bottom:5px;">
+              <span style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1px;">
+                <i class="fas fa-cloud-upload-alt" style="color:rgba(201,168,76,0.5);
+                   margin-right:4px;"></i>
+                Supabase'e yükleniyor...
+              </span>
+              <span id="hcmeUploadPct" style="font-size:10px;font-weight:700;
+                    color:#c9a84c;">0%</span>
+            </div>
+            <div style="height:4px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+              <div id="hcmeUploadBar" style="height:100%;width:0%;
+                   background:linear-gradient(90deg,#c9a84c,#f0d080);
+                   border-radius:4px;transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- أزرار الحفظ -->
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button onclick="closeHcmEdit()" style="
+          flex:1;padding:12px;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.4);
+          font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1px;
+          cursor:pointer;transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          İPTAL
+        </button>
+        <button onclick="saveHcmCard()" id="hcmeSaveBtn" style="
+          flex:2;padding:12px;border-radius:10px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:2px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:7px;"
+          onmouseover="this.style.transform='translateY(-2px)';
+                       this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <i class="fas fa-save"></i> KAYDET
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 
 
@@ -14781,6 +15441,832 @@ function getFullPhoneNumber() {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ نظام إدارة بطاقات الصفحة الرئيسية ★
+   - جلب من Supabase
+   - إضافة / تعديل / حذف / ترتيب
+   - رفع صور لـ Supabase Storage
+============================================================ */
+
+const HC_TABLE   = 'home_cards';
+const HC_BUCKET  = 'home-images'; /* اسم الـ bucket في Supabase Storage */
+let   _homeCards = [];            /* مصفوفة البطاقات المحلية */
+let   _hcmEditingId = null;       /* id البطاقة التي يتم تعديلها */
+let   _hcmUploadedUrl = '';       /* رابط الصورة المرفوعة */
+
+/* ── تحميل البطاقات من Supabase ── */
+async function loadHomeCards() {
+  const sb = await initSupabase();
+  if (!sb) return;
+  try {
+    const { data, error } = await sb
+      .from(HC_TABLE)
+      .select('*')
+      .eq('is_active', true)
+      .order('order_num', { ascending: true });
+    if (error) throw error;
+    _homeCards = data || [];
+    renderHomeCards();
+  } catch(e) {
+    console.error('[HomeCards] تحميل فشل:', e);
+    /* استخدام البطاقات الثابتة كاحتياط */
+  }
+}
+
+/* ── رسم البطاقات في الصفحة الرئيسية ── */
+function renderHomeCards() {
+  const container = document.querySelector('.home-cards');
+  if (!container || !_homeCards.length) return;
+
+  const isAdmin = currentUser === ADMIN_USER;
+
+  container.innerHTML = _homeCards.map((card, idx) => {
+    /* إخفاء بطاقة admin للمستخدمين العاديين */
+    if (card.section_key === 'admin' && !isAdmin) return '';
+    if (card.section_key === 'settings' && !isAdmin) return '';
+
+    const delay = (0.5 + idx * 0.15).toFixed(2);
+    const countStyle = card.section_key === 'admin'
+      ? 'background:rgba(239,68,68,0.7);border-color:rgba(239,68,68,0.5);color:#fff;'
+      : '';
+
+    return `
+      <div class="home-card" onclick="enterSection('${card.section_key}')"
+           style="animation:cardSlideIn 0.7s ease ${delay}s both;">
+        <img class="home-card-img" src="${card.image_url || ''}" alt="${card.title}"
+             loading="lazy" draggable="false"
+             onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW'"/>
+        <div class="home-card-overlay"></div>
+        <div class="home-card-shine"></div>
+        ${card.count_label
+          ? `<div class="home-card-count" style="${countStyle}">${card.count_label}</div>`
+          : ''}
+        <div class="home-card-content">
+          <div class="home-card-num">0${idx+1} — ${card.section_key.toUpperCase()}</div>
+          <div class="home-card-title">
+            ${card.title}
+            ${card.subtitle ? `<span>${card.subtitle}</span>` : ''}
+          </div>
+          ${card.description
+            ? `<div class="home-card-desc">${card.description}</div>`
+            : ''}
+          <div class="home-card-btn">
+            ${card.btn_text || 'Gör'}
+            <i class="fas fa-arrow-right"></i>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── بناء صفحة الإعدادات ── */
+function buildSettingsPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div>
+          <div class="section-banner-tag">✦ WOW YÖNETİM</div>
+          <div class="section-banner-title">
+            AYARLAR & <span class="accent">YÖNETİM</span>
+          </div>
+          <div class="section-banner-count">
+            WOW hesabı özel kontrol paneli
+          </div>
+          <div class="section-banner-line"></div>
+        </div>
+      </div>
+
+      <div class="settings-page-wrap">
+
+        <div class="settings-section-title">
+          <i class="fas fa-home" style="color:rgba(201,168,76,0.5);"></i>
+          ANA SAYFA YÖNETİMİ
+        </div>
+
+        <!-- زر التحكم بالبطاقات -->
+        <div class="settings-btn-card" onclick="openHomeCardsModal()">
+          <div class="settings-btn-icon">
+            <i class="fas fa-th-large"></i>
+          </div>
+          <div class="settings-btn-info">
+            <div class="settings-btn-title">
+              Ana Sayfa Kartlarını Düzenle
+            </div>
+            <div class="settings-btn-desc">
+              Kartların sıralamasını, görsellerini, başlıklarını ve<br/>
+              bağlı bölümlerini yönetin. Yeni kart ekleyin veya silin.
+            </div>
+          </div>
+          <i class="fas fa-chevron-right settings-btn-arrow"></i>
+        </div>
+
+        <!-- معلومات إضافية -->
+        <div style="
+          background:rgba(201,168,76,0.04);
+          border:1px solid rgba(201,168,76,0.12);
+          border-radius:14px;padding:16px 18px;
+          margin-top:8px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+            <i class="fas fa-info-circle" style="color:rgba(201,168,76,0.5);font-size:14px;"></i>
+            <span style="font-size:10px;letter-spacing:2px;color:rgba(201,168,76,0.6);
+                  font-weight:700;text-transform:uppercase;">BİLGİ</span>
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.3);line-height:1.8;letter-spacing:0.3px;">
+            • Kartlar <strong style="color:rgba(255,255,255,0.5);">gerçek zamanlı</strong>
+              güncellenir — tüm kullanıcılar anında görür.<br/>
+            • Görsel olarak <strong style="color:rgba(255,255,255,0.5);">URL</strong>,
+              <strong style="color:rgba(255,255,255,0.5);">Galeri</strong> veya
+              <strong style="color:rgba(255,255,255,0.5);">Kamera</strong> kullanabilirsiniz.<br/>
+            • Görseller Supabase Storage'a otomatik yüklenir.<br/>
+            • Sıra numarası küçük olan kart <strong style="color:rgba(255,255,255,0.5);">önce</strong> görünür.
+          </div>
+        </div>
+
+      </div>
+    </div>`;
+}
+
+/* ── فتح نافذة إدارة البطاقات ── */
+async function openHomeCardsModal() {
+  document.getElementById('homeCardsModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  await refreshHcmList();
+}
+
+function closeHomeCardsModal() {
+  document.getElementById('homeCardsModal').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+function handleHcmBg(e) {
+  if (e.target === document.getElementById('homeCardsModal'))
+    closeHomeCardsModal();
+}
+
+/* ── تحديث قائمة البطاقات في النافذة ── */
+async function refreshHcmList() {
+  const listEl = document.getElementById('hcmCardsList');
+  if (!listEl) return;
+
+  listEl.innerHTML = `
+    <div style="text-align:center;padding:30px;">
+      <i class="fas fa-spinner fa-spin"
+         style="font-size:24px;color:rgba(201,168,76,0.4);"></i>
+    </div>`;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data, error } = await sb
+    .from(HC_TABLE)
+    .select('*')
+    .order('order_num', { ascending: true });
+
+  if (error || !data) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:30px;color:#ef4444;">
+        <i class="fas fa-exclamation-circle" style="font-size:24px;"></i>
+        <p style="margin-top:10px;font-size:11px;">Yükleme hatası</p>
+      </div>`;
+    return;
+  }
+
+  _homeCards = data.filter(c => c.is_active);
+
+  if (!data.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
+        <i class="fas fa-th-large"
+           style="font-size:36px;display:block;margin-bottom:14px;
+                  color:rgba(201,168,76,0.15);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">Henüz kart yok</p>
+        <p style="font-size:10px;margin-top:6px;color:rgba(255,255,255,0.15);">
+          "YENİ KART" butonuna tıklayın
+        </p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = data.map((card, idx) => `
+    <div class="hcm-card" id="hcmcard-${card.id}">
+      <div class="hcm-card-order">${card.order_num}</div>
+      <img class="hcm-card-thumb"
+           src="${card.image_url || 'https://placehold.co/64x50/1a1a1a/c9a84c?text=W'}"
+           alt="${card.title}"
+           onerror="this.src='https://placehold.co/64x50/1a1a1a/c9a84c?text=W'"
+           draggable="false"/>
+      <div class="hcm-card-info">
+        <div class="hcm-card-title">
+          ${card.title} ${card.subtitle ? `<span style="color:#c9a84c;font-size:11px;">${card.subtitle}</span>` : ''}
+        </div>
+        <div class="hcm-card-sub">${card.section_key}</div>
+        ${card.description
+          ? `<div class="hcm-card-desc">${card.description}</div>`
+          : ''}
+      </div>
+      <div class="hcm-card-actions">
+        <!-- أعلى -->
+        <button class="hcm-action-btn up"
+                onclick="moveHcmCard(${card.id},-1)"
+                title="Yukarı"
+                ${idx === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>
+          <i class="fas fa-chevron-up"></i>
+        </button>
+        <!-- أسفل -->
+        <button class="hcm-action-btn dn"
+                onclick="moveHcmCard(${card.id},+1)"
+                title="Aşağı"
+                ${idx === data.length-1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <!-- تعديل -->
+        <button class="hcm-action-btn edit"
+                onclick="openHcmEdit(${card.id})"
+                title="Düzenle">
+          <i class="fas fa-edit"></i>
+        </button>
+        <!-- حذف -->
+        <button class="hcm-action-btn del"
+                onclick="deleteHcmCard(${card.id})"
+                title="Sil">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>`).join('');
+
+  /* تحديث الصفحة الرئيسية */
+  renderHomeCards();
+}
+
+/* ── تحريك بطاقة لأعلى/أسفل ── */
+async function moveHcmCard(cardId, direction) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: allCards } = await sb
+    .from(HC_TABLE)
+    .select('id, order_num')
+    .order('order_num', { ascending: true });
+
+  if (!allCards) return;
+
+  const idx = allCards.findIndex(c => c.id === cardId);
+  if (idx === -1) return;
+
+  const swapIdx = idx + direction;
+  if (swapIdx < 0 || swapIdx >= allCards.length) return;
+
+  const cardA = allCards[idx];
+  const cardB = allCards[swapIdx];
+
+  /* تبادل order_num */
+  await Promise.all([
+    sb.from(HC_TABLE).update({ order_num: cardB.order_num }).eq('id', cardA.id),
+    sb.from(HC_TABLE).update({ order_num: cardA.order_num }).eq('id', cardB.id),
+  ]);
+
+  await refreshHcmList();
+  showInvToast('Sıralama güncellendi ✓', 'success');
+}
+
+/* ── فتح نافذة التعديل/الإضافة ── */
+async function openHcmEdit(cardId) {
+  _hcmEditingId  = cardId;
+  _hcmUploadedUrl = '';
+
+  const titleEl = document.getElementById('hcmeTitle');
+  if (titleEl) titleEl.textContent = cardId ? 'Kartı Düzenle' : 'Yeni Kart Ekle';
+
+  /* مسح الحقول */
+  ['hcmeId','hcmeOrder','hcmeTitle2','hcmeSubtitle',
+   'hcmeDesc','hcmeCount','hcmeBtnText','hcmeImageUrl'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  clearHcmeImage();
+
+  if (cardId) {
+    /* جلب بيانات البطاقة */
+    const sb = await initSupabase();
+    if (!sb) return;
+    const { data } = await sb.from(HC_TABLE).select('*').eq('id', cardId).single();
+    if (data) {
+      document.getElementById('hcmeId').value         = data.id;
+      document.getElementById('hcmeOrder').value      = data.order_num;
+      document.getElementById('hcmeTitle2').value     = data.title;
+      document.getElementById('hcmeSubtitle').value   = data.subtitle || '';
+      document.getElementById('hcmeDesc').value       = data.description || '';
+      document.getElementById('hcmeCount').value      = data.count_label || '';
+      document.getElementById('hcmeBtnText').value    = data.btn_text || '';
+      document.getElementById('hcmeImageUrl').value   = data.image_url || '';
+      document.getElementById('hcmeSectionKey').value = data.section_key || 'orta';
+
+      if (data.image_url) {
+        _hcmUploadedUrl = data.image_url;
+        showHcmeImagePreview(data.image_url);
+      }
+    }
+  } else {
+    /* ترتيب افتراضي = آخر رقم + 1 */
+    const maxOrder = _homeCards.length > 0
+      ? Math.max(..._homeCards.map(c => c.order_num)) + 1
+      : 1;
+    document.getElementById('hcmeOrder').value   = maxOrder;
+    document.getElementById('hcmeBtnText').value = 'Koleksiyonu Gör';
+  }
+
+  document.getElementById('hcmEditModal').classList.add('active');
+}
+
+function closeHcmEdit() {
+  document.getElementById('hcmEditModal').classList.remove('active');
+  _hcmEditingId   = null;
+  _hcmUploadedUrl = '';
+  clearHcmeImage();
+}
+
+function handleHcmEditBg(e) {
+  if (e.target === document.getElementById('hcmEditModal')) closeHcmEdit();
+}
+
+/* ── معاينة الصورة ── */
+function showHcmeImagePreview(url) {
+  const wrap = document.getElementById('hcmeImgPreviewWrap');
+  const img  = document.getElementById('hcmeImgPreview');
+  if (!wrap || !img) return;
+  img.src          = url;
+  wrap.style.display = 'block';
+}
+
+function clearHcmeImage() {
+  const wrap = document.getElementById('hcmeImgPreviewWrap');
+  const img  = document.getElementById('hcmeImgPreview');
+  const urlInp = document.getElementById('hcmeImageUrl');
+  if (wrap)   wrap.style.display = 'none';
+  if (img)    img.src = '';
+  if (urlInp) urlInp.value = '';
+  _hcmUploadedUrl = '';
+}
+
+/* ── عند إدخال URL يدوياً ── */
+function onHcmeUrlInput(val) {
+  _hcmUploadedUrl = val.trim();
+  if (_hcmUploadedUrl) {
+    showHcmeImagePreview(_hcmUploadedUrl);
+  } else {
+    clearHcmeImage();
+  }
+}
+
+/* ── رفع الصورة لـ Supabase Storage ── */
+async function handleHcmeFileUpload(input, source) {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  /* التحقق من النوع والحجم */
+  if (!file.type.startsWith('image/')) {
+    showInvToast('Lütfen bir görsel dosyası seçin!', 'error');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showInvToast('Dosya boyutu 10MB\'dan küçük olmalıdır!', 'error');
+    return;
+  }
+
+  const progressWrap = document.getElementById('hcmeUploadProgress');
+  const progressBar  = document.getElementById('hcmeUploadBar');
+  const progressPct  = document.getElementById('hcmeUploadPct');
+
+  /* إظهار شريط التقدم */
+  if (progressWrap) progressWrap.style.display = 'block';
+
+  const updateProgress = (pct) => {
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressPct) progressPct.textContent = pct + '%';
+  };
+
+  updateProgress(10);
+
+  try {
+    const sb = await initSupabase();
+    if (!sb) throw new Error('Supabase bağlantısı yok');
+
+    updateProgress(30);
+
+    /* اسم فريد للملف */
+    const ext      = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const fileName = `card_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
+    const filePath = `home-cards/${fileName}`;
+
+    updateProgress(50);
+
+    /* رفع الملف */
+    const { data: uploadData, error: uploadError } = await sb.storage
+      .from(HC_BUCKET)
+      .upload(filePath, file, {
+        cacheControl : '3600',
+        upsert       : false,
+        contentType  : file.type,
+      });
+
+    if (uploadError) {
+      /* إذا لم يكن الـ bucket موجوداً، نجرب إنشاءه */
+      if (uploadError.message?.includes('Bucket not found') ||
+          uploadError.message?.includes('bucket')) {
+        /* محاولة إنشاء الـ bucket */
+        await sb.storage.createBucket(HC_BUCKET, { public: true });
+        /* إعادة المحاولة */
+        const { error: retryErr } = await sb.storage
+          .from(HC_BUCKET)
+          .upload(filePath, file, { cacheControl:'3600', upsert:false });
+        if (retryErr) throw retryErr;
+      } else {
+        throw uploadError;
+      }
+    }
+
+    updateProgress(80);
+
+    /* الحصول على الرابط العام */
+    const { data: urlData } = sb.storage
+      .from(HC_BUCKET)
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData?.publicUrl;
+    if (!publicUrl) throw new Error('URL alınamadı');
+
+    updateProgress(100);
+
+    /* تحديث الحقول */
+    _hcmUploadedUrl = publicUrl;
+    const urlInp = document.getElementById('hcmeImageUrl');
+    if (urlInp) urlInp.value = publicUrl;
+    showHcmeImagePreview(publicUrl);
+
+    showInvToast('Görsel başarıyla yüklendi ✓', 'success');
+
+    setTimeout(() => {
+      if (progressWrap) progressWrap.style.display = 'none';
+      updateProgress(0);
+    }, 1500);
+
+  } catch(e) {
+    console.error('[Storage] رفع فشل:', e);
+    if (progressWrap) progressWrap.style.display = 'none';
+    updateProgress(0);
+
+    /* احتياط: تحويل الصورة لـ base64 محلياً */
+    showInvToast('Supabase Storage hatası — URL kullanın', 'error');
+
+    /* نقرأ الصورة محلياً كـ preview فقط */
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      showHcmeImagePreview(ev.target.result);
+      /* لا نحفظ base64 في DB — نطلب من المستخدم استخدام URL */
+    };
+    reader.readAsDataURL(file);
+  }
+
+  /* مسح الـ input لإتاحة اختيار نفس الملف مرة أخرى */
+  input.value = '';
+}
+
+/* ── حفظ البطاقة في Supabase ── */
+async function saveHcmCard() {
+  const btn = document.getElementById('hcmeSaveBtn');
+
+  const id         = document.getElementById('hcmeId')?.value;
+  const orderNum   = parseInt(document.getElementById('hcmeOrder')?.value) || 1;
+  const title      = document.getElementById('hcmeTitle2')?.value.trim();
+  const subtitle   = document.getElementById('hcmeSubtitle')?.value.trim();
+  const desc       = document.getElementById('hcmeDesc')?.value.trim();
+  const countLabel = document.getElementById('hcmeCount')?.value.trim();
+  const btnText    = document.getElementById('hcmeBtnText')?.value.trim();
+  const sectionKey = document.getElementById('hcmeSectionKey')?.value;
+  const imageUrl   = _hcmUploadedUrl ||
+                     document.getElementById('hcmeImageUrl')?.value.trim() || '';
+
+  /* التحقق */
+  if (!title) {
+    showInvToast('Lütfen bir başlık girin!', 'error');
+    document.getElementById('hcmeTitle2')?.focus();
+    return;
+  }
+  if (!sectionKey) {
+    showInvToast('Lütfen bir bölüm seçin!', 'error');
+    return;
+  }
+
+  /* تعطيل الزر */
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> KAYDET';
+    }
+    showInvToast('Bağlantı hatası!', 'error');
+    return;
+  }
+
+  const cardData = {
+    order_num   : orderNum,
+    title       : title,
+    subtitle    : subtitle || '',
+    description : desc || '',
+    count_label : countLabel || '',
+    btn_text    : btnText || 'Koleksiyonu Gör',
+    section_key : sectionKey,
+    image_url   : imageUrl,
+    is_active   : true,
+    updated_at  : new Date().toISOString(),
+  };
+
+  try {
+    let error;
+
+    if (id) {
+      /* تعديل */
+      ({ error } = await sb
+        .from(HC_TABLE)
+        .update(cardData)
+        .eq('id', Number(id)));
+    } else {
+      /* إضافة جديدة */
+      ({ error } = await sb
+        .from(HC_TABLE)
+        .insert([cardData]));
+    }
+
+    if (error) throw error;
+
+    showInvToast(id ? 'Kart güncellendi ✓' : 'Yeni kart eklendi ✓', 'success');
+    closeHcmEdit();
+    await refreshHcmList();
+
+  } catch(e) {
+    console.error('[HomeCards] kaydetme hatası:', e);
+    showInvToast('Kayıt hatası: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> KAYDET';
+    }
+  }
+}
+
+/* ── حذف بطاقة ── */
+async function deleteHcmCard(cardId) {
+  const confirmed = await showDeleteConfirm();
+  if (!confirmed) return;
+
+  const card = document.getElementById('hcmcard-' + cardId);
+  if (card) {
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity    = '0.4';
+    card.style.transform  = 'scale(0.97)';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* حذف ناعم — نضع is_active = false */
+  const { error } = await sb
+    .from(HC_TABLE)
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('id', cardId);
+
+  if (error) {
+    console.error('[HomeCards] حذف فشل:', error.message);
+    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
+    showInvToast('Silme hatası: ' + error.message, 'error');
+    return;
+  }
+
+  /* إزالة بأنيميشن */
+  if (card) {
+    card.style.maxHeight    = card.offsetHeight + 'px';
+    card.style.overflow     = 'hidden';
+    requestAnimationFrame(() => {
+      card.style.transition   = 'all 0.4s ease';
+      card.style.maxHeight    = '0';
+      card.style.opacity      = '0';
+      card.style.marginBottom = '0';
+      card.style.padding      = '0';
+      card.style.border       = 'none';
+      setTimeout(() => card.remove(), 420);
+    });
+  }
+
+  _homeCards = _homeCards.filter(c => c.id !== cardId);
+  renderHomeCards();
+  showInvToast('Kart silindi ✓', 'success');
+}
+
+/* ── Realtime للبطاقات ── */
+async function subscribeHomeCards() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  sb.channel('home-cards-live')
+    .on('postgres_changes', {
+      event  : '*',
+      schema : 'public',
+      table  : HC_TABLE,
+    }, async () => {
+      /* إعادة تحميل البطاقات عند أي تغيير */
+      await loadHomeCards();
+      /* تحديث نافذة الإدارة إذا كانت مفتوحة */
+      if (document.getElementById('homeCardsModal')
+          ?.classList.contains('active')) {
+        await refreshHcmList();
+      }
+    })
+    .subscribe();
+}
+
+/* ============================================================
+   ★ تعديل showPage لدعم صفحة الإعدادات ★
+============================================================ */
+const _origShowPage_settings = showPage;
+showPage = function(cat) {
+  if (cat === 'settings') {
+    if (currentUser !== ADMIN_USER) return;
+    currentPage = 'settings';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    const el = document.getElementById('nav-settings');
+    if (el) el.classList.add('active');
+    filteredImages = [];
+    buildSettingsPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'settings' });
+    return;
+  }
+  _origShowPage_settings(cat);
+};
+
+/* ── تعديل enterSection لدعم settings ── */
+const _origEnterSection_settings = enterSection;
+enterSection = function(cat) {
+  if (cat === 'settings') {
+    const hs = document.getElementById('homeScreen');
+    hs.style.transition = 'opacity 0.4s ease';
+    hs.style.opacity    = '0';
+    setTimeout(() => {
+      hs.style.display = 'none';
+      document.getElementById('mainSite').style.display = 'block';
+      showPage('settings');
+    }, 400);
+    return;
+  }
+  _origEnterSection_settings(cat);
+};
+
+/* ============================================================
+   ★ إضافة روابط الإعدادات في الهيدر والموبايل ★
+============================================================ */
+(function addSettingsNavLinks() {
+  setTimeout(() => {
+
+    /* ── ديسكتوب ── */
+    const navCapsule = document.querySelector('.nav-capsule');
+    if (navCapsule && !document.getElementById('nav-settings')) {
+      const link = document.createElement('a');
+      link.id        = 'nav-settings';
+      link.className = 'nav-link';
+      link.href      = '#';
+      link.style.display = 'none';
+      link.innerHTML = `<i class="fas fa-cog"></i> AYARLAR`;
+      link.onclick   = (e) => { e.preventDefault(); showPage('settings'); };
+      navCapsule.appendChild(link);
+    }
+
+    /* ── موبايل ── */
+    const mobMenu = document.querySelector('.mobile-menu-inner');
+    if (mobMenu && !document.getElementById('mob-settings')) {
+      const mobLink = document.createElement('a');
+      mobLink.id        = 'mob-settings';
+      mobLink.href      = '#';
+      mobLink.style.display = 'none';
+      mobLink.innerHTML = `<i class="fas fa-cog"></i> AYARLAR`;
+      mobLink.onclick   = (e) => {
+        e.preventDefault();
+        showPage('settings');
+        closeMobileMenu();
+      };
+      /* أضفه بعد رابط الرسائل */
+      const msgsLink = document.getElementById('mob-messages');
+      if (msgsLink) msgsLink.after(mobLink);
+      else mobMenu.appendChild(mobLink);
+    }
+
+  }, 800);
+})();
+
+/* ── تحديث updateAdminNavVisibility لإظهار رابط الإعدادات ── */
+const _origUpdateAdminNav_settings = updateAdminNavVisibility;
+updateAdminNavVisibility = function() {
+  _origUpdateAdminNav_settings();
+  const isAdmin = currentUser === ADMIN_USER;
+  ['nav-settings', 'mob-settings'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? '' : 'none';
+  });
+};
+
+/* ============================================================
+   ★ إضافة بطاقة الإعدادات في الهوم ★
+============================================================ */
+(function addSettingsHomeCard() {
+  setTimeout(() => {
+    const homeCards = document.querySelector('.home-cards');
+    if (!homeCards || document.getElementById('homeSettingsCard')) return;
+
+    const card = document.createElement('div');
+    card.id        = 'homeSettingsCard';
+    card.className = 'home-card';
+    card.style.display = 'none';
+    card.style.animation = 'cardSlideIn 0.7s ease 1.1s both';
+    card.onclick   = () => enterSection('settings');
+
+    card.innerHTML = `
+      <img class="home-card-img"
+           src="https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png"
+           alt="Ayarlar" loading="lazy" draggable="false"
+           onerror="this.style.display='none'"/>
+      <div class="home-card-overlay"></div>
+      <div class="home-card-shine"></div>
+      <div class="home-card-count"
+           style="background:rgba(201,168,76,0.7);
+                  border-color:rgba(201,168,76,0.5);
+                  color:#0a0a0a;font-weight:900;">
+        WOW
+      </div>
+      <div class="home-card-content">
+        <div class="home-card-num">06 — YÖNETİM</div>
+        <div class="home-card-title">
+          AYARLAR<span>& YÖNETİM</span>
+        </div>
+        <div class="home-card-desc">Ana Sayfa Kartlarını Düzenle</div>
+        <div class="home-card-btn">
+          Ayarlara Git <i class="fas fa-cog"></i>
+        </div>
+      </div>`;
+
+    homeCards.appendChild(card);
+  }, 600);
+})();
+
+/* ── تحديث showHomeScreen لإظهار بطاقة الإعدادات ── */
+const _origShowHomeScreen_settings = showHomeScreen;
+showHomeScreen = function() {
+  _origShowHomeScreen_settings();
+
+  setTimeout(() => {
+    const isAdmin = currentUser === ADMIN_USER;
+
+    /* بطاقة الإعدادات */
+    const settingsCard = document.getElementById('homeSettingsCard');
+    if (settingsCard) {
+      settingsCard.style.display = isAdmin ? 'block' : 'none';
+    }
+
+    /* تحديث البطاقات من Supabase */
+    if (_homeCards.length > 0) {
+      renderHomeCards();
+    }
+  }, 100);
+};
+
+/* ============================================================
+   ★ تشغيل النظام عند تسجيل الدخول ★
+============================================================ */
+const _origFinishLogin_settings = finishLogin;
+finishLogin = function() {
+  _origFinishLogin_settings();
+  setTimeout(async () => {
+    /* تحميل البطاقات من Supabase */
+    await loadHomeCards();
+    /* الاشتراك في التحديثات الحية */
+    subscribeHomeCards();
+  }, 1200);
+};
 
   
   
