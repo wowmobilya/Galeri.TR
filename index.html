@@ -14414,28 +14414,33 @@ function buildCountryList(filter = '') {
 
 /* ── اختيار دولة ── */
 function selectCountry(code, flag, name) {
-  /* البحث عن بيانات الدولة كاملة */
   const found = COUNTRIES.find(c => c.code === code && c.name === name);
   selectedCountry = found || { code, flag, name, maxDigits:15, placeholder:'Numara girin' };
 
-  /* تحديث الزر */
   const flagEl = document.getElementById('selectedFlag');
   const codeEl = document.getElementById('selectedCode');
   if (flagEl) flagEl.textContent = flag;
   if (codeEl) codeEl.textContent = code;
 
-  /* ── تطبيق maxDigits على حقل الإدخال ── */
   const inp = document.getElementById('regPhone');
   if (inp) {
-    inp.maxLength   = selectedCountry.maxDigits;
+    /* ★ احسب maxLength الصحيح بناءً على pattern ★ */
+    const fullFormatted = formatPhoneDigits(
+      '0'.repeat(selectedCountry.maxDigits || 15),
+      selectedCountry.pattern
+    );
+    inp.maxLength   = fullFormatted.length;
     inp.placeholder = selectedCountry.placeholder || 'Numara girin';
 
-    /* مسح الرقم إذا تجاوز الحد الجديد */
-    if (inp.value.length > selectedCountry.maxDigits) {
-      inp.value = inp.value.slice(0, selectedCountry.maxDigits);
+    /* مسح الأرقام الزائدة */
+    const currentDigits = inp.value.replace(/\D/g, '');
+    if (currentDigits.length > selectedCountry.maxDigits) {
+      inp.value = formatPhoneDigits(
+        currentDigits.slice(0, selectedCountry.maxDigits),
+        selectedCountry.pattern
+      );
     }
 
-    /* تأثير بصري عند تغيير الدولة */
     inp.style.borderColor = 'rgba(201,168,76,0.7)';
     inp.style.boxShadow   = '0 0 20px rgba(201,168,76,0.2)';
     setTimeout(() => {
@@ -14493,8 +14498,10 @@ function handlePhoneInput(inp) {
   const selStart = inp.selectionStart;
   const oldVal   = inp.value;
 
+  /* إزالة كل ما ليس رقماً */
   let digits = inp.value.replace(/\D/g, '');
 
+  /* منع الصفر في البداية */
   if (digits.startsWith('0')) {
     digits = digits.replace(/^0+/, '');
     inp.style.borderColor = 'rgba(239,68,68,0.7)';
@@ -14505,12 +14512,23 @@ function handlePhoneInput(inp) {
     }, 600);
   }
 
+  /* ★ الحد الأقصى على الأرقام فقط — ليس على الحروف المنسقة ★ */
   const max = selectedCountry.maxDigits || 15;
   if (digits.length > max) digits = digits.slice(0, max);
 
+  /* تنسيق بالمسافات */
   const formatted = formatPhoneDigits(digits, selectedCountry.pattern);
+
+  /* ★ maxLength = طول النص المنسق الكامل (أرقام + مسافات) ★ */
+  const fullFormatted = formatPhoneDigits(
+    '0'.repeat(max),          /* نملأ بأرقام وهمية لحساب الطول الكامل */
+    selectedCountry.pattern
+  );
+  inp.maxLength = fullFormatted.length;   /* مثال تركيا: "000 000 00 00" = 13 */
+
   inp.value = formatted;
 
+  /* تحديث موضع المؤشر */
   const added  = formatted.length - oldVal.length;
   const newPos = Math.max(0, selStart + (added > 0 ? added : 0));
   try { inp.setSelectionRange(newPos, newPos); } catch(e) {}
@@ -14518,6 +14536,7 @@ function handlePhoneInput(inp) {
   updateDigitCounter(digits.length, max);
   updatePhonePreview();
 }
+
 
 /* ── دالة التنسيق بالمسافات ── */
 function formatPhoneDigits(digits, pattern) {
@@ -14648,15 +14667,21 @@ function getFullPhoneNumber() {
 
 
 
-/* ── تهيئة حقل الهاتف بقيم تركيا الافتراضية ── */
 (function initPhoneField() {
   setTimeout(() => {
     const inp = document.getElementById('regPhone');
     if (!inp) return;
-    inp.maxLength   = selectedCountry.maxDigits;   /* 10 لتركيا */
-    inp.placeholder = selectedCountry.placeholder; /* 5XX XXX XX XX */
+
+    /* ★ احسب maxLength الصحيح من البداية ★ */
+    const fullFormatted = formatPhoneDigits(
+      '0'.repeat(selectedCountry.maxDigits || 10),
+      selectedCountry.pattern
+    );
+    inp.maxLength   = fullFormatted.length;   /* تركيا = 13 */
+    inp.placeholder = selectedCountry.placeholder;
   }, 500);
 })();
+
 
   
 
