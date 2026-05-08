@@ -15969,165 +15969,115 @@ function handleAdminCardClick(sectionKey) {
    يفتح نافذة تُظهر واجهة المستخدم العادي
 ───────────────────────────────────────── */
 function openUserPreviewMode() {
-  document.getElementById('userPreviewModal')?.remove();
+  /* ── إنشاء زر الإغلاق فوق الـ homeScreen ── */
+  document.getElementById('previewCloseBar')?.remove();
 
-  const modal = document.createElement('div');
-  modal.id = 'userPreviewModal';
-  modal.style.cssText = `
-    position:fixed;inset:0;z-index:9000;
-    background:#0a0a0a;
-    display:flex;flex-direction:column;
-    overflow:hidden;
-    animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;`;
+  const bar = document.createElement('div');
+  bar.id = 'previewCloseBar';
+  bar.style.cssText = `
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 99999;
+    padding: 10px 16px;
+    background: rgba(0,0,0,0.88);
+    border-bottom: 1px solid rgba(99,102,241,0.35);
+    backdrop-filter: blur(20px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  `;
 
-  /* ── بناء HTML البطاقات طبق الأصل ── */
-  const cards = (_homeCards && _homeCards.length)
-    ? _homeCards.filter(c =>
-        c.is_active !== false &&
-        c.section_key !== 'admin' &&
-        c.section_key !== 'settings' &&
-        c.section_key !== 'users_panel' &&
-        c.section_key !== 'stock_panel' &&
-        c.section_key !== 'messages' &&
-        c.section_key !== 'user_preview')
-    : getStaticCards();
-
-  const cardsHTML = cards.map((card, idx) => {
-    const delay = (0.5 + idx * 0.15).toFixed(2);
-    const num   = String(idx + 1).padStart(2, '0');
-    return `
-      <div class="home-card" style="animation-delay:${delay}s;cursor:default;">
-        <img class="home-card-img"
-             src="${card.image_url || ''}"
-             alt="${card.title}"
-             loading="lazy" draggable="false"
-             onerror="this.style.display='none'"/>
-        <div class="home-card-overlay"></div>
-        <div class="home-card-shine"></div>
-        <div class="home-card-count">${card.count_label || ''}</div>
-        <div class="home-card-content">
-          <div class="home-card-num">${num} — KOLEKSİYON</div>
-          <div class="home-card-title">
-            ${card.title}
-            ${card.subtitle ? `<span>${card.subtitle}</span>` : ''}
-          </div>
-          <div class="home-card-desc">${card.description || ''}</div>
-          <div class="home-card-btn" style="opacity:1;transform:translateY(0);">
-            ${card.btn_text || 'Koleksiyonu Gör'}
-            <i class="fas fa-arrow-right"></i>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-
-  modal.innerHTML = `
-    <!-- خلفيات طبق الأصل -->
-    <div class="home-bg"    style="position:fixed;"></div>
-    <div class="home-grid-bg" style="position:fixed;"></div>
-
-    <!-- شريط الأدوات العلوي -->
-    <div style="
-      position:relative;z-index:10;
-      padding:10px 16px;
-      background:rgba(0,0,0,0.85);
-      border-bottom:1px solid rgba(201,168,76,0.2);
-      display:flex;align-items:center;justify-content:space-between;
-      flex-shrink:0;gap:10px;
-      backdrop-filter:blur(20px);">
-
-      <!-- يسار: بادج المعاينة -->
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="
-          display:flex;align-items:center;gap:7px;
-          padding:5px 13px;border-radius:50px;
-          background:rgba(99,102,241,0.15);
-          border:1px solid rgba(99,102,241,0.35);
-          color:#818cf8;font-size:10px;font-weight:700;
-          letter-spacing:1.5px;">
-          <i class="fas fa-eye" style="font-size:11px;"></i>
-          MÜŞTERİ GÖRÜNÜMÜ
-        </div>
-        <div style="
-          font-size:9px;color:rgba(255,255,255,0.2);
-          letter-spacing:1px;font-weight:600;">
-          — Salt okunur önizleme
-        </div>
+  bar.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="
+        display:flex;align-items:center;gap:7px;
+        padding:5px 13px;border-radius:50px;
+        background:rgba(99,102,241,0.15);
+        border:1px solid rgba(99,102,241,0.35);
+        color:#818cf8;font-size:10px;font-weight:700;
+        letter-spacing:1.5px;font-family:'Montserrat',sans-serif;">
+        <i class="fas fa-eye" style="font-size:11px;"></i>
+        MÜŞTERİ GÖRÜNÜMÜ ÖNİZLEME
       </div>
-
-      <!-- يمين: زر الإغلاق -->
-      <button onclick="closeUserPreviewMode()" style="
-        padding:8px 18px;border-radius:9px;border:none;
-        background:linear-gradient(135deg,#6366f1,#8b5cf6);
-        color:#fff;font-family:'Montserrat',sans-serif;
-        font-size:10px;font-weight:900;letter-spacing:1.5px;
-        cursor:pointer;display:flex;align-items:center;gap:7px;
-        transition:all 0.25s;flex-shrink:0;
-        box-shadow:0 4px 14px rgba(99,102,241,0.35);"
-        onmouseover="this.style.transform='translateY(-2px)'"
-        onmouseout="this.style.transform=''">
-        <i class="fas fa-times"></i> KAPAT
-      </button>
+      <span style="
+        font-size:9px;color:rgba(255,255,255,0.2);
+        letter-spacing:1px;font-weight:600;
+        font-family:'Montserrat',sans-serif;">
+        — Salt okunur
+      </span>
     </div>
 
-    <!-- المحتوى الرئيسي — نسخة طبق الأصل من home-inner -->
-    <div style="
-      position:relative;z-index:1;
-      flex:1;overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
-      scrollbar-width:thin;
-      scrollbar-color:rgba(201,168,76,0.3) transparent;">
+    <button onclick="closeUserPreviewMode()" style="
+      padding:8px 18px;border-radius:9px;border:none;
+      background:linear-gradient(135deg,#6366f1,#8b5cf6);
+      color:#fff;font-family:'Montserrat',sans-serif;
+      font-size:10px;font-weight:900;letter-spacing:1.5px;
+      cursor:pointer;display:flex;align-items:center;gap:7px;
+      box-shadow:0 4px 14px rgba(99,102,241,0.35);
+      transition:all 0.25s;"
+      onmouseover="this.style.transform='translateY(-2px)'"
+      onmouseout="this.style.transform=''">
+      <i class="fas fa-times"></i> KAPAT
+    </button>
+  `;
 
-      <div class="home-inner" style="
-        animation:none;
-        min-height:auto;
-        padding:40px 20px 60px;">
+  document.body.appendChild(bar);
 
-        <!-- الشعار -->
-        <div class="home-logo-wrap" style="animation:none;opacity:1;">
-          <img class="home-logo-img"
-               src="https://up6.cc/2026/04/177695590342861.png"
-               onerror="this.style.display='none'"
-               alt="WOW MOBİLYA" draggable="false"/>
-          <div class="home-logo-line"></div>
-          <div class="home-tagline">Premium Mobilya Koleksiyonu</div>
-        </div>
+  /* ── إخفاء mainSite وإظهار homeScreen ── */
+  document.getElementById('mainSite').style.display   = 'none';
+  document.getElementById('loginOverlay').style.display = 'none';
 
-        <!-- الترحيب -->
-        <div class="home-welcome" style="animation:none;opacity:1;">
-          <div class="home-welcome-title">✦ &nbsp; Koleksiyon Seçiniz &nbsp; ✦</div>
-        </div>
+  const hs = document.getElementById('homeScreen');
+  hs.style.display    = 'block';
+  hs.style.opacity    = '1';
+  hs.style.transition = '';
+  hs.style.zIndex     = '8000';
 
-        <!-- البطاقات — نفس الشبكة تماماً -->
-        <div class="home-cards user-mode" style="
-          animation:none;opacity:1;
-          grid-template-columns:repeat(2,1fr);">
-          ${cardsHTML}
-        </div>
+  /* ── إضافة padding للـ home-inner حتى لا يختبئ تحت الشريط ── */
+  const inner = hs.querySelector('.home-inner');
+  if (inner) inner.style.paddingTop = '70px';
 
-        <!-- الفوتر -->
-        <div class="home-footer" style="animation:none;opacity:1;">
-          <div class="home-footer-text">
-            © 2026 WOW MOBİLYA — Tüm Hakları Saklıdır
-          </div>
-        </div>
+  /* ── تعطيل النقر على البطاقات (معاينة فقط) ── */
+  hs.querySelectorAll('.home-card').forEach(card => {
+    card.dataset.origOnclick = card.getAttribute('onclick') || '';
+    card.removeAttribute('onclick');
+    card.style.cursor = 'default';
+    card.style.pointerEvents = 'none';
+  });
 
-      </div>
-    </div>`;
+  /* ── علامة أننا في وضع المعاينة ── */
+  hs.dataset.previewMode = 'true';
 
-  document.body.appendChild(modal);
-  document.body.style.overflow = 'hidden';
+  document.body.style.overflow = '';
 }
 
 function closeUserPreviewMode() {
-  const modal = document.getElementById('userPreviewModal');
-  if (!modal) return;
-  modal.style.transition = 'opacity 0.3s ease';
-  modal.style.opacity    = '0';
-  setTimeout(() => {
-    modal.remove();
-    document.body.style.overflow = '';
-  }, 300);
+  /* ── إزالة شريط المعاينة ── */
+  document.getElementById('previewCloseBar')?.remove();
+
+  const hs = document.getElementById('homeScreen');
+
+  /* ── إعادة النقر للبطاقات ── */
+  hs.querySelectorAll('.home-card').forEach(card => {
+    const orig = card.dataset.origOnclick;
+    if (orig) card.setAttribute('onclick', orig);
+    card.style.cursor = '';
+    card.style.pointerEvents = '';
+    delete card.dataset.origOnclick;
+  });
+
+  /* ── إعادة padding الأصلي ── */
+  const inner = hs.querySelector('.home-inner');
+  if (inner) inner.style.paddingTop = '';
+
+  delete hs.dataset.previewMode;
+
+  /* ── العودة لـ mainSite ── */
+  hs.style.display = 'none';
+  document.getElementById('mainSite').style.display = 'block';
 }
+
 
 /* ─────────────────────────────────────────
    البطاقات الثابتة الاحتياطية
