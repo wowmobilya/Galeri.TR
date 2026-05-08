@@ -1663,12 +1663,13 @@ html { scroll-behavior: auto; }
            text-transform:uppercase;font-weight:700;">YENİ HESAP OLUŞTUR</div>
     </div>
 
-    <div class="login-field">
-      <input type="text" id="regCompany" placeholder="Şirket Adı"
-       style="-webkit-user-select:text;user-select:text;"
-       onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('regUsername').focus();}"/>
+  <div class="login-field">
+  <i class="fas fa-building field-icon"></i>
+  <input type="text" id="regCompany" placeholder="Şirket Adı"
+         style="-webkit-user-select:text;user-select:text;"
+         onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('regUsername').focus();}"/>
+</div>
 
-    </div>
     <div class="login-field">
       <i class="fas fa-user field-icon"></i>
       <input type="text" id="regUsername" placeholder="Kullanıcı Adı"
