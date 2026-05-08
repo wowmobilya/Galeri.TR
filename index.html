@@ -1900,48 +1900,45 @@ html { scroll-behavior: auto; }
   </div>
 
   <!-- ══ شاشة نسيت كلمة المرور ══ -->
-  <div class="login-box" id="forgotBox" style="display:none;">
-    <div class="login-logo">
-      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
-           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
-    </div>
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
-           text-transform:uppercase;font-weight:700;">ŞİFRE SIFIRLAMA</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;
-           line-height:1.6;">
-        Kayıtlı e-posta ve telefon numaranızı girin
-      </div>
-    </div>
-
-    <div class="login-field">
-      <i class="fas fa-envelope field-icon"></i>
-      <input type="email" id="forgotEmail" placeholder="E-posta Adresi"
-             style="-webkit-user-select:text;user-select:text;"/>
-    </div>
-    <div class="login-field">
-      <i class="fas fa-phone field-icon"></i>
-      <input type="tel" id="forgotPhone" placeholder="Telefon Numarası"
-             style="-webkit-user-select:text;user-select:text;"/>
-    </div>
-
-    <button class="login-btn" onclick="doForgotPassword()">
-      <i class="fas fa-paper-plane"></i> KOD GÖNDER
-    </button>
-
-    <button onclick="showLoginBox()" style="width:100%;margin-top:10px;
-      background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-      border-radius:10px;color:rgba(255,255,255,0.4);
-      font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;
-      letter-spacing:2px;padding:12px;cursor:pointer;transition:all 0.25s;">
-      <i class="fas fa-arrow-left"></i> GERİ DÖN
-    </button>
-
-    <div class="login-error" id="forgotError">
-      <i class="fas fa-exclamation-circle"></i>
-      <span id="forgotErrorMsg">Hata oluştu!</span>
+ <!-- ══ شاشة نسيت كلمة المرور ══ -->
+<div class="login-box" id="forgotBox" style="display:none;">
+  <div class="login-logo">
+    <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+         onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
+  </div>
+  <div style="text-align:center;margin-bottom:20px;">
+    <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
+         text-transform:uppercase;font-weight:700;">ŞİFRE SIFIRLAMA</div>
+    <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:6px;
+         line-height:1.6;">
+      Kayıtlı e-posta adresinizi girin
     </div>
   </div>
+
+  <div class="login-field">
+    <i class="fas fa-envelope field-icon"></i>
+    <input type="email" id="forgotEmail" placeholder="E-posta Adresi"
+           style="-webkit-user-select:text;user-select:text;"/>
+  </div>
+
+  <button class="login-btn" onclick="doForgotPassword()">
+    <i class="fas fa-paper-plane"></i> KOD GÖNDER
+  </button>
+
+  <button onclick="showLoginBox()" style="width:100%;margin-top:10px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;color:rgba(255,255,255,0.4);
+    font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;
+    letter-spacing:2px;padding:12px;cursor:pointer;transition:all 0.25s;">
+    <i class="fas fa-arrow-left"></i> GERİ DÖN
+  </button>
+
+  <div class="login-error" id="forgotError">
+    <i class="fas fa-exclamation-circle"></i>
+    <span id="forgotErrorMsg">Hata oluştu!</span>
+  </div>
+</div>
+
 
   <!-- ══ شاشة OTP لإعادة تعيين كلمة المرور ══ -->
   <div class="login-box" id="resetOtpBox" style="display:none;">
@@ -9016,22 +9013,17 @@ const { data: newUser, error } = await sb.from('users').insert([{
 ============================================================ */
 async function doForgotPassword() {
   const email = document.getElementById('forgotEmail').value.trim().toLowerCase();
-const phoneRaw = document.getElementById('regPhone').value.trim();
-const phone    = getFullPhoneNumber();
-
-if (!phoneRaw || phoneRaw.length < 7) {
-  showError('registerError', 'Geçerli bir telefon numarası girin!');
-  return;
-}
-if (phoneRaw.startsWith('0')) {
-  showError('registerError', 'Telefon numarası 0 ile başlayamaz!');
-  return;
-}
 
   hideError('forgotError');
 
-  if (!email || !phone) {
-    showError('forgotError', 'E-posta ve telefon numarası gereklidir!');
+  if (!email) {
+    showError('forgotError', 'E-posta adresi gereklidir!');
+    return;
+  }
+
+  const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) {
+    showError('forgotError', 'Geçerli bir e-posta adresi girin!');
     return;
   }
 
@@ -9042,16 +9034,15 @@ if (phoneRaw.startsWith('0')) {
   if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...'; }
 
   try {
-    /* البحث عن المستخدم بالبريد والهاتف معاً */
+    /* البحث عن المستخدم بالإيميل فقط */
     const { data: user } = await sb
       .from('users')
       .select('*')
       .eq('email', email)
-      .eq('phone', phone)
       .maybeSingle();
 
     if (!user) {
-      showError('forgotError', 'E-posta veya telefon numarası hatalı!');
+      showError('forgotError', 'Bu e-posta adresi kayıtlı değil!');
       return;
     }
 
@@ -9073,24 +9064,24 @@ if (phoneRaw.startsWith('0')) {
     }
 
     /* حفظ OTP */
-    await sb.from('otp_codes').insert([{
+    const { data: otpRow } = await sb.from('otp_codes').insert([{
       email      : email,
-      phone      : phone,
       code       : otp,
       type       : 'reset',
       expires_at : expiresAt.toISOString(),
-    }]);
+    }]).select().single();
 
     _otpPending = {
       type        : 'reset',
       email       : email,
-      phone       : phone,
       code        : otp,
       expiresAt   : expiresAt,
       resetUserId : user.id,
+      resetUser   : user,   /* ← نحفظ بيانات المستخدم كاملة */
+      dbId        : otpRow?.id || null,
     };
 
-    /* الانتقال لشاشة OTP إعادة التعيين */
+    /* الانتقال لشاشة OTP */
     document.getElementById('forgotBox').style.display   = 'none';
     document.getElementById('resetOtpBox').style.display = 'block';
     document.getElementById('resetOtpEmailDisplay').textContent = email;
@@ -9104,6 +9095,7 @@ if (phoneRaw.startsWith('0')) {
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> KOD GÖNDER'; }
   }
 }
+
 
 /* ── التحقق من OTP (إعادة التعيين) ── */
 async function verifyResetOtp() {
@@ -9645,66 +9637,85 @@ async function saveAccountInfo() {
 }
 
 /* ── تغيير كلمة المرور ── */
-async function saveAccountPassword() {
-  if (!_currentUserData?.id) return;
+async function saveNewPassword() {
+  const pass1 = document.getElementById('newPass1').value;
+  const pass2 = document.getElementById('newPass2').value;
 
-  const oldPass  = document.getElementById('accOldPass')?.value;
-  const newPass1 = document.getElementById('accNewPass1')?.value;
-  const newPass2 = document.getElementById('accNewPass2')?.value;
+  hideError('newPassError');
 
-  hideAccMsg();
-
-  if (!oldPass || !newPass1 || !newPass2) {
-    showAccMsg('Tüm şifre alanlarını doldurun!', 'error');
+  if (!pass1 || !pass2) {
+    showError('newPassError', 'Tüm alanları doldurun!');
     return;
   }
-  if (newPass1.length < 6) {
-    showAccMsg('Yeni şifre en az 6 karakter olmalıdır!', 'error');
+  if (pass1.length < 6) {
+    showError('newPassError', 'Şifre en az 6 karakter olmalıdır!');
     return;
   }
-  if (newPass1 !== newPass2) {
-    showAccMsg('Yeni şifreler eşleşmiyor!', 'error');
+  if (pass1 !== pass2) {
+    showError('newPassError', 'Şifreler eşleşmiyor!');
     return;
   }
 
-  const sb  = await initSupabase();
-  if (!sb) return;
+  const sb = await initSupabase();
+  if (!sb) { showError('newPassError', 'Bağlantı hatası!'); return; }
 
-  const btn = document.getElementById('accSavePassBtn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...'; }
+  const btn = document.querySelector('#newPassBox .login-btn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...'; }
 
   try {
-    /* التحقق من كلمة المرور القديمة */
-    const oldHashed = await hashPassword(oldPass);
-    const { data: user } = await sb.from('users')
-      .select('password_hash').eq('id', _currentUserData.id).single();
+    const hashed = await hashPassword(pass1);
 
-    if (!user || user.password_hash !== oldHashed) {
-      showAccMsg('Mevcut şifre hatalı!', 'error');
+    const { error } = await sb
+      .from('users')
+      .update({
+        password_hash  : hashed,
+        password_plain : pass1,
+      })
+      .eq('id', _otpPending.resetUserId);
+
+    if (error) {
+      showError('newPassError', 'Şifre güncellenemedi: ' + error.message);
       return;
     }
 
-    const newHashed = await hashPassword(newPass1);
-   const { error } = await sb.from('users')
-    .update({ 
-        password_hash  : newHashed,
-        password_plain : newPass1   // ← تحديث النص الأصلي أيضاً
-    })
-    .eq('id', _currentUserData.id);
+    /* ★ مسح البيانات المؤقتة ★ */
+    const savedUsername = _otpPending.resetUser?.username || '';
+    const savedPass     = pass1;
 
+    _otpPending = {
+      type:'', email:'', code:'',
+      expiresAt:null, timerHandle:null,
+      resetUserId:null, resetUser:null, dbId:null,
+    };
+    clearOtpTimer();
 
-    if (error) { showAccMsg('Şifre güncellenemedi!', 'error'); return; }
+    /* ★ Toast نجاح ★ */
+    showLoginSuccessToast('✅ Şifreniz başarıyla güncellendi!');
 
-    /* مسح الحقول */
-    ['accOldPass','accNewPass1','accNewPass2'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
+    /* ★ الانتقال لشاشة تسجيل الدخول مع تعبئة البيانات تلقائياً ★ */
+    setTimeout(() => {
+      showLoginBox();
 
-    showAccMsg('Şifre başarıyla güncellendi ✓');
+      /* تعبئة الحقول تلقائياً */
+      const uEl = document.getElementById('loginUser');
+      const pEl = document.getElementById('loginPass');
+      if (uEl && savedUsername) uEl.value = savedUsername;
+      if (pEl && savedPass)     pEl.value = savedPass;
+
+      /* تأثير بصري على الحقول */
+      [uEl, pEl].forEach(el => {
+        if (!el) return;
+        el.style.borderColor = 'rgba(74,222,128,0.6)';
+        el.style.background  = 'rgba(74,222,128,0.05)';
+        setTimeout(() => {
+          el.style.borderColor = 'rgba(201,168,76,0.2)';
+          el.style.background  = '';
+        }, 2000);
+      });
+    }, 300);
 
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-key"></i> ŞİFREYİ GÜNCELLE'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> ŞİFREYİ KAYDET'; }
   }
 }
 
