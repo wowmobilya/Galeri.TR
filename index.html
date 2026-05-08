@@ -8683,10 +8683,25 @@ async function doRegister() {
     showError('registerError', 'Tüm alanları doldurun!');
     return;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showError('registerError', 'Geçerli bir e-posta adresi girin!');
+// ★ التحقق الصارم من البريد الإلكتروني
+const emailRegex = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/;
+if (!emailRegex.test(email)) {
+    showError('registerError', 'Geçerli bir e-posta adresi girin! (örn: ad@domain.com)');
+    document.getElementById('regEmail').style.borderColor = 'rgba(239,68,68,0.6)';
+    setTimeout(() => {
+        document.getElementById('regEmail').style.borderColor = 'rgba(201,168,76,0.2)';
+    }, 2000);
     return;
-  }
+}
+
+// ★ منع النطاقات الوهمية (اختياري لكن مفيد)
+const emailDomain = email.split('@')[1];
+const fakeDomains = ['test.com','example.com','fake.com','asdf.com','qwerty.com','aaaa.com','bbbb.com'];
+if (fakeDomains.includes(emailDomain)) {
+    showError('registerError', 'Lütfen gerçek bir e-posta adresi kullanın!');
+    return;
+}
+
   if (pass1.length < 6) {
     showError('registerError', 'Şifre en az 6 karakter olmalıdır!');
     return;
