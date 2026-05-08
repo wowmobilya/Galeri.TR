@@ -1841,6 +1841,35 @@ html { scroll-behavior: auto; }
     
 
 
+
+
+
+/* ── شبكة بطاقات التحكم للـ WOW ── */
+.home-cards {
+  display: grid;
+  gap: 12px;
+}
+
+/* المستخدم العادي: عمودان */
+.home-cards.user-mode {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* WOW: عمودان دائماً */
+.home-cards.admin-mode {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* الموبايل الصغير جداً: عمود واحد */
+@media (max-width: 340px) {
+  .home-cards.admin-mode {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+    
+
   </style>
 </head>
 <body>
@@ -15502,12 +15531,21 @@ function renderHomeCards() {
    بطاقات المستخدم العادي
 ───────────────────────────────────────── */
 function renderUserHomeCards(container) {
-  const cards = _homeCards && _homeCards.length ? _homeCards : getStaticCards();
+  container.classList.remove('admin-mode');
+  container.classList.add('user-mode');
+
+  const cards = _homeCards && _homeCards.length
+    ? _homeCards
+    : getStaticCards();
 
   container.innerHTML = cards
     .filter(c => c.is_active !== false
               && c.section_key !== 'admin'
-              && c.section_key !== 'settings')
+              && c.section_key !== 'settings'
+              && c.section_key !== 'users_panel'
+              && c.section_key !== 'stock_panel'
+              && c.section_key !== 'messages'
+              && c.section_key !== 'user_preview')
     .map((card, idx) => buildHomeCardHTML(card, idx))
     .join('');
 }
@@ -15519,6 +15557,9 @@ function renderUserHomeCards(container) {
    بطاقات الـ WOW (Admin)
 ───────────────────────────────────────── */
 function renderAdminHomeCards(container) {
+  /* إضافة class للشبكة */
+  container.classList.remove('user-mode');
+  container.classList.add('admin-mode');
 
   const previewCard = {
     section_key : 'user_preview',
@@ -15532,7 +15573,6 @@ function renderAdminHomeCards(container) {
     _icon       : 'fa-eye',
   };
 
-  /* لوحات التحكم — بدون صور، فقط رموز */
   const controlPanels = [
     {
       section_key : 'admin',
@@ -15593,22 +15633,21 @@ function renderAdminHomeCards(container) {
 
   let html = '';
 
-  /* ── عنوان قسم المعاينة ── */
+  /* ── عنوان + بطاقة المعاينة العريضة ── */
   html += buildSectionLabel('fa-eye', 'MÜŞTERİ GÖRÜNÜMÜ');
-
-  /* ── بطاقة المعاينة عريضة مع صورة ── */
   html += buildAdminWideCard(previewCard, 0);
 
-  /* ── عنوان قسم التحكم ── */
+  /* ── عنوان لوحات التحكم ── */
   html += buildSectionLabel('fa-th-large', 'YÖNETİM PANELLERİ');
 
-  /* ── بطاقات التحكم الصغيرة بدون صور ── */
+  /* ── البطاقات الصغيرة 2×2 ── */
   controlPanels.forEach((panel, idx) => {
     html += buildControlCard(panel, idx);
   });
 
   container.innerHTML = html;
 }
+
 
 /* ─────────────────────────────────────────
    عنوان القسم
@@ -15630,6 +15669,10 @@ function buildSectionLabel(icon, text) {
 /* ─────────────────────────────────────────
    بطاقة التحكم الصغيرة — بدون صورة
 ───────────────────────────────────────── */
+/* ─────────────────────────────────────────
+   بطاقة التحكم الصغيرة — بدون صورة
+   2 بطاقة بجانب بعض — لون صلب
+───────────────────────────────────────── */
 function buildControlCard(panel, idx) {
   const delay = (0.3 + idx * 0.08).toFixed(2);
   const c     = panel._colorRgb || '201,168,76';
@@ -15640,63 +15683,80 @@ function buildControlCard(panel, idx) {
          style="
            animation: cardSlideIn 0.6s ease ${delay}s both;
            cursor: pointer;
-           border-radius: 18px;
-           background: rgba(255,255,255,0.025);
-           border: 1px solid rgba(${c},0.15);
-           padding: 18px 16px 16px;
+           border-radius: 14px;
+           background: rgba(${c}, 0.13);
+           border: 1px solid rgba(${c}, 0.3);
+           padding: 14px 13px 12px;
            display: flex;
            flex-direction: column;
            align-items: flex-start;
-           gap: 12px;
+           gap: 10px;
            position: relative;
            overflow: hidden;
-           transition: all 0.3s ease;"
+           transition: all 0.25s ease;"
          onmouseover="
-           this.style.background='rgba(${c},0.07)';
-           this.style.borderColor='rgba(${c},0.35)';
-           this.style.transform='translateY(-3px)';
-           this.style.boxShadow='0 12px 32px rgba(0,0,0,0.4)';"
+           this.style.background='rgba(${c},0.22)';
+           this.style.borderColor='rgba(${c},0.5)';
+           this.style.transform='translateY(-2px)';
+           this.style.boxShadow='0 8px 24px rgba(0,0,0,0.35)';"
          onmouseout="
-           this.style.background='rgba(255,255,255,0.025)';
-           this.style.borderColor='rgba(${c},0.15)';
+           this.style.background='rgba(${c},0.13)';
+           this.style.borderColor='rgba(${c},0.3)';
            this.style.transform='translateY(0)';
            this.style.boxShadow='';">
 
-      <!-- خلفية الرمز الضبابية -->
+      <!-- توهج خلفي -->
       <div style="
-        position:absolute;top:-20px;right:-20px;
-        width:90px;height:90px;border-radius:50%;
+        position:absolute;top:-24px;right:-24px;
+        width:80px;height:80px;border-radius:50%;
         background:radial-gradient(circle,
-          rgba(${c},0.12) 0%,
-          transparent 70%);
+          rgba(${c},0.18) 0%, transparent 70%);
         pointer-events:none;"></div>
 
-      <!-- الرمز -->
+      <!-- صف: الرمز + الشارة -->
       <div style="
-        width:46px;height:46px;border-radius:13px;
-        background:linear-gradient(135deg,
-          rgba(${c},0.2),
-          rgba(${c},0.06));
-        border:1px solid rgba(${c},0.3);
-        display:flex;align-items:center;justify-content:center;
-        font-size:20px;color:${color};
-        flex-shrink:0;">
-        <i class="fas ${panel._icon}"></i>
+        display:flex;align-items:center;
+        justify-content:space-between;width:100%;">
+
+        <!-- الرمز -->
+        <div style="
+          width:38px;height:38px;border-radius:10px;
+          background:rgba(${c},0.2);
+          border:1px solid rgba(${c},0.35);
+          display:flex;align-items:center;
+          justify-content:center;
+          font-size:17px;color:${color};">
+          <i class="fas ${panel._icon}"></i>
+        </div>
+
+        <!-- شارة صغيرة -->
+        <div style="
+          padding:3px 8px;border-radius:20px;
+          background:rgba(${c},0.15);
+          border:1px solid rgba(${c},0.25);
+          font-size:8px;font-weight:800;
+          color:${color};letter-spacing:1px;">
+          ${panel.count_label}
+        </div>
       </div>
 
-      <!-- النص -->
-      <div style="flex:1;min-width:0;width:100%;">
+      <!-- العنوان -->
+      <div style="width:100%;">
         <div style="
-          font-size:13px;font-weight:900;color:#fff;
-          letter-spacing:0.5px;line-height:1.2;margin-bottom:4px;">
+          font-size:12px;font-weight:900;
+          color:#fff;letter-spacing:0.3px;
+          line-height:1.2;margin-bottom:2px;">
           ${panel.title}
-          <span style="color:${color};font-size:11px;">
-            ${panel.subtitle}
-          </span>
         </div>
         <div style="
-          font-size:10px;color:rgba(255,255,255,0.25);
-          letter-spacing:0.3px;line-height:1.4;">
+          font-size:10px;font-weight:700;
+          color:${color};letter-spacing:0.5px;">
+          ${panel.subtitle}
+        </div>
+        <div style="
+          font-size:9px;color:rgba(255,255,255,0.3);
+          margin-top:3px;letter-spacing:0.2px;
+          line-height:1.4;">
           ${panel.description}
         </div>
       </div>
@@ -15704,23 +15764,23 @@ function buildControlCard(panel, idx) {
       <!-- زر الدخول -->
       <div style="
         width:100%;
-        padding:8px 12px;
-        border-radius:9px;
-        background:rgba(${c},0.08);
-        border:1px solid rgba(${c},0.2);
+        padding:7px 10px;
+        border-radius:8px;
+        background:rgba(${c},0.15);
+        border:1px solid rgba(${c},0.25);
         color:${color};
-        font-size:9px;font-weight:700;
-        letter-spacing:1.5px;
+        font-size:8px;font-weight:800;
+        letter-spacing:1.2px;
         text-transform:uppercase;
         display:flex;align-items:center;
-        justify-content:space-between;
-        transition:all 0.25s;">
+        justify-content:space-between;">
         ${panel.btn_text}
-        <i class="fas fa-arrow-right" style="font-size:10px;"></i>
+        <i class="fas fa-arrow-right" style="font-size:9px;"></i>
       </div>
 
     </div>`;
 }
+
 
 /* ─────────────────────────────────────────
    بطاقة المعاينة العريضة (مع صورة)
