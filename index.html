@@ -15675,8 +15675,17 @@ function buildSectionLabel(icon, text) {
 ───────────────────────────────────────── */
 function buildControlCard(panel, idx) {
   const delay = (0.3 + idx * 0.08).toFixed(2);
-  const c     = panel._colorRgb || '201,168,76';
-  const color = panel._color    || '#c9a84c';
+
+  /* لون خلفية صلب لكل بطاقة */
+  const bgColors = {
+    'admin'       : { bg: '#1a0a0a', border: '#7f1d1d', icon: '#ef4444', badge: '#991b1b' },
+    'messages'    : { bg: '#0a1a0e', border: '#14532d', icon: '#22c55e', badge: '#15803d' },
+    'users_panel' : { bg: '#0a0f1a', border: '#1e3a5f', icon: '#3b82f6', badge: '#1d4ed8' },
+    'stock_panel' : { bg: '#1a130a', border: '#78350f', icon: '#f59e0b', badge: '#b45309' },
+    'settings'    : { bg: '#120f04', border: '#78611a', icon: '#c9a84c', badge: '#92701e' },
+  };
+
+  const theme = bgColors[panel.section_key] || bgColors['settings'];
 
   return `
     <div onclick="handleAdminCardClick('${panel.section_key}')"
@@ -15684,8 +15693,8 @@ function buildControlCard(panel, idx) {
            animation: cardSlideIn 0.6s ease ${delay}s both;
            cursor: pointer;
            border-radius: 14px;
-           background: rgba(${c}, 0.13);
-           border: 1px solid rgba(${c}, 0.3);
+           background: ${theme.bg};
+           border: 1px solid ${theme.border};
            padding: 14px 13px 12px;
            display: flex;
            flex-direction: column;
@@ -15695,23 +15704,11 @@ function buildControlCard(panel, idx) {
            overflow: hidden;
            transition: all 0.25s ease;"
          onmouseover="
-           this.style.background='rgba(${c},0.22)';
-           this.style.borderColor='rgba(${c},0.5)';
            this.style.transform='translateY(-2px)';
-           this.style.boxShadow='0 8px 24px rgba(0,0,0,0.35)';"
+           this.style.boxShadow='0 8px 24px rgba(0,0,0,0.5)';"
          onmouseout="
-           this.style.background='rgba(${c},0.13)';
-           this.style.borderColor='rgba(${c},0.3)';
            this.style.transform='translateY(0)';
            this.style.boxShadow='';">
-
-      <!-- توهج خلفي -->
-      <div style="
-        position:absolute;top:-24px;right:-24px;
-        width:80px;height:80px;border-radius:50%;
-        background:radial-gradient(circle,
-          rgba(${c},0.18) 0%, transparent 70%);
-        pointer-events:none;"></div>
 
       <!-- صف: الرمز + الشارة -->
       <div style="
@@ -15720,22 +15717,20 @@ function buildControlCard(panel, idx) {
 
         <!-- الرمز -->
         <div style="
-          width:38px;height:38px;border-radius:10px;
-          background:rgba(${c},0.2);
-          border:1px solid rgba(${c},0.35);
+          width:40px;height:40px;border-radius:11px;
+          background:${theme.badge};
           display:flex;align-items:center;
           justify-content:center;
-          font-size:17px;color:${color};">
+          font-size:18px;color:#fff;">
           <i class="fas ${panel._icon}"></i>
         </div>
 
-        <!-- شارة صغيرة -->
+        <!-- شارة -->
         <div style="
           padding:3px 8px;border-radius:20px;
-          background:rgba(${c},0.15);
-          border:1px solid rgba(${c},0.25);
+          background:${theme.badge};
           font-size:8px;font-weight:800;
-          color:${color};letter-spacing:1px;">
+          color:#fff;letter-spacing:1px;">
           ${panel.count_label}
         </div>
       </div>
@@ -15750,11 +15745,11 @@ function buildControlCard(panel, idx) {
         </div>
         <div style="
           font-size:10px;font-weight:700;
-          color:${color};letter-spacing:0.5px;">
+          color:${theme.icon};letter-spacing:0.5px;">
           ${panel.subtitle}
         </div>
         <div style="
-          font-size:9px;color:rgba(255,255,255,0.3);
+          font-size:9px;color:rgba(255,255,255,0.4);
           margin-top:3px;letter-spacing:0.2px;
           line-height:1.4;">
           ${panel.description}
@@ -15766,9 +15761,8 @@ function buildControlCard(panel, idx) {
         width:100%;
         padding:7px 10px;
         border-radius:8px;
-        background:rgba(${c},0.15);
-        border:1px solid rgba(${c},0.25);
-        color:${color};
+        background:${theme.badge};
+        color:#fff;
         font-size:8px;font-weight:800;
         letter-spacing:1.2px;
         text-transform:uppercase;
@@ -15780,6 +15774,7 @@ function buildControlCard(panel, idx) {
 
     </div>`;
 }
+
 
 
 /* ─────────────────────────────────────────
