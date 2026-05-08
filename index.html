@@ -15669,23 +15669,18 @@ function buildSectionLabel(icon, text) {
 /* ─────────────────────────────────────────
    بطاقة التحكم الصغيرة — بدون صورة
 ───────────────────────────────────────── */
-/* ─────────────────────────────────────────
-   بطاقة التحكم الصغيرة — بدون صورة
-   2 بطاقة بجانب بعض — لون صلب
-───────────────────────────────────────── */
 function buildControlCard(panel, idx) {
   const delay = (0.3 + idx * 0.08).toFixed(2);
 
-  /* لون الأيقونة والشارة فقط يتغير — الخلفية موحدة */
-  const iconColors = {
-    'admin'       : '#ef4444',
-    'messages'    : '#22c55e',
-    'users_panel' : '#3b82f6',
-    'stock_panel' : '#f59e0b',
-    'settings'    : '#c9a84c',
+  const accentColors = {
+    'admin'       : { icon: '#ef4444', badge: '#991b1b' },
+    'messages'    : { icon: '#22c55e', badge: '#15803d' },
+    'users_panel' : { icon: '#3b82f6', badge: '#1d4ed8' },
+    'stock_panel' : { icon: '#f59e0b', badge: '#b45309' },
+    'settings'    : { icon: '#c9a84c', badge: '#92701e' },
   };
 
-  const iconColor = iconColors[panel.section_key] || '#c9a84c';
+  const theme = accentColors[panel.section_key] || accentColors['settings'];
 
   return `
     <div onclick="handleAdminCardClick('${panel.section_key}')"
@@ -15693,8 +15688,8 @@ function buildControlCard(panel, idx) {
            animation: cardSlideIn 0.6s ease ${delay}s both;
            cursor: pointer;
            border-radius: 14px;
-           background: #120f04;
-           border: 1px solid #78611a;
+           background: var(--card-bg, #111111);
+           border: 1px solid rgba(255,255,255,0.07);
            padding: 14px 13px 12px;
            display: flex;
            flex-direction: column;
@@ -15706,31 +15701,31 @@ function buildControlCard(panel, idx) {
          onmouseover="
            this.style.transform='translateY(-2px)';
            this.style.boxShadow='0 8px 24px rgba(0,0,0,0.5)';
-           this.style.borderColor='#c9a84c';"
+           this.style.borderColor='rgba(255,255,255,0.13)';"
          onmouseout="
            this.style.transform='translateY(0)';
            this.style.boxShadow='';
-           this.style.borderColor='#78611a';">
+           this.style.borderColor='rgba(255,255,255,0.07)';">
 
       <!-- صف: الرمز + الشارة -->
       <div style="
         display:flex;align-items:center;
         justify-content:space-between;width:100%;">
 
-        <!-- الرمز — لون مختلف لكل بطاقة -->
+        <!-- الرمز -->
         <div style="
           width:40px;height:40px;border-radius:11px;
-          background:#92701e;
+          background:${theme.badge};
           display:flex;align-items:center;
           justify-content:center;
-          font-size:18px;color:${iconColor};">
+          font-size:18px;color:#fff;">
           <i class="fas ${panel._icon}"></i>
         </div>
 
         <!-- شارة -->
         <div style="
           padding:3px 8px;border-radius:20px;
-          background:#92701e;
+          background:${theme.badge};
           font-size:8px;font-weight:800;
           color:#fff;letter-spacing:1px;">
           ${panel.count_label}
@@ -15747,11 +15742,11 @@ function buildControlCard(panel, idx) {
         </div>
         <div style="
           font-size:10px;font-weight:700;
-          color:#c9a84c;letter-spacing:0.5px;">
+          color:${theme.icon};letter-spacing:0.5px;">
           ${panel.subtitle}
         </div>
         <div style="
-          font-size:9px;color:rgba(255,255,255,0.4);
+          font-size:9px;color:rgba(255,255,255,0.35);
           margin-top:3px;letter-spacing:0.2px;
           line-height:1.4;">
           ${panel.description}
@@ -15763,7 +15758,7 @@ function buildControlCard(panel, idx) {
         width:100%;
         padding:7px 10px;
         border-radius:8px;
-        background:#92701e;
+        background:${theme.badge};
         color:#fff;
         font-size:8px;font-weight:800;
         letter-spacing:1.2px;
@@ -15776,6 +15771,7 @@ function buildControlCard(panel, idx) {
 
     </div>`;
 }
+
 
 
 
