@@ -6656,6 +6656,67 @@ function buildAdminOrderCard(order) {
         ${adminNoteHtml}
       </div>
 
+
+
+${buildOrderContactBtns(order)}
+
+<!-- ══ أزرار التواصل السريع ══ -->
+<div style="
+  padding:12px 14px;
+  border-top:1px solid rgba(255,255,255,0.04);
+  background:rgba(255,255,255,0.01);">
+  
+  <div style="font-size:9px;letter-spacing:2px;
+       color:rgba(255,255,255,0.2);margin-bottom:10px;
+       font-weight:600;text-transform:uppercase;">
+    <i class="fas fa-paper-plane" style="margin-right:5px;
+       color:rgba(201,168,76,0.4);"></i>
+    HIZLI İLETİŞİM
+  </div>
+  
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+    <!-- ★ زر WhatsApp للطلبية ★ -->
+    <button onclick="sendOrderWhatsApp(${JSON.stringify(order).replace(/"/g,'&quot;')})"
+            style="
+      flex:1;min-width:130px;
+      padding:9px 14px;border-radius:9px;
+      background:rgba(37,211,102,0.1);
+      border:1px solid rgba(37,211,102,0.3);
+      color:#25d366;font-family:'Montserrat',sans-serif;
+      font-size:10px;font-weight:700;letter-spacing:0.5px;
+      cursor:pointer;transition:all 0.25s;
+      display:flex;align-items:center;justify-content:center;gap:7px;"
+      onmouseover="this.style.background='rgba(37,211,102,0.2)';this.style.transform='translateY(-1px)'"
+      onmouseout="this.style.background='rgba(37,211,102,0.1)';this.style.transform=''">
+      <i class="fab fa-whatsapp" style="font-size:14px;"></i>
+      WhatsApp Gönder
+    </button>
+
+    <!-- ★ زر Email للطلبية ★ -->
+    <button onclick="sendOrderEmail(${JSON.stringify(order).replace(/"/g,'&quot;')})"
+            style="
+      flex:1;min-width:130px;
+      padding:9px 14px;border-radius:9px;
+      background:rgba(96,165,250,0.1);
+      border:1px solid rgba(96,165,250,0.3);
+      color:#60a5fa;font-family:'Montserrat',sans-serif;
+      font-size:10px;font-weight:700;letter-spacing:0.5px;
+      cursor:pointer;transition:all 0.25s;
+      display:flex;align-items:center;justify-content:center;gap:7px;"
+      onmouseover="this.style.background='rgba(96,165,250,0.2)';this.style.transform='translateY(-1px)'"
+      onmouseout="this.style.background='rgba(96,165,250,0.1)';this.style.transform=''">
+      <i class="fas fa-envelope" style="font-size:12px;"></i>
+      E-posta Gönder
+    </button>
+
+  </div>
+</div>
+
+
+
+
+
       <!-- ══ أزرار تغيير الحالة ══ -->
       <div style="
         padding:12px 14px 14px;
@@ -12443,6 +12504,1553 @@ function showEmailStatus(msg, type) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ نظام الرسائل المتطور v2.0
+   - قوالب متعددة مع معاينة حية
+   - تاريخ الإرسال محفوظ في Supabase
+   - دعم WhatsApp + Email
+   - بحث في السجل
+============================================================ */
+
+/* ── جدول سجل الرسائل في Supabase ──
+   CREATE TABLE message_log (
+     id          bigserial PRIMARY KEY,
+     order_id    bigint,
+     order_number text,
+     username    text,
+     company_name text,
+     channel     text,        -- 'whatsapp' | 'email'
+     subject     text,
+     message     text,
+     status      text,        -- 'sent' | 'failed'
+     sent_by     text,        -- اسم الأدمن
+     sent_at     timestamptz DEFAULT now()
+   );
+── */
+
+/* ============================================================
+   ★ قوالب الرسائل الكاملة
+============================================================ */
+const MSG_TEMPLATES = {
+
+  /* ── WhatsApp ── */
+  wa: {
+    greeting: {
+      icon    : '👋',
+      label   : 'Merhaba',
+      color   : '#4ade80',
+      subject : '',
+      build   : (d) => `👋 *Merhaba ${d.compName}!*
+WOW MOBİLYA ekibinden yazıyoruz.
+Size nasıl yardımcı olabiliriz?
+
+📞 +90 538 626 37 00
+_WOW MOBİLYA Ekibi_`,
+    },
+
+    order_ready: {
+      icon    : '📦',
+      label   : 'Sipariş Hazır',
+      color   : '#fbbf24',
+      subject : '',
+      build   : (d) => `📦 *Siparişiniz Hazır!*
+━━━━━━━━━━━━━━━━━━━━
+👤 *Müşteri:* ${d.compName}
+📋 *Sipariş No:* ${d.orderNum}
+📅 *Tarih:* ${d.date}
+━━━━━━━━━━━━━━━━━━━━
+
+✅ Siparişiniz hazırlanmış ve teslime hazır durumdadır.
+
+🛍️ *Ürünler:*
+${d.itemLines}
+${d.totalLine}
+${d.noteLine}
+━━━━━━━━━━━━━━━━━━━━
+📞 +90 538 626 37 00
+_WOW MOBİLYA Ekibi_`,
+    },
+
+    order_status: {
+      icon    : '🔄',
+      label   : 'Durum Güncelleme',
+      color   : '#60a5fa',
+      subject : '',
+      build   : (d) => `🔄 *Sipariş Durumu Güncellendi*
+━━━━━━━━━━━━━━━━━━━━
+👤 *Müşteri:* ${d.compName}
+📋 *Sipariş No:* ${d.orderNum}
+━━━━━━━━━━━━━━━━━━━━
+
+${d.statusEmoji} *Yeni Durum:* ${d.statusLabel}
+
+${d.adminNote ? `💬 *Not:* ${d.adminNote}\n` : ''}
+━━━━━━━━━━━━━━━━━━━━
+📞 +90 538 626 37 00
+_WOW MOBİLYA Ekibi_`,
+    },
+
+    payment: {
+      icon    : '💳',
+      label   : 'Ödeme Hatırlatma',
+      color   : '#a78bfa',
+      subject : '',
+      build   : (d) => `💳 *Ödeme Hatırlatması*
+━━━━━━━━━━━━━━━━━━━━
+👤 *Müşteri:* ${d.compName}
+📋 *Sipariş No:* ${d.orderNum}
+${d.totalLine}
+━━━━━━━━━━━━━━━━━━━━
+
+Ödemenizi gerçekleştirmek için bizimle iletişime geçebilirsiniz.
+
+📞 +90 538 626 37 00
+_WOW MOBİLYA Ekibi_`,
+    },
+
+    delivery: {
+      icon    : '🚚',
+      label   : 'Teslimat Bilgisi',
+      color   : '#fb923c',
+      subject : '',
+      build   : (d) => `🚚 *Teslimat Bilgisi*
+━━━━━━━━━━━━━━━━━━━━
+👤 *Müşteri:* ${d.compName}
+📋 *Sipariş No:* ${d.orderNum}
+━━━━━━━━━━━━━━━━━━━━
+
+Siparişiniz yola çıkmıştır! Yakında teslim edilecektir.
+
+Teslimat saatinizi öğrenmek için bizi arayın:
+📞 +90 538 626 37 00
+_WOW MOBİLYA Ekibi_`,
+    },
+
+    custom: {
+      icon    : '✏️',
+      label   : 'Özel Mesaj',
+      color   : 'rgba(255,255,255,0.4)',
+      subject : '',
+      build   : (d) => `Merhaba ${d.compName}! ✨\n\n`,
+    },
+  },
+
+  /* ── Email ── */
+  email: {
+    welcome: {
+      icon    : '🎉',
+      label   : 'Hoş Geldiniz',
+      color   : '#4ade80',
+      subject : (d) => `WOW MOBİLYA — Hoş Geldiniz! 🎉`,
+      build   : (d) => `Merhaba ${d.compName},
+
+WOW MOBİLYA ailesine hoş geldiniz! 🎉
+
+Sisteme başarıyla kayıt oldunuz.
+Tüm koleksiyonlarımıza erişebilir ve sipariş verebilirsiniz.
+
+Herhangi bir sorunuz için bizimle iletişime geçin.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
+    },
+
+    order_ready: {
+      icon    : '📦',
+      label   : 'Sipariş Hazır',
+      color   : '#fbbf24',
+      subject : (d) => `WOW MOBİLYA — Siparişiniz Hazır! 📦 (${d.orderNum})`,
+      build   : (d) => `Merhaba ${d.compName},
+
+Siparişiniz hazırlanmış ve teslime hazır durumdadır. 📦
+
+━━━━━━━━━━━━━━━━━━━━
+📋 Sipariş No : ${d.orderNum}
+📅 Tarih      : ${d.date}
+📊 Durum      : ${d.statusLabel}
+━━━━━━━━━━━━━━━━━━━━
+
+🛍️ Sipariş Edilen Ürünler:
+${d.itemLines}
+${d.totalLine}
+${d.noteLine}
+Teslim tarihi ve detaylar için bizimle iletişime geçebilirsiniz.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
+    },
+
+    order_status: {
+      icon    : '🔄',
+      label   : 'Durum Güncelleme',
+      color   : '#60a5fa',
+      subject : (d) => `WOW MOBİLYA — Sipariş Durumu: ${d.statusLabel} (${d.orderNum})`,
+      build   : (d) => `Merhaba ${d.compName},
+
+Siparişinizin durumu güncellenmiştir.
+
+━━━━━━━━━━━━━━━━━━━━
+📋 Sipariş No : ${d.orderNum}
+📊 Yeni Durum : ${d.statusLabel}
+━━━━━━━━━━━━━━━━━━━━
+${d.adminNote ? `\n💬 Yönetici Notu: ${d.adminNote}\n` : ''}
+Sisteme giriş yaparak siparişinizi takip edebilirsiniz.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
+    },
+
+    payment: {
+      icon    : '💳',
+      label   : 'Ödeme Bilgisi',
+      color   : '#a78bfa',
+      subject : (d) => `WOW MOBİLYA — Ödeme Bilgilendirmesi 💳 (${d.orderNum})`,
+      build   : (d) => `Merhaba ${d.compName},
+
+Ödeme işleminizle ilgili bilgilendirme yapmak istedik.
+
+━━━━━━━━━━━━━━━━━━━━
+📋 Sipariş No : ${d.orderNum}
+${d.totalLine}
+━━━━━━━━━━━━━━━━━━━━
+
+Ödemenizi gerçekleştirmek için lütfen bizimle iletişime geçin.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
+    },
+
+    delivery: {
+      icon    : '🚚',
+      label   : 'Teslimat Bilgisi',
+      color   : '#fb923c',
+      subject : (d) => `WOW MOBİLYA — Siparişiniz Yolda! 🚚 (${d.orderNum})`,
+      build   : (d) => `Merhaba ${d.compName},
+
+Siparişiniz yola çıkmıştır! 🚚
+
+━━━━━━━━━━━━━━━━━━━━
+📋 Sipariş No : ${d.orderNum}
+📅 Tarih      : ${d.date}
+━━━━━━━━━━━━━━━━━━━━
+
+Teslimat saatinizi öğrenmek veya adres güncellemek için
+lütfen bizimle iletişime geçin.
+
+📞 +90 538 626 37 00
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi`,
+    },
+
+    invoice: {
+      icon    : '🧾',
+      label   : 'Fatura Özeti',
+      color   : '#34d399',
+      subject : (d) => `WOW MOBİLYA — Fatura Özeti (${d.orderNum})`,
+      build   : (d) => `Merhaba ${d.compName},
+
+Siparişinize ait fatura özeti aşağıda yer almaktadır.
+
+━━━━━━━━━━━━━━━━━━━━
+📋 Sipariş No : ${d.orderNum}
+📅 Tarih      : ${d.date}
+━━━━━━━━━━━━━━━━━━━━
+
+🛍️ Ürün Detayları:
+${d.itemLines}
+
+${d.totalLine}
+━━━━━━━━━━━━━━━━━━━━
+
+Bu fatura bilgi amaçlıdır.
+Resmi fatura için lütfen bizimle iletişime geçin.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
+    },
+
+    custom: {
+      icon    : '✏️',
+      label   : 'Özel Mesaj',
+      color   : 'rgba(255,255,255,0.4)',
+      subject : (d) => `WOW MOBİLYA — Önemli Bilgi`,
+      build   : (d) => `Merhaba ${d.compName},\n\n`,
+    },
+  },
+};
+
+
+/* ============================================================
+   ★ بناء بيانات القالب من الطلبية
+============================================================ */
+function buildTemplateData(order) {
+  const items     = Array.isArray(order.items) ? order.items : [];
+  const total     = items.reduce((s, i) => s + (i.price || 0) * (i.qty || 0), 0);
+  const st        = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+  const userObj   = _allUsers?.find(u => u.username === order.username);
+  const compName  = userObj?.company_name || order.username;
+  const date      = new Date(order.created_at).toLocaleDateString('tr-TR');
+
+  const statusEmoji = {
+    pending       : '⏳',
+    manufacturing : '🏭',
+    ready         : '✅',
+    cancelled     : '❌',
+  }[order.status] || '📋';
+
+  const itemLines = items.map((item, idx) =>
+    `  ${idx + 1}. ${item.title} — ${item.qty} adet` +
+    (item.price ? ` (${Number(item.price * item.qty).toLocaleString('tr-TR')} ₺)` : '')
+  ).join('\n');
+
+  const totalLine = total > 0
+    ? `💰 Toplam: ${Number(total).toLocaleString('tr-TR')} ₺`
+    : '';
+
+  const noteLine = order.note
+    ? `📝 Müşteri Notu: ${order.note}`
+    : '';
+
+  return {
+    compName,
+    orderNum    : order.order_number,
+    date,
+    statusLabel : st.label,
+    statusEmoji,
+    itemLines,
+    totalLine,
+    noteLine,
+    adminNote   : order.admin_note || '',
+    userObj,
+  };
+}
+
+
+/* ============================================================
+   ★ نافذة الرسائل الرئيسية المطوّرة
+============================================================ */
+function openOrderContactModal(type, order) {
+  document.getElementById('msgModalV2')?.remove();
+
+  const isWA     = type === 'whatsapp';
+  const userObj  = _allUsers?.find(u => u.username === order.username);
+  const phone    = userObj?.phone || '';
+  const email    = userObj?.email || '';
+  const target   = isWA ? phone : email;
+
+  if (!target) {
+    showInvToast(
+      `"${order.username}" için ${isWA ? 'telefon' : 'e-posta'} kayıtlı değil!`,
+      'error'
+    );
+    return;
+  }
+
+  /* تنظيف رقم الهاتف */
+  let cleanPhone = '';
+  if (isWA) {
+    cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+    if (cleanPhone.startsWith('0'))        cleanPhone = '90' + cleanPhone.substring(1);
+    if (!cleanPhone.startsWith('90') && cleanPhone.length <= 10) cleanPhone = '90' + cleanPhone;
+  }
+
+  const accent       = isWA ? '#25d366' : '#60a5fa';
+  const accentDark   = isWA ? 'rgba(37,211,102,0.12)' : 'rgba(96,165,250,0.12)';
+  const accentBorder = isWA ? 'rgba(37,211,102,0.25)' : 'rgba(96,165,250,0.25)';
+  const gradLine     = isWA
+    ? 'transparent,#25d366 30%,#61fd7d 50%,#25d366 70%,transparent'
+    : 'transparent,#3b82f6 30%,#93c5fd 50%,#3b82f6 70%,transparent';
+
+  const templates    = isWA ? MSG_TEMPLATES.wa : MSG_TEMPLATES.email;
+  const tplKeys      = Object.keys(templates);
+  const tData        = buildTemplateData(order);
+  const st           = ORDER_STATUSES[order.status] || ORDER_STATUSES.pending;
+
+  /* ── أزرار القوالب ── */
+  const tplBtns = tplKeys.map(key => {
+    const t = templates[key];
+    return `
+      <button class="msg-tpl-btn" data-key="${key}"
+              onclick="applyMsgTemplate('${key}','${type}')"
+              style="
+        padding:7px 12px;border-radius:8px;
+        background:${t.color}18;
+        border:1px solid ${t.color}40;
+        color:${t.color};
+        font-family:'Montserrat',sans-serif;
+        font-size:9px;font-weight:700;
+        cursor:pointer;transition:all 0.2s;
+        display:inline-flex;align-items:center;gap:5px;
+        white-space:nowrap;letter-spacing:0.5px;"
+        onmouseover="this.style.background='${t.color}30'"
+        onmouseout="this.style.background='${t.color}18'">
+        ${t.icon} ${t.label}
+      </button>`;
+  }).join('');
+
+  /* ── الرسالة الافتراضية ── */
+  const defaultKey = isWA ? 'order_status' : 'order_status';
+  const defaultTpl = templates[defaultKey];
+  const defaultMsg = defaultTpl.build(tData);
+  const defaultSub = isWA ? '' : (defaultTpl.subject(tData) || '');
+
+  const modal = document.createElement('div');
+  modal.id = 'msgModalV2';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9700;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter:blur(22px);
+    -webkit-backdrop-filter:blur(22px);
+    padding:12px;
+  `;
+
+  modal.innerHTML = `
+  <style>
+    #msgModalV2 * { box-sizing:border-box; }
+    #msgModalV2 .msg-tpl-btn.active {
+      transform:scale(1.05);
+      box-shadow:0 4px 14px rgba(0,0,0,0.3);
+    }
+    #msgModalV2 ::-webkit-scrollbar { width:3px; height:3px; }
+    #msgModalV2 ::-webkit-scrollbar-thumb {
+      background:rgba(255,255,255,0.15);border-radius:4px;
+    }
+    @keyframes msgModalIn {
+      from { opacity:0; transform:scale(0.9) translateY(20px); }
+      to   { opacity:1; transform:scale(1) translateY(0); }
+    }
+    @keyframes msgPulse {
+      0%,100% { opacity:1; }
+      50%      { opacity:0.4; }
+    }
+  </style>
+
+  <div style="
+    width:100%;max-width:620px;
+    background:linear-gradient(145deg,#080810,#0f0f1a);
+    border:1px solid ${accentBorder};
+    border-radius:24px;overflow:hidden;
+    box-shadow:0 40px 120px rgba(0,0,0,0.95),
+               0 0 0 1px rgba(255,255,255,0.03);
+    animation:msgModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    max-height:94vh;
+    display:flex;flex-direction:column;
+  ">
+
+    <!-- خط ملون علوي -->
+    <div style="height:3px;flex-shrink:0;
+         background:linear-gradient(90deg,${gradLine});"></div>
+
+    <!-- ══ الهيدر ══ -->
+    <div style="
+      padding:14px 18px 12px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid rgba(255,255,255,0.05);
+      background:rgba(255,255,255,0.015);
+    ">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div style="
+          width:42px;height:42px;flex-shrink:0;
+          background:${accentDark};
+          border:1px solid ${accentBorder};
+          border-radius:12px;
+          display:flex;align-items:center;justify-content:center;
+          font-size:${isWA ? '20px' : '17px'};
+        ">
+          ${isWA
+            ? `<i class="fab fa-whatsapp" style="color:#25d366;"></i>`
+            : `<i class="fas fa-envelope" style="color:#60a5fa;"></i>`}
+        </div>
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;
+               color:${accent}80;text-transform:uppercase;margin-bottom:2px;">
+            ${isWA ? 'WHATSAPP MESAJI' : 'E-POSTA GÖNDER'} — v2.0
+          </div>
+          <div style="font-size:14px;font-weight:900;color:#fff;
+               display:flex;align-items:center;gap:8px;">
+            ${tData.compName}
+            <span style="
+              font-size:9px;padding:3px 9px;border-radius:50px;
+              background:${st.bg};border:1px solid ${st.border};
+              color:${st.color};font-weight:700;letter-spacing:0.5px;">
+              <i class="fas ${st.icon}" style="font-size:8px;margin-right:3px;"></i>
+              ${st.label}
+            </span>
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px;">
+            ${order.order_number} &nbsp;·&nbsp;
+            ${isWA ? `📱 +${cleanPhone}` : `📧 ${email}`}
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:7px;">
+        <!-- زر سجل الرسائل -->
+        <button onclick="openMsgLog('${order.id}','${order.order_number}')"
+                title="Mesaj Geçmişi"
+                style="
+          width:34px;height:34px;
+          background:rgba(201,168,76,0.08);
+          border:1px solid rgba(201,168,76,0.2);
+          border-radius:9px;color:#c9a84c;
+          font-size:13px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(201,168,76,0.18)'"
+          onmouseout="this.style.background='rgba(201,168,76,0.08)'">
+          <i class="fas fa-history"></i>
+        </button>
+
+        <!-- زر التبديل WA ↔ Email -->
+        <button onclick="switchMsgChannel('${type}',${JSON.stringify(order).replace(/"/g,'&quot;')})"
+                title="${isWA ? 'E-postaya Geç' : 'WhatsApp\'a Geç'}"
+                style="
+          width:34px;height:34px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.08);
+          border-radius:9px;
+          color:rgba(255,255,255,0.3);
+          font-size:12px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          <i class="fas ${isWA ? 'fa-envelope' : 'fa-comment'}"></i>
+        </button>
+
+        <!-- إغلاق -->
+        <div onclick="closeOrderContactModal()" style="
+          width:34px;height:34px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);
+          border-radius:9px;color:rgba(255,255,255,0.3);
+          font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ المحتوى القابل للتمرير ══ -->
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+
+      <!-- ── قوالب سريعة ── -->
+      <div style="
+        padding:12px 16px 10px;flex-shrink:0;
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        background:rgba(255,255,255,0.01);
+      ">
+        <div style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.18);
+             text-transform:uppercase;font-weight:700;margin-bottom:8px;">
+          ⚡ HIZLI ŞABLONLAR
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${tplBtns}
+        </div>
+      </div>
+
+      <!-- ── جسم النافذة ── -->
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:11px;flex:1;">
+
+        <!-- حقل الموضوع (إيميل فقط) -->
+        ${!isWA ? `
+        <div>
+          <label style="font-size:8px;letter-spacing:2px;
+               color:rgba(255,255,255,0.2);text-transform:uppercase;
+               font-weight:700;margin-bottom:5px;display:block;">
+            <i class="fas fa-tag" style="color:${accent}60;margin-right:5px;"></i>
+            KONU
+          </label>
+          <input type="text" id="msgSubjectV2"
+            value="${defaultSub}"
+            style="
+              width:100%;padding:10px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid ${accentBorder};
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:12px;outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;"
+            onfocus="this.style.borderColor='${accent}80'"
+            onfocusout="this.style.borderColor='${accentBorder}'"/>
+        </div>` : ''}
+
+        <!-- ── منطقة الكتابة + المعاينة جنباً لجنب ── -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+
+          <!-- textarea -->
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:8px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.2);text-transform:uppercase;
+                 font-weight:700;">
+              <i class="fas fa-edit" style="color:${accent}60;margin-right:5px;"></i>
+              MESAJ METNİ
+            </label>
+            <textarea id="msgBodyV2"
+              style="
+                flex:1;width:100%;padding:11px 13px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid ${accentBorder};
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:11px;outline:none;transition:all 0.3s;
+                resize:none;height:220px;
+                -webkit-user-select:text;user-select:text;
+                line-height:1.7;"
+              onfocus="this.style.borderColor='${accent}80'"
+              onfocusout="this.style.borderColor='${accentBorder}'"
+              oninput="updateMsgPreview()"
+            >${defaultMsg}</textarea>
+            <div style="display:flex;justify-content:space-between;
+                 font-size:9px;color:rgba(255,255,255,0.15);">
+              <span><i class="fas fa-info-circle" style="margin-right:3px;"></i>
+                ${isWA ? 'WhatsApp uygulaması açılacak' : 'EmailJS ile gönderilecek'}
+              </span>
+              <span>
+                <span id="msgCharV2">0</span>/1500
+              </span>
+            </div>
+          </div>
+
+          <!-- معاينة حية -->
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="font-size:8px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.2);text-transform:uppercase;
+                 font-weight:700;">
+              <i class="fas fa-eye" style="color:${accent}60;margin-right:5px;"></i>
+              CANLI ÖNİZLEME
+            </label>
+            <div style="
+              flex:1;height:220px;overflow-y:auto;
+              border-radius:9px;overflow:hidden;
+              border:1px solid rgba(255,255,255,0.06);
+              background:${isWA ? '#0b1f17' : '#f8fafc'};
+              position:relative;
+            ">
+              ${isWA ? `
+              <!-- معاينة WhatsApp -->
+              <div style="
+                background:linear-gradient(135deg,#0b1f17,#0d2b1e);
+                padding:8px 10px 4px;
+                border-bottom:1px solid rgba(37,211,102,0.1);
+                display:flex;align-items:center;gap:7px;
+              ">
+                <div style="width:28px;height:28px;border-radius:50%;
+                     background:linear-gradient(135deg,#075e54,#128c7e);
+                     display:flex;align-items:center;justify-content:center;
+                     font-size:13px;flex-shrink:0;">👤</div>
+                <div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">
+                    ${tData.compName}
+                  </div>
+                  <div style="font-size:9px;color:rgba(37,211,102,0.5);">
+                    çevrimiçi
+                  </div>
+                </div>
+              </div>
+              <div style="padding:10px;background:url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><text y=%2240%22 font-size=%2230%22 opacity=%220.03%22>💬</text></svg>') repeat;">
+                <div style="
+                  background:linear-gradient(135deg,#075e54,#0a7a6a);
+                  border-radius:12px 12px 2px 12px;
+                  padding:10px 12px;
+                  max-width:90%;margin-left:auto;
+                  box-shadow:0 2px 8px rgba(0,0,0,0.3);
+                ">
+                  <div id="msgPreviewWA" style="
+                    font-size:11px;color:#e8f5e9;
+                    line-height:1.7;white-space:pre-wrap;
+                    word-break:break-word;
+                    font-family:'Segoe UI',system-ui,sans-serif;
+                  ">${defaultMsg}</div>
+                  <div style="text-align:right;margin-top:5px;
+                       display:flex;align-items:center;justify-content:flex-end;gap:3px;">
+                    <span style="font-size:9px;color:rgba(255,255,255,0.35);">Şimdi</span>
+                    <i class="fas fa-check-double" style="font-size:9px;color:#4fc3f7;"></i>
+                  </div>
+                </div>
+              </div>
+              ` : `
+              <!-- معاينة Email -->
+              <div style="background:#fff;height:100%;overflow-y:auto;">
+                <!-- شريط أدوات وهمي -->
+                <div style="
+                  background:#f1f5f9;padding:8px 12px;
+                  border-bottom:1px solid #e2e8f0;
+                  display:flex;align-items:center;gap:6px;
+                ">
+                  <div style="width:8px;height:8px;border-radius:50%;background:#ff5f57;"></div>
+                  <div style="width:8px;height:8px;border-radius:50%;background:#ffbd2e;"></div>
+                  <div style="width:8px;height:8px;border-radius:50%;background:#28c840;"></div>
+                  <span style="font-size:9px;color:#94a3b8;margin-left:8px;
+                       font-family:'Montserrat',sans-serif;">
+                    Gelen Kutusu
+                  </span>
+                </div>
+                <!-- رأس الإيميل -->
+                <div style="padding:10px 12px;border-bottom:1px solid #f0f0f0;">
+                  <div id="msgPreviewSubject" style="
+                    font-size:11px;font-weight:800;color:#1e293b;
+                    margin-bottom:5px;font-family:'Montserrat',sans-serif;">
+                    ${defaultSub}
+                  </div>
+                  <div style="font-size:9px;color:#94a3b8;
+                       font-family:'Montserrat',sans-serif;">
+                    <span style="color:#1e40af;font-weight:600;">WOW MOBİLYA</span>
+                    → ${email}
+                  </div>
+                </div>
+                <!-- جسم الإيميل -->
+                <div style="padding:10px 12px;">
+                  <div id="msgPreviewEmail" style="
+                    font-size:11px;color:#475569;
+                    line-height:1.7;white-space:pre-wrap;
+                    word-break:break-word;
+                    font-family:'Segoe UI',system-ui,sans-serif;
+                    border-left:3px solid #c9a84c;
+                    padding-left:8px;
+                  ">${defaultMsg}</div>
+                  <!-- توقيع -->
+                  <div style="
+                    margin-top:12px;padding-top:8px;
+                    border-top:1px solid #f0f0f0;
+                    font-size:9px;color:#94a3b8;
+                    font-family:'Montserrat',sans-serif;
+                    display:flex;align-items:center;gap:5px;
+                  ">
+                    <div style="
+                      width:16px;height:16px;border-radius:4px;
+                      background:linear-gradient(135deg,#0d0d1a,#1a1a2e);
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:8px;color:#c9a84c;
+                    ">W</div>
+                    WOW MOBİLYA Ekibi
+                  </div>
+                </div>
+              </div>
+              `}
+            </div>
+          </div>
+        </div>
+
+        <!-- ── رسالة الحالة ── -->
+        <div id="msgStatusV2" style="display:none;padding:9px 13px;
+             border-radius:9px;font-size:11px;font-weight:700;
+             text-align:center;font-family:'Montserrat',sans-serif;
+             transition:all 0.3s;"></div>
+
+        <!-- ── أزرار الإجراءات ── -->
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button onclick="closeOrderContactModal()" style="
+            flex:1;padding:12px;border-radius:10px;
+            border:1px solid rgba(255,255,255,0.08);
+            background:rgba(255,255,255,0.03);
+            color:rgba(255,255,255,0.35);
+            font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+            İPTAL
+          </button>
+
+          <button id="msgSendBtnV2"
+                  onclick="executeMsgSend('${type}','${isWA ? cleanPhone : email}','${order.id}','${order.order_number}','${order.username}','${tData.compName}')"
+                  style="
+            flex:3;padding:12px;border-radius:10px;border:none;
+            background:${isWA
+              ? 'linear-gradient(135deg,#075e54,#128c7e)'
+              : 'linear-gradient(135deg,#1e3a5f,#1e40af)'};
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:1.5px;
+            cursor:pointer;transition:all 0.3s;
+            display:flex;align-items:center;justify-content:center;gap:9px;
+            box-shadow:0 4px 20px ${isWA ? 'rgba(37,211,102,0.25)' : 'rgba(59,130,246,0.25)'};"
+            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px ${isWA ? 'rgba(37,211,102,0.4)' : 'rgba(59,130,246,0.4)'}'"
+            onmouseout="this.style.transform='';this.style.boxShadow='0 4px 20px ${isWA ? 'rgba(37,211,102,0.25)' : 'rgba(59,130,246,0.25)'}'">
+            <i class="${isWA ? 'fab fa-whatsapp' : 'fas fa-paper-plane'}"
+               style="font-size:${isWA ? '16px' : '13px'};"></i>
+            ${isWA ? 'WHATSAPP\'TA AÇ' : 'E-POSTA GÖNDER'}
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- خط ملون سفلي -->
+    <div style="height:2px;flex-shrink:0;
+         background:linear-gradient(90deg,${gradLine});
+         opacity:0.5;"></div>
+  </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  /* ── حفظ بيانات الطلبية للاستخدام في الدوال ── */
+  window._currentMsgOrder    = order;
+  window._currentMsgType     = type;
+  window._currentMsgTData    = tData;
+  window._currentMsgIsWA     = isWA;
+  window._currentMsgCleanPhone = cleanPhone;
+
+  /* ── تحديث العداد والمعاينة عند الكتابة ── */
+  const ta = document.getElementById('msgBodyV2');
+  if (ta) {
+    const counter = document.getElementById('msgCharV2');
+    if (counter) counter.textContent = ta.value.length;
+    updateMsgPreview();
+  }
+
+  /* ── إغلاق بالخلفية ── */
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeOrderContactModal();
+  });
+}
+
+
+/* ── تحديث المعاينة الحية ── */
+function updateMsgPreview() {
+  const ta      = document.getElementById('msgBodyV2');
+  const subEl   = document.getElementById('msgSubjectV2');
+  const counter = document.getElementById('msgCharV2');
+  if (!ta) return;
+
+  const val = ta.value;
+  if (counter) counter.textContent = val.length;
+
+  /* WhatsApp */
+  const waPreview = document.getElementById('msgPreviewWA');
+  if (waPreview) waPreview.textContent = val;
+
+  /* Email body */
+  const emailPreview = document.getElementById('msgPreviewEmail');
+  if (emailPreview) emailPreview.textContent = val;
+
+  /* Email subject */
+  if (subEl) {
+    const subPreview = document.getElementById('msgPreviewSubject');
+    if (subPreview) subPreview.textContent = subEl.value;
+  }
+}
+
+
+/* ── تطبيق قالب ── */
+function applyMsgTemplate(key, type) {
+  const isWA    = type === 'whatsapp';
+  const tpls    = isWA ? MSG_TEMPLATES.wa : MSG_TEMPLATES.email;
+  const tpl     = tpls[key];
+  const tData   = window._currentMsgTData;
+  if (!tpl || !tData) return;
+
+  const ta    = document.getElementById('msgBodyV2');
+  const subEl = document.getElementById('msgSubjectV2');
+
+  if (ta) {
+    ta.value = tpl.build(tData);
+    /* تأثير بصري */
+    ta.style.borderColor = tpl.color + '80';
+    ta.style.boxShadow   = `0 0 16px ${tpl.color}20`;
+    setTimeout(() => {
+      ta.style.borderColor = '';
+      ta.style.boxShadow   = '';
+    }, 700);
+  }
+
+  if (!isWA && subEl && typeof tpl.subject === 'function') {
+    subEl.value = tpl.subject(tData);
+  }
+
+  /* تحديث المعاينة */
+  updateMsgPreview();
+
+  /* تمييز الزر النشط */
+  document.querySelectorAll('.msg-tpl-btn').forEach(b => {
+    b.classList.remove('active');
+    b.style.transform = '';
+  });
+  const activeBtn = document.querySelector(`.msg-tpl-btn[data-key="${key}"]`);
+  if (activeBtn) activeBtn.classList.add('active');
+}
+
+
+/* ── تبديل القناة WA ↔ Email ── */
+function switchMsgChannel(currentType, order) {
+  closeOrderContactModal();
+  const newType = currentType === 'whatsapp' ? 'email' : 'whatsapp';
+  setTimeout(() => openOrderContactModal(newType, order), 200);
+}
+
+
+/* ── إغلاق النافذة ── */
+function closeOrderContactModal() {
+  document.getElementById('msgModalV2')?.remove();
+  window._currentMsgOrder     = null;
+  window._currentMsgType      = null;
+  window._currentMsgTData     = null;
+}
+
+
+/* ============================================================
+   ★ تنفيذ الإرسال + حفظ السجل
+============================================================ */
+async function executeMsgSend(type, target, orderId, orderNum, username, compName) {
+  const ta    = document.getElementById('msgBodyV2');
+  const subEl = document.getElementById('msgSubjectV2');
+  const btn   = document.getElementById('msgSendBtnV2');
+  const stEl  = document.getElementById('msgStatusV2');
+
+  const message = ta?.value?.trim() || '';
+  const subject = subEl?.value?.trim() || `WOW MOBİLYA — Sipariş: ${orderNum}`;
+
+  if (!message) {
+    showMsgStatus('Lütfen mesaj girin!', 'error');
+    ta?.focus();
+    return;
+  }
+
+  const isWA = type === 'whatsapp';
+
+  /* ── WhatsApp ── */
+  if (isWA) {
+    const waUrl = `https://wa.me/${target}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+
+    /* حفظ في السجل */
+    await saveMsgLog({
+      orderId, orderNum, username, compName,
+      channel : 'whatsapp',
+      subject : '',
+      message,
+      status  : 'sent',
+    });
+
+    showInvToast('WhatsApp açıldı ✓', 'success');
+    setTimeout(() => closeOrderContactModal(), 500);
+    return;
+  }
+
+  /* ── Email ── */
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+  }
+  showMsgStatus(
+    '<i class="fas fa-spinner fa-spin"></i> E-posta gönderiliyor...',
+    'loading'
+  );
+
+  try {
+    if (typeof emailjs === 'undefined') throw new Error('EmailJS yüklenmedi!');
+
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_MSG_TEMPLATE_ID, {
+      to_email     : target,
+      to_name      : compName,
+      subject      : subject,
+      message_body : message,
+    });
+
+    /* حفظ في السجل */
+    await saveMsgLog({
+      orderId, orderNum, username, compName,
+      channel : 'email',
+      subject,
+      message,
+      status  : 'sent',
+    });
+
+    showMsgStatus(
+      `<i class="fas fa-check-circle"></i> Gönderildi → ${target}`,
+      'success'
+    );
+    showInvToast(`"${username}" adresine e-posta gönderildi ✓`, 'success');
+    setTimeout(() => closeOrderContactModal(), 2200);
+
+  } catch(e) {
+    console.error('[MsgSend]', e);
+
+    /* حفظ الفشل في السجل */
+    await saveMsgLog({
+      orderId, orderNum, username, compName,
+      channel : 'email',
+      subject,
+      message,
+      status  : 'failed',
+    });
+
+    showMsgStatus(
+      `<i class="fas fa-exclamation-circle"></i> Hata: ${e.message}`,
+      'error'
+    );
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> TEKRAR DENE';
+    }
+  }
+}
+
+
+/* ── عرض حالة الإرسال ── */
+function showMsgStatus(html, type) {
+  const el = document.getElementById('msgStatusV2');
+  if (!el) return;
+  const c = {
+    loading : ['rgba(96,165,250,0.08)',  'rgba(96,165,250,0.25)',  '#60a5fa'],
+    success : ['rgba(74,222,128,0.08)',  'rgba(74,222,128,0.3)',   '#4ade80'],
+    error   : ['rgba(239,68,68,0.08)',   'rgba(239,68,68,0.3)',    '#ef4444'],
+  }[type] || ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.1)', '#fff'];
+  el.style.display    = 'block';
+  el.style.background = c[0];
+  el.style.border     = `1px solid ${c[[1]](#__1)}`;
+  el.style.color      = c[[2]](#__2);
+  el.innerHTML        = html;
+}
+
+
+/* ============================================================
+   ★ حفظ سجل الرسائل في Supabase
+============================================================ */
+async function saveMsgLog({ orderId, orderNum, username, compName,
+                             channel, subject, message, status }) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  try {
+    await sb.from('message_log').insert([{
+      order_id     : orderId     || null,
+      order_number : orderNum,
+      username,
+      company_name : compName,
+      channel,
+      subject      : subject || '',
+      message,
+      status,
+      sent_by      : currentUser,
+    }]);
+    console.log('[MsgLog] ✅ سجّل:', channel, status);
+  } catch(e) {
+    console.warn('[MsgLog] فشل الحفظ:', e);
+  }
+}
+
+
+/* ============================================================
+   ★ نافذة سجل الرسائل
+============================================================ */
+async function openMsgLog(orderId, orderNum) {
+  document.getElementById('msgLogModal')?.remove();
+
+  const sb = await initSupabase();
+  let logs = [];
+
+  if (sb) {
+    const { data } = await sb
+      .from('message_log')
+      .select('*')
+      .eq('order_number', orderNum)
+      .order('sent_at', { ascending: false })
+      .limit(50);
+    logs = data || [];
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'msgLogModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9800;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter:blur(20px);
+    padding:16px;
+  `;
+
+  const logRows = logs.length
+    ? logs.map(log => {
+        const isWA  = log.channel === 'whatsapp';
+        const isSent = log.status === 'sent';
+        const date  = new Date(log.sent_at);
+        const dateStr = date.toLocaleDateString('tr-TR');
+        const timeStr = date.toLocaleTimeString('tr-TR',
+          { hour:'2-digit', minute:'2-digit' });
+
+        return `
+          <div style="
+            background:rgba(255,255,255,0.025);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:12px 14px;
+            transition:all 0.2s;
+            border-left:3px solid ${isWA ? '#25d366' : '#60a5fa'};
+          "
+          onmouseover="this.style.background='rgba(255,255,255,0.04)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.025)'">
+
+            <!-- هيدر السجل -->
+            <div style="display:flex;align-items:center;
+                 justify-content:space-between;margin-bottom:8px;
+                 flex-wrap:wrap;gap:6px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <!-- أيقونة القناة -->
+                <div style="
+                  width:28px;height:28px;border-radius:8px;flex-shrink:0;
+                  background:${isWA ? 'rgba(37,211,102,0.12)' : 'rgba(96,165,250,0.12)'};
+                  border:1px solid ${isWA ? 'rgba(37,211,102,0.25)' : 'rgba(96,165,250,0.25)'};
+                  display:flex;align-items:center;justify-content:center;
+                  font-size:13px;color:${isWA ? '#25d366' : '#60a5fa'};">
+                  <i class="${isWA ? 'fab fa-whatsapp' : 'fas fa-envelope'}"></i>
+                </div>
+                <div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">
+                    ${isWA ? 'WhatsApp' : 'E-posta'}
+                    ${log.subject ? `— <span style="color:rgba(255,255,255,0.4);font-weight:400;">${log.subject}</span>` : ''}
+                  </div>
+                  <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:1px;">
+                    <i class="fas fa-user" style="margin-right:3px;"></i>
+                    ${log.sent_by || 'WOW'}
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;align-items:center;gap:7px;">
+                <!-- حالة الإرسال -->
+                <div style="
+                  padding:3px 10px;border-radius:50px;
+                  background:${isSent ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'};
+                  border:1px solid ${isSent ? 'rgba(74,222,128,0.3)' : 'rgba(239,68,68,0.3)'};
+                  color:${isSent ? '#4ade80' : '#ef4444'};
+                  font-size:9px;font-weight:700;
+                  display:flex;align-items:center;gap:4px;">
+                  <i class="fas ${isSent ? 'fa-check' : 'fa-times'}"
+                     style="font-size:8px;"></i>
+                  ${isSent ? 'Gönderildi' : 'Başarısız'}
+                </div>
+
+                <!-- التاريخ والوقت -->
+                <div style="text-align:right;">
+                  <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);">
+                    ${timeStr}
+                  </div>
+                  <div style="font-size:9px;color:rgba(255,255,255,0.2);">
+                    ${dateStr}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- نص الرسالة قابل للطي -->
+            <div style="
+              background:rgba(0,0,0,0.25);
+              border-radius:7px;padding:8px 10px;
+              font-size:10px;color:rgba(255,255,255,0.4);
+              line-height:1.6;white-space:pre-wrap;
+              word-break:break-word;
+              max-height:60px;overflow:hidden;
+              position:relative;cursor:pointer;
+              transition:max-height 0.3s ease;
+            "
+            onclick="this.style.maxHeight = this.style.maxHeight==='60px' ? '400px' : '60px'"
+            title="Mesajı görmek için tıklayın">
+              ${log.message}
+              <div style="
+                position:absolute;bottom:0;left:0;right:0;height:20px;
+                background:linear-gradient(transparent,rgba(0,0,0,0.4));
+                pointer-events:none;
+              "></div>
+            </div>
+          </div>`;
+      }).join('')
+    : `<div style="text-align:center;padding:40px 20px;
+            color:rgba(255,255,255,0.2);">
+         <i class="fas fa-inbox" style="font-size:32px;display:block;
+            margin-bottom:12px;color:rgba(201,168,76,0.15);"></i>
+         <p style="font-size:12px;letter-spacing:2px;">
+           Bu sipariş için henüz mesaj gönderilmemiş
+         </p>
+       </div>`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:540px;
+      background:linear-gradient(145deg,#080810,#0f0f1a);
+      border:1px solid rgba(201,168,76,0.2);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.95);
+      animation:msgModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      max-height:85vh;display:flex;flex-direction:column;
+    ">
+      <!-- خط ذهبي -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+        flex-shrink:0;"></div>
+
+      <!-- هيدر -->
+      <div style="
+        padding:16px 18px 13px;flex-shrink:0;
+        display:flex;align-items:center;justify-content:space-between;
+        border-bottom:1px solid rgba(255,255,255,0.05);
+      ">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <div style="
+            width:40px;height:40px;
+            background:rgba(201,168,76,0.1);
+            border:1px solid rgba(201,168,76,0.25);
+            border-radius:11px;
+            display:flex;align-items:center;justify-content:center;
+            color:#c9a84c;font-size:16px;">
+            <i class="fas fa-history"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(201,168,76,0.5);text-transform:uppercase;margin-bottom:2px;">
+              MESAJ GEÇMİŞİ
+            </div>
+            <div style="font-size:14px;font-weight:900;color:#fff;">
+              ${orderNum}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:1px;">
+              ${logs.length} mesaj kaydı
+            </div>
+          </div>
+        </div>
+        <div onclick="closeMsgLog()" style="
+          width:32px;height:32px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);
+          border-radius:8px;color:rgba(255,255,255,0.3);
+          font-size:13px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <!-- قائمة السجلات -->
+      <div style="
+        flex:1;overflow-y:auto;
+        padding:14px 16px 16px;
+        display:flex;flex-direction:column;gap:9px;
+      ">
+        ${logRows}
+      </div>
+
+      <!-- خط ذهبي سفلي -->
+      <div style="height:2px;flex-shrink:0;
+           background:linear-gradient(90deg,
+           transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+           opacity:0.5;"></div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeMsgLog();
+  });
+}
+
+/* ── إغلاق سجل الرسائل ── */
+function closeMsgLog() {
+  document.getElementById('msgLogModal')?.remove();
+}
+
+
+/* ============================================================
+   ★ ربط الأزرار في buildAdminOrderCard
+   أضف هذا بعد بناء بطاقة الطلبية مباشرة
+============================================================ */
+
+/* ── تعديل sendOrderWhatsApp لاستخدام النظام الجديد ── */
+function sendOrderWhatsApp(order) {
+  const userObj = _allUsers?.find(u => u.username === order.username);
+  const phone   = userObj?.phone || '';
+
+  if (!phone) {
+    showInvToast(
+      `"${order.username}" için telefon numarası kayıtlı değil!`,
+      'error'
+    );
+    return;
+  }
+
+  /* فتح النافذة الجديدة */
+  openOrderContactModal('whatsapp', order);
+}
+
+/* ── تعديل sendOrderEmail لاستخدام النظام الجديد ── */
+function sendOrderEmail(order) {
+  const userObj = _allUsers?.find(u => u.username === order.username);
+  const email   = userObj?.email || '';
+
+  if (!email) {
+    showInvToast(
+      `"${order.username}" için e-posta adresi kayıtlı değil!`,
+      'error'
+    );
+    return;
+  }
+
+  /* فتح النافذة الجديدة */
+  openOrderContactModal('email', order);
+}
+
+
+/* ============================================================
+   ★ إضافة أزرار التواصل في buildAdminOrderCard
+   ابحث عن هذا السطر في buildAdminOrderCard:
+   <!-- ══ أزرار تغيير الحالة ══ -->
+   وأضف قبله هذا الكود:
+============================================================ */
+
+/* ── دالة مساعدة لبناء HTML أزرار التواصل ── */
+function buildOrderContactBtns(order) {
+  const userObj  = _allUsers?.find(u => u.username === order.username);
+  const hasPhone = !!(userObj?.phone);
+  const hasEmail = !!(userObj?.email);
+
+  /* عدد الرسائل المرسلة (يُحدَّث لاحقاً بـ Realtime) */
+  const msgCount = window._msgCounts?.[order.order_number] || 0;
+
+  return `
+    <!-- ══ أزرار التواصل السريع ══ -->
+    <div style="
+      padding:12px 14px;
+      border-top:1px solid rgba(255,255,255,0.04);
+      background:rgba(255,255,255,0.01);
+    ">
+      <div style="
+        display:flex;align-items:center;
+        justify-content:space-between;
+        margin-bottom:10px;flex-wrap:wrap;gap:6px;">
+
+        <div style="font-size:9px;letter-spacing:2px;
+             color:rgba(255,255,255,0.2);font-weight:700;
+             text-transform:uppercase;
+             display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-paper-plane"
+             style="color:rgba(201,168,76,0.4);"></i>
+          HIZLI İLETİŞİM
+        </div>
+
+        <!-- عداد الرسائل المرسلة -->
+        ${msgCount > 0 ? `
+          <div style="
+            display:flex;align-items:center;gap:5px;
+            padding:3px 10px;border-radius:50px;
+            background:rgba(201,168,76,0.08);
+            border:1px solid rgba(201,168,76,0.2);">
+            <i class="fas fa-check-double"
+               style="font-size:9px;color:#c9a84c;"></i>
+            <span style="font-size:9px;font-weight:700;color:#c9a84c;">
+              ${msgCount} mesaj gönderildi
+            </span>
+          </div>` : ''}
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+        <!-- ★ زر WhatsApp ★ -->
+        <button
+          onclick='sendOrderWhatsApp(${JSON.stringify(order).replace(/'/g, "\\'")})'
+          style="
+            flex:1;min-width:140px;
+            padding:10px 14px;border-radius:10px;
+            background:${hasPhone
+              ? 'rgba(37,211,102,0.1)'
+              : 'rgba(255,255,255,0.03)'};
+            border:1px solid ${hasPhone
+              ? 'rgba(37,211,102,0.3)'
+              : 'rgba(255,255,255,0.08)'};
+            color:${hasPhone ? '#25d366' : 'rgba(255,255,255,0.2)'};
+            font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:700;letter-spacing:0.5px;
+            cursor:${hasPhone ? 'pointer' : 'not-allowed'};
+            transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:7px;"
+          ${hasPhone ? `
+            onmouseover="this.style.background='rgba(37,211,102,0.2)';
+                         this.style.transform='translateY(-1px)';
+                         this.style.boxShadow='0 4px 14px rgba(37,211,102,0.2)'"
+            onmouseout="this.style.background='rgba(37,211,102,0.1)';
+                        this.style.transform='';
+                        this.style.boxShadow=''"` : 'disabled'}
+        >
+          <i class="fab fa-whatsapp" style="font-size:14px;"></i>
+          ${hasPhone ? 'WhatsApp Gönder' : 'Telefon Yok'}
+        </button>
+
+        <!-- ★ زر Email ★ -->
+        <button
+          onclick='sendOrderEmail(${JSON.stringify(order).replace(/'/g, "\\'")})'
+          style="
+            flex:1;min-width:140px;
+            padding:10px 14px;border-radius:10px;
+            background:${hasEmail
+              ? 'rgba(96,165,250,0.1)'
+              : 'rgba(255,255,255,0.03)'};
+            border:1px solid ${hasEmail
+              ? 'rgba(96,165,250,0.3)'
+              : 'rgba(255,255,255,0.08)'};
+            color:${hasEmail ? '#60a5fa' : 'rgba(255,255,255,0.2)'};
+            font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:700;letter-spacing:0.5px;
+            cursor:${hasEmail ? 'pointer' : 'not-allowed'};
+            transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:7px;"
+          ${hasEmail ? `
+            onmouseover="this.style.background='rgba(96,165,250,0.2)';
+                         this.style.transform='translateY(-1px)';
+                         this.style.boxShadow='0 4px 14px rgba(96,165,250,0.2)'"
+            onmouseout="this.style.background='rgba(96,165,250,0.1)';
+                        this.style.transform='';
+                        this.style.boxShadow=''"` : 'disabled'}
+        >
+          <i class="fas fa-envelope" style="font-size:12px;"></i>
+          ${hasEmail ? 'E-posta Gönder' : 'E-posta Yok'}
+        </button>
+
+        <!-- ★ زر سجل الرسائل ★ -->
+        <button
+          onclick="openMsgLog('${order.id}','${order.order_number}')"
+          style="
+            padding:10px 14px;border-radius:10px;
+            background:rgba(201,168,76,0.07);
+            border:1px solid rgba(201,168,76,0.2);
+            color:#c9a84c;
+            font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:700;letter-spacing:0.5px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;gap:6px;"
+          onmouseover="this.style.background='rgba(201,168,76,0.15)';
+                       this.style.transform='translateY(-1px)'"
+          onmouseout="this.style.background='rgba(201,168,76,0.07)';
+                      this.style.transform=''">
+          <i class="fas fa-history" style="font-size:11px;"></i>
+          Geçmiş
+          ${msgCount > 0 ? `
+            <span style="
+              background:rgba(201,168,76,0.2);
+              border-radius:50px;padding:1px 7px;
+              font-size:9px;font-weight:900;">
+              ${msgCount}
+            </span>` : ''}
+        </button>
+
+      </div>
+    </div>`;
+}
+
+
+/* ============================================================
+   ★ تحميل عدد الرسائل لكل طلبية عند فتح لوحة الأدمن
+============================================================ */
+async function loadMsgCounts() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  try {
+    const { data } = await sb
+      .from('message_log')
+      .select('order_number')
+      .eq('status', 'sent');
+
+    if (!data) return;
+
+    /* بناء خريطة العدد */
+    window._msgCounts = {};
+    data.forEach(row => {
+      const n = row.order_number;
+      window._msgCounts[n] = (window._msgCounts[n] || 0) + 1;
+    });
+
+    console.log('[MsgCounts] ✅ محمّل:', Object.keys(window._msgCounts).length, 'طلبية');
+  } catch(e) {
+    console.warn('[MsgCounts] فشل:', e);
+  }
+}
+
+
+/* ============================================================
+   ★ تعديل buildAdminPage لتحميل عدد الرسائل
+============================================================ */
+const _origBuildAdminPage_msg = buildAdminPage;
+buildAdminPage = async function() {
+  await _origBuildAdminPage_msg();
+  /* تحميل عدد الرسائل في الخلفية */
+  loadMsgCounts();
+};
+
+
+/* ============================================================
+   ★ Realtime لتحديث عدد الرسائل فور الإرسال
+============================================================ */
+async function subscribeMsgLog() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  sb.channel('msg-log-live')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'message_log' },
+      payload => {
+        const row = payload.new;
+        if (!row || row.status !== 'sent') return;
+
+        /* تحديث العداد المحلي */
+        if (!window._msgCounts) window._msgCounts = {};
+        const n = row.order_number;
+        window._msgCounts[n] = (window._msgCounts[n] || 0) + 1;
+
+        /* تحديث الشارة في البطاقة إذا كانت مرئية */
+        const card = document.querySelector(
+          `[id^="admincard-"]`
+        );
+        if (card) {
+          /* إعادة رسم الأزرار فقط بدون إعادة رسم البطاقة كاملة */
+          const order = allAdminOrders.find(
+            o => o.order_number === n
+          );
+          if (order) {
+            const btnsWrap = card.querySelector(
+              `[data-contact-btns="${n}"]`
+            );
+            if (btnsWrap) {
+              btnsWrap.innerHTML = buildOrderContactBtns(order);
+            }
+          }
+        }
+
+        console.log('[MsgLog Realtime] رسالة جديدة:', n);
+      }
+    )
+    .subscribe();
+}
+
+/* ── تشغيل الاشتراك بعد تسجيل الدخول ── */
+const _origFinishLogin_msg = finishLogin;
+finishLogin = function() {
+  _origFinishLogin_msg();
+  setTimeout(() => subscribeMsgLog(), 1500);
+};
 
 
 
