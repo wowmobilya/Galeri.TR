@@ -15487,48 +15487,442 @@ async function loadHomeCards() {
 /* ── رسم البطاقات في الصفحة الرئيسية ── */
 function renderHomeCards() {
   const container = document.querySelector('.home-cards');
-  if (!container || !_homeCards.length) return;
+  if (!container) return;
 
   const isAdmin = currentUser === ADMIN_USER;
 
-  container.innerHTML = _homeCards.map((card, idx) => {
-    /* إخفاء بطاقة admin للمستخدمين العاديين */
-    if (card.section_key === 'admin' && !isAdmin) return '';
-    if (card.section_key === 'settings' && !isAdmin) return '';
+  if (isAdmin) {
+    renderAdminHomeCards(container);
+  } else {
+    renderUserHomeCards(container);
+  }
+}
 
-    const delay = (0.5 + idx * 0.15).toFixed(2);
-    const countStyle = card.section_key === 'admin'
-      ? 'background:rgba(239,68,68,0.7);border-color:rgba(239,68,68,0.5);color:#fff;'
-      : '';
+/* ─────────────────────────────────────────
+   بطاقات المستخدم العادي
+───────────────────────────────────────── */
+function renderUserHomeCards(container) {
+  const cards = _homeCards && _homeCards.length ? _homeCards : getStaticCards();
 
-    return `
-      <div class="home-card" onclick="enterSection('${card.section_key}')"
-           style="animation:cardSlideIn 0.7s ease ${delay}s both;">
-        <img class="home-card-img" src="${card.image_url || ''}" alt="${card.title}"
-             loading="lazy" draggable="false"
-             onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW'"/>
-        <div class="home-card-overlay"></div>
-        <div class="home-card-shine"></div>
-        ${card.count_label
-          ? `<div class="home-card-count" style="${countStyle}">${card.count_label}</div>`
+  container.innerHTML = cards
+    .filter(c => c.is_active !== false
+              && c.section_key !== 'admin'
+              && c.section_key !== 'settings')
+    .map((card, idx) => buildHomeCardHTML(card, idx))
+    .join('');
+}
+
+/* ─────────────────────────────────────────
+   بطاقات الـ WOW (Admin)
+───────────────────────────────────────── */
+function renderAdminHomeCards(container) {
+
+  /* ── صف 1: بطاقة معاينة واجهة المستخدم ── */
+  const previewCard = {
+    section_key : 'user_preview',
+    title       : 'MÜŞTERİ',
+    subtitle    : 'GÖRÜNÜMÜ',
+    description : 'Kullanıcı arayüzünü görüntüle',
+    count_label : 'ÖNZLM',
+    btn_text    : 'Görünümü Aç',
+    image_url   : 'https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg',
+    _accent     : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+    _countStyle : 'background:rgba(99,102,241,0.75);border-color:rgba(99,102,241,0.5);color:#fff;',
+    _icon       : 'fa-eye',
+    _fullWidth  : true,
+  };
+
+  /* ── لوحات التحكم ── */
+  const controlPanels = [
+    {
+      section_key : 'admin',
+      title       : 'SİPARİŞ',
+      subtitle    : 'PANELİ',
+      description : 'Tüm siparişleri görüntüle & yönet',
+      count_label : 'ORDERS',
+      btn_text    : 'Panele Gir',
+      image_url   : 'https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png',
+      _countStyle : 'background:rgba(239,68,68,0.75);border-color:rgba(239,68,68,0.5);color:#fff;',
+      _icon       : 'fa-clipboard-list',
+    },
+    {
+      section_key : 'messages',
+      title       : 'MESAJ',
+      subtitle    : 'MERKEZİ',
+      description : 'WhatsApp & e-posta geçmişi',
+      count_label : 'MSG',
+      btn_text    : 'Mesajları Gör',
+      image_url   : 'https://static.wixstatic.com/media/42e4ec_7557d3da2f9e4a2a8816339de74659b2~mv2.jpg/v1/fill/w_750,h_562,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2016_52_edited.jpg',
+      _countStyle : 'background:rgba(34,197,94,0.75);border-color:rgba(34,197,94,0.5);color:#fff;',
+      _icon       : 'fa-comments',
+    },
+    {
+      section_key : 'users_panel',
+      title       : 'KULLANICI',
+      subtitle    : 'YÖNETİMİ',
+      description : 'Hesapları görüntüle & düzenle',
+      count_label : 'USERS',
+      btn_text    : 'Kullanıcıları Gör',
+      image_url   : 'https://static.wixstatic.com/media/42e4ec_497547faea6641019e1ece74652f9f0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_160720150_edited.jpg',
+      _countStyle : 'background:rgba(59,130,246,0.75);border-color:rgba(59,130,246,0.5);color:#fff;',
+      _icon       : 'fa-users',
+    },
+    {
+      section_key : 'stock_panel',
+      title       : 'STOK',
+      subtitle    : 'YÖNETİMİ',
+      description : 'Ürün stoklarını takip et & güncelle',
+      count_label : 'STOCK',
+      btn_text    : 'Stoğa Git',
+      image_url   : 'https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg',
+      _countStyle : 'background:rgba(245,158,11,0.75);border-color:rgba(245,158,11,0.5);color:#fff;',
+      _icon       : 'fa-boxes',
+    },
+    {
+      section_key : 'settings',
+      title       : 'AYARLAR',
+      subtitle    : '& DÜZEN',
+      description : 'Ana sayfa kartlarını özelleştir',
+      count_label : 'SET',
+      btn_text    : 'Ayarlara Git',
+      image_url   : 'https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png',
+      _countStyle : 'background:rgba(201,168,76,0.75);border-color:rgba(201,168,76,0.5);color:#0a0a0a;font-weight:900;',
+      _icon       : 'fa-cog',
+    },
+  ];
+
+  /* ── بناء HTML ── */
+  let html = '';
+
+  /* عنوان قسم المعاينة */
+  html += `
+    <div class="admin-home-section-label" style="
+      grid-column: 1 / -1;
+      font-size:9px;letter-spacing:3px;
+      color:rgba(201,168,76,0.5);
+      font-weight:700;text-transform:uppercase;
+      padding:4px 0 8px;
+      display:flex;align-items:center;gap:8px;">
+      <i class="fas fa-eye" style="font-size:11px;"></i>
+      MÜŞTERİ GÖRÜNÜMÜ
+    </div>`;
+
+  /* بطاقة المعاينة — عرض كامل */
+  html += buildAdminWideCard(previewCard, 0);
+
+  /* عنوان قسم التحكم */
+  html += `
+    <div class="admin-home-section-label" style="
+      grid-column: 1 / -1;
+      font-size:9px;letter-spacing:3px;
+      color:rgba(201,168,76,0.5);
+      font-weight:700;text-transform:uppercase;
+      padding:12px 0 8px;
+      display:flex;align-items:center;gap:8px;">
+      <i class="fas fa-th-large" style="font-size:11px;"></i>
+      YÖNETİM PANELLERİ
+    </div>`;
+
+  /* بطاقات لوحات التحكم */
+  controlPanels.forEach((panel, idx) => {
+    html += buildHomeCardHTML(panel, idx + 1);
+  });
+
+  container.innerHTML = html;
+}
+
+/* ─────────────────────────────────────────
+   بناء بطاقة عادية
+───────────────────────────────────────── */
+function buildHomeCardHTML(card, idx) {
+  const delay      = (0.4 + idx * 0.12).toFixed(2);
+  const countStyle = card._countStyle || '';
+  const icon       = card._icon || 'fa-arrow-right';
+
+  const sectionLabels = {
+    tv          : 'KOLEKSİYON',
+    orta        : 'KOLEKSİYON',
+    dresuar     : 'KOLEKSİYON',
+    orders      : 'SİPARİŞ',
+    admin       : 'YÖNETİM',
+    messages    : 'İLETİŞİM',
+    users_panel : 'YÖNETİM',
+    stock_panel : 'STOK',
+    settings    : 'AYARLAR',
+    user_preview: 'ÖNZLM',
+  };
+  const label = sectionLabels[card.section_key] || 'BÖLÜM';
+
+  return `
+    <div class="home-card"
+         onclick="handleAdminCardClick('${card.section_key}')"
+         style="animation:cardSlideIn 0.7s ease ${delay}s both;">
+      <img class="home-card-img"
+           src="${card.image_url || ''}"
+           alt="${card.title}"
+           loading="lazy" draggable="false"
+           onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW'"/>
+      <div class="home-card-overlay"></div>
+      <div class="home-card-shine"></div>
+      ${card.count_label
+        ? `<div class="home-card-count" style="${countStyle}">${card.count_label}</div>`
+        : ''}
+      <div class="home-card-content">
+        <div class="home-card-num">0${idx + 1} — ${label}</div>
+        <div class="home-card-title">
+          ${card.title}
+          ${card.subtitle ? `<span>${card.subtitle}</span>` : ''}
+        </div>
+        ${card.description
+          ? `<div class="home-card-desc">${card.description}</div>`
           : ''}
-        <div class="home-card-content">
-          <div class="home-card-num">0${idx+1} — ${card.section_key.toUpperCase()}</div>
-          <div class="home-card-title">
-            ${card.title}
-            ${card.subtitle ? `<span>${card.subtitle}</span>` : ''}
+        <div class="home-card-btn">
+          ${card.btn_text || 'Gör'}
+          <i class="fas ${icon}"></i>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─────────────────────────────────────────
+   بناء بطاقة عريضة (عرض كامل)
+───────────────────────────────────────── */
+function buildAdminWideCard(card, idx) {
+  const delay = (0.3 + idx * 0.12).toFixed(2);
+
+  return `
+    <div class="home-card"
+         onclick="handleAdminCardClick('${card.section_key}')"
+         style="
+           animation:cardSlideIn 0.7s ease ${delay}s both;
+           grid-column: 1 / -1;
+           min-height: 200px;">
+      <img class="home-card-img"
+           src="${card.image_url || ''}"
+           alt="${card.title}"
+           loading="lazy" draggable="false"
+           onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW'"/>
+      <div class="home-card-overlay" style="
+        background:linear-gradient(135deg,
+          rgba(99,102,241,0.55) 0%,
+          rgba(0,0,0,0.75) 100%);"></div>
+      <div class="home-card-shine"></div>
+      <div class="home-card-count"
+           style="${card._countStyle || ''}">
+        ${card.count_label}
+      </div>
+      <div class="home-card-content">
+        <div class="home-card-num">01 — MÜŞTERİ GÖRÜNÜMÜ</div>
+        <div class="home-card-title" style="font-size:clamp(22px,5vw,36px);">
+          ${card.title}
+          ${card.subtitle ? `<span>${card.subtitle}</span>` : ''}
+        </div>
+        <div class="home-card-desc" style="font-size:12px;max-width:340px;">
+          ${card.description}
+        </div>
+        <div class="home-card-btn" style="
+          background:linear-gradient(135deg,#6366f1,#8b5cf6);
+          border-color:rgba(99,102,241,0.4);">
+          ${card.btn_text}
+          <i class="fas ${card._icon || 'fa-eye'}"></i>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ─────────────────────────────────────────
+   معالج النقر على بطاقات الـ WOW
+───────────────────────────────────────── */
+function handleAdminCardClick(sectionKey) {
+  switch(sectionKey) {
+
+    /* ── معاينة واجهة المستخدم ── */
+    case 'user_preview':
+      openUserPreviewMode();
+      break;
+
+    /* ── لوحة الطلبيات ── */
+    case 'admin':
+      enterSection('admin');
+      break;
+
+    /* ── مركز الرسائل ── */
+    case 'messages':
+      enterSection('messages');
+      break;
+
+    /* ── إدارة المستخدمين ── */
+    case 'users_panel':
+      enterSection('users_panel');
+      break;
+
+    /* ── إدارة الستوك ── */
+    case 'stock_panel':
+      enterSection('stock_panel');
+      break;
+
+    /* ── الإعدادات ── */
+    case 'settings':
+      enterSection('settings');
+      break;
+
+    default:
+      enterSection(sectionKey);
+  }
+}
+
+/* ─────────────────────────────────────────
+   وضع معاينة المستخدم
+   يفتح نافذة تُظهر واجهة المستخدم العادي
+───────────────────────────────────────── */
+function openUserPreviewMode() {
+  /* إنشاء النافذة إذا لم تكن موجودة */
+  let modal = document.getElementById('userPreviewModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'userPreviewModal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:9000;
+      background:rgba(0,0,0,0.95);
+      backdrop-filter:blur(20px);
+      display:flex;flex-direction:column;
+      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;`;
+
+    modal.innerHTML = `
+      <!-- هيدر المعاينة -->
+      <div style="
+        padding:14px 20px;
+        background:rgba(99,102,241,0.12);
+        border-bottom:1px solid rgba(99,102,241,0.25);
+        display:flex;align-items:center;justify-content:space-between;
+        flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="
+            width:38px;height:38px;border-radius:10px;
+            background:linear-gradient(135deg,rgba(99,102,241,0.3),rgba(99,102,241,0.08));
+            border:1px solid rgba(99,102,241,0.4);
+            display:flex;align-items:center;justify-content:center;
+            color:#818cf8;font-size:16px;">
+            <i class="fas fa-eye"></i>
           </div>
-          ${card.description
-            ? `<div class="home-card-desc">${card.description}</div>`
-            : ''}
-          <div class="home-card-btn">
-            ${card.btn_text || 'Gör'}
-            <i class="fas fa-arrow-right"></i>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(99,102,241,0.7);text-transform:uppercase;margin-bottom:2px;">
+              MÜŞTERİ GÖRÜNÜMÜ
+            </div>
+            <div style="font-size:14px;font-weight:900;color:#fff;">
+              Kullanıcı Arayüzü Önizleme
+            </div>
           </div>
         </div>
+        <button onclick="closeUserPreviewMode()" style="
+          padding:8px 16px;border-radius:9px;border:none;
+          background:linear-gradient(135deg,#6366f1,#8b5cf6);
+          color:#fff;font-family:'Montserrat',sans-serif;
+          font-size:10px;font-weight:900;letter-spacing:1.5px;
+          cursor:pointer;display:flex;align-items:center;gap:6px;
+          transition:all 0.25s;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform=''">
+          <i class="fas fa-times"></i> KAPAT
+        </button>
+      </div>
+
+      <!-- محتوى المعاينة: بطاقات المستخدم العادي -->
+      <div style="
+        flex:1;overflow-y:auto;padding:24px 20px;
+        scrollbar-width:thin;
+        scrollbar-color:rgba(99,102,241,0.3) transparent;">
+
+        <!-- شعار WOW -->
+        <div style="text-align:center;margin-bottom:28px;">
+          <div style="
+            font-size:clamp(28px,8vw,48px);
+            font-weight:900;letter-spacing:8px;
+            background:linear-gradient(135deg,#c9a84c,#f0d080,#c9a84c);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+            background-clip:text;">
+            WOW
+          </div>
+          <div style="font-size:9px;letter-spacing:4px;
+               color:rgba(255,255,255,0.25);margin-top:4px;">
+            MOBİLYA KOLEKSİYONU
+          </div>
+        </div>
+
+        <!-- بطاقات المستخدم -->
+        <div class="home-cards" id="previewCardsContainer"
+             style="display:grid;gap:14px;">
+        </div>
+
       </div>`;
-  }).join('');
+
+    document.body.appendChild(modal);
+  }
+
+  modal.style.display = 'flex';
+
+  /* رسم بطاقات المستخدم العادي داخل المعاينة */
+  const previewContainer = document.getElementById('previewCardsContainer');
+  if (previewContainer) {
+    const cards = _homeCards && _homeCards.length ? _homeCards : getStaticCards();
+    previewContainer.innerHTML = cards
+      .filter(c => c.is_active !== false
+                && c.section_key !== 'admin'
+                && c.section_key !== 'settings'
+                && c.section_key !== 'users_panel'
+                && c.section_key !== 'stock_panel'
+                && c.section_key !== 'messages'
+                && c.section_key !== 'user_preview')
+      .map((card, idx) => buildHomeCardHTML(card, idx))
+      .join('');
+  }
+
+  document.body.style.overflow = 'hidden';
 }
+
+function closeUserPreviewMode() {
+  const modal = document.getElementById('userPreviewModal');
+  if (modal) {
+    modal.style.animation = 'fadeOut 0.3s ease forwards';
+    setTimeout(() => { modal.style.display = 'none'; }, 300);
+  }
+  document.body.style.overflow = '';
+}
+
+/* ─────────────────────────────────────────
+   البطاقات الثابتة الاحتياطية
+───────────────────────────────────────── */
+function getStaticCards() {
+  return [
+    {
+      section_key:'tv', title:'TV', subtitle:'ÜNİTESİ',
+      description:'Fonksiyonel & Zarif', count_label:'3 MODEL',
+      btn_text:'Koleksiyonu Gör', is_active:true,
+      image_url:'https://static.wixstatic.com/media/42e4ec_7557d3da2f9e4a2a8816339de74659b2~mv2.jpg/v1/fill/w_750,h_562,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2016_52_edited.jpg',
+    },
+    {
+      section_key:'orta', title:'ORTA', subtitle:'SEHPA',
+      description:'Şık & Modern Tasarımlar', count_label:'20 MODEL',
+      btn_text:'Koleksiyonu Gör', is_active:true,
+      image_url:'https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg',
+    },
+    {
+      section_key:'dresuar', title:'DRESUAR', subtitle:'MODELLERİ',
+      description:'Lüks & Kaliteli', count_label:'6 MODEL',
+      btn_text:'Koleksiyonu Gör', is_active:true,
+      image_url:'https://static.wixstatic.com/media/42e4ec_497547faea6641019e1ece74652f9f0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_160720150_edited.jpg',
+    },
+    {
+      section_key:'orders', title:'SİPARİŞ', subtitle:'VER',
+      description:'Model Seç & Gönder', count_label:'YENİ',
+      btn_text:'Sipariş Ver', is_active:true,
+      image_url:'https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png',
+    },
+  ];
+}
+
+  
 
 /* ── بناء صفحة الإعدادات ── */
 function buildSettingsPage() {
