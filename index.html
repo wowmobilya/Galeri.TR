@@ -9934,6 +9934,45 @@ function buildUserAdminCard(u) {
             ${u.is_blocked ? 'Engeli Kaldır' : 'Engelle'}
           </button>
 
+
+
+
+
+<!-- ★ زر WhatsApp المباشر ★ -->
+<button onclick="sendWhatsAppToUser('${u.phone || ''}', '${u.username}', '${u.company_name || ''}')"
+        title="WhatsApp ile mesaj gönder"
+        style="padding:7px 12px;border-radius:8px;
+        background:rgba(37,211,102,0.1);
+        border:1px solid rgba(37,211,102,0.3);
+        color:#25d366;font-family:'Montserrat',sans-serif;
+        font-size:10px;font-weight:700;letter-spacing:0.5px;
+        cursor:pointer;transition:all 0.25s;
+        display:flex;align-items:center;gap:6px;"
+        onmouseover="this.style.background='rgba(37,211,102,0.2)'"
+        onmouseout="this.style.background='rgba(37,211,102,0.1)'">
+  <i class="fab fa-whatsapp" style="font-size:13px;"></i> WhatsApp
+</button>
+
+<!-- ★ زر الإيميل المباشر ★ -->
+<button onclick="openSendEmailModal(${u.id}, '${u.email}', '${u.username}', '${u.company_name || ''}')"
+        title="E-posta gönder"
+        style="padding:7px 12px;border-radius:8px;
+        background:rgba(96,165,250,0.1);
+        border:1px solid rgba(96,165,250,0.3);
+        color:#60a5fa;font-family:'Montserrat',sans-serif;
+        font-size:10px;font-weight:700;letter-spacing:0.5px;
+        cursor:pointer;transition:all 0.25s;
+        display:flex;align-items:center;gap:6px;"
+        onmouseover="this.style.background='rgba(96,165,250,0.2)'"
+        onmouseout="this.style.background='rgba(96,165,250,0.1)'">
+  <i class="fas fa-envelope" style="font-size:11px;"></i> E-posta
+</button>
+
+
+
+
+
+
           <!-- زر التفاصيل -->
           <button onclick="toggleUserDetails(${u.id})"
                   style="padding:7px 12px;border-radius:8px;
@@ -11052,6 +11091,433 @@ function showDeleteUserConfirm(username) {
 
 
 
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ إرسال رسالة مباشرة للمستخدم — WhatsApp + Email ★
+============================================================ */
+
+/* ── فتح WhatsApp مباشرة ── */
+function sendWhatsAppToUser(phone, username, companyName) {
+  if (!phone || phone.trim() === '') {
+    showInvToast(`"${username}" için telefon numarası kayıtlı değil!`, 'error');
+    return;
+  }
+
+  /* تنظيف رقم الهاتف — إزالة المسافات والشرطات والأقواس */
+  let cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+
+  /* إذا بدأ بـ 0 نستبدله بـ 90 (تركيا) */
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = '90' + cleanPhone.substring(1);
+  }
+
+  /* إذا لم يبدأ برمز دولة، نضيف 90 */
+  if (!cleanPhone.startsWith('90') && cleanPhone.length <= 10) {
+    cleanPhone = '90' + cleanPhone;
+  }
+
+  const defaultMsg = encodeURIComponent(
+    `Merhaba ${companyName || username}! WOW MOBİLYA ekibinden yazıyoruz.`
+  );
+
+  const waUrl = `https://wa.me/${cleanPhone}?text=${defaultMsg}`;
+  window.open(waUrl, '_blank', 'noopener,noreferrer');
+}
+
+/* ── فتح نافذة إرسال الإيميل ── */
+function openSendEmailModal(userId, email, username, companyName) {
+  /* إزالة أي نافذة سابقة */
+  document.getElementById('sendEmailModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'sendEmailModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9500;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    padding:16px;
+    animation:updBgIn 0.3s ease forwards;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:480px;
+      background:linear-gradient(145deg,#0f0f0f,#161616);
+      border:1px solid rgba(96,165,250,0.3);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.9),0 0 60px rgba(96,165,250,0.06);
+      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    ">
+
+      <!-- خط أزرق علوي -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#60a5fa 30%,#93c5fd 50%,#60a5fa 70%,transparent);"></div>
+
+      <!-- هيدر -->
+      <div style="padding:18px 20px 14px;display:flex;align-items:center;
+           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:44px;height:44px;flex-shrink:0;
+               background:linear-gradient(135deg,rgba(96,165,250,0.18),rgba(96,165,250,0.04));
+               border:1px solid rgba(96,165,250,0.3);border-radius:12px;
+               display:flex;align-items:center;justify-content:center;
+               color:#60a5fa;font-size:18px;">
+            <i class="fas fa-paper-plane"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;color:rgba(96,165,250,0.6);
+                 text-transform:uppercase;margin-bottom:3px;">E-POSTA GÖNDER</div>
+            <div style="font-size:15px;font-weight:900;color:#fff;">${username}</div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">
+              ${email}
+            </div>
+          </div>
+        </div>
+        <div onclick="closeSendEmailModal()" style="
+          width:32px;height:32px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);
+          border-radius:8px;color:rgba(255,255,255,0.3);
+          font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <!-- جسم النافذة -->
+      <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- معلومات المستلم -->
+        <div style="
+          background:rgba(96,165,250,0.05);
+          border:1px solid rgba(96,165,250,0.15);
+          border-radius:12px;padding:12px 14px;
+          display:flex;align-items:center;gap:10px;">
+          <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+               background:linear-gradient(135deg,rgba(96,165,250,0.2),rgba(96,165,250,0.05));
+               border:1.5px solid rgba(96,165,250,0.3);
+               display:flex;align-items:center;justify-content:center;
+               font-size:15px;color:#60a5fa;">
+            <i class="fas fa-user"></i>
+          </div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff;">${companyName || username}</div>
+            <div style="font-size:10px;color:rgba(96,165,250,0.7);margin-top:2px;">
+              <i class="fas fa-envelope" style="margin-right:4px;"></i>${email}
+            </div>
+          </div>
+        </div>
+
+        <!-- حقل الموضوع -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-tag" style="color:rgba(96,165,250,0.5);margin-right:5px;"></i>
+            KONU
+          </label>
+          <input type="text" id="emailSubjectInput"
+            placeholder="E-posta konusu..."
+            value="WOW MOBİLYA — Önemli Bilgi"
+            style="width:100%;padding:12px 14px;
+                   background:rgba(255,255,255,0.04);
+                   border:1.5px solid rgba(96,165,250,0.2);
+                   border-radius:10px;color:#fff;
+                   font-family:'Montserrat',sans-serif;
+                   font-size:13px;outline:none;transition:all 0.3s;
+                   -webkit-user-select:text;user-select:text;"
+            onfocus="this.style.borderColor='rgba(96,165,250,0.6)';
+                     this.style.boxShadow='0 0 16px rgba(96,165,250,0.1)';"
+            onfocusout="this.style.borderColor='rgba(96,165,250,0.2)';
+                        this.style.boxShadow='none';"/>
+        </div>
+
+        <!-- حقل الرسالة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-comment-alt" style="color:rgba(96,165,250,0.5);margin-right:5px;"></i>
+            MESAJ
+          </label>
+          <textarea id="emailBodyInput"
+            placeholder="Mesajınızı buraya yazın..."
+            maxlength="1000"
+            style="width:100%;padding:12px 14px;
+                   background:rgba(255,255,255,0.04);
+                   border:1.5px solid rgba(96,165,250,0.2);
+                   border-radius:10px;color:#fff;
+                   font-family:'Montserrat',sans-serif;
+                   font-size:13px;outline:none;transition:all 0.3s;
+                   resize:vertical;min-height:120px;max-height:250px;
+                   -webkit-user-select:text;user-select:text;
+                   line-height:1.6;"
+            onfocus="this.style.borderColor='rgba(96,165,250,0.6)';
+                     this.style.boxShadow='0 0 16px rgba(96,165,250,0.1)';"
+            onfocusout="this.style.borderColor='rgba(96,165,250,0.2)';
+                        this.style.boxShadow='none';">Merhaba ${companyName || username},
+
+WOW MOBİLYA ekibinden yazıyoruz.
+
+</textarea>
+          <!-- عداد الأحرف -->
+          <div style="text-align:right;font-size:9px;color:rgba(255,255,255,0.2);
+               margin-top:4px;letter-spacing:1px;">
+            <span id="emailCharCount">0</span>/1000
+          </div>
+        </div>
+
+        <!-- شريط الأدوات السريعة -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:9px;letter-spacing:1.5px;color:rgba(255,255,255,0.2);
+               font-weight:700;text-transform:uppercase;align-self:center;">
+            HIZLI ŞABLONLAR:
+          </span>
+          <button onclick="setEmailTemplate('welcome')" style="
+            padding:5px 10px;border-radius:6px;
+            background:rgba(74,222,128,0.08);
+            border:1px solid rgba(74,222,128,0.2);
+            color:#4ade80;font-size:9px;font-weight:700;
+            cursor:pointer;font-family:'Montserrat',sans-serif;
+            transition:all 0.2s;letter-spacing:0.5px;"
+            onmouseover="this.style.background='rgba(74,222,128,0.15)'"
+            onmouseout="this.style.background='rgba(74,222,128,0.08)'">
+            👋 Hoş Geldin
+          </button>
+          <button onclick="setEmailTemplate('order')" style="
+            padding:5px 10px;border-radius:6px;
+            background:rgba(251,191,36,0.08);
+            border:1px solid rgba(251,191,36,0.2);
+            color:#fbbf24;font-size:9px;font-weight:700;
+            cursor:pointer;font-family:'Montserrat',sans-serif;
+            transition:all 0.2s;letter-spacing:0.5px;"
+            onmouseover="this.style.background='rgba(251,191,36,0.15)'"
+            onmouseout="this.style.background='rgba(251,191,36,0.08)'">
+            📦 Sipariş Hazır
+          </button>
+          <button onclick="setEmailTemplate('info')" style="
+            padding:5px 10px;border-radius:6px;
+            background:rgba(96,165,250,0.08);
+            border:1px solid rgba(96,165,250,0.2);
+            color:#60a5fa;font-size:9px;font-weight:700;
+            cursor:pointer;font-family:'Montserrat',sans-serif;
+            transition:all 0.2s;letter-spacing:0.5px;"
+            onmouseover="this.style.background='rgba(96,165,250,0.15)'"
+            onmouseout="this.style.background='rgba(96,165,250,0.08)'">
+            ℹ️ Genel Bilgi
+          </button>
+        </div>
+
+        <!-- رسالة الحالة -->
+        <div id="emailSendStatus" style="display:none;padding:10px 14px;
+             border-radius:9px;font-size:11px;font-weight:700;
+             text-align:center;font-family:'Montserrat',sans-serif;"></div>
+
+        <!-- أزرار الإرسال -->
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeSendEmailModal()" style="
+            flex:1;padding:13px;border-radius:12px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;">
+            İPTAL
+          </button>
+          <button id="sendEmailConfirmBtn"
+                  onclick="sendEmailToUser('${email}', '${username}', '${companyName || ''}')"
+                  style="
+            flex:2;padding:13px;border-radius:12px;border:none;
+            background:linear-gradient(135deg,#3b82f6,#60a5fa);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:1.5px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:8px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+                         this.style.boxShadow='0 8px 24px rgba(59,130,246,0.4)';"
+            onmouseout="this.style.transform='';this.style.boxShadow='';">
+            <i class="fas fa-paper-plane"></i> GÖNDER
+          </button>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  /* عداد الأحرف */
+  const textarea = document.getElementById('emailBodyInput');
+  const counter  = document.getElementById('emailCharCount');
+  if (textarea && counter) {
+    counter.textContent = textarea.value.length;
+    textarea.addEventListener('input', () => {
+      counter.textContent = textarea.value.length;
+    });
+  }
+
+  /* إغلاق بالخلفية */
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeSendEmailModal();
+  });
+
+  /* التركيز على حقل الموضوع */
+  setTimeout(() => document.getElementById('emailSubjectInput')?.focus(), 350);
+
+  /* حفظ بيانات المستلم الحالي */
+  window._emailModalData = { userId, email, username, companyName };
+}
+
+/* ── إغلاق نافذة الإيميل ── */
+function closeSendEmailModal() {
+  document.getElementById('sendEmailModal')?.remove();
+  window._emailModalData = null;
+}
+
+/* ── قوالب سريعة ── */
+function setEmailTemplate(type) {
+  const data     = window._emailModalData || {};
+  const name     = data.companyName || data.username || 'Değerli Müşterimiz';
+  const subInput = document.getElementById('emailSubjectInput');
+  const bodyInput = document.getElementById('emailBodyInput');
+  if (!subInput || !bodyInput) return;
+
+  const templates = {
+    welcome: {
+      subject : 'WOW MOBİLYA — Hoş Geldiniz! 🎉',
+      body    : `Merhaba ${name},\n\nWOW MOBİLYA ailesine hoş geldiniz!\n\nSistemimize başarıyla kayıt oldunuz. Artık tüm koleksiyonlarımıza erişebilir ve sipariş verebilirsiniz.\n\nHerhangi bir sorunuz olursa bizimle iletişime geçmekten çekinmeyin.\n\nSaygılarımızla,\nWOW MOBİLYA Ekibi\n📞 +90 538 626 37 00`,
+    },
+    order: {
+      subject : 'WOW MOBİLYA — Siparişiniz Hazır! 📦',
+      body    : `Merhaba ${name},\n\nSiparişiniz hazırlanmış ve teslime hazır durumdadır.\n\nSipariş detaylarınız için lütfen sistemimize giriş yaparak "Siparişlerim" bölümünü kontrol ediniz.\n\nTeslim tarihi ve detaylar için bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,\nWOW MOBİLYA Ekibi\n📞 +90 538 626 37 00`,
+    },
+    info: {
+      subject : 'WOW MOBİLYA — Önemli Bilgilendirme ℹ️',
+      body    : `Merhaba ${name},\n\nSize önemli bir bilgi iletmek istedik.\n\n[Mesajınızı buraya yazın]\n\nDaha fazla bilgi için bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,\nWOW MOBİLYA Ekibi\n📞 +90 538 626 37 00`,
+    },
+  };
+
+  const t = templates[type];
+  if (!t) return;
+
+  subInput.value  = t.subject;
+  bodyInput.value = t.body;
+
+  /* تحديث عداد الأحرف */
+  const counter = document.getElementById('emailCharCount');
+  if (counter) counter.textContent = bodyInput.value.length;
+
+  /* تأثير بصري */
+  [subInput, bodyInput].forEach(el => {
+    el.style.borderColor = 'rgba(96,165,250,0.6)';
+    el.style.boxShadow   = '0 0 16px rgba(96,165,250,0.1)';
+    setTimeout(() => {
+      el.style.borderColor = 'rgba(96,165,250,0.2)';
+      el.style.boxShadow   = 'none';
+    }, 800);
+  });
+}
+
+/* ── إرسال الإيميل عبر EmailJS ── */
+async function sendEmailToUser(toEmail, toUsername, toCompany) {
+  const subject = document.getElementById('emailSubjectInput')?.value.trim();
+  const body    = document.getElementById('emailBodyInput')?.value.trim();
+  const btn     = document.getElementById('sendEmailConfirmBtn');
+  const status  = document.getElementById('emailSendStatus');
+
+  if (!subject) {
+    showEmailStatus('Lütfen bir konu girin!', 'error');
+    document.getElementById('emailSubjectInput')?.focus();
+    return;
+  }
+  if (!body) {
+    showEmailStatus('Lütfen mesaj içeriği girin!', 'error');
+    document.getElementById('emailBodyInput')?.focus();
+    return;
+  }
+
+  /* تعطيل الزر */
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+  }
+
+  showEmailStatus('<i class="fas fa-spinner fa-spin"></i> E-posta gönderiliyor...', 'loading');
+
+  try {
+    if (typeof emailjs === 'undefined') {
+      throw new Error('EmailJS yüklenmedi!');
+    }
+
+    /* إرسال عبر EmailJS */
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email  : toEmail,
+      to_name   : toCompany || toUsername,
+      otp_code  : body,          /* نستخدم حقل otp_code لإرسال النص */
+      subject   : subject,       /* إذا كان القالب يدعم subject */
+    });
+
+    /* نجاح */
+    showEmailStatus(
+      `<i class="fas fa-check-circle"></i> E-posta başarıyla gönderildi! → ${toEmail}`,
+      'success'
+    );
+
+    showInvToast(`"${toUsername}" adresine e-posta gönderildi ✓`, 'success');
+
+    /* إغلاق تلقائي بعد 2 ثانية */
+    setTimeout(() => closeSendEmailModal(), 2200);
+
+  } catch(e) {
+    console.error('[Email] Gönderme hatası:', e);
+    showEmailStatus(
+      `<i class="fas fa-exclamation-circle"></i> Hata: ${e.message || 'Gönderilemedi!'}`,
+      'error'
+    );
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-paper-plane"></i> TEKRAR DENE';
+    }
+  }
+}
+
+/* ── عرض حالة الإرسال ── */
+function showEmailStatus(msg, type) {
+  const el = document.getElementById('emailSendStatus');
+  if (!el) return;
+
+  const styles = {
+    loading : { bg:'rgba(96,165,250,0.08)',  border:'rgba(96,165,250,0.25)',  color:'#60a5fa'  },
+    success : { bg:'rgba(74,222,128,0.08)',  border:'rgba(74,222,128,0.3)',   color:'#4ade80'  },
+    error   : { bg:'rgba(239,68,68,0.08)',   border:'rgba(239,68,68,0.3)',    color:'#ef4444'  },
+  };
+
+  const s = styles[type] || styles.loading;
+  el.style.display    = 'block';
+  el.style.background = s.bg;
+  el.style.border     = `1px solid ${s.border}`;
+  el.style.color      = s.color;
+  el.innerHTML        = msg;
+}
+
+
+
+
+
+
+
+  
   
 
 </script>
