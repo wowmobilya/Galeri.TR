@@ -15971,16 +15971,15 @@ function handleAdminCardClick(sectionKey) {
 function openUserPreviewMode() {
   document.getElementById('previewCloseBar')?.remove();
 
-  /* ── حفظ الحالة الحالية ── */
-  const mainSite    = document.getElementById('mainSite');
-  const homeScreen  = document.getElementById('homeScreen');
+  const mainSite     = document.getElementById('mainSite');
+  const homeScreen   = document.getElementById('homeScreen');
   const loginOverlay = document.getElementById('loginOverlay');
 
-  /* ── إخفاء كل شيء أولاً ── */
+  /* ── إخفاء كل شيء ── */
   mainSite.style.display     = 'none';
   loginOverlay.style.display = 'none';
 
-  /* ── إظهار homeScreen فقط ── */
+  /* ── إظهار homeScreen ── */
   homeScreen.style.display    = 'block';
   homeScreen.style.opacity    = '1';
   homeScreen.style.transition = 'none';
@@ -15988,7 +15987,19 @@ function openUserPreviewMode() {
   homeScreen.style.position   = 'fixed';
   homeScreen.style.inset      = '0';
 
-  /* ── تعطيل كليك البطاقات ── */
+  /* ── إعادة رسم البطاقات كمستخدم عادي ── */
+  const container = homeScreen.querySelector('.home-cards');
+  if (container) {
+    container.classList.remove('admin-mode');
+    container.classList.add('user-mode');
+    renderUserHomeCards(container);
+  }
+
+  /* ── إخفاء بطاقة الأدمن ── */
+  const adminCard = document.getElementById('homeAdminCard');
+  if (adminCard) adminCard.style.display = 'none';
+
+  /* ── تعطيل الكليك ── */
   homeScreen.querySelectorAll('.home-card').forEach(card => {
     card.dataset.origOnclick = card.getAttribute('onclick') || '';
     card.removeAttribute('onclick');
@@ -15996,26 +16007,19 @@ function openUserPreviewMode() {
     card.style.pointerEvents = 'none';
   });
 
-  /* ── إخفاء بطاقة الأدمن ── */
-  const adminCard = document.getElementById('homeAdminCard');
-  if (adminCard) adminCard.style.display = 'none';
-
-  /* ── شريط المعاينة العلوي ── */
+  /* ── شريط المعاينة ── */
   const bar = document.createElement('div');
   bar.id = 'previewCloseBar';
   bar.style.cssText = `
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 99999;
-    padding: 10px 16px;
-    background: rgba(0,0,0,0.92);
-    border-bottom: 1px solid rgba(99,102,241,0.35);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    position:fixed; top:0; left:0; right:0;
+    z-index:99999;
+    padding:10px 16px;
+    background:rgba(0,0,0,0.92);
+    border-bottom:1px solid rgba(99,102,241,0.35);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    display:flex; align-items:center;
+    justify-content:space-between; gap:10px;
   `;
   bar.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;">
@@ -16029,10 +16033,9 @@ function openUserPreviewMode() {
         <i class="fas fa-eye" style="font-size:11px;"></i>
         MÜŞTERİ GÖRÜNÜMÜ
       </div>
-      <span style="
-        font-size:9px;color:rgba(255,255,255,0.2);
-        letter-spacing:1px;font-weight:600;
-        font-family:'Montserrat',sans-serif;">
+      <span style="font-size:9px;color:rgba(255,255,255,0.2);
+            letter-spacing:1px;font-weight:600;
+            font-family:'Montserrat',sans-serif;">
         — Salt okunur önizleme
       </span>
     </div>
@@ -16051,7 +16054,7 @@ function openUserPreviewMode() {
   `;
   document.body.appendChild(bar);
 
-  /* ── padding للمحتوى تحت الشريط ── */
+  /* ── padding تحت الشريط ── */
   const inner = homeScreen.querySelector('.home-inner');
   if (inner) inner.style.paddingTop = '70px';
 
@@ -16065,24 +16068,23 @@ function closeUserPreviewMode() {
   const homeScreen = document.getElementById('homeScreen');
   const mainSite   = document.getElementById('mainSite');
 
-  /* ── إعادة كليك البطاقات ── */
-  homeScreen.querySelectorAll('.home-card').forEach(card => {
-    const orig = card.dataset.origOnclick;
-    if (orig) card.setAttribute('onclick', orig);
-    card.style.cursor        = '';
-    card.style.pointerEvents = '';
-    delete card.dataset.origOnclick;
-  });
+  /* ── إعادة padding ── */
+  const inner = homeScreen.querySelector('.home-inner');
+  if (inner) inner.style.paddingTop = '';
+
+  /* ── إعادة رسم البطاقات كـ WOW ── */
+  const container = homeScreen.querySelector('.home-cards');
+  if (container) {
+    container.classList.remove('user-mode');
+    container.classList.add('admin-mode');
+    renderAdminHomeCards(container);
+  }
 
   /* ── إعادة بطاقة الأدمن ── */
   const adminCard = document.getElementById('homeAdminCard');
   if (adminCard) adminCard.style.display = 'block';
 
-  /* ── إعادة padding ── */
-  const inner = homeScreen.querySelector('.home-inner');
-  if (inner) inner.style.paddingTop = '';
-
-  /* ── إعادة styles الـ homeScreen لوضعها الأصلي ── */
+  /* ── إعادة styles ── */
   homeScreen.style.display  = 'none';
   homeScreen.style.position = '';
   homeScreen.style.inset    = '';
