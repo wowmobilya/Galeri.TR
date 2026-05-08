@@ -1844,10 +1844,14 @@ html { scroll-behavior: auto; }
 
 
 
-/* ── شبكة بطاقات التحكم للـ WOW ── */
+/* ══ شبكة بطاقات الهوم — موحدة ══ */
 .home-cards {
   display: grid;
-  gap: 12px;
+  gap: 14px;
+  width: 100%;
+  max-width: 900px;
+  animation: homeCardsIn 0.9s ease 0.35s forwards;
+  opacity: 0;
 }
 
 /* المستخدم العادي: عمودان */
@@ -1860,10 +1864,19 @@ html { scroll-behavior: auto; }
   grid-template-columns: repeat(2, 1fr);
 }
 
-/* الموبايل الصغير جداً: عمود واحد */
+/* موبايل صغير: عمود واحد */
 @media (max-width: 340px) {
+  .home-cards.user-mode,
   .home-cards.admin-mode {
     grid-template-columns: 1fr;
+  }
+}
+
+/* موبايل ≤ 900px: عمود واحد للمستخدم العادي */
+@media (max-width: 900px) {
+  .home-cards.user-mode {
+    grid-template-columns: 1fr;
+    max-width: 420px;
   }
 }
 
@@ -3861,20 +3874,45 @@ function doLogin(){
 /* ============================================================
    التنقل بين الشاشات
 ============================================================ */
-function showHomeScreen(){
-  document.getElementById('mainSite').style.display='none';
-  const hs=document.getElementById('homeScreen');
-  hs.style.display='block';hs.style.opacity='0';hs.style.transition='opacity 0.5s ease';
-  hs.querySelectorAll('.home-logo-wrap,.home-welcome,.home-cards,.home-footer').forEach(el=>{el.style.animation='none';void el.offsetWidth;el.style.animation='';});
-  requestAnimationFrame(()=>{hs.style.opacity='1';});
-  document.body.style.overflow='';window.scrollTo({top:0});
-  appState='home';pushState('home');
-/* ★ إظهار/إخفاء بطاقة الإدارة */
+function showHomeScreen() {
+  document.getElementById('mainSite').style.display = 'none';
+  const hs = document.getElementById('homeScreen');
+  hs.style.display  = 'block';
+  hs.style.opacity  = '0';
+  hs.style.transition = 'opacity 0.5s ease';
+  hs.querySelectorAll(
+    '.home-logo-wrap,.home-welcome,.home-cards,.home-footer'
+  ).forEach(el => {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  });
+  requestAnimationFrame(() => { hs.style.opacity = '1'; });
+  document.body.style.overflow = '';
+  window.scrollTo({ top: 0 });
+  appState = 'home';
+  pushState('home');
+
   const adminCard = document.getElementById('homeAdminCard');
-  if(adminCard){
+  if (adminCard) {
     adminCard.style.display = (currentUser === ADMIN_USER) ? 'block' : 'none';
   }
+
+  /* ★ رسم البطاقات الديناميكية ★ */
+  const container = document.querySelector('.home-cards');
+  if (container) {
+    if (currentUser === ADMIN_USER) {
+      container.classList.remove('user-mode');
+      container.classList.add('admin-mode');
+      renderAdminHomeCards(container);
+    } else {
+      container.classList.remove('admin-mode');
+      container.classList.add('user-mode');
+      renderUserHomeCards(container);
+    }
+  }
 }
+
 function enterSection(cat){
   const hs=document.getElementById('homeScreen');
   hs.style.transition='opacity 0.4s ease';hs.style.opacity='0';
@@ -16817,7 +16855,39 @@ finishLogin = function() {
   }, 1200);
 };
 
-  
+
+
+  function buildHomeCardHTML(card, idx) {
+  const delay = (0.5 + idx * 0.15).toFixed(2);
+  const num   = String(idx + 1).padStart(2, '0');
+
+  return `
+    <div class="home-card"
+         style="animation-delay:${delay}s"
+         onclick="enterSection('${card.section_key}')">
+      <img class="home-card-img"
+           src="${card.image_url || ''}"
+           alt="${card.title}"
+           loading="lazy" draggable="false"
+           onerror="this.style.display='none'"/>
+      <div class="home-card-overlay"></div>
+      <div class="home-card-shine"></div>
+      <div class="home-card-count">${card.count_label || ''}</div>
+      <div class="home-card-content">
+        <div class="home-card-num">${num} — KOLEKSİYON</div>
+        <div class="home-card-title">
+          ${card.title}
+          ${card.subtitle ? `<span>${card.subtitle}</span>` : ''}
+        </div>
+        <div class="home-card-desc">${card.description || ''}</div>
+        <div class="home-card-btn">
+          ${card.btn_text || 'Görüntüle'}
+          <i class="fas fa-arrow-right"></i>
+        </div>
+      </div>
+    </div>`;
+}
+
   
 
 </script>
