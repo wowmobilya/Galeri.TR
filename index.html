@@ -15975,11 +15975,9 @@ function openUserPreviewMode() {
   const homeScreen   = document.getElementById('homeScreen');
   const loginOverlay = document.getElementById('loginOverlay');
 
-  /* ── إخفاء كل شيء ── */
   mainSite.style.display     = 'none';
   loginOverlay.style.display = 'none';
 
-  /* ── إظهار homeScreen ── */
   homeScreen.style.display    = 'block';
   homeScreen.style.opacity    = '1';
   homeScreen.style.transition = 'none';
@@ -15987,7 +15985,7 @@ function openUserPreviewMode() {
   homeScreen.style.position   = 'fixed';
   homeScreen.style.inset      = '0';
 
-  /* ── إعادة رسم البطاقات كمستخدم عادي ── */
+  /* ── رسم بطاقات المستخدم ── */
   const container = homeScreen.querySelector('.home-cards');
   if (container) {
     container.classList.remove('admin-mode');
@@ -15995,16 +15993,30 @@ function openUserPreviewMode() {
     renderUserHomeCards(container);
   }
 
-  /* ── إخفاء بطاقة الأدمن ── */
   const adminCard = document.getElementById('homeAdminCard');
   if (adminCard) adminCard.style.display = 'none';
 
-  /* ── تعطيل الكليك ── */
+  /* ── تفعيل الكليك لكن بسلوك المعاينة ── */
   homeScreen.querySelectorAll('.home-card').forEach(card => {
-    card.dataset.origOnclick = card.getAttribute('onclick') || '';
-    card.removeAttribute('onclick');
-    card.style.cursor        = 'default';
-    card.style.pointerEvents = 'none';
+    const origOnclick = card.getAttribute('onclick') || '';
+    card.dataset.origOnclick = origOnclick;
+
+    /* استخراج اسم القسم من onclick مثل enterSection('tv') */
+    const match = origOnclick.match(/enterSection\(['"](\w+)['"]\)/);
+    if (match) {
+      const sectionKey = match[1];
+      card.removeAttribute('onclick');
+      card.style.cursor        = 'pointer';
+      card.style.pointerEvents = 'auto';
+      card.addEventListener('click', function previewClick() {
+        card._previewClickHandler = previewClick;
+        openPreviewSection(sectionKey);
+      });
+      card._previewClickHandler = null; /* سيُعيَّن فوق */
+    } else {
+      card.style.cursor        = 'default';
+      card.style.pointerEvents = 'none';
+    }
   });
 
   /* ── شريط المعاينة ── */
@@ -16033,28 +16045,44 @@ function openUserPreviewMode() {
         <i class="fas fa-eye" style="font-size:11px;"></i>
         MÜŞTERİ GÖRÜNÜMÜ
       </div>
-      <span style="font-size:9px;color:rgba(255,255,255,0.2);
-            letter-spacing:1px;font-weight:600;
-            font-family:'Montserrat',sans-serif;">
+      <span id="previewSectionLabel" style="
+        font-size:9px;color:rgba(255,255,255,0.2);
+        letter-spacing:1px;font-weight:600;
+        font-family:'Montserrat',sans-serif;">
         — Salt okunur önizleme
       </span>
     </div>
-    <button onclick="closeUserPreviewMode()" style="
-      padding:8px 18px;border-radius:9px;border:none;
-      background:linear-gradient(135deg,#6366f1,#8b5cf6);
-      color:#fff;font-family:'Montserrat',sans-serif;
-      font-size:10px;font-weight:900;letter-spacing:1.5px;
-      cursor:pointer;display:flex;align-items:center;gap:7px;
-      box-shadow:0 4px 14px rgba(99,102,241,0.35);
-      transition:all 0.25s;"
-      onmouseover="this.style.transform='translateY(-2px)'"
-      onmouseout="this.style.transform=''">
-      <i class="fas fa-times"></i> KAPAT
-    </button>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <!-- زر الرجوع للهوم — يظهر فقط داخل قسم -->
+      <button id="previewBackBtn" onclick="backToPreviewHome()"
+              style="display:none;
+        padding:8px 14px;border-radius:9px;
+        border:1px solid rgba(99,102,241,0.35);
+        background:rgba(99,102,241,0.1);
+        color:#818cf8;font-family:'Montserrat',sans-serif;
+        font-size:10px;font-weight:700;letter-spacing:1px;
+        cursor:pointer;display:none;align-items:center;gap:6px;
+        transition:all 0.25s;"
+        onmouseover="this.style.background='rgba(99,102,241,0.2)'"
+        onmouseout="this.style.background='rgba(99,102,241,0.1)'">
+        <i class="fas fa-arrow-left"></i> Geri
+      </button>
+      <button onclick="closeUserPreviewMode()" style="
+        padding:8px 18px;border-radius:9px;border:none;
+        background:linear-gradient(135deg,#6366f1,#8b5cf6);
+        color:#fff;font-family:'Montserrat',sans-serif;
+        font-size:10px;font-weight:900;letter-spacing:1.5px;
+        cursor:pointer;display:flex;align-items:center;gap:7px;
+        box-shadow:0 4px 14px rgba(99,102,241,0.35);
+        transition:all 0.25s;"
+        onmouseover="this.style.transform='translateY(-2px)'"
+        onmouseout="this.style.transform=''">
+        <i class="fas fa-times"></i> KAPAT
+      </button>
+    </div>
   `;
   document.body.appendChild(bar);
 
-  /* ── padding تحت الشريط ── */
   const inner = homeScreen.querySelector('.home-inner');
   if (inner) inner.style.paddingTop = '70px';
 
@@ -16062,17 +16090,79 @@ function openUserPreviewMode() {
   document.body.style.overflow   = '';
 }
 
+/* ── فتح قسم داخل المعاينة ── */
+function openPreviewSection(sectionKey) {
+  const homeScreen = document.getElementById('homeScreen');
+
+  /* إخفاء الهوم وإظهار الـ mainSite بوضع المعاينة */
+  homeScreen.style.display = 'none';
+
+  const mainSite = document.getElementById('mainSite');
+  mainSite.style.display = 'block';
+
+  /* تحديث label الشريط */
+  const label = document.getElementById('previewSectionLabel');
+  const sectionNames = {
+    tv:'TV Ünitesi', orta:'Orta Sehpa',
+    dresuar:'Dresuar', orders:'Sipariş'
+  };
+  if (label) label.textContent = `— ${sectionNames[sectionKey] || sectionKey}`;
+
+  /* إظهار زر الرجوع */
+  const backBtn = document.getElementById('previewBackBtn');
+  if (backBtn) backBtn.style.display = 'flex';
+
+  /* تحميل الصفحة */
+  currentPage = sectionKey;
+  if (sectionKey === 'orders') {
+    filteredImages = [];
+    buildOrderPage();
+  } else {
+    filteredImages = images.filter(i => i.cat === sectionKey);
+    buildPage(sectionKey);
+  }
+
+  window.scrollTo({ top:0, behavior:'smooth' });
+
+  /* تعطيل أزرار التنزيل في وضع المعاينة */
+  setTimeout(() => {
+    document.querySelectorAll('.card-btn-dl, .bulk-dl-btn, .order-send-btn').forEach(btn => {
+      btn.style.opacity        = '0.3';
+      btn.style.pointerEvents  = 'none';
+      btn.style.cursor         = 'not-allowed';
+    });
+  }, 300);
+}
+
+/* ── الرجوع لهوم المعاينة ── */
+function backToPreviewHome() {
+  const mainSite   = document.getElementById('mainSite');
+  const homeScreen = document.getElementById('homeScreen');
+
+  mainSite.style.display  = 'none';
+  homeScreen.style.display = 'block';
+
+  /* إخفاء زر الرجوع */
+  const backBtn = document.getElementById('previewBackBtn');
+  if (backBtn) backBtn.style.display = 'none';
+
+  /* إعادة label */
+  const label = document.getElementById('previewSectionLabel');
+  if (label) label.textContent = '— Salt okunur önizleme';
+}
+
+/* ── إغلاق المعاينة ── */
 function closeUserPreviewMode() {
   document.getElementById('previewCloseBar')?.remove();
 
   const homeScreen = document.getElementById('homeScreen');
   const mainSite   = document.getElementById('mainSite');
 
-  /* ── إعادة padding ── */
+  /* إعادة padding */
   const inner = homeScreen.querySelector('.home-inner');
   if (inner) inner.style.paddingTop = '';
 
-  /* ── إعادة رسم البطاقات كـ WOW ── */
+  /* إعادة رسم بطاقات الـ WOW */
   const container = homeScreen.querySelector('.home-cards');
   if (container) {
     container.classList.remove('user-mode');
@@ -16080,20 +16170,22 @@ function closeUserPreviewMode() {
     renderAdminHomeCards(container);
   }
 
-  /* ── إعادة بطاقة الأدمن ── */
+  /* إعادة بطاقة الأدمن */
   const adminCard = document.getElementById('homeAdminCard');
   if (adminCard) adminCard.style.display = 'block';
 
-  /* ── إعادة styles ── */
+  /* إعادة styles */
   homeScreen.style.display  = 'none';
   homeScreen.style.position = '';
   homeScreen.style.inset    = '';
   homeScreen.style.zIndex   = '';
   delete homeScreen.dataset.previewMode;
 
-  /* ── إظهار mainSite ── */
-  mainSite.style.display = 'block';
+  /* ✅ إخفاء mainSite والرجوع للهوم */
+  mainSite.style.display = 'none';
+  showHomeScreen();
 }
+
 
 
 
