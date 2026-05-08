@@ -1811,11 +1811,16 @@ html { scroll-behavior: auto; }
         <i class="fas fa-eye" id="toggleRegPassIcon"></i>
       </button>
     </div>
+
     <div class="login-field">
-      <i class="fas fa-lock field-icon"></i>
-      <input type="password" id="regPass2" placeholder="Şifreyi Tekrar Girin"
-             style="-webkit-user-select:text;user-select:text;"/>
-    </div>
+  <i class="fas fa-lock field-icon"></i>
+  <input type="password" id="regPass2" placeholder="Şifreyi Tekrar Girin"
+         style="-webkit-user-select:text;user-select:text;"/>
+  <button class="toggle-pass" type="button" onclick="toggleRegPass2()" tabindex="-1">
+    <i class="fas fa-eye" id="toggleRegPass2Icon"></i>
+  </button>
+</div>
+
 
     <button class="login-btn" onclick="doRegister()">
       <i class="fas fa-user-plus"></i> HESAP OLUŞTUR
@@ -9338,6 +9343,13 @@ function showLoginSuccessToast(msg) {
 function toggleRegPass() {
   const inp = document.getElementById('regPass');
   const ico = document.getElementById('toggleRegPassIcon');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text';     ico.className = 'fas fa-eye-slash'; }
+  else                         { inp.type = 'password'; ico.className = 'fas fa-eye';       }
+}
+function toggleRegPass2() {
+  const inp = document.getElementById('regPass2');
+  const ico = document.getElementById('toggleRegPass2Icon');
   if (!inp) return;
   if (inp.type === 'password') { inp.type = 'text';     ico.className = 'fas fa-eye-slash'; }
   else                         { inp.type = 'password'; ico.className = 'fas fa-eye';       }
