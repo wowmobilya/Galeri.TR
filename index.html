@@ -16124,15 +16124,36 @@ function openPreviewSection(sectionKey) {
 
   window.scrollTo({ top:0, behavior:'smooth' });
 
-  /* تعطيل أزرار التنزيل في وضع المعاينة */
-  setTimeout(() => {
-    document.querySelectorAll('.card-btn-dl, .bulk-dl-btn, .order-send-btn').forEach(btn => {
-      btn.style.opacity        = '0.3';
-      btn.style.pointerEvents  = 'none';
-      btn.style.cursor         = 'not-allowed';
-    });
-  }, 300);
-}
+ /* تعطيل أزرار التنزيل والإجراءات في وضع المعاينة */
+setTimeout(() => {
+  /* أزرار الغاليري */
+  document.querySelectorAll(
+    '.card-btn-dl, .card-btn-view, .bulk-dl-btn, .bulk-bar, ' +
+    '.order-send-btn, .order-clear-btn, .lb-dl-btn, ' +
+    '.dims-btn, .select-actions, .sel-btn'
+  ).forEach(btn => {
+    btn.style.opacity       = '0';
+    btn.style.pointerEvents = 'none';
+    btn.style.cursor        = 'not-allowed';
+  });
+
+  /* منع فتح الـ lightbox عند الضغط على الصور */
+  document.querySelectorAll('.gallery-item').forEach(item => {
+    item.dataset.origOnclick = item.getAttribute('onclick') || '';
+    item.removeAttribute('onclick');
+    item.style.cursor = 'default';
+  });
+
+  /* إخفاء شريط الـ bulk */
+  const bulkBar = document.getElementById('bulkBar');
+  if (bulkBar) bulkBar.style.display = 'none';
+
+  /* إخفاء شريط الأدوات كله */
+  const toolbar = document.querySelector('.gallery-toolbar');
+  if (toolbar) toolbar.style.display = 'none';
+
+}, 300);
+
 
 /* ── الرجوع لهوم المعاينة ── */
 function backToPreviewHome() {
