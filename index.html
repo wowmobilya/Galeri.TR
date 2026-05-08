@@ -11697,8 +11697,11 @@ function openWhatsAppWithMessage(cleanPhone) {
 
   
 /* ── فتح نافذة إرسال الإيميل ── */
+/* ============================================================
+   ★ نافذة الإيميل المطوّرة — Modal كامل مع قوالب ★
+============================================================ */
+
 function openSendEmailModal(userId, email, username, companyName) {
-  /* إزالة أي نافذة سابقة */
   document.getElementById('sendEmailModal')?.remove();
 
   const modal = document.createElement('div');
@@ -11716,37 +11719,71 @@ function openSendEmailModal(userId, email, username, companyName) {
   modal.innerHTML = `
     <div style="
       width:100%;max-width:480px;
-      background:linear-gradient(145deg,#0f0f0f,#161616);
-      border:1px solid rgba(96,165,250,0.3);
+      background:linear-gradient(145deg,#0a0a12,#0f0f1a);
+      border:1px solid rgba(96,165,250,0.2);
       border-radius:22px;overflow:hidden;
-      box-shadow:0 40px 100px rgba(0,0,0,0.9),0 0 60px rgba(96,165,250,0.06);
+      box-shadow:0 40px 100px rgba(0,0,0,0.9),
+                 0 0 60px rgba(96,165,250,0.04);
       animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
     ">
 
       <!-- خط أزرق علوي -->
       <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#60a5fa 30%,#93c5fd 50%,#60a5fa 70%,transparent);"></div>
+        transparent,#3b82f6 30%,#93c5fd 50%,#3b82f6 70%,transparent);"></div>
 
-      <!-- هيدر -->
-      <div style="padding:18px 20px 14px;display:flex;align-items:center;
-           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+
+      <!-- ══ الهيدر ══ -->
+      <div style="
+        padding:18px 20px 14px;
+        display:flex;align-items:center;justify-content:space-between;
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        background:rgba(96,165,250,0.03);
+      ">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:44px;height:44px;flex-shrink:0;
-               background:linear-gradient(135deg,rgba(96,165,250,0.18),rgba(96,165,250,0.04));
-               border:1px solid rgba(96,165,250,0.3);border-radius:12px;
-               display:flex;align-items:center;justify-content:center;
-               color:#60a5fa;font-size:18px;">
-            <i class="fas fa-paper-plane"></i>
+
+          <!-- أيقونة الإيميل -->
+          <div style="
+            width:46px;height:46px;flex-shrink:0;
+            background:linear-gradient(135deg,#1e3a5f,#1e40af);
+            border-radius:13px;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 14px rgba(59,130,246,0.3);
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
+                 viewBox="0 0 24 24" fill="none"
+                 stroke="#93c5fd" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 style="display:block;">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2
+                       H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+              <polyline points="22,6 12,13 2,6"/>
+            </svg>
           </div>
+
           <div>
-            <div style="font-size:8px;letter-spacing:3px;color:rgba(96,165,250,0.6);
-                 text-transform:uppercase;margin-bottom:3px;">E-POSTA GÖNDER</div>
-            <div style="font-size:15px;font-weight:900;color:#fff;">${username}</div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:2px;">
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(96,165,250,0.5);text-transform:uppercase;margin-bottom:3px;">
+              E-POSTA GÖNDER
+            </div>
+            <div style="font-size:15px;font-weight:900;color:#fff;">
+              ${username}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px;
+                 display:flex;align-items:center;gap:5px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9"
+                   viewBox="0 0 24 24" fill="none"
+                   stroke="rgba(96,165,250,0.5)" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2
+                         H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
               ${email}
             </div>
           </div>
         </div>
+
+        <!-- زر الإغلاق -->
         <div onclick="closeSendEmailModal()" style="
           width:32px;height:32px;
           background:rgba(255,255,255,0.04);
@@ -11754,222 +11791,504 @@ function openSendEmailModal(userId, email, username, companyName) {
           border-radius:8px;color:rgba(255,255,255,0.3);
           font-size:14px;cursor:pointer;
           display:flex;align-items:center;justify-content:center;
-          transition:all 0.25s;"
+          transition:all 0.25s;flex-shrink:0;"
           onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
           onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
           <i class="fas fa-times"></i>
         </div>
       </div>
 
-      <!-- جسم النافذة -->
-      <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:14px;">
+
+      <!-- ══ جسم النافذة ══ -->
+      <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:13px;">
 
         <!-- معلومات المستلم -->
         <div style="
           background:rgba(96,165,250,0.05);
-          border:1px solid rgba(96,165,250,0.15);
-          border-radius:12px;padding:12px 14px;
+          border:1px solid rgba(96,165,250,0.12);
+          border-radius:11px;padding:11px 14px;
           display:flex;align-items:center;gap:10px;">
-          <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
-               background:linear-gradient(135deg,rgba(96,165,250,0.2),rgba(96,165,250,0.05));
-               border:1.5px solid rgba(96,165,250,0.3);
-               display:flex;align-items:center;justify-content:center;
-               font-size:15px;color:#60a5fa;">
-            <i class="fas fa-user"></i>
-          </div>
+          <div style="
+            width:34px;height:34px;border-radius:50%;flex-shrink:0;
+            background:linear-gradient(135deg,rgba(96,165,250,0.18),rgba(96,165,250,0.04));
+            border:1.5px solid rgba(96,165,250,0.3);
+            display:flex;align-items:center;justify-content:center;
+            font-size:15px;">👤</div>
           <div>
-            <div style="font-size:12px;font-weight:700;color:#fff;">${companyName || username}</div>
-            <div style="font-size:10px;color:rgba(96,165,250,0.7);margin-top:2px;">
-              <i class="fas fa-envelope" style="margin-right:4px;"></i>${email}
+            <div style="font-size:12px;font-weight:700;color:#fff;">
+              ${companyName || username}
             </div>
+            <div style="font-size:10px;color:rgba(96,165,250,0.6);margin-top:2px;">
+              ${email}
+            </div>
+          </div>
+          <!-- مؤشر -->
+          <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+            <div style="
+              width:7px;height:7px;border-radius:50%;
+              background:#60a5fa;
+              box-shadow:0 0 6px rgba(96,165,250,0.6);
+              animation:emailPulse 2s infinite;
+            "></div>
+            <span style="font-size:9px;color:rgba(96,165,250,0.5);letter-spacing:1px;">HAZIR</span>
           </div>
         </div>
 
+
+        <!-- قوالب سريعة -->
+        <div>
+          <div style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.2);
+               text-transform:uppercase;font-weight:700;margin-bottom:8px;">
+            ⚡ HIZLI ŞABLONLAR
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+
+            <button onclick="setEmailTemplateV2('welcome','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(74,222,128,0.07);
+              border:1px solid rgba(74,222,128,0.2);
+              color:#4ade80;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(74,222,128,0.15)'"
+              onmouseout="this.style.background='rgba(74,222,128,0.07)'">
+              👋 Hoş Geldin
+            </button>
+
+            <button onclick="setEmailTemplateV2('order','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(251,191,36,0.07);
+              border:1px solid rgba(251,191,36,0.2);
+              color:#fbbf24;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(251,191,36,0.15)'"
+              onmouseout="this.style.background='rgba(251,191,36,0.07)'">
+              📦 Sipariş Hazır
+            </button>
+
+            <button onclick="setEmailTemplateV2('payment','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(96,165,250,0.07);
+              border:1px solid rgba(96,165,250,0.2);
+              color:#60a5fa;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(96,165,250,0.15)'"
+              onmouseout="this.style.background='rgba(96,165,250,0.07)'">
+              💳 Ödeme
+            </button>
+
+            <button onclick="setEmailTemplateV2('delivery','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(167,139,250,0.07);
+              border:1px solid rgba(167,139,250,0.2);
+              color:#a78bfa;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(167,139,250,0.15)'"
+              onmouseout="this.style.background='rgba(167,139,250,0.07)'">
+              🚚 Teslimat
+            </button>
+
+            <button onclick="setEmailTemplateV2('info','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(255,255,255,0.1);
+              color:rgba(255,255,255,0.4);font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+              ℹ️ Genel Bilgi
+            </button>
+
+          </div>
+        </div>
+
+
         <!-- حقل الموضوع -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+          <label style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.2);
                text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
-            <i class="fas fa-tag" style="color:rgba(96,165,250,0.5);margin-right:5px;"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9"
+                 viewBox="0 0 24 24" fill="none"
+                 stroke="rgba(96,165,250,0.5)" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 style="display:inline-block;vertical-align:middle;margin-right:5px;">
+              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+              <line x1="7" y1="7" x2="7.01" y2="7"/>
+            </svg>
             KONU
           </label>
           <input type="text" id="emailSubjectInput"
             placeholder="E-posta konusu..."
             value="WOW MOBİLYA — Önemli Bilgi"
-            style="width:100%;padding:12px 14px;
-                   background:rgba(255,255,255,0.04);
-                   border:1.5px solid rgba(96,165,250,0.2);
-                   border-radius:10px;color:#fff;
-                   font-family:'Montserrat',sans-serif;
-                   font-size:13px;outline:none;transition:all 0.3s;
-                   -webkit-user-select:text;user-select:text;"
-            onfocus="this.style.borderColor='rgba(96,165,250,0.6)';
-                     this.style.boxShadow='0 0 16px rgba(96,165,250,0.1)';"
-            onfocusout="this.style.borderColor='rgba(96,165,250,0.2)';
+            style="
+              width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(96,165,250,0.18);
+              border-radius:10px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:12px;outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;
+              box-sizing:border-box;
+            "
+            onfocus="this.style.borderColor='rgba(96,165,250,0.55)';
+                     this.style.boxShadow='0 0 16px rgba(96,165,250,0.08)';"
+            onfocusout="this.style.borderColor='rgba(96,165,250,0.18)';
                         this.style.boxShadow='none';"/>
         </div>
 
-        <!-- حقل الرسالة -->
+
+        <!-- حقل الرسالة مع معاينة -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+          <label style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.2);
                text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
-            <i class="fas fa-comment-alt" style="color:rgba(96,165,250,0.5);margin-right:5px;"></i>
-            MESAJ
+            <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9"
+                 viewBox="0 0 24 24" fill="none"
+                 stroke="rgba(96,165,250,0.5)" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 style="display:inline-block;vertical-align:middle;margin-right:5px;">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            MESAJ METNİ
           </label>
+
+          <!-- معاينة الإيميل -->
+          <div style="
+            background:rgba(96,165,250,0.04);
+            border:1px solid rgba(96,165,250,0.12);
+            border-radius:11px;
+            padding:10px 12px 8px;
+            margin-bottom:8px;
+          ">
+            <!-- شريط العنوان -->
+            <div style="
+              display:flex;align-items:center;justify-content:space-between;
+              padding-bottom:8px;
+              border-bottom:1px solid rgba(96,165,250,0.08);
+              margin-bottom:10px;
+            ">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <!-- نقاط macOS -->
+                <div style="width:8px;height:8px;border-radius:50%;background:#ff5f57;"></div>
+                <div style="width:8px;height:8px;border-radius:50%;background:#ffbd2e;"></div>
+                <div style="width:8px;height:8px;border-radius:50%;background:#28c840;"></div>
+              </div>
+              <span style="font-size:9px;color:rgba(96,165,250,0.4);
+                   letter-spacing:1.5px;text-transform:uppercase;font-weight:700;">
+                ÖNİZLEME
+              </span>
+              <div style="width:40px;"></div>
+            </div>
+
+            <!-- محتوى المعاينة -->
+            <div style="
+              background:#fff;border-radius:8px;
+              padding:12px 14px;
+              box-shadow:0 2px 8px rgba(0,0,0,0.15);
+            ">
+              <!-- موضوع الإيميل في المعاينة -->
+              <div style="
+                font-size:10px;font-weight:800;color:#1a1a2e;
+                margin-bottom:6px;padding-bottom:6px;
+                border-bottom:1px solid #f0f0f0;
+                display:flex;align-items:center;gap:6px;
+              ">
+                <div style="
+                  width:16px;height:16px;
+                  background:linear-gradient(135deg,#1e3a5f,#1e40af);
+                  border-radius:4px;
+                  display:flex;align-items:center;justify-content:center;
+                  flex-shrink:0;
+                ">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9"
+                       viewBox="0 0 24 24" fill="none"
+                       stroke="#93c5fd" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                  </svg>
+                </div>
+                <span id="emailSubjectPreview" style="color:#1e40af;">
+                  WOW MOBİLYA — Önemli Bilgi
+                </span>
+              </div>
+              <!-- نص الرسالة في المعاينة -->
+              <div id="emailBodyPreview" style="
+                font-size:11px;color:#475569;
+                line-height:1.7;white-space:pre-wrap;
+                word-break:break-word;
+                font-family:'Segoe UI',system-ui,sans-serif;
+                max-height:80px;overflow:hidden;
+                border-left:2px solid #c9a84c;
+                padding-left:8px;
+              ">Merhaba ${companyName || username},
+
+WOW MOBİLYA ekibinden yazıyoruz.</div>
+              <!-- توقيع مصغر -->
+              <div style="
+                margin-top:8px;padding-top:6px;
+                border-top:1px solid #f0f0f0;
+                font-size:9px;color:#94a3b8;
+                display:flex;align-items:center;gap:5px;
+              ">
+                <div style="
+                  width:14px;height:14px;
+                  background:linear-gradient(135deg,#0d0d1a,#1a1a2e);
+                  border-radius:3px;font-size:7px;
+                  display:flex;align-items:center;justify-content:center;
+                ">👤</div>
+                WOW MOBİLYA Ekibi
+              </div>
+            </div>
+          </div>
+
+          <!-- textarea -->
           <textarea id="emailBodyInput"
             placeholder="Mesajınızı buraya yazın..."
             maxlength="1000"
-            style="width:100%;padding:12px 14px;
-                   background:rgba(255,255,255,0.04);
-                   border:1.5px solid rgba(96,165,250,0.2);
-                   border-radius:10px;color:#fff;
-                   font-family:'Montserrat',sans-serif;
-                   font-size:13px;outline:none;transition:all 0.3s;
-                   resize:vertical;min-height:120px;max-height:250px;
-                   -webkit-user-select:text;user-select:text;
-                   line-height:1.6;"
-            onfocus="this.style.borderColor='rgba(96,165,250,0.6)';
-                     this.style.boxShadow='0 0 16px rgba(96,165,250,0.1)';"
-            onfocusout="this.style.borderColor='rgba(96,165,250,0.2)';
-                        this.style.boxShadow='none';">Merhaba ${companyName || username},
+            style="
+              width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(96,165,250,0.18);
+              border-radius:10px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:12px;outline:none;transition:all 0.3s;
+              resize:vertical;min-height:90px;max-height:200px;
+              -webkit-user-select:text;user-select:text;
+              line-height:1.6;box-sizing:border-box;
+            "
+            onfocus="this.style.borderColor='rgba(96,165,250,0.55)';
+                     this.style.boxShadow='0 0 16px rgba(96,165,250,0.08)';"
+            onfocusout="this.style.borderColor='rgba(96,165,250,0.18)';
+                        this.style.boxShadow='none';"
+          >Merhaba ${companyName || username},
 
-WOW MOBİLYA ekibinden yazıyoruz.
+WOW MOBİLYA ekibinden yazıyoruz.</textarea>
 
-</textarea>
           <!-- عداد الأحرف -->
-          <div style="text-align:right;font-size:9px;color:rgba(255,255,255,0.2);
-               margin-top:4px;letter-spacing:1px;">
-            <span id="emailCharCount">0</span>/1000
+          <div style="
+            display:flex;justify-content:space-between;
+            margin-top:5px;font-size:9px;letter-spacing:1px;
+          ">
+            <span style="color:rgba(255,255,255,0.15);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9"
+                   viewBox="0 0 24 24" fill="none"
+                   stroke="rgba(96,165,250,0.4)" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round"
+                   style="display:inline-block;vertical-align:middle;margin-right:3px;">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              EmailJS üzerinden gönderilecek
+            </span>
+            <span id="emailCharCount" style="color:rgba(255,255,255,0.2);">0/1000</span>
           </div>
         </div>
 
-        <!-- شريط الأدوات السريعة -->
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <span style="font-size:9px;letter-spacing:1.5px;color:rgba(255,255,255,0.2);
-               font-weight:700;text-transform:uppercase;align-self:center;">
-            HIZLI ŞABLONLAR:
-          </span>
-          <button onclick="setEmailTemplate('welcome')" style="
-            padding:5px 10px;border-radius:6px;
-            background:rgba(74,222,128,0.08);
-            border:1px solid rgba(74,222,128,0.2);
-            color:#4ade80;font-size:9px;font-weight:700;
-            cursor:pointer;font-family:'Montserrat',sans-serif;
-            transition:all 0.2s;letter-spacing:0.5px;"
-            onmouseover="this.style.background='rgba(74,222,128,0.15)'"
-            onmouseout="this.style.background='rgba(74,222,128,0.08)'">
-            👋 Hoş Geldin
-          </button>
-          <button onclick="setEmailTemplate('order')" style="
-            padding:5px 10px;border-radius:6px;
-            background:rgba(251,191,36,0.08);
-            border:1px solid rgba(251,191,36,0.2);
-            color:#fbbf24;font-size:9px;font-weight:700;
-            cursor:pointer;font-family:'Montserrat',sans-serif;
-            transition:all 0.2s;letter-spacing:0.5px;"
-            onmouseover="this.style.background='rgba(251,191,36,0.15)'"
-            onmouseout="this.style.background='rgba(251,191,36,0.08)'">
-            📦 Sipariş Hazır
-          </button>
-          <button onclick="setEmailTemplate('info')" style="
-            padding:5px 10px;border-radius:6px;
-            background:rgba(96,165,250,0.08);
-            border:1px solid rgba(96,165,250,0.2);
-            color:#60a5fa;font-size:9px;font-weight:700;
-            cursor:pointer;font-family:'Montserrat',sans-serif;
-            transition:all 0.2s;letter-spacing:0.5px;"
-            onmouseover="this.style.background='rgba(96,165,250,0.15)'"
-            onmouseout="this.style.background='rgba(96,165,250,0.08)'">
-            ℹ️ Genel Bilgi
-          </button>
-        </div>
 
         <!-- رسالة الحالة -->
         <div id="emailSendStatus" style="display:none;padding:10px 14px;
              border-radius:9px;font-size:11px;font-weight:700;
              text-align:center;font-family:'Montserrat',sans-serif;"></div>
 
-        <!-- أزرار الإرسال -->
-        <div style="display:flex;gap:10px;">
+
+        <!-- أزرار الإجراءات -->
+        <div style="display:flex;gap:8px;">
+
+          <!-- إلغاء -->
           <button onclick="closeSendEmailModal()" style="
-            flex:1;padding:13px;border-radius:12px;
-            border:1px solid rgba(255,255,255,0.1);
-            background:rgba(255,255,255,0.04);
-            color:rgba(255,255,255,0.4);
+            flex:1;padding:12px;border-radius:11px;
+            border:1px solid rgba(255,255,255,0.08);
+            background:rgba(255,255,255,0.03);
+            color:rgba(255,255,255,0.35);
             font-family:'Montserrat',sans-serif;
-            font-size:11px;font-weight:700;letter-spacing:1px;
-            cursor:pointer;transition:all 0.25s;">
+            font-size:10px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.03)'">
             İPTAL
           </button>
+
+          <!-- إرسال -->
           <button id="sendEmailConfirmBtn"
-                  onclick="sendEmailToUser('${email}', '${username}', '${companyName || ''}')"
+                  onclick="sendEmailToUser('${email}','${username}','${companyName || ''}')"
                   style="
-            flex:2;padding:13px;border-radius:12px;border:none;
-            background:linear-gradient(135deg,#3b82f6,#60a5fa);
+            flex:3;padding:12px;border-radius:11px;border:none;
+            background:linear-gradient(135deg,#1e3a5f,#1e40af);
             color:#fff;font-family:'Montserrat',sans-serif;
-            font-size:11px;font-weight:900;letter-spacing:1.5px;
+            font-size:11px;font-weight:900;letter-spacing:1px;
             cursor:pointer;transition:all 0.25s;
-            display:flex;align-items:center;justify-content:center;gap:8px;"
+            display:flex;align-items:center;justify-content:center;gap:9px;
+            box-shadow:0 4px 16px rgba(59,130,246,0.2);"
             onmouseover="this.style.transform='translateY(-2px)';
-                         this.style.boxShadow='0 8px 24px rgba(59,130,246,0.4)';"
-            onmouseout="this.style.transform='';this.style.boxShadow='';">
-            <i class="fas fa-paper-plane"></i> GÖNDER
+                         this.style.boxShadow='0 8px 24px rgba(59,130,246,0.35)';"
+            onmouseout="this.style.transform='';
+                        this.style.boxShadow='0 4px 16px rgba(59,130,246,0.2)';">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                 viewBox="0 0 24 24" fill="none"
+                 stroke="#93c5fd" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round"
+                 style="display:block;flex-shrink:0;">
+              <line x1="22" y1="2" x2="11" y2="13"/>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+            E-POSTA GÖNDER
           </button>
+
         </div>
 
       </div>
+      <!-- ══ نهاية الجسم ══ -->
+
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  /* عداد الأحرف */
-  const textarea = document.getElementById('emailBodyInput');
-  const counter  = document.getElementById('emailCharCount');
-  if (textarea && counter) {
-    counter.textContent = textarea.value.length;
-    textarea.addEventListener('input', () => {
-      counter.textContent = textarea.value.length;
+  /* ── أنيميشن النبض ── */
+  if (!document.getElementById('emailPulseStyle')) {
+    const st = document.createElement('style');
+    st.id = 'emailPulseStyle';
+    st.textContent = `
+      @keyframes emailPulse {
+        0%,100% { opacity:1; transform:scale(1); }
+        50%      { opacity:0.4; transform:scale(0.8); }
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  /* ── ربط الحقول بالمعاينة ── */
+  const subInput    = document.getElementById('emailSubjectInput');
+  const bodyInput   = document.getElementById('emailBodyInput');
+  const subPreview  = document.getElementById('emailSubjectPreview');
+  const bodyPreview = document.getElementById('emailBodyPreview');
+  const counter     = document.getElementById('emailCharCount');
+
+  if (subInput && subPreview) {
+    subInput.addEventListener('input', () => {
+      subPreview.textContent = subInput.value || '';
     });
   }
 
-  /* إغلاق بالخلفية */
+  if (bodyInput) {
+    bodyInput.addEventListener('input', () => {
+      if (bodyPreview) bodyPreview.textContent = bodyInput.value || '';
+      if (counter)     counter.textContent = `${bodyInput.value.length}/1000`;
+    });
+    if (counter) counter.textContent = `${bodyInput.value.length}/1000`;
+  }
+
+  /* ── إغلاق بالخلفية ── */
   modal.addEventListener('click', e => {
     if (e.target === modal) closeSendEmailModal();
   });
 
-  /* التركيز على حقل الموضوع */
-  setTimeout(() => document.getElementById('emailSubjectInput')?.focus(), 350);
-
-  /* حفظ بيانات المستلم الحالي */
+  /* ── حفظ البيانات ── */
   window._emailModalData = { userId, email, username, companyName };
+
+  /* ── التركيز ── */
+  setTimeout(() => subInput?.focus(), 350);
 }
 
-/* ── إغلاق نافذة الإيميل ── */
+
+/* ── إغلاق النافذة ── */
 function closeSendEmailModal() {
   document.getElementById('sendEmailModal')?.remove();
   window._emailModalData = null;
 }
 
-/* ── قوالب سريعة ── */
-function setEmailTemplate(type) {
-  const data     = window._emailModalData || {};
-  const name     = data.companyName || data.username || 'Değerli Müşterimiz';
-  const subInput = document.getElementById('emailSubjectInput');
-  const bodyInput = document.getElementById('emailBodyInput');
+
+/* ── قوالب الإيميل السريعة V2 ── */
+function setEmailTemplateV2(type, username, companyName) {
+  const subInput    = document.getElementById('emailSubjectInput');
+  const bodyInput   = document.getElementById('emailBodyInput');
+  const subPreview  = document.getElementById('emailSubjectPreview');
+  const bodyPreview = document.getElementById('emailBodyPreview');
+  const counter     = document.getElementById('emailCharCount');
+  const name        = companyName || username || 'Değerli Müşterimiz';
   if (!subInput || !bodyInput) return;
 
   const templates = {
     welcome: {
-      subject : 'WOW MOBİLYA — Hoş Geldiniz! 🎉',
-      body    : `Merhaba ${name},\n\nWOW MOBİLYA ailesine hoş geldiniz!\n\nSistemimize başarıyla kayıt oldunuz. Artık tüm koleksiyonlarımıza erişebilir ve sipariş verebilirsiniz.\n\nHerhangi bir sorunuz olursa bizimle iletişime geçmekten çekinmeyin.\n\nSaygılarımızla,\nWOW MOBİLYA Ekibi\n📞 +90 538 626 37 00`,
+      subject: 'WOW MOBİLYA — Hoş Geldiniz! 🎉',
+      body:
+`Merhaba ${name},
+
+WOW MOBİLYA ailesine hoş geldiniz! 🎉
+
+Sisteme başarıyla kayıt oldunuz. Artık tüm koleksiyonlarımıza erişebilir ve sipariş verebilirsiniz.
+
+Herhangi bir sorunuz için bizimle iletişime geçmekten çekinmeyin.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
     },
+
     order: {
-      subject : 'WOW MOBİLYA — Siparişiniz Hazır! 📦',
-      body    : `Merhaba ${name},\n\nSiparişiniz hazırlanmış ve teslime hazır durumdadır.\n\nSipariş detaylarınız için lütfen sistemimize giriş yaparak "Siparişlerim" bölümünü kontrol ediniz.\n\nTeslim tarihi ve detaylar için bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,\nWOW MOBİLYA Ekibi\n📞 +90 538 626 37 00`,
+      subject: 'WOW MOBİLYA — Siparişiniz Hazır! 📦',
+      body:
+`Merhaba ${name},
+
+Siparişiniz hazırlanmış ve teslime hazır durumdadır. 📦
+
+Sipariş detaylarınız için sisteme giriş yaparak "Siparişlerim" bölümünü kontrol edebilirsiniz.
+
+Teslim tarihi ve detaylar için bizimle iletişime geçebilirsiniz.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
     },
+
+    payment: {
+      subject: 'WOW MOBİLYA — Ödeme Bilgilendirmesi 💳',
+      body:
+`Merhaba ${name},
+
+Ödeme işleminizle ilgili size bilgi vermek istedik. 💳
+
+Lütfen hesabınızı kontrol ederek ödeme durumunuzu doğrulayın. Herhangi bir sorun yaşarsanız bizimle iletişime geçin.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
+    },
+
+    delivery: {
+      subject: 'WOW MOBİLYA — Teslimat Bilgisi 🚚',
+      body:
+`Merhaba ${name},
+
+Siparişiniz yola çıkmıştır! 🚚
+
+Teslimat saatinizi öğrenmek veya adres güncellemek için lütfen bizimle iletişime geçin.
+
+📞 +90 538 626 37 00
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi`,
+    },
+
     info: {
-      subject : 'WOW MOBİLYA — Önemli Bilgilendirme ℹ️',
-      body    : `Merhaba ${name},\n\nSize önemli bir bilgi iletmek istedik.\n\n[Mesajınızı buraya yazın]\n\nDaha fazla bilgi için bizimle iletişime geçebilirsiniz.\n\nSaygılarımızla,\nWOW MOBİLYA Ekibi\n📞 +90 538 626 37 00`,
+      subject: 'WOW MOBİLYA — Önemli Bilgilendirme ℹ️',
+      body:
+`Merhaba ${name},
+
+Size önemli bir bilgi iletmek istedik.
+
+[Mesajınızı buraya yazın]
+
+Daha fazla bilgi için bizimle iletişime geçebilirsiniz.
+
+Saygılarımızla,
+WOW MOBİLYA Ekibi
+📞 +90 538 626 37 00`,
     },
   };
 
@@ -11979,27 +12298,29 @@ function setEmailTemplate(type) {
   subInput.value  = t.subject;
   bodyInput.value = t.body;
 
-  /* تحديث عداد الأحرف */
-  const counter = document.getElementById('emailCharCount');
-  if (counter) counter.textContent = bodyInput.value.length;
+  if (subPreview)  subPreview.textContent  = t.subject;
+  if (bodyPreview) bodyPreview.textContent = t.body;
+  if (counter)     counter.textContent     = `${t.body.length}/1000`;
 
   /* تأثير بصري */
   [subInput, bodyInput].forEach(el => {
     el.style.borderColor = 'rgba(96,165,250,0.6)';
     el.style.boxShadow   = '0 0 16px rgba(96,165,250,0.1)';
     setTimeout(() => {
-      el.style.borderColor = 'rgba(96,165,250,0.2)';
+      el.style.borderColor = 'rgba(96,165,250,0.18)';
       el.style.boxShadow   = 'none';
-    }, 800);
+    }, 700);
   });
+
+  subInput.focus();
 }
+
 
 /* ── إرسال الإيميل عبر EmailJS ── */
 async function sendEmailToUser(toEmail, toUsername, toCompany) {
   const subject = document.getElementById('emailSubjectInput')?.value.trim();
   const body    = document.getElementById('emailBodyInput')?.value.trim();
   const btn     = document.getElementById('sendEmailConfirmBtn');
-  const status  = document.getElementById('emailSendStatus');
 
   if (!subject) {
     showEmailStatus('Lütfen bir konu girin!', 'error');
@@ -12015,47 +12336,90 @@ async function sendEmailToUser(toEmail, toUsername, toCompany) {
   /* تعطيل الزر */
   if (btn) {
     btn.disabled  = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+    btn.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+           viewBox="0 0 24 24" fill="none"
+           stroke="#93c5fd" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round"
+           style="display:block;flex-shrink:0;animation:spin 1s linear infinite;">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+      Gönderiliyor...
+    `;
   }
 
-  showEmailStatus('<i class="fas fa-spinner fa-spin"></i> E-posta gönderiliyor...', 'loading');
+  /* أنيميشن الدوران */
+  if (!document.getElementById('spinStyle')) {
+    const st = document.createElement('style');
+    st.id = 'spinStyle';
+    st.textContent = `@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`;
+    document.head.appendChild(st);
+  }
+
+  showEmailStatus(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+          viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+          style="display:inline-block;vertical-align:middle;margin-right:6px;
+                 animation:spin 1s linear infinite;">
+       <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+     </svg> E-posta gönderiliyor...`,
+    'loading'
+  );
 
   try {
-    if (typeof emailjs === 'undefined') {
-      throw new Error('EmailJS yüklenmedi!');
-    }
+    if (typeof emailjs === 'undefined') throw new Error('EmailJS yüklenmedi!');
 
-   await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_MSG_TEMPLATE_ID, {
-  to_email     : toEmail,
-  to_name      : toCompany || toUsername,
-  subject      : subject,
-  message_body : body,
-});
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_MSG_TEMPLATE_ID, {
+      to_email     : toEmail,
+      to_name      : toCompany || toUsername,
+      subject      : subject,
+      message_body : body,
+    });
 
-
-    /* نجاح */
     showEmailStatus(
-      `<i class="fas fa-check-circle"></i> E-posta başarıyla gönderildi! → ${toEmail}`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+            style="display:inline-block;vertical-align:middle;margin-right:6px;">
+         <polyline points="20 6 9 17 4 12"/>
+       </svg> E-posta başarıyla gönderildi! → ${toEmail}`,
       'success'
     );
 
     showInvToast(`"${toUsername}" adresine e-posta gönderildi ✓`, 'success');
-
-    /* إغلاق تلقائي بعد 2 ثانية */
     setTimeout(() => closeSendEmailModal(), 2200);
 
   } catch(e) {
-    console.error('[Email] Gönderme hatası:', e);
+    console.error('[Email]', e);
     showEmailStatus(
-      `<i class="fas fa-exclamation-circle"></i> Hata: ${e.message || 'Gönderilemedi!'}`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+            viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="display:inline-block;vertical-align:middle;margin-right:6px;">
+         <circle cx="12" cy="12" r="10"/>
+         <line x1="12" y1="8" x2="12" y2="12"/>
+         <line x1="12" y1="16" x2="12.01" y2="16"/>
+       </svg> Hata: ${e.message || 'Gönderilemedi!'}`,
       'error'
     );
     if (btn) {
       btn.disabled  = false;
-      btn.innerHTML = '<i class="fas fa-paper-plane"></i> TEKRAR DENE';
+      btn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+             viewBox="0 0 24 24" fill="none"
+             stroke="#93c5fd" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round"
+             style="display:block;flex-shrink:0;">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        TEKRAR DENE
+      `;
     }
   }
 }
+
 
 /* ── عرض حالة الإرسال ── */
 function showEmailStatus(msg, type) {
@@ -12063,9 +12427,9 @@ function showEmailStatus(msg, type) {
   if (!el) return;
 
   const styles = {
-    loading : { bg:'rgba(96,165,250,0.08)',  border:'rgba(96,165,250,0.25)',  color:'#60a5fa'  },
-    success : { bg:'rgba(74,222,128,0.08)',  border:'rgba(74,222,128,0.3)',   color:'#4ade80'  },
-    error   : { bg:'rgba(239,68,68,0.08)',   border:'rgba(239,68,68,0.3)',    color:'#ef4444'  },
+    loading : { bg:'rgba(96,165,250,0.08)',  border:'rgba(96,165,250,0.25)',  color:'#60a5fa' },
+    success : { bg:'rgba(74,222,128,0.08)',  border:'rgba(74,222,128,0.3)',   color:'#4ade80' },
+    error   : { bg:'rgba(239,68,68,0.08)',   border:'rgba(239,68,68,0.3)',    color:'#ef4444' },
   };
 
   const s = styles[type] || styles.loading;
