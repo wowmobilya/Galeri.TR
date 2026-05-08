@@ -1673,11 +1673,13 @@ html { scroll-behavior: auto; }
       <input type="text" id="regUsername" placeholder="Kullanıcı Adı"
              style="-webkit-user-select:text;user-select:text;"/>
     </div>
-    <div class="login-field">
-      <i class="fas fa-envelope field-icon"></i>
-      <input type="email" id="regEmail" placeholder="E-posta Adresi"
-             style="-webkit-user-select:text;user-select:text;"/>
-    </div>
+   <div class="login-field">
+  <i class="fas fa-envelope field-icon"></i>
+  <input type="email" id="regEmail" placeholder="E-posta Adresi"
+         style="-webkit-user-select:text;user-select:text;"
+         oninput="validateEmailField(this)"/>
+</div>
+
    <div class="login-field" style="flex-direction:column;align-items:stretch;gap:0;">
   <div style="display:flex;gap:8px;align-items:stretch;">
     
@@ -14701,6 +14703,29 @@ function getFullPhoneNumber() {
   
 
 
+
+
+
+
+
+  function validateEmailField(inp) {
+    const val   = inp.value.trim();
+    const valid = /^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$/.test(val);
+    
+    if (val.length === 0) {
+        inp.style.borderColor = 'rgba(201,168,76,0.2)';
+        inp.style.boxShadow   = 'none';
+        return;
+    }
+    
+    if (valid) {
+        inp.style.borderColor = 'rgba(74,222,128,0.5)';
+        inp.style.boxShadow   = '0 0 16px rgba(74,222,128,0.1)';
+    } else {
+        inp.style.borderColor = 'rgba(239,68,68,0.5)';
+        inp.style.boxShadow   = '0 0 16px rgba(239,68,68,0.08)';
+    }
+}
 
 
 
