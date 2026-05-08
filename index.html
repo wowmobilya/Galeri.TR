@@ -8246,6 +8246,7 @@ async function subscribeInventory() {
 ============================================================ */
 const EMAILJS_SERVICE_ID  = 'service_3rhndww';
 const EMAILJS_TEMPLATE_ID = 'template_fj5wmvn';
+const EMAILJS_MSG_TEMPLATE_ID = 'template_5cgzd76'; // ← ضع معرف القالب الجديد هنا
 const EMAILJS_PUBLIC_KEY  = 'VCnjcO1Br8kR7hZDL';
 
 /* ============================================================
@@ -11460,13 +11461,13 @@ async function sendEmailToUser(toEmail, toUsername, toCompany) {
       throw new Error('EmailJS yüklenmedi!');
     }
 
-    /* إرسال عبر EmailJS */
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_email  : toEmail,
-      to_name   : toCompany || toUsername,
-      otp_code  : body,          /* نستخدم حقل otp_code لإرسال النص */
-      subject   : subject,       /* إذا كان القالب يدعم subject */
-    });
+   await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_MSG_TEMPLATE_ID, {
+  to_email     : toEmail,
+  to_name      : toCompany || toUsername,
+  subject      : subject,
+  message_body : body,
+});
+
 
     /* نجاح */
     showEmailStatus(
