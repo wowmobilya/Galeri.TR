@@ -11105,33 +11105,597 @@ function showDeleteUserConfirm(username) {
 ============================================================ */
 
 /* ── فتح WhatsApp مباشرة ── */
+/* ============================================================
+   ★ نافذة WhatsApp المباشرة — Modal كامل مع قوالب ★
+============================================================ */
+
 function sendWhatsAppToUser(phone, username, companyName) {
   if (!phone || phone.trim() === '') {
     showInvToast(`"${username}" için telefon numarası kayıtlı değil!`, 'error');
     return;
   }
 
-  /* تنظيف رقم الهاتف — إزالة المسافات والشرطات والأقواس */
+  /* تنظيف الرقم */
   let cleanPhone = phone.replace(/[\s\-\(\)\+]/g, '');
+  if (cleanPhone.startsWith('0'))        cleanPhone = '90' + cleanPhone.substring(1);
+  if (!cleanPhone.startsWith('90') && cleanPhone.length <= 10) cleanPhone = '90' + cleanPhone;
 
-  /* إذا بدأ بـ 0 نستبدله بـ 90 (تركيا) */
-  if (cleanPhone.startsWith('0')) {
-    cleanPhone = '90' + cleanPhone.substring(1);
+  /* إزالة أي نافذة سابقة */
+  document.getElementById('whatsappModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'whatsappModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9500;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    padding:16px;
+    animation:updBgIn 0.3s ease forwards;
+  `;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:460px;
+      background:linear-gradient(145deg,#0a0f0a,#0f1a0f);
+      border:1px solid rgba(37,211,102,0.25);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.9),
+                 0 0 60px rgba(37,211,102,0.05);
+      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    ">
+
+      <!-- خط أخضر علوي -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#25d366 30%,#61fd7d 50%,#25d366 70%,transparent);"></div>
+
+      <!-- ══ الهيدر ══ -->
+      <div style="
+        padding:18px 20px 14px;
+        display:flex;align-items:center;justify-content:space-between;
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        background:rgba(37,211,102,0.03);
+      ">
+        <div style="display:flex;align-items:center;gap:12px;">
+
+          <!-- أيقونة WhatsApp SVG -->
+          <div style="
+            width:46px;height:46px;flex-shrink:0;
+            background:linear-gradient(135deg,#075e54,#128c7e);
+            border-radius:13px;
+            display:flex;align-items:center;justify-content:center;
+            box-shadow:0 4px 14px rgba(37,211,102,0.3);
+          ">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 viewBox="0 0 175.216 175.552"
+                 width="26" height="26" style="display:block;">
+              <defs>
+                <linearGradient id="wgH1" x1="85.915%" x2="14.083%" y1="14.084%" y2="85.916%">
+                  <stop offset="0%"   stop-color="#25CF43"/>
+                  <stop offset="100%" stop-color="#61FD7D"/>
+                </linearGradient>
+              </defs>
+              <path fill="url(#wgH1)"
+                d="M87.608 0C39.238 0 0 39.238 0 87.608c0 15.145
+                   3.913 29.382 10.79 41.766L.37 174.24l46.087-10.19
+                   C58.74 171.14 72.72 175.55 87.608 175.55
+                   c48.37 0 87.608-39.238 87.608-87.608
+                   C175.216 39.238 135.978 0 87.608 0z"/>
+              <path fill="#FFF"
+                d="M130.04 111.87c-1.99 5.6-9.87 10.25-16.12 11.6
+                   -4.3.91-9.91 1.64-28.8-6.19
+                   -24.17-10.1-39.75-34.7-40.96-36.3
+                   -1.17-1.6-9.83-13.1-9.83-25.01
+                   0-11.9 6.25-17.72 8.47-20.12
+                   1.99-2.16 5.28-3.15 7.43-3.15
+                   .9 0 1.71.04 2.44.08
+                   2.14.09 3.22.22 4.63 3.6
+                   1.77 4.24 6.07 14.85 6.6 15.93
+                   .54 1.08.9 2.34.18 3.78
+                   -.68 1.48-1.26 2.13-2.34 3.37
+                   -1.08 1.22-2.1 2.16-3.18 3.47
+                   -.99 1.13-2.1 2.34-1.04 4.5
+                   1.08 2.12 4.77 7.86 10.24 12.73
+                   7.03 6.28 12.96 8.23 15.26 9.14
+                   1.76.69 3.83.54 4.95-.68
+                   1.44-1.57 3.22-4.18 5.03-6.75
+                   1.3-1.84 2.93-2.07 4.64-1.39
+                   1.74.64 11.03 5.2 12.92 6.15
+                   1.9.95 3.15 1.39 3.6 2.17
+                   .45.77.45 4.5-1.54 10.1z"/>
+            </svg>
+          </div>
+
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(37,211,102,0.5);text-transform:uppercase;margin-bottom:3px;">
+              WHATSAPP MESAJI
+            </div>
+            <div style="font-size:15px;font-weight:900;color:#fff;">
+              ${username}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:2px;
+                 display:flex;align-items:center;gap:5px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9"
+                   viewBox="0 0 24 24" fill="none"
+                   stroke="rgba(37,211,102,0.5)" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2
+                         1.99 1.99 0 0 1-.82-.18
+                         19.79 19.79 0 0 1-8.63-5.88
+                         19.45 19.45 0 0 1-3.86-8.67
+                         2 2 0 0 1 1.72-2.21h3a2 2 0 0 1 2 1.72
+                         12.84 12.84 0 0 0 .7 2.81
+                         2 2 0 0 1-.45 2.11L9.91 10a16 16 0 0 0 6 6
+                         l1.27-1.27a2 2 0 0 1 2.11-.45
+                         12.84 12.84 0 0 0 2.81.7
+                         2 2 0 0 1 1.72 2z"/>
+              </svg>
+              +${cleanPhone}
+            </div>
+          </div>
+        </div>
+
+        <!-- زر الإغلاق -->
+        <div onclick="closeWhatsAppModal()" style="
+          width:32px;height:32px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);
+          border-radius:8px;color:rgba(255,255,255,0.3);
+          font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;flex-shrink:0;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+
+      <!-- ══ جسم النافذة ══ -->
+      <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:13px;">
+
+        <!-- معلومات المستلم -->
+        <div style="
+          background:rgba(37,211,102,0.05);
+          border:1px solid rgba(37,211,102,0.12);
+          border-radius:11px;padding:11px 14px;
+          display:flex;align-items:center;gap:10px;">
+          <div style="
+            width:34px;height:34px;border-radius:50%;flex-shrink:0;
+            background:linear-gradient(135deg,rgba(37,211,102,0.18),rgba(37,211,102,0.04));
+            border:1.5px solid rgba(37,211,102,0.3);
+            display:flex;align-items:center;justify-content:center;
+            font-size:15px;">👤</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff;">
+              ${companyName || username}
+            </div>
+            <div style="font-size:10px;color:rgba(37,211,102,0.6);margin-top:2px;">
+              wa.me/${cleanPhone}
+            </div>
+          </div>
+          <!-- مؤشر الاتصال -->
+          <div style="margin-left:auto;display:flex;align-items:center;gap:5px;">
+            <div style="
+              width:7px;height:7px;border-radius:50%;
+              background:#25d366;
+              box-shadow:0 0 6px rgba(37,211,102,0.6);
+              animation:waPulse 1.5s infinite;
+            "></div>
+            <span style="font-size:9px;color:rgba(37,211,102,0.6);letter-spacing:1px;">HAZIR</span>
+          </div>
+        </div>
+
+
+        <!-- قوالب سريعة -->
+        <div>
+          <div style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.2);
+               text-transform:uppercase;font-weight:700;margin-bottom:8px;">
+            ⚡ HIZLI ŞABLONLAR
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+
+            <button onclick="setWATemplate('greeting','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(37,211,102,0.07);
+              border:1px solid rgba(37,211,102,0.2);
+              color:#25d366;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(37,211,102,0.15)'"
+              onmouseout="this.style.background='rgba(37,211,102,0.07)'">
+              👋 Merhaba
+            </button>
+
+            <button onclick="setWATemplate('order','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(251,191,36,0.07);
+              border:1px solid rgba(251,191,36,0.2);
+              color:#fbbf24;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(251,191,36,0.15)'"
+              onmouseout="this.style.background='rgba(251,191,36,0.07)'">
+              📦 Sipariş Hazır
+            </button>
+
+            <button onclick="setWATemplate('payment','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(96,165,250,0.07);
+              border:1px solid rgba(96,165,250,0.2);
+              color:#60a5fa;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(96,165,250,0.15)'"
+              onmouseout="this.style.background='rgba(96,165,250,0.07)'">
+              💳 Ödeme
+            </button>
+
+            <button onclick="setWATemplate('delivery','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(167,139,250,0.07);
+              border:1px solid rgba(167,139,250,0.2);
+              color:#a78bfa;font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(167,139,250,0.15)'"
+              onmouseout="this.style.background='rgba(167,139,250,0.07)'">
+              🚚 Teslimat
+            </button>
+
+            <button onclick="setWATemplate('custom','${username}','${companyName || ''}')"
+              style="padding:6px 11px;border-radius:7px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(255,255,255,0.1);
+              color:rgba(255,255,255,0.4);font-size:9px;font-weight:700;
+              cursor:pointer;font-family:'Montserrat',sans-serif;
+              transition:all 0.2s;letter-spacing:0.5px;"
+              onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+              ✏️ Özel
+            </button>
+
+          </div>
+        </div>
+
+
+        <!-- حقل الرسالة -->
+        <div>
+          <label style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.2);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-comment-dots" style="color:rgba(37,211,102,0.4);margin-right:5px;"></i>
+            MESAJ METNİ
+          </label>
+
+          <!-- معاينة بفقاعة WhatsApp -->
+          <div style="
+            background:rgba(37,211,102,0.04);
+            border:1px solid rgba(37,211,102,0.12);
+            border-radius:11px;
+            padding:10px 12px 6px;
+            margin-bottom:8px;
+          ">
+            <!-- شريط علوي للفقاعة -->
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;
+                 padding-bottom:8px;border-bottom:1px solid rgba(37,211,102,0.08);">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 175.216 175.552"
+                   width="14" height="14" style="display:block;flex-shrink:0;">
+                <defs>
+                  <linearGradient id="wgP" x1="85.915%" x2="14.083%" y1="14.084%" y2="85.916%">
+                    <stop offset="0%" stop-color="#25CF43"/>
+                    <stop offset="100%" stop-color="#61FD7D"/>
+                  </linearGradient>
+                </defs>
+                <path fill="url(#wgP)"
+                  d="M87.608 0C39.238 0 0 39.238 0 87.608c0 15.145
+                     3.913 29.382 10.79 41.766L.37 174.24l46.087-10.19
+                     C58.74 171.14 72.72 175.55 87.608 175.55
+                     c48.37 0 87.608-39.238 87.608-87.608
+                     C175.216 39.238 135.978 0 87.608 0z"/>
+                <path fill="#FFF"
+                  d="M130.04 111.87c-1.99 5.6-9.87 10.25-16.12 11.6
+                     -4.3.91-9.91 1.64-28.8-6.19
+                     -24.17-10.1-39.75-34.7-40.96-36.3
+                     -1.17-1.6-9.83-13.1-9.83-25.01
+                     0-11.9 6.25-17.72 8.47-20.12
+                     1.99-2.16 5.28-3.15 7.43-3.15
+                     .9 0 1.71.04 2.44.08
+                     2.14.09 3.22.22 4.63 3.6
+                     1.77 4.24 6.07 14.85 6.6 15.93
+                     .54 1.08.9 2.34.18 3.78
+                     -.68 1.48-1.26 2.13-2.34 3.37
+                     -1.08 1.22-2.1 2.16-3.18 3.47
+                     -.99 1.13-2.1 2.34-1.04 4.5
+                     1.08 2.12 4.77 7.86 10.24 12.73
+                     7.03 6.28 12.96 8.23 15.26 9.14
+                     1.76.69 3.83.54 4.95-.68
+                     1.44-1.57 3.22-4.18 5.03-6.75
+                     1.3-1.84 2.93-2.07 4.64-1.39
+                     1.74.64 11.03 5.2 12.92 6.15
+                     1.9.95 3.15 1.39 3.6 2.17
+                     .45.77.45 4.5-1.54 10.1z"/>
+              </svg>
+              <span style="font-size:9px;color:rgba(37,211,102,0.5);
+                   letter-spacing:1.5px;text-transform:uppercase;font-weight:700;">
+                MESAJ ÖNİZLEME
+              </span>
+            </div>
+
+            <!-- فقاعة الرسالة -->
+            <div style="display:flex;justify-content:flex-end;padding:0 0 6px;">
+              <div style="
+                background:linear-gradient(135deg,#075e54,#128c7e);
+                border-radius:12px 12px 2px 12px;
+                padding:10px 13px;
+                max-width:85%;
+                position:relative;
+              ">
+                <div id="waMsgPreview" style="
+                  font-size:12px;color:#fff;
+                  line-height:1.6;white-space:pre-wrap;
+                  word-break:break-word;
+                  font-family:'Segoe UI',system-ui,sans-serif;
+                  min-height:16px;
+                ">Merhaba ${companyName || username}! 👋
+WOW MOBİLYA ekibinden yazıyoruz.</div>
+                <!-- وقت الإرسال -->
+                <div style="
+                  text-align:right;margin-top:4px;
+                  display:flex;align-items:center;justify-content:flex-end;gap:3px;
+                ">
+                  <span style="font-size:9px;color:rgba(255,255,255,0.45);">Şimdi</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="10"
+                       viewBox="0 0 16 11" fill="none" style="display:block;">
+                    <path d="M1 5.5L4.5 9L10 3" stroke="rgba(255,255,255,0.5)"
+                          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M6 5.5L9.5 9L15 3" stroke="rgba(255,255,255,0.5)"
+                          stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- textarea -->
+          <textarea id="waMessageInput"
+            placeholder="Mesajınızı buraya yazın..."
+            maxlength="1000"
+            style="
+              width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(37,211,102,0.18);
+              border-radius:10px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:12px;outline:none;transition:all 0.3s;
+              resize:vertical;min-height:90px;max-height:200px;
+              -webkit-user-select:text;user-select:text;
+              line-height:1.6;
+            "
+            onfocus="this.style.borderColor='rgba(37,211,102,0.5)';
+                     this.style.boxShadow='0 0 16px rgba(37,211,102,0.08)';"
+            onfocusout="this.style.borderColor='rgba(37,211,102,0.18)';
+                        this.style.boxShadow='none';"
+          >Merhaba ${companyName || username}! 👋
+WOW MOBİLYA ekibinden yazıyoruz.</textarea>
+
+          <!-- عداد الأحرف -->
+          <div style="
+            display:flex;justify-content:space-between;
+            margin-top:5px;font-size:9px;letter-spacing:1px;
+          ">
+            <span style="color:rgba(255,255,255,0.15);">
+              <i class="fas fa-info-circle" style="margin-right:3px;"></i>
+              WhatsApp uygulaması açılacak
+            </span>
+            <span id="waCharCount" style="color:rgba(255,255,255,0.2);">0/1000</span>
+          </div>
+        </div>
+
+
+        <!-- أزرار الإجراءات -->
+        <div style="display:flex;gap:8px;">
+
+          <!-- إلغاء -->
+          <button onclick="closeWhatsAppModal()" style="
+            flex:1;padding:12px;border-radius:11px;
+            border:1px solid rgba(255,255,255,0.08);
+            background:rgba(255,255,255,0.03);
+            color:rgba(255,255,255,0.35);
+            font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.07)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+            İPTAL
+          </button>
+
+          <!-- فتح WhatsApp -->
+          <button onclick="openWhatsAppWithMessage('${cleanPhone}')" style="
+            flex:3;padding:12px;border-radius:11px;border:none;
+            background:linear-gradient(135deg,#075e54,#128c7e);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:9px;
+            box-shadow:0 4px 16px rgba(37,211,102,0.2);"
+            onmouseover="this.style.transform='translateY(-2px)';
+                         this.style.boxShadow='0 8px 24px rgba(37,211,102,0.35)';"
+            onmouseout="this.style.transform='';
+                        this.style.boxShadow='0 4px 16px rgba(37,211,102,0.2)';">
+
+            <!-- شعار WhatsApp صغير في الزر -->
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 viewBox="0 0 175.216 175.552"
+                 width="18" height="18" style="display:block;flex-shrink:0;">
+              <defs>
+                <linearGradient id="wgB" x1="85.915%" x2="14.083%" y1="14.084%" y2="85.916%">
+                  <stop offset="0%"   stop-color="#25CF43"/>
+                  <stop offset="100%" stop-color="#61FD7D"/>
+                </linearGradient>
+              </defs>
+              <path fill="url(#wgB)"
+                d="M87.608 0C39.238 0 0 39.238 0 87.608c0 15.145
+                   3.913 29.382 10.79 41.766L.37 174.24l46.087-10.19
+                   C58.74 171.14 72.72 175.55 87.608 175.55
+                   c48.37 0 87.608-39.238 87.608-87.608
+                   C175.216 39.238 135.978 0 87.608 0z"/>
+              <path fill="#FFF"
+                d="M130.04 111.87c-1.99 5.6-9.87 10.25-16.12 11.6
+                   -4.3.91-9.91 1.64-28.8-6.19
+                   -24.17-10.1-39.75-34.7-40.96-36.3
+                   -1.17-1.6-9.83-13.1-9.83-25.01
+                   0-11.9 6.25-17.72 8.47-20.12
+                   1.99-2.16 5.28-3.15 7.43-3.15
+                   .9 0 1.71.04 2.44.08
+                   2.14.09 3.22.22 4.63 3.6
+                   1.77 4.24 6.07 14.85 6.6 15.93
+                   .54 1.08.9 2.34.18 3.78
+                   -.68 1.48-1.26 2.13-2.34 3.37
+                   -1.08 1.22-2.1 2.16-3.18 3.47
+                   -.99 1.13-2.1 2.34-1.04 4.5
+                   1.08 2.12 4.77 7.86 10.24 12.73
+                   7.03 6.28 12.96 8.23 15.26 9.14
+                   1.76.69 3.83.54 4.95-.68
+                   1.44-1.57 3.22-4.18 5.03-6.75
+                   1.3-1.84 2.93-2.07 4.64-1.39
+                   1.74.64 11.03 5.2 12.92 6.15
+                   1.9.95 3.15 1.39 3.6 2.17
+                   .45.77.45 4.5-1.54 10.1z"/>
+            </svg>
+            WHATSAPP'TA AÇ
+          </button>
+
+        </div>
+
+      </div>
+      <!-- ══ نهاية الجسم ══ -->
+
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  /* ── أنيميشن النبض ── */
+  if (!document.getElementById('waPulseStyle')) {
+    const st = document.createElement('style');
+    st.id = 'waPulseStyle';
+    st.textContent = `
+      @keyframes waPulse {
+        0%,100% { opacity:1; transform:scale(1); }
+        50%      { opacity:0.5; transform:scale(0.85); }
+      }
+    `;
+    document.head.appendChild(st);
   }
 
-  /* إذا لم يبدأ برمز دولة، نضيف 90 */
-  if (!cleanPhone.startsWith('90') && cleanPhone.length <= 10) {
-    cleanPhone = '90' + cleanPhone;
+  /* ── ربط الـ textarea بالمعاينة والعداد ── */
+  const ta      = document.getElementById('waMessageInput');
+  const preview = document.getElementById('waMsgPreview');
+  const counter = document.getElementById('waCharCount');
+
+  if (ta) {
+    /* تحديث فوري عند الكتابة */
+    ta.addEventListener('input', () => {
+      if (preview) preview.textContent = ta.value || '';
+      if (counter) counter.textContent = `${ta.value.length}/1000`;
+    });
+    /* تحديث العداد الأولي */
+    if (counter) counter.textContent = `${ta.value.length}/1000`;
   }
 
-  const defaultMsg = encodeURIComponent(
-    `Merhaba ${companyName || username}! WOW MOBİLYA ekibinden yazıyoruz.`
-  );
+  /* ── إغلاق بالخلفية ── */
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeWhatsAppModal();
+  });
 
-  const waUrl = `https://wa.me/${cleanPhone}?text=${defaultMsg}`;
-  window.open(waUrl, '_blank', 'noopener,noreferrer');
+  /* ── حفظ البيانات ── */
+  window._waModalData = { cleanPhone, username, companyName };
+
+  /* ── التركيز ── */
+  setTimeout(() => ta?.focus(), 350);
 }
 
+
+/* ── إغلاق النافذة ── */
+function closeWhatsAppModal() {
+  document.getElementById('whatsappModal')?.remove();
+  window._waModalData = null;
+}
+
+
+/* ── قوالب WhatsApp السريعة ── */
+function setWATemplate(type, username, companyName) {
+  const ta      = document.getElementById('waMessageInput');
+  const preview = document.getElementById('waMsgPreview');
+  const counter = document.getElementById('waCharCount');
+  const name    = companyName || username || 'Değerli Müşterimiz';
+  if (!ta) return;
+
+  const templates = {
+    greeting: `Merhaba ${name}! 👋\nWOW MOBİLYA ekibinden yazıyoruz.\nSize nasıl yardımcı olabiliriz?`,
+
+    order: `Merhaba ${name}! 📦\nSiparişiniz hazırlanmış ve teslime hazır durumdadır.\nDetaylar için bizimle iletişime geçebilirsiniz.\n\n— WOW MOBİLYA Ekibi`,
+
+    payment: `Merhaba ${name}! 💳\nÖdeme işleminizle ilgili size bilgi vermek istedik.\nHerhangi bir sorunuz varsa lütfen bizimle iletişime geçin.\n\n— WOW MOBİLYA Ekibi`,
+
+    delivery: `Merhaba ${name}! 🚚\nSiparişiniz yola çıkmıştır, yakında teslim edilecektir.\nTeslimat saatinizi öğrenmek için bizi arayabilirsiniz.\n\n📞 +90 538 626 37 00\n— WOW MOBİLYA Ekibi`,
+
+    custom: `Merhaba ${name}! ✨\n\n`,
+  };
+
+  const msg = templates[type] || templates.greeting;
+  ta.value = msg;
+  if (preview) preview.textContent = msg;
+  if (counter) counter.textContent = `${msg.length}/1000`;
+
+  /* تأثير بصري على الـ textarea */
+  ta.style.borderColor = 'rgba(37,211,102,0.55)';
+  ta.style.boxShadow   = '0 0 16px rgba(37,211,102,0.1)';
+  setTimeout(() => {
+    ta.style.borderColor = 'rgba(37,211,102,0.18)';
+    ta.style.boxShadow   = 'none';
+  }, 700);
+
+  ta.focus();
+}
+
+
+/* ── فتح WhatsApp مع الرسالة ── */
+function openWhatsAppWithMessage(cleanPhone) {
+  const ta  = document.getElementById('waMessageInput');
+  const msg = ta?.value?.trim() || '';
+
+  if (!msg) {
+    /* تأثير اهتزاز على الـ textarea */
+    if (ta) {
+      ta.style.borderColor = 'rgba(239,68,68,0.6)';
+      ta.style.boxShadow   = '0 0 16px rgba(239,68,68,0.1)';
+      setTimeout(() => {
+        ta.style.borderColor = 'rgba(37,211,102,0.18)';
+        ta.style.boxShadow   = 'none';
+      }, 800);
+    }
+    showInvToast('Lütfen bir mesaj yazın!', 'error');
+    return;
+  }
+
+  const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+  window.open(waUrl, '_blank', 'noopener,noreferrer');
+
+  /* إغلاق النافذة بعد الفتح */
+  setTimeout(() => {
+    closeWhatsAppModal();
+    showInvToast(`WhatsApp açıldı ✓`, 'success');
+  }, 400);
+}
+
+
+
+
+
+  
 /* ── فتح نافذة إرسال الإيميل ── */
 function openSendEmailModal(userId, email, username, companyName) {
   /* إزالة أي نافذة سابقة */
