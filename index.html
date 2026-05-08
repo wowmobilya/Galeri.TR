@@ -1996,36 +1996,53 @@ html { scroll-behavior: auto; }
   </div>
 
   <!-- ══ شاشة تعيين كلمة مرور جديدة ══ -->
-  <div class="login-box" id="newPassBox" style="display:none;">
-    <div class="login-logo">
-      <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
-           onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
-    </div>
-    <div style="text-align:center;margin-bottom:20px;">
-      <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
-           text-transform:uppercase;font-weight:700;">YENİ ŞİFRE BELİRLE</div>
-    </div>
-
-    <div class="login-field">
-      <i class="fas fa-lock field-icon"></i>
-      <input type="password" id="newPass1" placeholder="Yeni Şifre"
-             style="-webkit-user-select:text;user-select:text;"/>
-    </div>
-    <div class="login-field">
-      <i class="fas fa-lock field-icon"></i>
-      <input type="password" id="newPass2" placeholder="Şifreyi Tekrar Girin"
-             style="-webkit-user-select:text;user-select:text;"/>
-    </div>
-
-    <button class="login-btn" onclick="saveNewPassword()">
-      <i class="fas fa-save"></i> ŞİFREYİ KAYDET
-    </button>
-
-    <div class="login-error" id="newPassError">
-      <i class="fas fa-exclamation-circle"></i>
-      <span id="newPassErrorMsg">Hata oluştu!</span>
-    </div>
+<!-- ══ شاشة تعيين كلمة مرور جديدة ══ -->
+<div class="login-box" id="newPassBox" style="display:none;">
+  <div class="login-logo">
+    <img class="logo-img" src="https://up6.cc/2026/04/177695590342861.png"
+         onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
   </div>
+  <div style="text-align:center;margin-bottom:20px;">
+    <div style="font-size:10px;letter-spacing:4px;color:rgba(201,168,76,0.6);
+         text-transform:uppercase;font-weight:700;">YENİ ŞİFRE BELİRLE</div>
+  </div>
+
+  <!-- حقل كلمة المرور الجديدة -->
+  <div class="login-field">
+    <i class="fas fa-lock field-icon"></i>
+    <input type="password" id="newPass1"
+           placeholder="Yeni Şifre (min. 6 karakter)"
+           style="-webkit-user-select:text;user-select:text;"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('newPass2').focus();}"/>
+    <button class="toggle-pass" type="button"
+            onclick="toggleNewPass1()" tabindex="-1">
+      <i class="fas fa-eye" id="toggleNewPass1Icon"></i>
+    </button>
+  </div>
+
+  <!-- حقل تأكيد كلمة المرور -->
+  <div class="login-field">
+    <i class="fas fa-lock field-icon"></i>
+    <input type="password" id="newPass2"
+           placeholder="Şifreyi Tekrar Girin"
+           style="-webkit-user-select:text;user-select:text;"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();saveNewPassword();}"/>
+    <button class="toggle-pass" type="button"
+            onclick="toggleNewPass2()" tabindex="-1">
+      <i class="fas fa-eye" id="toggleNewPass2Icon"></i>
+    </button>
+  </div>
+
+  <button class="login-btn" onclick="saveNewPassword()">
+    <i class="fas fa-save"></i> ŞİFREYİ KAYDET
+  </button>
+
+  <div class="login-error" id="newPassError">
+    <i class="fas fa-exclamation-circle"></i>
+    <span id="newPassErrorMsg">Hata oluştu!</span>
+  </div>
+</div>
+
 
 </div><!-- /loginOverlay -->
 
@@ -9327,6 +9344,24 @@ function toggleRegPass() {
 function toggleRegPass2() {
   const inp = document.getElementById('regPass2');
   const ico = document.getElementById('toggleRegPass2Icon');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text';     ico.className = 'fas fa-eye-slash'; }
+  else                         { inp.type = 'password'; ico.className = 'fas fa-eye';       }
+}
+
+
+
+  function toggleNewPass1() {
+  const inp = document.getElementById('newPass1');
+  const ico = document.getElementById('toggleNewPass1Icon');
+  if (!inp) return;
+  if (inp.type === 'password') { inp.type = 'text';     ico.className = 'fas fa-eye-slash'; }
+  else                         { inp.type = 'password'; ico.className = 'fas fa-eye';       }
+}
+
+function toggleNewPass2() {
+  const inp = document.getElementById('newPass2');
+  const ico = document.getElementById('toggleNewPass2Icon');
   if (!inp) return;
   if (inp.type === 'password') { inp.type = 'text';     ico.className = 'fas fa-eye-slash'; }
   else                         { inp.type = 'password'; ico.className = 'fas fa-eye';       }
