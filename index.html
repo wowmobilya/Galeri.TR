@@ -16152,7 +16152,18 @@ setTimeout(() => {
   const toolbar = document.querySelector('.gallery-toolbar');
   if (toolbar) toolbar.style.display = 'none';
 
+  /* ✅ إلغاء تحديد البطاقات */
+  document.querySelectorAll('.gallery-item.selected, .card.selected').forEach(card => {
+    card.classList.remove('selected');
+  });
+
+  /* ✅ إلغاء عداد الطلب / الـ badge */
+  document.querySelectorAll('.order-count, .order-badge, .cart-count, [id*="orderCount"], [id*="cartCount"]').forEach(el => {
+    el.style.display = 'none';
+  });
+
 }, 300);
+
 }
 
 /* ── الرجوع لهوم المعاينة ── */
