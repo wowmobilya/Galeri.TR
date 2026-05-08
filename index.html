@@ -15969,9 +15969,38 @@ function handleAdminCardClick(sectionKey) {
    يفتح نافذة تُظهر واجهة المستخدم العادي
 ───────────────────────────────────────── */
 function openUserPreviewMode() {
-  /* ── إنشاء زر الإغلاق فوق الـ homeScreen ── */
   document.getElementById('previewCloseBar')?.remove();
 
+  /* ── حفظ الحالة الحالية ── */
+  const mainSite    = document.getElementById('mainSite');
+  const homeScreen  = document.getElementById('homeScreen');
+  const loginOverlay = document.getElementById('loginOverlay');
+
+  /* ── إخفاء كل شيء أولاً ── */
+  mainSite.style.display     = 'none';
+  loginOverlay.style.display = 'none';
+
+  /* ── إظهار homeScreen فقط ── */
+  homeScreen.style.display    = 'block';
+  homeScreen.style.opacity    = '1';
+  homeScreen.style.transition = 'none';
+  homeScreen.style.zIndex     = '8000';
+  homeScreen.style.position   = 'fixed';
+  homeScreen.style.inset      = '0';
+
+  /* ── تعطيل كليك البطاقات ── */
+  homeScreen.querySelectorAll('.home-card').forEach(card => {
+    card.dataset.origOnclick = card.getAttribute('onclick') || '';
+    card.removeAttribute('onclick');
+    card.style.cursor        = 'default';
+    card.style.pointerEvents = 'none';
+  });
+
+  /* ── إخفاء بطاقة الأدمن ── */
+  const adminCard = document.getElementById('homeAdminCard');
+  if (adminCard) adminCard.style.display = 'none';
+
+  /* ── شريط المعاينة العلوي ── */
   const bar = document.createElement('div');
   bar.id = 'previewCloseBar';
   bar.style.cssText = `
@@ -15979,15 +16008,15 @@ function openUserPreviewMode() {
     top: 0; left: 0; right: 0;
     z-index: 99999;
     padding: 10px 16px;
-    background: rgba(0,0,0,0.88);
+    background: rgba(0,0,0,0.92);
     border-bottom: 1px solid rgba(99,102,241,0.35);
     backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
   `;
-
   bar.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;">
       <div style="
@@ -15998,16 +16027,15 @@ function openUserPreviewMode() {
         color:#818cf8;font-size:10px;font-weight:700;
         letter-spacing:1.5px;font-family:'Montserrat',sans-serif;">
         <i class="fas fa-eye" style="font-size:11px;"></i>
-        MÜŞTERİ GÖRÜNÜMÜ ÖNİZLEME
+        MÜŞTERİ GÖRÜNÜMÜ
       </div>
       <span style="
         font-size:9px;color:rgba(255,255,255,0.2);
         letter-spacing:1px;font-weight:600;
         font-family:'Montserrat',sans-serif;">
-        — Salt okunur
+        — Salt okunur önizleme
       </span>
     </div>
-
     <button onclick="closeUserPreviewMode()" style="
       padding:8px 18px;border-radius:9px;border:none;
       background:linear-gradient(135deg,#6366f1,#8b5cf6);
@@ -16021,62 +16049,50 @@ function openUserPreviewMode() {
       <i class="fas fa-times"></i> KAPAT
     </button>
   `;
-
   document.body.appendChild(bar);
 
-  /* ── إخفاء mainSite وإظهار homeScreen ── */
-  document.getElementById('mainSite').style.display   = 'none';
-  document.getElementById('loginOverlay').style.display = 'none';
-
-  const hs = document.getElementById('homeScreen');
-  hs.style.display    = 'block';
-  hs.style.opacity    = '1';
-  hs.style.transition = '';
-  hs.style.zIndex     = '8000';
-
-  /* ── إضافة padding للـ home-inner حتى لا يختبئ تحت الشريط ── */
-  const inner = hs.querySelector('.home-inner');
+  /* ── padding للمحتوى تحت الشريط ── */
+  const inner = homeScreen.querySelector('.home-inner');
   if (inner) inner.style.paddingTop = '70px';
 
-  /* ── تعطيل النقر على البطاقات (معاينة فقط) ── */
-  hs.querySelectorAll('.home-card').forEach(card => {
-    card.dataset.origOnclick = card.getAttribute('onclick') || '';
-    card.removeAttribute('onclick');
-    card.style.cursor = 'default';
-    card.style.pointerEvents = 'none';
-  });
-
-  /* ── علامة أننا في وضع المعاينة ── */
-  hs.dataset.previewMode = 'true';
-
-  document.body.style.overflow = '';
+  homeScreen.dataset.previewMode = 'true';
+  document.body.style.overflow   = '';
 }
 
 function closeUserPreviewMode() {
-  /* ── إزالة شريط المعاينة ── */
   document.getElementById('previewCloseBar')?.remove();
 
-  const hs = document.getElementById('homeScreen');
+  const homeScreen = document.getElementById('homeScreen');
+  const mainSite   = document.getElementById('mainSite');
 
-  /* ── إعادة النقر للبطاقات ── */
-  hs.querySelectorAll('.home-card').forEach(card => {
+  /* ── إعادة كليك البطاقات ── */
+  homeScreen.querySelectorAll('.home-card').forEach(card => {
     const orig = card.dataset.origOnclick;
     if (orig) card.setAttribute('onclick', orig);
-    card.style.cursor = '';
+    card.style.cursor        = '';
     card.style.pointerEvents = '';
     delete card.dataset.origOnclick;
   });
 
-  /* ── إعادة padding الأصلي ── */
-  const inner = hs.querySelector('.home-inner');
+  /* ── إعادة بطاقة الأدمن ── */
+  const adminCard = document.getElementById('homeAdminCard');
+  if (adminCard) adminCard.style.display = 'block';
+
+  /* ── إعادة padding ── */
+  const inner = homeScreen.querySelector('.home-inner');
   if (inner) inner.style.paddingTop = '';
 
-  delete hs.dataset.previewMode;
+  /* ── إعادة styles الـ homeScreen لوضعها الأصلي ── */
+  homeScreen.style.display  = 'none';
+  homeScreen.style.position = '';
+  homeScreen.style.inset    = '';
+  homeScreen.style.zIndex   = '';
+  delete homeScreen.dataset.previewMode;
 
-  /* ── العودة لـ mainSite ── */
-  hs.style.display = 'none';
-  document.getElementById('mainSite').style.display = 'block';
+  /* ── إظهار mainSite ── */
+  mainSite.style.display = 'block';
 }
+
 
 
 /* ─────────────────────────────────────────
