@@ -1664,20 +1664,25 @@ html { scroll-behavior: auto; }
     </div>
 
     <div class="login-field">
-      <i class="fas fa-building field-icon"></i>
       <input type="text" id="regCompany" placeholder="Şirket Adı"
-             style="-webkit-user-select:text;user-select:text;"/>
+       style="-webkit-user-select:text;user-select:text;"
+       onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('regUsername').focus();}"/>
+
     </div>
     <div class="login-field">
       <i class="fas fa-user field-icon"></i>
       <input type="text" id="regUsername" placeholder="Kullanıcı Adı"
-             style="-webkit-user-select:text;user-select:text;"/>
+       style="-webkit-user-select:text;user-select:text;"
+       onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('regEmail').focus();}"/>
+
     </div>
    <div class="login-field">
   <i class="fas fa-envelope field-icon"></i>
-  <input type="email" id="regEmail" placeholder="E-posta Adresi"
-         style="-webkit-user-select:text;user-select:text;"
-         oninput="validateEmailField(this)"/>
+ <input type="email" id="regEmail" placeholder="E-posta Adresi"
+       style="-webkit-user-select:text;user-select:text;"
+       oninput="validateEmailField(this)"
+       onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('regPhone').focus();}"/>
+
 </div>
 
    <div class="login-field" style="flex-direction:column;align-items:stretch;gap:0;">
@@ -1758,28 +1763,29 @@ html { scroll-behavior: auto; }
         color:rgba(201,168,76,0.5);font-size:14px;
         pointer-events:none;
       "></i>
-      <input type="tel" id="regPhone"
-             placeholder="5XX XXX XX XX"
-             inputmode="numeric"
-             oninput="handlePhoneInput(this)"
-             onkeydown="preventLeadingZero(event)"
-             style="
-               width:100%;
-               padding:14px 14px 14px 42px;
-               background:rgba(255,255,255,0.05);
-               border:1px solid rgba(201,168,76,0.2);
-               border-radius:10px;
-               color:#fff;
-               font-family:'Montserrat',sans-serif;
-               font-size:14px;font-weight:600;
-               outline:none;transition:all 0.3s;
-               -webkit-user-select:text;
-               user-select:text;
-             "
-             onfocus="this.style.borderColor='#c9a84c';
-                      this.style.boxShadow='0 0 20px rgba(201,168,76,0.15)'"
-             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
-                         this.style.boxShadow='none'"/>
+     <input type="tel" id="regPhone"
+       placeholder="5XX XXX XX XX"
+       inputmode="numeric"
+       oninput="handlePhoneInput(this)"
+       onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('regPass').focus();}else{preventLeadingZero(event);}"
+       style="
+         width:100%;
+         padding:14px 14px 14px 42px;
+         background:rgba(255,255,255,0.05);
+         border:1px solid rgba(201,168,76,0.2);
+         border-radius:10px;
+         color:#fff;
+         font-family:'Montserrat',sans-serif;
+         font-size:14px;font-weight:600;
+         outline:none;transition:all 0.3s;
+         -webkit-user-select:text;
+         user-select:text;
+       "
+       onfocus="this.style.borderColor='#c9a84c';
+                this.style.boxShadow='0 0 20px rgba(201,168,76,0.15)'"
+       onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
+                   this.style.boxShadow='none'"/>
+
     </div>
   </div>
 
@@ -1789,9 +1795,10 @@ html { scroll-behavior: auto; }
 
     
     <div class="login-field">
-      <i class="fas fa-lock field-icon"></i>
-      <input type="password" id="regPass" placeholder="Şifre (min. 6 karakter)"
-             style="-webkit-user-select:text;user-select:text;"/>
+     <input type="password" id="regPass" placeholder="Şifre (min. 6 karakter)"
+       style="-webkit-user-select:text;user-select:text;"
+       onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('regPass2').focus();}"/>
+
       <button class="toggle-pass" type="button" onclick="toggleRegPass()" tabindex="-1">
         <i class="fas fa-eye" id="toggleRegPassIcon"></i>
       </button>
@@ -1799,8 +1806,10 @@ html { scroll-behavior: auto; }
 
     <div class="login-field">
   <i class="fas fa-lock field-icon"></i>
-  <input type="password" id="regPass2" placeholder="Şifreyi Tekrar Girin"
-         style="-webkit-user-select:text;user-select:text;"/>
+ <input type="password" id="regPass2" placeholder="Şifreyi Tekrar Girin"
+       style="-webkit-user-select:text;user-select:text;"
+       onkeydown="if(event.key==='Enter'){event.preventDefault();doRegister();}"/>
+
   <button class="toggle-pass" type="button" onclick="toggleRegPass2()" tabindex="-1">
     <i class="fas fa-eye" id="toggleRegPass2Icon"></i>
   </button>
