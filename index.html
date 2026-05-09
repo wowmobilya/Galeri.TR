@@ -1885,6 +1885,16 @@ html { scroll-behavior: auto; }
 
 
 
+    /* ضبط padding صفحة الإعدادات عند إخفاء الهيدر */
+body.wow-mode .settings-page,
+body.wow-mode .settings-container,
+body.wow-mode [class*="settings"] {
+  padding-top: 16px !important;
+  margin-top: 0 !important;
+}
+
+
+
 
 
 /* =====================================================
@@ -17200,7 +17210,7 @@ enterSection = function(cat) {
     return;
   }
 
-  /* ★ WOW: تفعيل/إلغاء wow-mode لبقية الأقسام ★ */
+  /* ★ WOW: لبقية الأقسام ★ */
   setTimeout(() => {
     if (currentUser === ADMIN_USER) {
       document.body.classList.add('wow-mode');
@@ -17211,6 +17221,7 @@ enterSection = function(cat) {
 
   _origEnterSection_settings(cat);
 };
+
 
 /* ============================================================
    ★ إضافة روابط الإعدادات في الهيدر والموبايل ★
