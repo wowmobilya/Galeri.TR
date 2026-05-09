@@ -2440,7 +2440,7 @@ html { scroll-behavior: auto; }
   </button>
 
   <!-- استبدل زر المخزون الحالي بهذا الكود -->
-<button class="nav-icon-btn inv-open-btn" id="invOpenBtn" onclick="openInventoryModal()" data-tip="Stok Yönetimi" style="display:none;">
+<button class="nav-icon-btn inv-open-btn" id="invOpenBtn" onclick="enterSection('stock')" data-tip="Stok Yönetimi" style="display:none;">
   <i class="fas fa-boxes"></i>
 </button>
 
@@ -17030,23 +17030,40 @@ async function subscribeHomeCards() {
 /* ============================================================
    ★ تعديل showPage لدعم صفحة الإعدادات ★
 ============================================================ */
-const _origShowPage_settings = showPage;
+const _origShowPage_stock = showPage;
 showPage = function(cat) {
-  if (cat === 'settings') {
+  if (cat === 'stock') {
     if (currentUser !== ADMIN_USER) return;
-    currentPage = 'settings';
+    currentPage = 'stock';
     document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
-    const el = document.getElementById('nav-settings');
-    if (el) el.classList.add('active');
     filteredImages = [];
-    buildSettingsPage();
+    buildStockPage();
     window.scrollTo({ top:0, behavior:'smooth' });
     appState = 'section';
-    pushState('section', { cat:'settings' });
+    pushState('section', { cat:'stock' });
     return;
   }
-  _origShowPage_settings(cat);
+  _origShowPage_stock(cat);
 };
+
+/* ── دعم enterSection لـ stock ── */
+const _origEnterSection_stock = enterSection;
+enterSection = function(cat) {
+  if (cat === 'stock') {
+    const hs = document.getElementById('homeScreen');
+    hs.style.transition = 'opacity 0.4s ease';
+    hs.style.opacity    = '0';
+    setTimeout(() => {
+      hs.style.display = 'none';
+      document.getElementById('mainSite').style.display = 'block';
+      updateAdminNavVisibility();
+      showPage('stock');
+    }, 400);
+    return;
+  }
+  _origEnterSection_stock(cat);
+};
+
 
 /* ── تعديل enterSection لدعم settings ── */
 const _origEnterSection_settings = enterSection;
@@ -17604,6 +17621,335 @@ function hideLogoStatus() {
 
 
 
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ صفحة إدارة المخزون الكاملة ★
+============================================================ */
+function buildStockPage() {
+  const filtered = [...images];
+
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div>
+          <div class="section-banner-tag">✦ STOK & MODEL YÖNETİMİ</div>
+          <div class="section-banner-title">
+            STOK <span class="accent">YÖNETİMİ</span>
+          </div>
+          <div class="section-banner-count" id="stockPageCount">
+            ${filtered.length} model
+          </div>
+          <div class="section-banner-line"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <button onclick="openProductEditor()" style="
+            padding:9px 18px;border-radius:9px;border:none;
+            background:linear-gradient(135deg,#c9a84c,#f0d080);
+            color:#0a0a0a;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:1.5px;
+            cursor:pointer;display:flex;align-items:center;gap:7px;
+            transition:all 0.25s;"
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">
+            <i class="fas fa-plus"></i> YENİ MODEL
+          </button>
+          <button onclick="saveAllInventory()" style="
+            padding:9px 18px;border-radius:9px;
+            border:1px solid rgba(201,168,76,0.3);
+            background:rgba(201,168,76,0.08);
+            color:#c9a84c;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;display:flex;align-items:center;gap:7px;
+            transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(201,168,76,0.16)'"
+            onmouseout="this.style.background='rgba(201,168,76,0.08)'">
+            <i class="fas fa-cloud-upload-alt"></i> STOK KAYDET
+          </button>
+        </div>
+      </div>
+
+      <!-- شريط البحث -->
+      <div style="
+        padding:12px 22px;
+        background:var(--dark4);
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="position:relative;flex:1;min-width:200px;max-width:400px;">
+          <i class="fas fa-search" style="
+            position:absolute;left:12px;top:50%;
+            transform:translateY(-50%);
+            color:rgba(201,168,76,0.5);font-size:13px;"></i>
+          <input type="text"
+            id="stockPageSearch"
+            placeholder="Model ara..."
+            oninput="filterStockPage(this.value)"
+            autocomplete="off"
+            style="
+              width:100%;padding:10px 14px 10px 38px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);
+              border-radius:10px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:12px;outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        </div>
+        <!-- فلاتر الفئات -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${['all','orta','tv','dresuar'].map(cat => `
+            <button onclick="filterStockByCat('${cat}',this)"
+              class="stock-cat-btn ${cat==='all'?'stock-cat-active':''}"
+              data-cat="${cat}"
+              style="
+                padding:7px 14px;border-radius:7px;
+                border:1px solid rgba(255,255,255,0.08);
+                background:${cat==='all'?'rgba(201,168,76,0.12)':'rgba(255,255,255,0.04)'};
+                color:${cat==='all'?'#c9a84c':'rgba(255,255,255,0.35)'};
+                font-family:'Montserrat',sans-serif;
+                font-size:9px;font-weight:700;letter-spacing:1px;
+                cursor:pointer;transition:all 0.25s;">
+              ${cat==='all'?'TÜMÜ':cat==='orta'?'ORTA SEHPA':cat==='tv'?'TV ÜNİTESİ':'DRESUAR'}
+            </button>`).join('')}
+        </div>
+      </div>
+
+      <!-- شبكة المنتجات -->
+      <div style="padding:18px 22px 40px;">
+        <div id="stockPageGrid" style="
+          display:grid;
+          grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+          gap:14px;">
+          ${renderStockCards(filtered)}
+        </div>
+        <div id="stockPageEmpty" style="display:none;text-align:center;
+             padding:60px 20px;color:rgba(255,255,255,0.2);">
+          <i class="fas fa-box-open"
+             style="font-size:40px;display:block;margin-bottom:14px;
+                    color:rgba(201,168,76,0.15);"></i>
+          <p style="font-size:12px;letter-spacing:2px;">Model bulunamadı</p>
+        </div>
+      </div>
+    </div>`;
+
+  /* CSS للفلاتر */
+  if (!document.getElementById('stockCatStyle')) {
+    const s = document.createElement('style');
+    s.id = 'stockCatStyle';
+    s.textContent = `
+      .stock-cat-btn:hover {
+        border-color:rgba(201,168,76,0.3) !important;
+        color:#c9a84c !important;
+        background:rgba(201,168,76,0.08) !important;
+      }
+      .stock-cat-active {
+        background:rgba(201,168,76,0.12) !important;
+        border-color:rgba(201,168,76,0.4) !important;
+        color:#c9a84c !important;
+      }
+    `;
+    document.head.appendChild(s);
+  }
+}
+
+/* ── رسم بطاقات المنتجات ── */
+function renderStockCards(list) {
+  if (!list.length) return '';
+  return list.map((img, idx) => {
+    const stock = invPendingChanges[img.id] !== undefined
+      ? invPendingChanges[img.id]
+      : (inventoryData[img.id] ?? 0);
+    const s = getStockStatus(stock);
+    const delay = (idx * 0.03).toFixed(2);
+    return `
+      <div style="
+        background:var(--dark3);
+        border:1px solid rgba(255,255,255,0.06);
+        border-radius:14px;overflow:hidden;
+        animation:cardIn 0.4s ease ${delay}s forwards;
+        opacity:0;transition:all 0.3s ease;"
+        onmouseover="this.style.borderColor='rgba(201,168,76,0.25)';
+                     this.style.transform='translateY(-3px)';
+                     this.style.boxShadow='0 10px 30px rgba(0,0,0,0.4)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.06)';
+                    this.style.transform='';this.style.boxShadow=''">
+
+        <!-- الصورة -->
+        <div style="position:relative;overflow:hidden;height:160px;">
+          <img src="${img.src}" alt="${img.title}"
+               loading="lazy" draggable="false"
+               style="width:100%;height:100%;object-fit:cover;
+                      transition:transform 0.4s ease;"
+               onmouseover="this.style.transform='scale(1.05)'"
+               onmouseout="this.style.transform='scale(1)'"
+               onerror="this.src='https://placehold.co/300x160/1a1a1a/c9a84c?text=W'"/>
+          <!-- شارة الفئة -->
+          <div style="
+            position:absolute;top:9px;left:9px;
+            padding:3px 10px;border-radius:50px;
+            background:rgba(0,0,0,0.7);
+            border:1px solid rgba(201,168,76,0.3);
+            font-size:8px;font-weight:700;
+            color:#c9a84c;letter-spacing:1.5px;
+            backdrop-filter:blur(8px);">
+            ${img.catLabel}
+          </div>
+        </div>
+
+        <!-- المعلومات -->
+        <div style="padding:12px 14px 10px;">
+          <div style="font-size:14px;font-weight:900;color:#fff;
+               margin-bottom:3px;letter-spacing:0.3px;">
+            ${img.title}
+          </div>
+          ${img.price ? `
+          <div style="font-size:12px;font-weight:700;
+               background:linear-gradient(135deg,#c9a84c,#f0d080);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+               background-clip:text;margin-bottom:8px;">
+            ${Number(img.price).toLocaleString('tr-TR')} ₺
+          </div>` : ''}
+        </div>
+
+        <!-- عداد المخزون -->
+        <div style="
+          padding:8px 14px 10px;
+          background:rgba(0,0,0,0.2);
+          border-top:1px solid rgba(255,255,255,0.04);
+          display:flex;align-items:center;
+          justify-content:space-between;gap:8px;">
+
+          <div style="display:flex;align-items:center;gap:6px;">
+            <span class="stock-pill ${s.cls}" style="font-size:9px;">
+              <i class="fas ${s.icon}"></i> ${s.label}
+            </span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:6px;">
+            <!-- عداد الكمية -->
+            <div style="
+              display:flex;align-items:center;gap:5px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(255,255,255,0.08);
+              border-radius:8px;padding:3px 6px;">
+              <button onclick="changeStockPageQty(${img.id},-1)"
+                style="width:24px;height:24px;border-radius:6px;
+                border:1px solid rgba(201,168,76,0.25);
+                background:rgba(201,168,76,0.08);
+                color:#c9a84c;font-size:14px;font-weight:700;
+                cursor:pointer;display:flex;align-items:center;
+                justify-content:center;transition:all 0.2s;
+                font-family:'Montserrat',sans-serif;line-height:1;">−</button>
+              <span id="spqty-${img.id}"
+                style="font-size:14px;font-weight:900;color:#fff;
+                min-width:26px;text-align:center;">${stock}</span>
+              <button onclick="changeStockPageQty(${img.id},+1)"
+                style="width:24px;height:24px;border-radius:6px;
+                border:1px solid rgba(201,168,76,0.25);
+                background:rgba(201,168,76,0.08);
+                color:#c9a84c;font-size:14px;font-weight:700;
+                cursor:pointer;display:flex;align-items:center;
+                justify-content:center;transition:all 0.2s;
+                font-family:'Montserrat',sans-serif;line-height:1;">+</button>
+            </div>
+
+            <!-- أزرار التعديل والحذف -->
+            <button onclick="openProductEditor(${img.id})" style="
+              width:30px;height:30px;border-radius:7px;
+              background:rgba(96,165,250,0.1);
+              border:1px solid rgba(96,165,250,0.25);
+              color:#60a5fa;font-size:12px;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;
+              transition:all 0.2s;"
+              onmouseover="this.style.background='rgba(96,165,250,0.2)'"
+              onmouseout="this.style.background='rgba(96,165,250,0.1)'">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="deleteProduct(${img.id})" style="
+              width:30px;height:30px;border-radius:7px;
+              background:rgba(239,68,68,0.1);
+              border:1px solid rgba(239,68,68,0.25);
+              color:#ef4444;font-size:12px;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;
+              transition:all 0.2s;"
+              onmouseover="this.style.background='rgba(239,68,68,0.2)'"
+              onmouseout="this.style.background='rgba(239,68,68,0.1)'">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── تغيير الكمية من الصفحة ── */
+function changeStockPageQty(id, delta) {
+  const current = invPendingChanges[id] !== undefined
+    ? invPendingChanges[id]
+    : (inventoryData[id] ?? 0);
+  const newVal = Math.max(0, current + delta);
+  invPendingChanges[id] = newVal;
+
+  const valEl = document.getElementById('spqty-' + id);
+  if (valEl) valEl.textContent = newVal;
+
+  /* تحديث الشارة */
+  const s = getStockStatus(newVal);
+  const card = valEl?.closest('[style]');
+  const pill = card?.querySelector('.stock-pill');
+  if (pill) {
+    pill.className = `stock-pill ${s.cls}`;
+    pill.innerHTML = `<i class="fas ${s.icon}"></i> ${s.label}`;
+  }
+}
+
+/* ── فلترة بالبحث ── */
+function filterStockPage(val) {
+  const grid  = document.getElementById('stockPageGrid');
+  const empty = document.getElementById('stockPageEmpty');
+  if (!grid) return;
+
+  const filtered = images.filter(img =>
+    !val || img.title.toLowerCase().includes(val.toLowerCase())
+  );
+
+  grid.innerHTML = renderStockCards(filtered);
+  if (empty) empty.style.display = filtered.length ? 'none' : 'block';
+
+  const countEl = document.getElementById('stockPageCount');
+  if (countEl) countEl.textContent = filtered.length + ' model';
+}
+
+/* ── فلترة بالفئة ── */
+function filterStockByCat(cat, btn) {
+  document.querySelectorAll('.stock-cat-btn').forEach(b =>
+    b.classList.remove('stock-cat-active')
+  );
+  if (btn) btn.classList.add('stock-cat-active');
+
+  const filtered = cat === 'all'
+    ? images
+    : images.filter(img => img.cat === cat);
+
+  const grid  = document.getElementById('stockPageGrid');
+  const empty = document.getElementById('stockPageEmpty');
+  if (grid) grid.innerHTML = renderStockCards(filtered);
+  if (empty) empty.style.display = filtered.length ? 'none' : 'block';
+
+  const countEl = document.getElementById('stockPageCount');
+  if (countEl) countEl.textContent = filtered.length + ' model';
+
+  /* مسح البحث */
+  const searchEl = document.getElementById('stockPageSearch');
+  if (searchEl) searchEl.value = '';
+}
 
   
 
