@@ -17380,23 +17380,25 @@ async function loadLogoFromDB() {
 /* ── تطبيق النصوص الديناميكية في كل مكان ── */
 function applyAppTexts(tagline, footerCopy) {
   if (tagline) {
-    /* النص تحت اللوجو في الصفحة الرئيسية */
     document.querySelectorAll('.home-tagline').forEach(el => {
       el.textContent = tagline;
     });
-    /* حفظ في localStorage */
     try { localStorage.setItem('wow_tagline', tagline); } catch(e) {}
   }
 
   if (footerCopy) {
-    /* نص الحقوق في الفوتر */
+    /* ✅ الفوتر الرئيسي */
     document.querySelectorAll('.footer-copy').forEach(el => {
       el.textContent = footerCopy;
     });
-    /* حفظ في localStorage */
+    /* ✅ نص الحقوق في الصفحة الرئيسية (home screen) */
+    document.querySelectorAll('.home-footer-text').forEach(el => {
+      el.textContent = footerCopy;
+    });
     try { localStorage.setItem('wow_footer_copy', footerCopy); } catch(e) {}
   }
 }
+
 
 
 
