@@ -3835,20 +3835,19 @@ function doLogin(){
 function showHomeScreen() {
   const hs = document.getElementById('homeScreen');
 
-  /* ── حماية من الاستدعاء المتكرر خلال 800ms ── */
-  const now = Date.now();
-  if (hs._lastShown && (now - hs._lastShown) < 800) return;
-  hs._lastShown = now;
+  /* ── حماية من التكرار السريع ── */
+  if (hs._rendering) return;
+  hs._rendering = true;
+  setTimeout(() => { hs._rendering = false; }, 600);
 
   const isFirstShow = hs.style.display !== 'block';
 
-  /* ── إخفاء mainSite دائماً ── */
   document.getElementById('mainSite').style.display = 'none';
   document.body.style.overflow = '';
   appState = 'home';
   pushState('home');
 
-  /* ── إظهار / إخفاء عناصر حسب نوع المستخدم ── */
+  /* ── إظهار/إخفاء العناصر ── */
   const adminCard = document.getElementById('homeAdminCard');
   if (adminCard) {
     adminCard.style.display = (currentUser === ADMIN_USER) ? 'block' : 'none';
@@ -3873,17 +3872,20 @@ function showHomeScreen() {
     }
   }
 
-  /* ── أنيميشن الظهور — فقط في أول مرة ── */
+  /* ── أنيميشن الظهور — أول مرة فقط ── */
   if (isFirstShow) {
     hs.style.opacity    = '0';
     hs.style.display    = 'block';
     hs.style.transition = 'opacity 0.5s ease';
     window.scrollTo({ top: 0 });
     requestAnimationFrame(() => {
-      hs.style.opacity = '1';
+      requestAnimationFrame(() => {        /* ← double rAF يضمن الـ paint */
+        hs.style.opacity = '1';
+      });
     });
   }
 }
+
 
 
 function enterSection(cat){
@@ -15506,16 +15508,17 @@ async function loadHomeCards() {
     if (error) throw error;
     _homeCards = data || [];
 
-    // ★ فقط حدّث إذا كانت الشاشة مرئية فعلاً — بدون إعادة بناء
-    const hs = document.getElementById('homeScreen');
-    if (hs && hs.style.display === 'block') {
-      const container = document.querySelector('.home-cards');
-      if (container) {
-        if (currentUser === ADMIN_USER) {
-          renderAdminHomeCards(container);
-        } else {
-          renderUserHomeCards(container);
-        }
+    /* ★ فقط حدّث الـ container مباشرة — لا تستدعِ showHomeScreen ★ */
+    const container = document.querySelector('.home-cards');
+    if (container) {
+      if (currentUser === ADMIN_USER) {
+        container.classList.remove('user-mode');
+        container.classList.add('admin-mode');
+        renderAdminHomeCards(container);
+      } else {
+        container.classList.remove('admin-mode');
+        container.classList.add('user-mode');
+        renderUserHomeCards(container);
       }
     }
   } catch(e) {
@@ -15524,19 +15527,21 @@ async function loadHomeCards() {
 }
 
 
+
 /* ── رسم البطاقات في الصفحة الرئيسية ── */
 function renderHomeCards() {
+  /* ★ لا تستدعِ showHomeScreen هنا أبداً ★ */
   const container = document.querySelector('.home-cards');
   if (!container) return;
 
   const isAdmin = currentUser === ADMIN_USER;
-
   if (isAdmin) {
     renderAdminHomeCards(container);
   } else {
     renderUserHomeCards(container);
   }
 }
+
 
 /* ─────────────────────────────────────────
    بطاقات المستخدم العادي
@@ -16962,12 +16967,9 @@ finishLogin = function() {
   _masterFinishLogin();
 
   setTimeout(async () => {
-
-    /* 1. حالة المستخدم */
     subscribeUserStatus();
     updateAdminNavVisibility();
 
-    /* 2. زر طلبيتي */
     if (currentUser && currentUser !== ADMIN_USER) {
       const btn    = document.getElementById('myOrderBtn');
       const mobBtn = document.getElementById('mobMyOrderBtn');
@@ -16976,14 +16978,13 @@ finishLogin = function() {
       updateMyOrderBtn();
     }
 
-    /* 3. بطاقات الهوم */
-    await loadHomeCards();
+    /* ★ تحميل البطاقات بعد اكتمال الـ animation (500ms) + هامش أمان ★ */
+    await loadHomeCards();        /* ← لن تستدعي showHomeScreen بعد الآن */
     subscribeHomeCards();
 
-    /* 4. شارة الرسائل */
     if (currentUser === ADMIN_USER) updateMsgBadge();
 
-  }, 1000);
+  }, 700);   /* ← 700ms بدل 1000ms، بعد انتهاء opacity animation */
 };
 
 
