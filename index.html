@@ -1990,13 +1990,16 @@ body.wow-mode .mobile-menu {
              autocomplete="username" onkeydown="handleLoginKey(event,'user')"/>
     </div>
     <div class="login-field">
-      <i class="fas fa-lock field-icon"></i>
-      <input type="password" id="loginPass" placeholder="Şifre"
-             autocomplete="current-password" onkeydown="handleLoginKey(event,'pass')"/>
-      <button class="toggle-pass" type="button" onclick="togglePassVisibility()" tabindex="-1">
-        <i class="fas fa-eye" id="togglePassIcon"></i>
-      </button>
-    </div>
+  <i class="fas fa-lock field-icon"></i>
+  <input type="password" id="loginPass" placeholder="Şifre"
+         autocomplete="current-password"
+         onkeydown="handleLoginKey(event,'pass')"
+         style="-webkit-user-select:text;user-select:text;"/>
+  <button class="toggle-pass" type="button" onclick="togglePassVisibility()" tabindex="-1">
+    <i class="fas fa-eye" id="togglePassIcon"></i>
+  </button>
+</div>
+
     <label class="login-remember">
       <input type="checkbox" id="rememberMe"/>
       <span>Beni Hatırla</span>
@@ -2258,6 +2261,7 @@ body.wow-mode .mobile-menu {
        oninput="otpInput(this,5)" onkeydown="otpKeydown(event,5)"
        onpaste="handleOtpPaste(event,'otp')"/>
 
+
     </div>
 
     <!-- عداد الوقت -->
@@ -2353,7 +2357,7 @@ body.wow-mode .mobile-menu {
     </div>
 
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;">
-     <input class="otp-digit" id="rotp0" maxlength="1" type="text" inputmode="numeric"
+   <input class="otp-digit" id="rotp0" maxlength="1" type="text" inputmode="numeric"
        oninput="rotpInput(this,0)" onkeydown="rotpKeydown(event,0)"
        onpaste="handleOtpPaste(event,'rotp')"/>
 <input class="otp-digit" id="rotp1" maxlength="1" type="text" inputmode="numeric"
@@ -2371,6 +2375,7 @@ body.wow-mode .mobile-menu {
 <input class="otp-digit" id="rotp5" maxlength="1" type="text" inputmode="numeric"
        oninput="rotpInput(this,5)" onkeydown="rotpKeydown(event,5)"
        onpaste="handleOtpPaste(event,'rotp')"/>
+
 
     </div>
 
@@ -3952,6 +3957,37 @@ body.wow-mode .mobile-menu {
 document.addEventListener('contextmenu',e=>{e.preventDefault();return false;});
 document.addEventListener('selectstart',e=>{e.preventDefault();return false;});
 document.addEventListener('dragstart',  e=>{e.preventDefault();return false;});
+  /* ★ السماح باللصق في حقول OTP وكلمة المرور ★ */
+document.addEventListener('paste', function(e) {
+  const allowed = [
+    'otp0','otp1','otp2','otp3','otp4','otp5',
+    'rotp0','rotp1','rotp2','rotp3','rotp4','rotp5',
+    'loginPass','loginUser',
+    'regPass','regPass2','regEmail','regUsername','regCompany','regPhone',
+    'forgotEmail',
+    'newPass1','newPass2',
+    'accOldPass','accNewPass1','accNewPass2','accEmail',
+    'accCompany','accUsername','accPhone',
+    'adminNewPassInput',
+    'orderNoteInput',
+    'invSearchInput',
+    'waMessageInput','emailSubjectInput','emailBodyInput',
+    'ocMessageInput','ocSubjectInput',
+    'hcmeImageUrl','hcmeTitle2','hcmeSubtitle','hcmeDesc',
+    'hcmeCount','hcmeBtnText','logoUrlInput',
+    'taglineInput','footerCopyInput',
+    'peTitle','peLabel','peImage',
+    'countrySearch',
+  ];
+  const t = e.target;
+  if (t && (allowed.includes(t.id) || t.classList.contains('otp-digit'))) {
+    /* السماح باللصق */
+    return true;
+  }
+  /* منع اللصق في بقية العناصر */
+  e.preventDefault();
+});
+
 
 document.addEventListener('keydown',e=>{
   if(e.key==='F12'){e.preventDefault();return false;}
@@ -10312,6 +10348,38 @@ async function verifyResetOtp() {
 }
 
 
+
+
+
+
+
+
+/* ★ لصق OTP — يملأ الستة حقول دفعة واحدة ★ */
+function handleOtpPaste(e, prefix) {
+  e.stopPropagation();
+  const pasted = (e.clipboardData || window.clipboardData)
+    .getData('text')
+    .replace(/\D/g, '')
+    .slice(0, 6);
+  if (!pasted) return;
+  for (let i = 0; i < 6; i++) {
+    const el = document.getElementById(prefix + i);
+    if (!el) continue;
+    el.value = pasted[i] || '';
+    el.classList.toggle('filled', !!el.value);
+    el.classList.remove('error');
+  }
+  const focusIdx = Math.min(pasted.length, 5);
+  document.getElementById(prefix + focusIdx)?.focus();
+  if (pasted.length === 6) {
+    if (prefix === 'otp')  setTimeout(verifyOtp,      400);
+    if (prefix === 'rotp') setTimeout(verifyResetOtp, 400);
+  }
+}
+
+
+
+  
 /* ============================================================
    أدوات OTP
 ============================================================ */
