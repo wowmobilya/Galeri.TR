@@ -3773,6 +3773,8 @@ const USERS = {
 
 /* ★ المستخدم الحالي — يُعيَّن عند تسجيل الدخول */
 let currentUser = '';
+let _loginInProgress = false;
+
 const ADMIN_USER = 'WOW'; /* الحساب الذي يرى لوحة الإدارة */
 
 
@@ -3831,6 +3833,10 @@ function doLogin(){
    التنقل بين الشاشات
 ============================================================ */
 function showHomeScreen() {
+  // منع الاستدعاء المزدوج
+  if (document.getElementById('homeScreen').style.display === 'block' &&
+      document.getElementById('homeScreen').style.opacity === '1') return;
+
   document.getElementById('mainSite').style.display = 'none';
   const hs = document.getElementById('homeScreen');
   hs.style.display  = 'block';
@@ -9342,6 +9348,9 @@ async function doLogin() {
 
 /* ── إتمام تسجيل الدخول ── */
 function finishLogin() {
+  if (_loginInProgress) return;
+  _loginInProgress = true;
+
   const ov = document.getElementById('loginOverlay');
   ov.style.transition = 'opacity 0.7s';
   ov.style.opacity    = '0';
@@ -9352,6 +9361,7 @@ function finishLogin() {
     showHomeScreen();
     setTimeout(tryPlayAudio, 600);
     startSessionHeartbeat();
+    setTimeout(() => { _loginInProgress = false; }, 1000);
   }, 700);
 }
 
@@ -11370,15 +11380,6 @@ async function forceLogout() {
   await doLogout();
 }
 
-/* ── تشغيل الاشتراك بعد تسجيل الدخول ── */
-const _origFinishLogin = finishLogin;
-finishLogin = function() {
-  _origFinishLogin();
-  setTimeout(() => {
-    subscribeUserStatus();
-    updateAdminNavVisibility();
-  }, 1000);
-};
 
 
 
@@ -14927,14 +14928,7 @@ async function updateMsgBadge() {
   }
 }
 
-/* تشغيل تحديث الشارة بعد تسجيل الدخول */
-const _origFinishLogin_msgs = finishLogin;
-finishLogin = function() {
-  _origFinishLogin_msgs();
-  setTimeout(() => {
-    if (currentUser === ADMIN_USER) updateMsgBadge();
-  }, 1500);
-};
+
 
 
 /* ============================================================
@@ -16901,19 +16895,7 @@ showHomeScreen = function() {
   }, 100);
 };
 
-/* ============================================================
-   ★ تشغيل النظام عند تسجيل الدخول ★
-============================================================ */
-const _origFinishLogin_settings = finishLogin;
-finishLogin = function() {
-  _origFinishLogin_settings();
-  setTimeout(async () => {
-    /* تحميل البطاقات من Supabase */
-    await loadHomeCards();
-    /* الاشتراك في التحديثات الحية */
-    subscribeHomeCards();
-  }, 1200);
-};
+
 
 
 
@@ -16948,7 +16930,46 @@ finishLogin = function() {
     </div>`;
 }
 
-  
+
+
+
+
+
+
+
+
+
+
+  /* ══ finishLogin موحدة — كل الـ hooks في مكان واحد ══ */
+const _masterFinishLogin = finishLogin;
+finishLogin = function() {
+  _masterFinishLogin();
+
+  setTimeout(async () => {
+
+    /* 1. حالة المستخدم */
+    subscribeUserStatus();
+    updateAdminNavVisibility();
+
+    /* 2. زر طلبيتي */
+    if (currentUser && currentUser !== ADMIN_USER) {
+      const btn    = document.getElementById('myOrderBtn');
+      const mobBtn = document.getElementById('mobMyOrderBtn');
+      if (btn)    btn.style.display = 'flex';
+      if (mobBtn) mobBtn.style.display = 'flex';
+      updateMyOrderBtn();
+    }
+
+    /* 3. بطاقات الهوم */
+    await loadHomeCards();
+    subscribeHomeCards();
+
+    /* 4. شارة الرسائل */
+    if (currentUser === ADMIN_USER) updateMsgBadge();
+
+  }, 1000);
+};
+
 
 </script>
 </body>
