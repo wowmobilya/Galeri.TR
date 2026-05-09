@@ -1931,47 +1931,25 @@ body.wow-mode .select-mode-bar {
 }
 
 /* تثبيت order-bottom-bar في الأسفل */
-/* =====================================================
-   WOW ONLY — إخفاء الهيدر + تثبيت الشريط السفلي
-===================================================== */
-
-body.wow-mode header {
-  display: none !important;
-}
-
-body.wow-mode .page-content {
-  padding-top: 0 !important;
-}
-
-body.wow-mode .gallery-toolbar {
-  top: 0 !important;
-}
-
-body.wow-mode .select-mode-bar {
-  top: 52px !important;
-}
-
-/* ★ الإصلاح الجوهري: نلغي sticky أولاً ثم نطبق fixed ★ */
 body.wow-mode .order-bottom-bar {
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
   right: 0 !important;
-  top: unset !important;        /* ← unset بدل auto */
   z-index: 1000 !important;
   border-top: 1px solid rgba(201,168,76,0.2) !important;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.5) !important;
-  transform: none !important;
-  width: 100% !important;
-  /* ★ إلغاء sticky بشكل صريح ★ */
-  will-change: auto !important;
-  contain: none !important;
+  top: auto !important; /* ★ يمنع sticky من التغلب ★ */
+  width: 100% !important; /* ★ ضمان العرض الكامل ★ */
+  transform: none !important; /* ★ يمنع أي transform من كسر fixed ★ */
 }
 
+/* مسافة سفلية لمنع تداخل المحتوى مع الشريط الثابت */
 body.wow-mode #pageContent {
   padding-bottom: 80px !important;
 }
 
+/* إخفاء المحمول أيضاً */
 body.wow-mode .mobile-menu {
   top: 0 !important;
 }
@@ -4856,15 +4834,17 @@ function buildOrderPage() {
   });
   updateOrderBar();
 
-   /* ★ padding للمحتوى فقط — الـ CSS يتولى تثبيت الشريط ★ */
+  /* ★ تثبيت الشريط السفلي لـ WOW ★ */
   if (currentUser === ADMIN_USER) {
     setTimeout(() => {
-      const pc = document.getElementById('pageContent');
-      if (pc) pc.style.paddingBottom = '80px';
+      const bar = document.getElementById('orderBottomBar');
+      if (bar) {
+        bar.style.cssText += ';position:fixed!important;bottom:0!important;left:0!important;right:0!important;z-index:1000!important;box-shadow:0 -4px 24px rgba(0,0,0,0.5)!important;top:auto!important;';
+      }
+      document.getElementById('pageContent').style.paddingBottom = '80px';
     }, 30);
   }
 }
-
 
 
 /* ── بناء بطاقة موديل واحد ── */
@@ -17229,30 +17209,29 @@ enterSection = function(cat) {
       hs.style.display = 'none';
 
       /* ★ أضف wow-mode قبل إظهار mainSite ★ */
-      document.body.classList.add('wow-mode');
+      if (currentUser === ADMIN_USER) {
+        document.body.classList.add('wow-mode');
+      } else {
+        document.body.classList.remove('wow-mode');
+      }
 
       document.getElementById('mainSite').style.display = 'block';
-      currentPage = 'settings';
-      document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
-      filteredImages = [];
-      buildSettingsPage();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      appState = 'section';
-      pushState('section', { cat: 'settings' });
+      showPage('settings');
     }, 400);
     return;
   }
 
-  /* لبقية الأقسام — أضف wow-mode إذا كان WOW */
-  if (currentUser === ADMIN_USER) {
-    document.body.classList.add('wow-mode');
-  } else {
-    document.body.classList.remove('wow-mode');
-  }
+  /* لبقية الأقسام */
+  setTimeout(() => {
+    if (currentUser === ADMIN_USER) {
+      document.body.classList.add('wow-mode');
+    } else {
+      document.body.classList.remove('wow-mode');
+    }
+  }, 410);
 
   _origEnterSection_settings(cat);
 };
-
 
 
 /* ============================================================
