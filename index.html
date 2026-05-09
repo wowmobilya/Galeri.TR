@@ -1898,30 +1898,28 @@ body.wow-admin-mode .page-content {
 }
 
 /* ── WOW: شريط ثابت في الأسفل ── */
-body.wow-admin-mode #orderBottomBar,
-body.wow-admin-mode .order-bottom-bar {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  top: auto !important;
-  z-index: 9999 !important;
-  transform: none !important;
-  min-height: 64px !important;
-  background: rgba(9,9,9,0.97) !important;
-  border-top: 1px solid rgba(201,168,76,0.2) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  padding: 12px 22px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  flex-wrap: wrap !important;
-  gap: 10px !important;
+/* ── WOW: شريط ثابت في الأسفل ── */
+#orderBottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: rgba(9,9,9,0.97);
+  border-top: 1px solid rgba(201,168,76,0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 12px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 60px;
 }
 
 body.wow-admin-mode #pageContent {
-  padding-bottom: 90px !important;
+  padding-bottom: 80px !important;
 }
 
 
@@ -4733,11 +4731,11 @@ catFolderName['orders'] = 'WOW MOBILYA SIPARIS';
 /* ── بناء صفحة الطلبيات ── */
 function buildOrderPage() {
   const L = labels['orders'];
-  const allImages = images; /* جميع الموديلات */
+  const allImages = images;
 
+  /* ── 1. بناء الصفحة بدون الشريط ── */
   document.getElementById('pageContent').innerHTML = `
-    <div class="page-transition">
-      <!-- بانر الصفحة -->
+    <div class="page-transition" style="padding-bottom:80px;">
       <div class="section-banner">
         <div>
           <div class="section-banner-tag">✦ ${L.tag}</div>
@@ -4750,13 +4748,9 @@ function buildOrderPage() {
           <div class="section-banner-line"></div>
         </div>
       </div>
-
-      <!-- شبكة الموديلات -->
       <div class="order-grid" id="orderGrid">
         ${allImages.map((img, idx) => buildOrderCard(img, idx)).join('')}
       </div>
-
-      <!-- حقل الملاحظة -->
       <div class="order-note-wrap">
         <div class="order-note-label">
           <i class="fas fa-sticky-note"></i> SİPARİŞ NOTU (İsteğe Bağlı)
@@ -4768,26 +4762,33 @@ function buildOrderPage() {
           maxlength="500"
         ></textarea>
       </div>
-
-      <!-- شريط الإجراءات السفلي -->
-      <div class="order-bottom-bar" id="orderBottomBar">
-        <div class="order-bar-info">
-          <span class="order-bar-count" id="orderBarCount">0 ürün seçildi</span>
-          <span class="order-bar-total" id="orderBarTotal"></span>
-        </div>
-        <div class="order-bar-actions">
-          <button class="order-clear-btn" onclick="clearOrderCart()">
-            <i class="fas fa-trash"></i> Temizle
-          </button>
-          <button class="order-send-btn" id="orderSendBtn"
-                  onclick="openOrderConfirmModal()" disabled>
-            <i class="fas fa-paper-plane"></i> SİPARİŞ VER
-          </button>
-        </div>
-      </div>
     </div>`;
 
-  /* استعادة الكميات المحفوظة */
+  /* ── 2. حذف الشريط القديم إن وجد ── */
+  document.getElementById('orderBottomBar')?.remove();
+
+  /* ── 3. إنشاء الشريط وإضافته لـ body مباشرة ── */
+  const bar = document.createElement('div');
+  bar.id = 'orderBottomBar';
+  bar.className = 'order-bottom-bar';
+  bar.innerHTML = `
+    <div class="order-bar-info">
+      <span class="order-bar-count" id="orderBarCount">0 ürün seçildi</span>
+      <span class="order-bar-total" id="orderBarTotal"></span>
+    </div>
+    <div class="order-bar-actions">
+      <button class="order-clear-btn" onclick="clearOrderCart()">
+        <i class="fas fa-trash"></i> Temizle
+      </button>
+      <button class="order-send-btn" id="orderSendBtn"
+              onclick="openOrderConfirmModal()" disabled>
+        <i class="fas fa-paper-plane"></i> SİPARİŞ VER
+      </button>
+    </div>
+  `;
+  document.body.appendChild(bar);
+
+  /* ── 4. استعادة الكميات ── */
   Object.keys(orderCart).forEach(id => {
     const qty = orderCart[id];
     if (qty > 0) {
@@ -4799,40 +4800,11 @@ function buildOrderPage() {
       }
     }
   });
-   updateOrderBar();
 
-/* ★ ضمان ظهور الشريط السفلي في WOW ★ */
-setTimeout(() => {
-  const bar = document.querySelector('.order-bottom-bar');
-  if (!bar) return;
-  
-  if (document.body.classList.contains('wow-admin-mode')) {
-    /* نقله لـ body لتجنب overflow:hidden من الأب */
-    if (bar.parentElement !== document.body) {
-      document.body.appendChild(bar);
-    }
-    /* تطبيق الأنماط مباشرة كضمان إضافي */
-    bar.style.cssText = `
-      position: fixed !important;
-      bottom: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      top: auto !important;
-      z-index: 9999 !important;
-      min-height: 64px !important;
-      background: rgba(9,9,9,0.97) !important;
-      border-top: 1px solid rgba(201,168,76,0.2) !important;
-      backdrop-filter: blur(20px) !important;
-      padding: 12px 22px !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      flex-wrap: wrap !important;
-      gap: 10px !important;
-    `;
-  }
-}, 100);
+  /* ── 5. تحديث الشريط ── */
+  updateOrderBar();
 }
+
 
 
 /* ── بناء بطاقة موديل واحد ── */
