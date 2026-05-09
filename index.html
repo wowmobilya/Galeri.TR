@@ -1892,12 +1892,13 @@ html { scroll-behavior: auto; }
 body.wow-admin-mode header {
   display: none !important;
 }
+
 body.wow-admin-mode .page-content {
   padding-top: 0 !important;
 }
 
-/* ── الشريط السفلي بعد نقله لـ body ── */
-#orderBottomBar {
+/* ── WOW: شريط ثابت في الأسفل ── */
+body.wow-admin-mode .order-bottom-bar {
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
@@ -1906,10 +1907,7 @@ body.wow-admin-mode .page-content {
   z-index: 9999 !important;
   transform: none !important;
   will-change: auto !important;
-}
-
-body.wow-admin-mode #pageContent {
-  padding-bottom: 90px !important;
+  width: 100% !important;
 }
 
 
@@ -4787,15 +4785,25 @@ function buildOrderPage() {
       }
     }
   });
-  updateOrderBar();
+   updateOrderBar();
 
-  /* ★ نقل الشريط السفلي لـ body لضمان fixed يعمل ★ */
-  setTimeout(() => {
-    const bar = document.getElementById('orderBottomBar');
-    if (bar && bar.parentElement !== document.body) {
-      document.body.appendChild(bar);
-    }
-  }, 50);
+ setTimeout(() => {
+  const bar = document.getElementById('orderBottomBar');
+  if (bar && bar.parentElement !== document.body) {
+    document.body.appendChild(bar);
+    bar.style.position = 'fixed';
+    bar.style.bottom   = '0';
+    bar.style.left     = '0';
+    bar.style.right    = '0';
+    bar.style.zIndex   = '9999';
+    bar.style.width    = '100%';
+    bar.style.transform = 'none';
+  }
+  /* مساحة للمحتوى تحت الشريط */
+  const content = document.getElementById('pageContent');
+  if (content) content.style.paddingBottom = '160px';
+}, 100);
+
 
 
 /* ── بناء بطاقة موديل واحد ── */
