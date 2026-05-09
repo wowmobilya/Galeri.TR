@@ -2238,18 +2238,26 @@ body.wow-mode .mobile-menu {
 
     <!-- حقول OTP المنفصلة -->
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;" id="otpInputsWrap">
-      <input class="otp-digit" id="otp0" maxlength="1" type="text" inputmode="numeric"
-             oninput="otpInput(this,0)" onkeydown="otpKeydown(event,0)"/>
-      <input class="otp-digit" id="otp1" maxlength="1" type="text" inputmode="numeric"
-             oninput="otpInput(this,1)" onkeydown="otpKeydown(event,1)"/>
-      <input class="otp-digit" id="otp2" maxlength="1" type="text" inputmode="numeric"
-             oninput="otpInput(this,2)" onkeydown="otpKeydown(event,2)"/>
-      <input class="otp-digit" id="otp3" maxlength="1" type="text" inputmode="numeric"
-             oninput="otpInput(this,3)" onkeydown="otpKeydown(event,3)"/>
-      <input class="otp-digit" id="otp4" maxlength="1" type="text" inputmode="numeric"
-             oninput="otpInput(this,4)" onkeydown="otpKeydown(event,4)"/>
-      <input class="otp-digit" id="otp5" maxlength="1" type="text" inputmode="numeric"
-             oninput="otpInput(this,5)" onkeydown="otpKeydown(event,5)"/>
+     <!-- استبدل حقول OTP الستة في otpBox بهذه -->
+<input class="otp-digit" id="otp0" maxlength="1" type="text" inputmode="numeric"
+       oninput="otpInput(this,0)" onkeydown="otpKeydown(event,0)"
+       onpaste="handleOtpPaste(event,'otp')"/>
+<input class="otp-digit" id="otp1" maxlength="1" type="text" inputmode="numeric"
+       oninput="otpInput(this,1)" onkeydown="otpKeydown(event,1)"
+       onpaste="handleOtpPaste(event,'otp')"/>
+<input class="otp-digit" id="otp2" maxlength="1" type="text" inputmode="numeric"
+       oninput="otpInput(this,2)" onkeydown="otpKeydown(event,2)"
+       onpaste="handleOtpPaste(event,'otp')"/>
+<input class="otp-digit" id="otp3" maxlength="1" type="text" inputmode="numeric"
+       oninput="otpInput(this,3)" onkeydown="otpKeydown(event,3)"
+       onpaste="handleOtpPaste(event,'otp')"/>
+<input class="otp-digit" id="otp4" maxlength="1" type="text" inputmode="numeric"
+       oninput="otpInput(this,4)" onkeydown="otpKeydown(event,4)"
+       onpaste="handleOtpPaste(event,'otp')"/>
+<input class="otp-digit" id="otp5" maxlength="1" type="text" inputmode="numeric"
+       oninput="otpInput(this,5)" onkeydown="otpKeydown(event,5)"
+       onpaste="handleOtpPaste(event,'otp')"/>
+
     </div>
 
     <!-- عداد الوقت -->
@@ -2345,18 +2353,25 @@ body.wow-mode .mobile-menu {
     </div>
 
     <div style="display:flex;gap:8px;justify-content:center;margin-bottom:20px;">
-      <input class="otp-digit" id="rotp0" maxlength="1" type="text" inputmode="numeric"
-             oninput="rotpInput(this,0)" onkeydown="rotpKeydown(event,0)"/>
-      <input class="otp-digit" id="rotp1" maxlength="1" type="text" inputmode="numeric"
-             oninput="rotpInput(this,1)" onkeydown="rotpKeydown(event,1)"/>
-      <input class="otp-digit" id="rotp2" maxlength="1" type="text" inputmode="numeric"
-             oninput="rotpInput(this,2)" onkeydown="rotpKeydown(event,2)"/>
-      <input class="otp-digit" id="rotp3" maxlength="1" type="text" inputmode="numeric"
-             oninput="rotpInput(this,3)" onkeydown="rotpKeydown(event,3)"/>
-      <input class="otp-digit" id="rotp4" maxlength="1" type="text" inputmode="numeric"
-             oninput="rotpInput(this,4)" onkeydown="rotpKeydown(event,4)"/>
-      <input class="otp-digit" id="rotp5" maxlength="1" type="text" inputmode="numeric"
-             oninput="rotpInput(this,5)" onkeydown="rotpKeydown(event,5)"/>
+     <input class="otp-digit" id="rotp0" maxlength="1" type="text" inputmode="numeric"
+       oninput="rotpInput(this,0)" onkeydown="rotpKeydown(event,0)"
+       onpaste="handleOtpPaste(event,'rotp')"/>
+<input class="otp-digit" id="rotp1" maxlength="1" type="text" inputmode="numeric"
+       oninput="rotpInput(this,1)" onkeydown="rotpKeydown(event,1)"
+       onpaste="handleOtpPaste(event,'rotp')"/>
+<input class="otp-digit" id="rotp2" maxlength="1" type="text" inputmode="numeric"
+       oninput="rotpInput(this,2)" onkeydown="rotpKeydown(event,2)"
+       onpaste="handleOtpPaste(event,'rotp')"/>
+<input class="otp-digit" id="rotp3" maxlength="1" type="text" inputmode="numeric"
+       oninput="rotpInput(this,3)" onkeydown="rotpKeydown(event,3)"
+       onpaste="handleOtpPaste(event,'rotp')"/>
+<input class="otp-digit" id="rotp4" maxlength="1" type="text" inputmode="numeric"
+       oninput="rotpInput(this,4)" onkeydown="rotpKeydown(event,4)"
+       onpaste="handleOtpPaste(event,'rotp')"/>
+<input class="otp-digit" id="rotp5" maxlength="1" type="text" inputmode="numeric"
+       oninput="rotpInput(this,5)" onkeydown="rotpKeydown(event,5)"
+       onpaste="handleOtpPaste(event,'rotp')"/>
+
     </div>
 
     <div style="text-align:center;margin-bottom:16px;">
@@ -9873,6 +9888,50 @@ if (fakeDomains.includes(emailDomain)) {
   }
 }
 
+
+
+
+
+
+/* ============================================================
+   ★ لصق OTP — لصق في الحقل الأول يملأ الستة تلقائياً ★
+============================================================ */
+function handleOtpPaste(e, prefix) {
+  e.preventDefault();
+  const pasted = (e.clipboardData || window.clipboardData)
+    .getData('text')
+    .replace(/\D/g, '')   /* أرقام فقط */
+    .slice(0, 6);
+
+  if (!pasted) return;
+
+  for (let i = 0; i < 6; i++) {
+    const el = document.getElementById(prefix + i);
+    if (!el) continue;
+    el.value = pasted[i] || '';
+    el.classList.toggle('filled', !!el.value);
+    el.classList.remove('error');
+  }
+
+  /* التركيز على آخر حقل ممتلئ أو الأول الفارغ */
+  const focusIdx = Math.min(pasted.length, 5);
+  document.getElementById(prefix + focusIdx)?.focus();
+
+  /* إذا اكتملت الستة أرقام — تحقق تلقائياً */
+  if (pasted.length === 6) {
+    if (prefix === 'otp')  setTimeout(verifyOtp,      300);
+    if (prefix === 'rotp') setTimeout(verifyResetOtp, 300);
+  }
+}
+
+
+  
+
+
+
+  
+
+  
 
 /* ============================================================
    ★ التحقق من OTP — نسخة مُصلحة نهائياً ★
@@ -18477,58 +18536,6 @@ showPage = function(cat) {
 
 
 
-  /* ============================================================
-   ★ ميزة اللصق التلقائي لرموز OTP ★
-============================================================ */
-function handleOtpPaste(e, prefix) {
-  e.preventDefault(); // منع اللصق الافتراضي
-  
-  // جلب النص المنسوخ من الحافظة
-  const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
-  
-  // استخراج الأرقام فقط وأخذ أول 6 أرقام (لتجاهل أي نصوص أو مسافات)
-  const digits = pasteData.replace(/\D/g, '').slice(0, 6);
-  
-  if (digits.length > 0) {
-    // توزيع الأرقام على الحقول الستة
-    for (let i = 0; i < 6; i++) {
-      const el = document.getElementById(prefix + i);
-      if (el) {
-        if (i < digits.length) {
-          el.value = digits[i];
-          el.classList.add('filled');
-        } else {
-          el.value = '';
-          el.classList.remove('filled');
-        }
-      }
-    }
-    
-    // نقل التركيز إلى الحقل المناسب (آخر حقل تم تعبئته)
-    const focusIdx = Math.min(digits.length, 5);
-    document.getElementById(prefix + focusIdx)?.focus();
-    
-    // تنفيذ التحقق تلقائياً إذا كان الرمز مكتملاً (6 أرقام)
-    if (digits.length === 6) {
-      if (prefix === 'otp') verifyOtp();
-      else if (prefix === 'rotp') verifyResetOtp();
-    }
-  }
-}
-
-// ربط حدث اللصق (Paste) بجميع حقول OTP بمجرد تحميل الصفحة
-window.addEventListener('DOMContentLoaded', () => {
-  for (let i = 0; i < 6; i++) {
-    const otpEl = document.getElementById('otp' + i);
-    const rotpEl = document.getElementById('rotp' + i);
-    
-    // ربط حقول تسجيل الدخول
-    if (otpEl) otpEl.addEventListener('paste', (e) => handleOtpPaste(e, 'otp'));
-    
-    // ربط حقول استعادة كلمة المرور
-    if (rotpEl) rotpEl.addEventListener('paste', (e) => handleOtpPaste(e, 'rotp'));
-  }
-});
 
 
 </script>
