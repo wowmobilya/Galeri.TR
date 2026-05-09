@@ -16165,24 +16165,41 @@ function handleAdminCardClick(sectionKey) {
       enterSection('messages');
       break;
 
-    /* ★ هذا هو المفقود ★ */
     case 'users_panel':
       enterSection('users_panel');
       break;
 
     case 'stock_panel':
-  enterSection('stock');
-  break;
-
+      enterSection('stock');
+      break;
 
     case 'settings':
-      enterSection('settings');
+      /* ★ استدعاء مباشر بدون enterSection لتجنب تعارض الـ overrides ★ */
+      (function() {
+        const hs = document.getElementById('homeScreen');
+        hs.style.transition = 'opacity 0.4s ease';
+        hs.style.opacity    = '0';
+        setTimeout(() => {
+          hs.style.display = 'none';
+          document.getElementById('mainSite').style.display = 'block';
+          currentPage = 'settings';
+          document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+          const el = document.getElementById('nav-settings');
+          if (el) el.classList.add('active');
+          filteredImages = [];
+          buildSettingsPage();
+          window.scrollTo({ top:0, behavior:'smooth' });
+          appState = 'section';
+          pushState('section', { cat:'settings' });
+        }, 400);
+      })();
       break;
 
     default:
       enterSection(sectionKey);
   }
 }
+
 
 /* ─────────────────────────────────────────
    وضع معاينة المستخدم
