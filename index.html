@@ -18468,6 +18468,69 @@ showPage = function(cat) {
 };
 
 
+
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ ميزة اللصق التلقائي لرموز OTP ★
+============================================================ */
+function handleOtpPaste(e, prefix) {
+  e.preventDefault(); // منع اللصق الافتراضي
+  
+  // جلب النص المنسوخ من الحافظة
+  const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+  
+  // استخراج الأرقام فقط وأخذ أول 6 أرقام (لتجاهل أي نصوص أو مسافات)
+  const digits = pasteData.replace(/\D/g, '').slice(0, 6);
+  
+  if (digits.length > 0) {
+    // توزيع الأرقام على الحقول الستة
+    for (let i = 0; i < 6; i++) {
+      const el = document.getElementById(prefix + i);
+      if (el) {
+        if (i < digits.length) {
+          el.value = digits[i];
+          el.classList.add('filled');
+        } else {
+          el.value = '';
+          el.classList.remove('filled');
+        }
+      }
+    }
+    
+    // نقل التركيز إلى الحقل المناسب (آخر حقل تم تعبئته)
+    const focusIdx = Math.min(digits.length, 5);
+    document.getElementById(prefix + focusIdx)?.focus();
+    
+    // تنفيذ التحقق تلقائياً إذا كان الرمز مكتملاً (6 أرقام)
+    if (digits.length === 6) {
+      if (prefix === 'otp') verifyOtp();
+      else if (prefix === 'rotp') verifyResetOtp();
+    }
+  }
+}
+
+// ربط حدث اللصق (Paste) بجميع حقول OTP بمجرد تحميل الصفحة
+window.addEventListener('DOMContentLoaded', () => {
+  for (let i = 0; i < 6; i++) {
+    const otpEl = document.getElementById('otp' + i);
+    const rotpEl = document.getElementById('rotp' + i);
+    
+    // ربط حقول تسجيل الدخول
+    if (otpEl) otpEl.addEventListener('paste', (e) => handleOtpPaste(e, 'otp'));
+    
+    // ربط حقول استعادة كلمة المرور
+    if (rotpEl) rotpEl.addEventListener('paste', (e) => handleOtpPaste(e, 'rotp'));
+  }
+});
+
+
 </script>
 </body>
 </html>
