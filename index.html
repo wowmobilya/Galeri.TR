@@ -2374,7 +2374,7 @@ html { scroll-behavior: auto; }
       <img class="home-logo-img" src="https://up6.cc/2026/04/177695590342861.png"
            onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
       <div class="home-logo-line"></div>
-      <div class="home-tagline">Premium Mobilya Koleksiyonu</div>
+<div class="home-tagline"></div>
     </div>
     <div class="home-welcome">
       <div class="home-welcome-title">✦ &nbsp; Koleksiyon Seçiniz &nbsp; ✦</div>
@@ -2410,7 +2410,7 @@ html { scroll-behavior: auto; }
 
 
     <div class="home-footer">
-      <div class="home-footer-text">© 2026 WOW MOBİLYA — Tüm Hakları Saklıdır</div>
+<div class="home-footer-text"></div>
     </div>
   </div>
 </div>
@@ -2515,7 +2515,7 @@ html { scroll-behavior: auto; }
       <img src="https://up6.cc/2026/04/177695590342861.png" alt="WOW MOBİLYA"
            class="footer-logo-img" onerror="this.style.display='none'" draggable="false"/>
       <div class="footer-divider"></div>
-      <div class="footer-copy">©2026 WOW MOBİLYA — Tüm Hakları Saklıdır</div>
+<div class="footer-copy"></div>
     </div>
   </footer>
 
@@ -18054,10 +18054,9 @@ function openTextsModal() {
   document.getElementById('appTextsModal')?.remove();
 
   /* تحميل القيم الحالية */
-  const currentTagline = localStorage.getItem('wow_tagline')
-    || 'Premium Mobilya Koleksiyonu';
-  const currentFooter  = localStorage.getItem('wow_footer_copy')
-    || '©2026 WOW MOBİLYA — Tüm Hakları Saklıdır';
+ const currentTagline = localStorage.getItem('wow_tagline') || '';
+const currentFooter  = localStorage.getItem('wow_footer_copy') || '';
+
 
   const modal = document.createElement('div');
   modal.id = 'appTextsModal';
