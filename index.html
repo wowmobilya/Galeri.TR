@@ -3833,23 +3833,46 @@ function doLogin(){
    التنقل بين الشاشات
 ============================================================ */
 function showHomeScreen() {
-  // منع الاستدعاء المزدوج
-  if (document.getElementById('homeScreen').style.display === 'block' &&
-      document.getElementById('homeScreen').style.opacity === '1') return;
-
-  document.getElementById('mainSite').style.display = 'none';
   const hs = document.getElementById('homeScreen');
-  hs.style.display  = 'block';
-  hs.style.opacity  = '0';
+
+  // منع الوميض — إذا كانت مرئية بالفعل، حدّث المحتوى فقط
+  if (hs.style.display === 'block') {
+    document.getElementById('mainSite').style.display = 'none';
+    document.body.style.overflow = '';
+    appState = 'home';
+    pushState('home');
+
+    const adminCard = document.getElementById('homeAdminCard');
+    if (adminCard) {
+      adminCard.style.display = (currentUser === ADMIN_USER) ? 'block' : 'none';
+    }
+
+    const logoWrap    = document.querySelector('.home-logo-wrap');
+    const welcomeWrap = document.querySelector('.home-welcome');
+    if (logoWrap)    logoWrap.style.display    = (currentUser === ADMIN_USER) ? 'none' : '';
+    if (welcomeWrap) welcomeWrap.style.display = (currentUser === ADMIN_USER) ? 'none' : '';
+
+    const container = document.querySelector('.home-cards');
+    if (container) {
+      if (currentUser === ADMIN_USER) {
+        container.classList.remove('user-mode');
+        container.classList.add('admin-mode');
+        renderAdminHomeCards(container);
+      } else {
+        container.classList.remove('admin-mode');
+        container.classList.add('user-mode');
+        renderUserHomeCards(container);
+      }
+    }
+    return;
+  }
+
+  // أول ظهور فقط
+  document.getElementById('mainSite').style.display = 'none';
+  hs.style.display    = 'block';
+  hs.style.opacity    = '0';
   hs.style.transition = 'opacity 0.5s ease';
-  hs.querySelectorAll(
-    '.home-logo-wrap,.home-welcome,.home-cards,.home-footer'
-  ).forEach(el => {
-    el.style.animation = 'none';
-    void el.offsetWidth;
-    el.style.animation = '';
-  });
-  requestAnimationFrame(() => { hs.style.opacity = '1'; });
+
   document.body.style.overflow = '';
   window.scrollTo({ top: 0 });
   appState = 'home';
@@ -3860,16 +3883,13 @@ function showHomeScreen() {
     adminCard.style.display = (currentUser === ADMIN_USER) ? 'block' : 'none';
   }
 
-  /* ★ رسم البطاقات الديناميكية ★ */
+  const logoWrap    = document.querySelector('.home-logo-wrap');
+  const welcomeWrap = document.querySelector('.home-welcome');
+  if (logoWrap)    logoWrap.style.display    = (currentUser === ADMIN_USER) ? 'none' : '';
+  if (welcomeWrap) welcomeWrap.style.display = (currentUser === ADMIN_USER) ? 'none' : '';
+
   const container = document.querySelector('.home-cards');
   if (container) {
-
-    /* ── إخفاء/إظهار اللوجو بناءً على نوع المستخدم ── */
-const logoWrap = document.querySelector('.home-logo-wrap');
-const welcomeWrap = document.querySelector('.home-welcome');
-if (logoWrap) logoWrap.style.display = (currentUser === ADMIN_USER) ? 'none' : '';
-if (welcomeWrap) welcomeWrap.style.display = (currentUser === ADMIN_USER) ? 'none' : '';
-
     if (currentUser === ADMIN_USER) {
       container.classList.remove('user-mode');
       container.classList.add('admin-mode');
@@ -3880,7 +3900,12 @@ if (welcomeWrap) welcomeWrap.style.display = (currentUser === ADMIN_USER) ? 'non
       renderUserHomeCards(container);
     }
   }
+
+  requestAnimationFrame(() => {
+    hs.style.opacity = '1';
+  });
 }
+
 
 function enterSection(cat){
   const hs=document.getElementById('homeScreen');
