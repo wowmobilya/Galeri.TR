@@ -17271,7 +17271,6 @@ finishLogin = function() {
    ★ نظام إدارة اللوجو ★
 ============================================================ */
 
-let _currentLogoUrl = 'https://up6.cc/2026/04/177695590342861.png';
 let _pendingLogoUrl = '';
 
 /* ── تحميل اللوجو من Supabase ── */
@@ -17293,9 +17292,9 @@ async function loadLogoFromDB() {
       .select('value')
       .eq('key', 'logo_url')
       .maybeSingle();
-    if (data?.value) {
-      applyLogoEverywhere(data.value);
-    }
+   if (data?.value && data.value.trim() !== '') {
+  applyLogoEverywhere(data.value);
+}
   } catch(e) {
     console.warn('[Logo] DB yükleme hatası:', e);
   }
