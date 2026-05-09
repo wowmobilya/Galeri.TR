@@ -4023,12 +4023,13 @@ const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRES
   }
 replaceState('login');
 loadSavedCredentials();
-
-(function() {
+})();
+  
+(function applyLogoEarly() {
   try {
     const cached = localStorage.getItem('wow_logo_url');
     if (cached && cached !== 'undefined' && cached !== 'null') {
-      document.querySelectorAll('.logo-img').forEach(function(el) {
+      document.querySelectorAll('.logo-img').forEach(el => {
         el.src           = cached;
         el.style.display = '';
         el.onerror       = null;
