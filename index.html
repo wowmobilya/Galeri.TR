@@ -4021,9 +4021,23 @@ const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRES
     p.style.cssText=`left:${Math.random()*100}%;width:${Math.random()*4+1}px;height:${Math.random()*4+1}px;animation-duration:${Math.random()*8+5}s;animation-delay:${Math.random()*6}s;`;
     c.appendChild(p);
   }
-  replaceState('login');
-  loadSavedCredentials();
+replaceState('login');
+loadSavedCredentials();
+
+/* ── تطبيق اللوجو المحفوظ فوراً عند تحميل الصفحة ── */
+(function applyLogoEarly() {
+  try {
+    const cached = localStorage.getItem('wow_logo_url');
+    if (cached && cached !== 'undefined' && cached !== 'null') {
+      document.querySelectorAll('.logo-img').forEach(el => {
+        el.src           = cached;
+        el.style.display = '';
+        el.onerror       = null;
+      });
+    }
+  } catch(e) {}
 })();
+
 
 /* ============================================================
    تسجيل الدخول
@@ -17262,6 +17276,15 @@ let _pendingLogoUrl = '';
 
 /* ── تحميل اللوجو من Supabase ── */
 async function loadLogoFromDB() {
+  /* ★ أولاً: تطبيق من localStorage فوراً (بدون انتظار Supabase) ★ */
+  try {
+    const cached = localStorage.getItem('wow_logo_url');
+    if (cached && cached !== 'undefined' && cached !== 'null') {
+      applyLogoEverywhere(cached);
+    }
+  } catch(e) {}
+
+  /* ★ ثانياً: جلب من Supabase وتحديث إن وُجد ★ */
   const sb = await initSupabase();
   if (!sb) return;
   try {
@@ -17271,40 +17294,60 @@ async function loadLogoFromDB() {
       .eq('key', 'logo_url')
       .maybeSingle();
     if (data?.value) {
-      _currentLogoUrl = data.value;
-      applyLogoEverywhere(_currentLogoUrl);
+      applyLogoEverywhere(data.value);
     }
   } catch(e) {
-    console.warn('[Logo] تحميل فشل:', e);
+    console.warn('[Logo] DB yükleme hatası:', e);
   }
 }
+
 
 /* ── تطبيق اللوجو في كل مكان ── */
 function applyLogoEverywhere(url) {
   if (!url) return;
   _currentLogoUrl = url;
 
-  /* قائمة جميع selectors للوجو */
-  const logoSelectors = [
-    '.logo-img',           /* شاشة تسجيل الدخول */
+  /* ── 1. كل صور اللوجو في الصفحة ── */
+  const imgSelectors = [
+    '.logo-img',           /* شاشة تسجيل الدخول — كل الصناديق */
     '.home-logo-img',      /* الصفحة الرئيسية */
     '.header-logo img',    /* الهيدر */
     '.footer-logo-img',    /* الفوتر */
-    'link[rel="apple-touch-icon"]', /* PWA */
   ];
 
-  logoSelectors.forEach(sel => {
+  imgSelectors.forEach(sel => {
     document.querySelectorAll(sel).forEach(el => {
-      if (el.tagName === 'IMG') el.src = url;
-      else if (el.tagName === 'LINK') el.href = url;
+      if (el.tagName === 'IMG') {
+        el.src           = url;
+        el.style.display = '';
+        el.onerror       = null;
+      }
     });
   });
 
-  /* Open Graph */
-  const ogImg = document.querySelector('meta[property="og:image"]');
-  if (ogImg) ogImg.content = url;
+  /* ── 2. صور login بشكل صريح (كل صناديق تسجيل الدخول) ── */
+  const loginBoxes = [
+    '#loginBox',
+    '#registerBox',
+    '#otpBox',
+    '#forgotBox',
+    '#resetOtpBox',
+    '#newPassBox',
+  ];
+  loginBoxes.forEach(boxSel => {
+    document.querySelectorAll(boxSel + ' .logo-img').forEach(el => {
+      el.src           = url;
+      el.style.display = '';
+      el.onerror       = null;
+    });
+  });
 
-  /* favicon */
+  /* ── 3. PWA icons ── */
+  document.querySelectorAll('link[rel="apple-touch-icon"]').forEach(el => {
+    el.href = url;
+  });
+
+  /* ── 4. favicon ── */
   let favicon = document.querySelector('link[rel="icon"]');
   if (!favicon) {
     favicon = document.createElement('link');
@@ -17313,8 +17356,21 @@ function applyLogoEverywhere(url) {
   }
   favicon.href = url;
 
+  /* ── 5. Open Graph ── */
+  const ogImg = document.querySelector('meta[property="og:image"]');
+  if (ogImg) ogImg.setAttribute('content', url);
+
+  /* ── 6. theme-color (اختياري) ── */
+  /* يبقى كما هو — لا علاقة له باللوجو */
+
+  /* ── 7. حفظ في localStorage كاحتياط للتحميل المبكر ── */
+  try {
+    localStorage.setItem('wow_logo_url', url);
+  } catch(e) {}
+
   console.log('[Logo] ✅ طُبِّق في كل مكان:', url);
 }
+
 
 /* ── فتح نافذة اللوجو ── */
 function openLogoModal() {
