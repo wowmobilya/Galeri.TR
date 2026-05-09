@@ -18430,7 +18430,43 @@ async function saveAppTexts() {
 }
 
 
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ ربط صفحة الإعدادات بنظام التنقل (showPage) ★
+============================================================ */
+const _origShowPage_for_settings = showPage;
+showPage = function(cat) {
+  if (cat === 'settings') {
+    if (currentUser !== ADMIN_USER) return;
+    currentPage = 'settings';
+    
+    // إزالة التفعيل من الروابط الأخرى
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    const el = document.getElementById('nav-settings');
+    if (el) el.classList.add('active');
+    
+    filteredImages = [];
+    
+    // بناء صفحة الإعدادات
+    buildSettingsPage();
+    
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'settings' });
+    return;
+  }
   
+  // تشغيل الدالة الأصلية لبقية الأقسام
+  _origShowPage_for_settings(cat);
+};
+
 
 </script>
 </body>
