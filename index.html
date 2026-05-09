@@ -1885,13 +1885,24 @@ html { scroll-behavior: auto; }
 
 
 
-    /* ضبط padding صفحة الإعدادات عند إخفاء الهيدر */
+/* ضبط padding صفحة الإعدادات عند إخفاء الهيدر */
 body.wow-mode .settings-page,
 body.wow-mode .settings-container,
 body.wow-mode [class*="settings"] {
   padding-top: 16px !important;
   margin-top: 0 !important;
 }
+
+/* ★ هذان السطران هما الحل الفعلي ★ */
+body.wow-mode .page-content {
+  padding-top: 0 !important;
+}
+
+body.wow-mode .page-transition {
+  transform: none !important;
+  will-change: auto !important;
+}
+
 
 
 
@@ -17196,21 +17207,21 @@ enterSection = function(cat) {
     hs.style.opacity    = '0';
     setTimeout(() => {
       hs.style.display = 'none';
-      document.getElementById('mainSite').style.display = 'block';
 
-      /* ★ WOW: تفعيل/إلغاء wow-mode ★ */
+      /* ★ أضف wow-mode قبل إظهار mainSite ★ */
       if (currentUser === ADMIN_USER) {
         document.body.classList.add('wow-mode');
       } else {
         document.body.classList.remove('wow-mode');
       }
 
+      document.getElementById('mainSite').style.display = 'block';
       showPage('settings');
     }, 400);
     return;
   }
 
-  /* ★ WOW: لبقية الأقسام ★ */
+  /* لبقية الأقسام */
   setTimeout(() => {
     if (currentUser === ADMIN_USER) {
       document.body.classList.add('wow-mode');
