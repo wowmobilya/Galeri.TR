@@ -3606,6 +3606,238 @@ html { scroll-behavior: auto; }
 
 
 
+
+
+
+
+
+
+  <!-- =====================================================
+     نافذة تغيير اللوجو
+===================================================== -->
+<div id="logoModal" style="
+  display:none;position:fixed;inset:0;z-index:8500;
+  align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.88);
+  backdrop-filter:blur(18px);
+  padding:16px;">
+
+  <div style="
+    width:100%;max-width:480px;
+    background:linear-gradient(145deg,#0f0f0f,#161616);
+    border:1px solid rgba(201,168,76,0.25);
+    border-radius:22px;overflow:hidden;
+    box-shadow:0 40px 100px rgba(0,0,0,0.8),0 0 60px rgba(201,168,76,0.06);
+    animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    max-height:90vh;overflow-y:auto;">
+
+    <!-- خط ذهبي علوي -->
+    <div style="height:3px;background:linear-gradient(90deg,
+      transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+    <!-- هيدر -->
+    <div style="padding:18px 20px 14px;display:flex;align-items:center;
+         justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;flex-shrink:0;
+             background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+             border:1px solid rgba(201,168,76,0.3);border-radius:12px;
+             display:flex;align-items:center;justify-content:center;
+             color:#c9a84c;font-size:18px;">
+          <i class="fas fa-image"></i>
+        </div>
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,0.55);
+               text-transform:uppercase;margin-bottom:3px;">LOGO YÖNETİMİ</div>
+          <div style="font-size:16px;font-weight:900;color:#fff;">Logo Değiştir</div>
+        </div>
+      </div>
+      <div onclick="closeLogoModal()" style="
+        width:32px;height:32px;background:rgba(255,255,255,0.04);
+        border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+        color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
+        onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+        onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+        <i class="fas fa-times"></i>
+      </div>
+    </div>
+
+    <!-- جسم النافذة -->
+    <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+
+      <!-- معاينة اللوجو الحالي -->
+      <div style="text-align:center;padding:20px;
+           background:rgba(255,255,255,0.025);
+           border:1px solid rgba(255,255,255,0.06);
+           border-radius:14px;">
+        <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.2);
+             text-transform:uppercase;font-weight:700;margin-bottom:12px;">
+          <i class="fas fa-eye" style="color:rgba(201,168,76,0.4);margin-right:5px;"></i>
+          MEVCUT LOGO
+        </div>
+        <img id="logoPreviewImg" src="" alt="Logo"
+             style="max-width:240px;max-height:100px;object-fit:contain;
+                    display:block;margin:0 auto;border-radius:8px;"
+             onerror="this.style.opacity='0.3'"/>
+      </div>
+
+      <!-- حقل URL -->
+      <div>
+        <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+             text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+          <i class="fas fa-link" style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+          URL İLE YÜKLEYİN
+        </label>
+        <div style="display:flex;gap:8px;">
+          <input type="url" id="logoUrlInput"
+            placeholder="https://... (Logo URL)"
+            oninput="onLogoUrlInput(this.value)"
+            style="flex:1;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);
+            border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          <button onclick="applyLogoUrl()" style="
+            padding:11px 16px;border-radius:9px;border:none;
+            background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.06));
+            border:1px solid rgba(201,168,76,0.3);
+            color:#c9a84c;font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;white-space:nowrap;"
+            onmouseover="this.style.background='rgba(201,168,76,0.25)'"
+            onmouseout="this.style.background='linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.06))'">
+            <i class="fas fa-check"></i> Uygula
+          </button>
+        </div>
+      </div>
+
+      <!-- فاصل -->
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
+        <span style="font-size:9px;color:rgba(255,255,255,0.2);
+              letter-spacing:2px;font-weight:700;">VEYA</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.06);"></div>
+      </div>
+
+      <!-- أزرار الرفع -->
+      <div>
+        <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+             text-transform:uppercase;font-weight:700;margin-bottom:8px;display:block;">
+          <i class="fas fa-upload" style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+          CİHAZDAN YÜKLEYİN
+        </label>
+        <div style="display:flex;gap:8px;">
+
+          <!-- من المعرض -->
+          <label style="flex:1;cursor:pointer;">
+            <input type="file" id="logoFileGallery"
+              accept="image/*"
+              onchange="handleLogoFileUpload(this)"
+              style="display:none;"/>
+            <div style="
+              padding:12px 8px;border-radius:10px;
+              border:1px solid rgba(201,168,76,0.2);
+              background:rgba(201,168,76,0.06);
+              color:rgba(201,168,76,0.7);
+              font-family:'Montserrat',sans-serif;
+              font-size:9px;font-weight:700;letter-spacing:1px;
+              text-align:center;transition:all 0.25s;
+              display:flex;flex-direction:column;align-items:center;gap:6px;"
+              onmouseover="this.style.background='rgba(201,168,76,0.14)'"
+              onmouseout="this.style.background='rgba(201,168,76,0.06)'">
+              <i class="fas fa-images" style="font-size:20px;"></i>
+              GALERİ
+            </div>
+          </label>
+
+          <!-- من الكاميرا -->
+          <label style="flex:1;cursor:pointer;">
+            <input type="file" id="logoFileCamera"
+              accept="image/*" capture="environment"
+              onchange="handleLogoFileUpload(this)"
+              style="display:none;"/>
+            <div style="
+              padding:12px 8px;border-radius:10px;
+              border:1px solid rgba(96,165,250,0.2);
+              background:rgba(96,165,250,0.06);
+              color:rgba(96,165,250,0.7);
+              font-family:'Montserrat',sans-serif;
+              font-size:9px;font-weight:700;letter-spacing:1px;
+              text-align:center;transition:all 0.25s;
+              display:flex;flex-direction:column;align-items:center;gap:6px;"
+              onmouseover="this.style.background='rgba(96,165,250,0.14)'"
+              onmouseout="this.style.background='rgba(96,165,250,0.06)'">
+              <i class="fas fa-camera" style="font-size:20px;"></i>
+              KAMERA
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      <!-- شريط تقدم الرفع -->
+      <div id="logoUploadProgress" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+             margin-bottom:5px;">
+          <span style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:1px;">
+            <i class="fas fa-cloud-upload-alt"
+               style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+            Supabase'e yükleniyor...
+          </span>
+          <span id="logoUploadPct"
+                style="font-size:10px;font-weight:700;color:#c9a84c;">0%</span>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,0.06);
+             border-radius:4px;overflow:hidden;">
+          <div id="logoUploadBar" style="height:100%;width:0%;
+               background:linear-gradient(90deg,#c9a84c,#f0d080);
+               border-radius:4px;transition:width 0.3s ease;"></div>
+        </div>
+      </div>
+
+      <!-- رسالة الحالة -->
+      <div id="logoStatusMsg" style="display:none;padding:10px 14px;
+           border-radius:9px;font-size:11px;font-weight:700;
+           text-align:center;font-family:'Montserrat',sans-serif;"></div>
+
+      <!-- أزرار الحفظ -->
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button onclick="closeLogoModal()" style="
+          flex:1;padding:12px;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.4);
+          font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1px;
+          cursor:pointer;transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          İPTAL
+        </button>
+        <button onclick="saveLogoToDB()" id="logoSaveBtn" style="
+          flex:2;padding:12px;border-radius:10px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:2px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:7px;"
+          onmouseover="this.style.transform='translateY(-2px)';
+                       this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <i class="fas fa-save"></i> KAYDET & UYGULA
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 </div><!-- /mainSite -->
 
 <script>
@@ -16232,6 +16464,30 @@ function buildSettingsPage() {
           <i class="fas fa-chevron-right settings-btn-arrow"></i>
         </div>
 
+
+        <!-- زر تغيير اللوجو -->
+        <div class="settings-section-title" style="margin-top:28px;">
+          <i class="fas fa-image" style="color:rgba(201,168,76,0.5);"></i>
+          LOGO YÖNETİMİ
+        </div>
+
+        <div class="settings-btn-card" onclick="openLogoModal()">
+          <div class="settings-btn-icon">
+            <i class="fas fa-image"></i>
+          </div>
+          <div class="settings-btn-info">
+            <div class="settings-btn-title">
+              Uygulama Logosunu Değiştir
+            </div>
+            <div class="settings-btn-desc">
+              Tüm sayfalarda görünen logoyu güncelleyin.<br/>
+              Galeri, kamera veya URL ile yükleyebilirsiniz.
+            </div>
+          </div>
+          <i class="fas fa-chevron-right settings-btn-arrow"></i>
+        </div>
+
+
         <!-- معلومات إضافية -->
         <div style="
           background:rgba(201,168,76,0.04);
@@ -16980,12 +17236,325 @@ finishLogin = function() {
     /* ★ تحميل البطاقات بعد اكتمال الـ animation (500ms) + هامش أمان ★ */
     await loadHomeCards();        /* ← لن تستدعي showHomeScreen بعد الآن */
     subscribeHomeCards();
+    await loadLogoFromDB();        /* ← أضف هذا السطر هنا */
+
 
     if (currentUser === ADMIN_USER) updateMsgBadge();
 
   }, 700);   /* ← 700ms بدل 1000ms، بعد انتهاء opacity animation */
 };
 
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ نظام إدارة اللوجو ★
+============================================================ */
+
+let _currentLogoUrl = 'https://up6.cc/2026/04/177695590342861.png';
+let _pendingLogoUrl = '';
+
+/* ── تحميل اللوجو من Supabase ── */
+async function loadLogoFromDB() {
+  const sb = await initSupabase();
+  if (!sb) return;
+  try {
+    const { data } = await sb
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'logo_url')
+      .maybeSingle();
+    if (data?.value) {
+      _currentLogoUrl = data.value;
+      applyLogoEverywhere(_currentLogoUrl);
+    }
+  } catch(e) {
+    console.warn('[Logo] تحميل فشل:', e);
+  }
+}
+
+/* ── تطبيق اللوجو في كل مكان ── */
+function applyLogoEverywhere(url) {
+  if (!url) return;
+  _currentLogoUrl = url;
+
+  /* قائمة جميع selectors للوجو */
+  const logoSelectors = [
+    '.logo-img',           /* شاشة تسجيل الدخول */
+    '.home-logo-img',      /* الصفحة الرئيسية */
+    '.header-logo img',    /* الهيدر */
+    '.footer-logo-img',    /* الفوتر */
+    'link[rel="apple-touch-icon"]', /* PWA */
+  ];
+
+  logoSelectors.forEach(sel => {
+    document.querySelectorAll(sel).forEach(el => {
+      if (el.tagName === 'IMG') el.src = url;
+      else if (el.tagName === 'LINK') el.href = url;
+    });
+  });
+
+  /* Open Graph */
+  const ogImg = document.querySelector('meta[property="og:image"]');
+  if (ogImg) ogImg.content = url;
+
+  /* favicon */
+  let favicon = document.querySelector('link[rel="icon"]');
+  if (!favicon) {
+    favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    document.head.appendChild(favicon);
+  }
+  favicon.href = url;
+
+  console.log('[Logo] ✅ طُبِّق في كل مكان:', url);
+}
+
+/* ── فتح نافذة اللوجو ── */
+function openLogoModal() {
+  _pendingLogoUrl = _currentLogoUrl;
+
+  /* تعبئة الحقول */
+  const urlInput = document.getElementById('logoUrlInput');
+  if (urlInput) urlInput.value = _currentLogoUrl;
+
+  /* معاينة اللوجو الحالي */
+  const preview = document.getElementById('logoPreviewImg');
+  if (preview) preview.src = _currentLogoUrl;
+
+  /* إخفاء الرسائل */
+  hideLogoStatus();
+  const progressWrap = document.getElementById('logoUploadProgress');
+  if (progressWrap) progressWrap.style.display = 'none';
+
+  document.getElementById('logoModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+/* ── إغلاق النافذة ── */
+function closeLogoModal() {
+  document.getElementById('logoModal').style.display = 'none';
+  document.body.style.overflow = '';
+  _pendingLogoUrl = '';
+}
+
+/* ── عند إدخال URL يدوياً ── */
+function onLogoUrlInput(val) {
+  _pendingLogoUrl = val.trim();
+  const preview = document.getElementById('logoPreviewImg');
+  if (preview && _pendingLogoUrl) {
+    preview.src = _pendingLogoUrl;
+  }
+}
+
+/* ── تطبيق URL مباشرة ── */
+function applyLogoUrl() {
+  const val = document.getElementById('logoUrlInput')?.value.trim();
+  if (!val) {
+    showLogoStatus('Lütfen bir URL girin!', 'error');
+    return;
+  }
+  _pendingLogoUrl = val;
+  const preview = document.getElementById('logoPreviewImg');
+  if (preview) preview.src = val;
+  showLogoStatus('URL önizlemesi güncellendi ✓', 'success');
+}
+
+/* ── رفع صورة من الجهاز ── */
+async function handleLogoFileUpload(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showLogoStatus('Lütfen bir görsel dosyası seçin!', 'error');
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showLogoStatus('Dosya boyutu 5MB\'dan küçük olmalıdır!', 'error');
+    return;
+  }
+
+  const progressWrap = document.getElementById('logoUploadProgress');
+  const progressBar  = document.getElementById('logoUploadBar');
+  const progressPct  = document.getElementById('logoUploadPct');
+
+  if (progressWrap) progressWrap.style.display = 'block';
+
+  const updateProg = (pct) => {
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressPct) progressPct.textContent = pct + '%';
+  };
+
+  updateProg(15);
+
+  try {
+    const sb = await initSupabase();
+    if (!sb) throw new Error('Supabase bağlantısı yok');
+
+    updateProg(35);
+
+    const ext      = file.name.split('.').pop().toLowerCase() || 'png';
+    const fileName = `logo_${Date.now()}.${ext}`;
+    const filePath = `logos/${fileName}`;
+
+    updateProg(55);
+
+    /* رفع الملف */
+    const { error: uploadErr } = await sb.storage
+      .from('home-images')
+      .upload(filePath, file, {
+        cacheControl : '3600',
+        upsert       : false,
+        contentType  : file.type,
+      });
+
+    if (uploadErr) throw uploadErr;
+
+    updateProg(80);
+
+    /* الرابط العام */
+    const { data: urlData } = sb.storage
+      .from('home-images')
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData?.publicUrl;
+    if (!publicUrl) throw new Error('URL alınamadı');
+
+    updateProg(100);
+
+    _pendingLogoUrl = publicUrl;
+
+    /* تحديث الحقل والمعاينة */
+    const urlInput = document.getElementById('logoUrlInput');
+    if (urlInput) urlInput.value = publicUrl;
+    const preview = document.getElementById('logoPreviewImg');
+    if (preview) preview.src = publicUrl;
+
+    showLogoStatus('Görsel yüklendi ✓ — Kaydetmek için "KAYDET" butonuna basın', 'success');
+
+    setTimeout(() => {
+      if (progressWrap) progressWrap.style.display = 'none';
+      updateProg(0);
+    }, 1500);
+
+  } catch(e) {
+    console.error('[Logo Upload]', e);
+    if (progressWrap) progressWrap.style.display = 'none';
+    updateProg(0);
+
+    /* احتياط: base64 محلي للمعاينة فقط */
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      _pendingLogoUrl = ev.target.result;
+      const preview = document.getElementById('logoPreviewImg');
+      if (preview) preview.src = ev.target.result;
+      const urlInput = document.getElementById('logoUrlInput');
+      if (urlInput) urlInput.value = ev.target.result;
+      showLogoStatus('Görsel yerel olarak yüklendi (Storage hatası)', 'info');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  input.value = '';
+}
+
+/* ── حفظ اللوجو في Supabase ── */
+async function saveLogoToDB() {
+  const urlToSave = _pendingLogoUrl ||
+                    document.getElementById('logoUrlInput')?.value.trim();
+
+  if (!urlToSave) {
+    showLogoStatus('Lütfen bir logo URL\'si girin veya dosya yükleyin!', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('logoSaveBtn');
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    showLogoStatus('Bağlantı hatası!', 'error');
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> KAYDET & UYGULA';
+    }
+    return;
+  }
+
+  try {
+    const { error } = await sb
+      .from('app_settings')
+      .upsert([{
+        key        : 'logo_url',
+        value      : urlToSave,
+        updated_at : new Date().toISOString(),
+      }], { onConflict: 'key' });
+
+    if (error) throw error;
+
+    /* تطبيق فوري */
+    applyLogoEverywhere(urlToSave);
+    _currentLogoUrl = urlToSave;
+
+    showLogoStatus('Logo başarıyla güncellendi ve uygulandı ✓', 'success');
+    showInvToast('Logo güncellendi ✓', 'success');
+
+    setTimeout(() => closeLogoModal(), 1500);
+
+  } catch(e) {
+    console.error('[Logo Save]', e);
+    showLogoStatus('Kayıt hatası: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> KAYDET & UYGULA';
+    }
+  }
+}
+
+/* ── عرض رسالة الحالة ── */
+function showLogoStatus(msg, type) {
+  const el = document.getElementById('logoStatusMsg');
+  if (!el) return;
+  const styles = {
+    success : { bg:'rgba(74,222,128,0.08)',  border:'rgba(74,222,128,0.3)',  color:'#4ade80' },
+    error   : { bg:'rgba(239,68,68,0.08)',   border:'rgba(239,68,68,0.3)',   color:'#ef4444' },
+    info    : { bg:'rgba(96,165,250,0.08)',  border:'rgba(96,165,250,0.3)',  color:'#60a5fa' },
+  };
+  const s = styles[type] || styles.info;
+  el.style.display    = 'block';
+  el.style.background = s.bg;
+  el.style.border     = `1px solid ${s.border}`;
+  el.style.color      = s.color;
+  el.innerHTML = (type === 'success' ? '<i class="fas fa-check-circle"></i> ' :
+                  type === 'error'   ? '<i class="fas fa-exclamation-circle"></i> ' :
+                  '<i class="fas fa-info-circle"></i> ') + msg;
+}
+
+function hideLogoStatus() {
+  const el = document.getElementById('logoStatusMsg');
+  if (el) el.style.display = 'none';
+}
+
+/* ── تحميل اللوجو عند بدء التطبيق ── */
+/* أضف هذا داخل finishLogin بعد loadHomeCards() */
+// await loadLogoFromDB();
+
+
+
+
+
+
+  
 
 </script>
 </body>
