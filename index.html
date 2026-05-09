@@ -1918,6 +1918,9 @@ body.wow-mode .order-bottom-bar {
   z-index: 1000 !important;
   border-top: 1px solid rgba(201,168,76,0.2) !important;
   box-shadow: 0 -4px 24px rgba(0,0,0,0.5) !important;
+  top: auto !important; /* ★ يمنع sticky من التغلب ★ */
+  width: 100% !important; /* ★ ضمان العرض الكامل ★ */
+  transform: none !important; /* ★ يمنع أي transform من كسر fixed ★ */
 }
 
 /* مسافة سفلية لمنع تداخل المحتوى مع الشريط الثابت */
@@ -1929,6 +1932,7 @@ body.wow-mode #pageContent {
 body.wow-mode .mobile-menu {
   top: 0 !important;
 }
+
 
     
     
@@ -4795,7 +4799,7 @@ function buildOrderPage() {
       </div>
     </div>`;
 
-  /* استعادة الكميات المحفوظة */
+    /* استعادة الكميات المحفوظة */
   Object.keys(orderCart).forEach(id => {
     const qty = orderCart[id];
     if (qty > 0) {
@@ -4808,7 +4812,19 @@ function buildOrderPage() {
     }
   });
   updateOrderBar();
+
+  /* ★ تثبيت الشريط السفلي لـ WOW ★ */
+  if (currentUser === ADMIN_USER) {
+    setTimeout(() => {
+      const bar = document.getElementById('orderBottomBar');
+      if (bar) {
+        bar.style.cssText += ';position:fixed!important;bottom:0!important;left:0!important;right:0!important;z-index:1000!important;box-shadow:0 -4px 24px rgba(0,0,0,0.5)!important;top:auto!important;';
+      }
+      document.getElementById('pageContent').style.paddingBottom = '80px';
+    }, 30);
+  }
 }
+
 
 /* ── بناء بطاقة موديل واحد ── */
 function buildOrderCard(img, idx) {
