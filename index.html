@@ -15085,20 +15085,21 @@ showPage = function(cat) {
 };
 
 /* تعديل enterSection لدعم صفحة الرسائل */
-const _origEnterSection_msgs = enterSection;
+const _origEnterSection_users = enterSection;
 enterSection = function(cat) {
-  if (cat === 'messages') {
+  if (cat === 'users_panel') {
     const hs = document.getElementById('homeScreen');
     hs.style.transition = 'opacity 0.4s ease';
     hs.style.opacity    = '0';
     setTimeout(() => {
       hs.style.display = 'none';
       document.getElementById('mainSite').style.display = 'block';
-      showPage('messages');
+      updateAdminNavVisibility();
+      showPage('users');   /* ← يفتح صفحة إدارة المستخدمين */
     }, 400);
     return;
   }
-  _origEnterSection_msgs(cat);
+  _origEnterSection_users(cat);
 };
 
 /* إضافة روابط الرسائل في الهيدر والموبايل */
@@ -16152,32 +16153,27 @@ function buildAdminWideCard(card, idx) {
 function handleAdminCardClick(sectionKey) {
   switch(sectionKey) {
 
-    /* ── معاينة واجهة المستخدم ── */
     case 'user_preview':
       openUserPreviewMode();
       break;
 
-    /* ── لوحة الطلبيات ── */
     case 'admin':
       enterSection('admin');
       break;
 
-    /* ── مركز الرسائل ── */
     case 'messages':
       enterSection('messages');
       break;
 
-    /* ── إدارة المستخدمين ── */
+    /* ★ هذا هو المفقود ★ */
     case 'users_panel':
       enterSection('users_panel');
       break;
 
-    /* ── إدارة الستوك ── */
     case 'stock_panel':
-      enterSection('stock_panel');
+      openInventoryModal();   /* أو enterSection('stock_panel') حسب رغبتك */
       break;
 
-    /* ── الإعدادات ── */
     case 'settings':
       enterSection('settings');
       break;
