@@ -2379,54 +2379,10 @@ html { scroll-behavior: auto; }
     <div class="home-welcome">
       <div class="home-welcome-title">✦ &nbsp; Koleksiyon Seçiniz &nbsp; ✦</div>
     </div>
+
+    
     <div class="home-cards">
-      <div class="home-card" onclick="enterSection('tv')">
-        <img class="home-card-img" src="https://static.wixstatic.com/media/42e4ec_7557d3da2f9e4a2a8816339de74659b2~mv2.jpg/v1/fill/w_750,h_562,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2016_52_edited.jpg" alt="TV" loading="lazy" draggable="false"/>
-        <div class="home-card-overlay"></div><div class="home-card-shine"></div>
-        <div class="home-card-count">3 MODEL</div>
-        <div class="home-card-content">
-          <div class="home-card-num">01 — KOLEKSİYON</div>
-          <div class="home-card-title">TV<span>ÜNİTESİ</span></div>
-          <div class="home-card-desc">Fonksiyonel & Zarif</div>
-          <div class="home-card-btn">Koleksiyonu Gör <i class="fas fa-arrow-right"></i></div>
-        </div>
-      </div>
-      <div class="home-card" onclick="enterSection('orta')">
-        <img class="home-card-img" src="https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg" alt="Orta" loading="lazy" draggable="false"/>
-        <div class="home-card-overlay"></div><div class="home-card-shine"></div>
-        <div class="home-card-count">20 MODEL</div>
-        <div class="home-card-content">
-          <div class="home-card-num">02 — KOLEKSİYON</div>
-          <div class="home-card-title">ORTA<span>SEHPA</span></div>
-          <div class="home-card-desc">Şık & Modern Tasarımlar</div>
-          <div class="home-card-btn">Koleksiyonu Gör <i class="fas fa-arrow-right"></i></div>
-        </div>
-      </div>
-      <div class="home-card" onclick="enterSection('dresuar')">
-        <img class="home-card-img" src="https://static.wixstatic.com/media/42e4ec_497547faea6641019e1ece74652f9f0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_160720150_edited.jpg" alt="Dresuar" loading="lazy" draggable="false"/>
-        <div class="home-card-overlay"></div><div class="home-card-shine"></div>
-        <div class="home-card-count">6 MODEL</div>
-        <div class="home-card-content">
-          <div class="home-card-num">03 — KOLEKSİYON</div>
-          <div class="home-card-title">DRESUAR<span>MODELLERİ</span></div>
-          <div class="home-card-desc">Lüks & Kaliteli</div>
-          <div class="home-card-btn">Koleksiyonu Gör <i class="fas fa-arrow-right"></i></div>
-        </div>
-      </div>
-      <!-- بطاقة الطلبيات -->
-      <div class="home-card" onclick="enterSection('orders')">
-        <img class="home-card-img"
-             src="https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png"
-             alt="Sipariş" loading="lazy" draggable="false"/>
-        <div class="home-card-overlay"></div>
-        <div class="home-card-shine"></div>
-        <div class="home-card-count">YENİ</div>
-        <div class="home-card-content">
-          <div class="home-card-num">04 — SİPARİŞ</div>
-          <div class="home-card-title">SİPARİŞ<span>VER</span></div>
-          <div class="home-card-desc">Model Seç & Gönder</div>
-          <div class="home-card-btn">Sipariş Ver <i class="fas fa-shopping-cart"></i></div>
-        </div>
+
       </div>
 
 <!-- بطاقة لوحة الإدارة — WOW فقط -->
@@ -16216,32 +16172,7 @@ function closeUserPreviewMode() {
    البطاقات الثابتة الاحتياطية
 ───────────────────────────────────────── */
 function getStaticCards() {
-  return [
-    {
-      section_key:'tv', title:'TV', subtitle:'ÜNİTESİ',
-      description:'Fonksiyonel & Zarif', count_label:'3 MODEL',
-      btn_text:'Koleksiyonu Gör', is_active:true,
-      image_url:'https://static.wixstatic.com/media/42e4ec_7557d3da2f9e4a2a8816339de74659b2~mv2.jpg/v1/fill/w_750,h_562,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/%D8%B5%D9%88%D8%B1%D8%A9%20%D9%88%D8%A7%D8%AA%D8%B3%D8%A7%D8%A8%20%D8%A8%D8%AA%D8%A7%D8%B1%D9%8A%D8%AE%201447-05-21%20%D9%81%D9%8A%2016_52_edited.jpg',
-    },
-    {
-      section_key:'orta', title:'ORTA', subtitle:'SEHPA',
-      description:'Şık & Modern Tasarımlar', count_label:'20 MODEL',
-      btn_text:'Koleksiyonu Gör', is_active:true,
-      image_url:'https://static.wixstatic.com/media/42e4ec_f3e0eda2c9564c5f95529b02c0046660~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/IMG_20251019_150626_edited.jpg',
-    },
-    {
-      section_key:'dresuar', title:'DRESUAR', subtitle:'MODELLERİ',
-      description:'Lüks & Kaliteli', count_label:'6 MODEL',
-      btn_text:'Koleksiyonu Gör', is_active:true,
-      image_url:'https://static.wixstatic.com/media/42e4ec_497547faea6641019e1ece74652f9f0c~mv2.jpg/v1/fill/w_824,h_618,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/Photoroom-20260127_160720150_edited.jpg',
-    },
-    {
-      section_key:'orders', title:'SİPARİŞ', subtitle:'VER',
-      description:'Model Seç & Gönder', count_label:'YENİ',
-      btn_text:'Sipariş Ver', is_active:true,
-      image_url:'https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png',
-    },
-  ];
+  return []; // لا بطاقات ثابتة — كل شيء من Supabase
 }
 
   
