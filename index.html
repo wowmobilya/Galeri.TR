@@ -7348,6 +7348,7 @@ async function buildAdminPage() {
 
       <!-- فلاتر الحالة -->
       <div style="
+        position: sticky; top: 0; z-index: 100; /* ← أضف هذا السطر هنا */
         padding:12px 22px;
         background:var(--dark4);
         border-bottom:1px solid rgba(255,255,255,0.04);
@@ -14580,6 +14581,7 @@ async function buildMessagesPage() {
 
       <!-- فلاتر -->
       <div style="
+        position: sticky; top: 0; z-index: 100; /* ← أضف هذا السطر هنا */
         padding:10px 18px;
         background:var(--dark4);
         border-bottom:1px solid rgba(255,255,255,0.04);
@@ -16263,31 +16265,14 @@ function handleAdminCardClick(sectionKey) {
       break;
 
     case 'settings':
-      /* ★ استدعاء مباشر بدون enterSection لتجنب تعارض الـ overrides ★ */
-      (function() {
-        const hs = document.getElementById('homeScreen');
-        hs.style.transition = 'opacity 0.4s ease';
-        hs.style.opacity    = '0';
-        setTimeout(() => {
-          hs.style.display = 'none';
-          document.getElementById('mainSite').style.display = 'block';
-          currentPage = 'settings';
-          document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
-          const el = document.getElementById('nav-settings');
-          if (el) el.classList.add('active');
-          filteredImages = [];
-          buildSettingsPage();
-          window.scrollTo({ top:0, behavior:'smooth' });
-          appState = 'section';
-          pushState('section', { cat:'settings' });
-        }, 400);
-      })();
+      enterSection('settings'); // ← تم التعديل هنا: استدعاء الدالة مباشرة ليتم إضافة wow-mode وإخفاء الهيدر
       break;
 
     default:
       enterSection(sectionKey);
   }
 }
+
 
 
 /* ─────────────────────────────────────────
@@ -17874,6 +17859,7 @@ function buildStockPage() {
 
       <!-- شريط البحث -->
       <div style="
+        position: sticky; top: 0; z-index: 100; /* ← أضف هذا السطر هنا */
         padding:12px 22px;
         background:var(--dark4);
         border-bottom:1px solid rgba(255,255,255,0.04);
