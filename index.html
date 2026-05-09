@@ -738,18 +738,23 @@ html { scroll-behavior: auto; }
 
 /* ── شريط الطلب السفلي ── */
 .order-bottom-bar {
-  position: sticky;
+  position: fixed;
   bottom: 0;
-  z-index: 200;
+  left: 0;
+  right: 0;
+  z-index: 9000;
   background: rgba(9,9,9,0.97);
   border-top: 1px solid rgba(201,168,76,0.2);
   backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   padding: 12px 22px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
+  /* مسافة أمان لـ iPhone */
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
 }
 .order-bar-info {
   display: flex;
@@ -814,6 +819,17 @@ html { scroll-behavior: auto; }
   transform: none;
 }
 
+/* ── منع المحتوى من الاختباء خلف الشريط ── */
+.order-grid,
+.order-note-wrap {
+  margin-bottom: 0;
+}
+
+/* padding سفلي للصفحة كلها لتجنب الاختباء */
+#pageContent {
+  padding-bottom: 80px;
+}
+
 /* ── حقل الملاحظة ── */
 .order-note-wrap {
   padding: 0 22px 16px;
@@ -854,6 +870,7 @@ html { scroll-behavior: auto; }
   box-shadow: 0 0 20px rgba(201,168,76,0.1);
 }
 .order-note-input::placeholder { color: rgba(255,255,255,0.2); }
+
 
 /* ── نافذة تأكيد الإرسال ── */
 /* ══════════════════════════════════════════════════════
@@ -1897,30 +1914,7 @@ body.wow-admin-mode .page-content {
   padding-top: 0 !important;
 }
 
-/* ── WOW: شريط ثابت في الأسفل ── */
-/* ── WOW: شريط ثابت في الأسفل ── */
-#orderBottomBar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 9999;
-  background: rgba(9,9,9,0.97);
-  border-top: 1px solid rgba(201,168,76,0.2);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  padding: 12px 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-  min-height: 60px;
-}
 
-body.wow-admin-mode #pageContent {
-  padding-bottom: 80px !important;
-}
 
 
     
@@ -4731,11 +4725,11 @@ catFolderName['orders'] = 'WOW MOBILYA SIPARIS';
 /* ── بناء صفحة الطلبيات ── */
 function buildOrderPage() {
   const L = labels['orders'];
-  const allImages = images;
+  const allImages = images; /* جميع الموديلات */
 
-  /* ── 1. بناء الصفحة بدون الشريط ── */
   document.getElementById('pageContent').innerHTML = `
-    <div class="page-transition" style="padding-bottom:80px;">
+    <div class="page-transition">
+      <!-- بانر الصفحة -->
       <div class="section-banner">
         <div>
           <div class="section-banner-tag">✦ ${L.tag}</div>
@@ -4748,9 +4742,13 @@ function buildOrderPage() {
           <div class="section-banner-line"></div>
         </div>
       </div>
+
+      <!-- شبكة الموديلات -->
       <div class="order-grid" id="orderGrid">
         ${allImages.map((img, idx) => buildOrderCard(img, idx)).join('')}
       </div>
+
+      <!-- حقل الملاحظة -->
       <div class="order-note-wrap">
         <div class="order-note-label">
           <i class="fas fa-sticky-note"></i> SİPARİŞ NOTU (İsteğe Bağlı)
@@ -4762,33 +4760,26 @@ function buildOrderPage() {
           maxlength="500"
         ></textarea>
       </div>
+
+      <!-- شريط الإجراءات السفلي -->
+      <div class="order-bottom-bar" id="orderBottomBar">
+        <div class="order-bar-info">
+          <span class="order-bar-count" id="orderBarCount">0 ürün seçildi</span>
+          <span class="order-bar-total" id="orderBarTotal"></span>
+        </div>
+        <div class="order-bar-actions">
+          <button class="order-clear-btn" onclick="clearOrderCart()">
+            <i class="fas fa-trash"></i> Temizle
+          </button>
+          <button class="order-send-btn" id="orderSendBtn"
+                  onclick="openOrderConfirmModal()" disabled>
+            <i class="fas fa-paper-plane"></i> SİPARİŞ VER
+          </button>
+        </div>
+      </div>
     </div>`;
 
-  /* ── 2. حذف الشريط القديم إن وجد ── */
-  document.getElementById('orderBottomBar')?.remove();
-
-  /* ── 3. إنشاء الشريط وإضافته لـ body مباشرة ── */
-  const bar = document.createElement('div');
-  bar.id = 'orderBottomBar';
-  bar.className = 'order-bottom-bar';
-  bar.innerHTML = `
-    <div class="order-bar-info">
-      <span class="order-bar-count" id="orderBarCount">0 ürün seçildi</span>
-      <span class="order-bar-total" id="orderBarTotal"></span>
-    </div>
-    <div class="order-bar-actions">
-      <button class="order-clear-btn" onclick="clearOrderCart()">
-        <i class="fas fa-trash"></i> Temizle
-      </button>
-      <button class="order-send-btn" id="orderSendBtn"
-              onclick="openOrderConfirmModal()" disabled>
-        <i class="fas fa-paper-plane"></i> SİPARİŞ VER
-      </button>
-    </div>
-  `;
-  document.body.appendChild(bar);
-
-  /* ── 4. استعادة الكميات ── */
+  /* استعادة الكميات المحفوظة */
   Object.keys(orderCart).forEach(id => {
     const qty = orderCart[id];
     if (qty > 0) {
@@ -4800,11 +4791,8 @@ function buildOrderPage() {
       }
     }
   });
-
-  /* ── 5. تحديث الشريط ── */
-  updateOrderBar();
+   updateOrderBar();
 }
-
 
 
 /* ── بناء بطاقة موديل واحد ── */
