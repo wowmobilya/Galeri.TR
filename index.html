@@ -3901,6 +3901,13 @@ function showHomeScreen() {
   /* ★ رسم البطاقات الديناميكية ★ */
   const container = document.querySelector('.home-cards');
   if (container) {
+
+    /* ── إخفاء/إظهار اللوجو بناءً على نوع المستخدم ── */
+const logoWrap = document.querySelector('.home-logo-wrap');
+const welcomeWrap = document.querySelector('.home-welcome');
+if (logoWrap) logoWrap.style.display = (currentUser === ADMIN_USER) ? 'none' : '';
+if (welcomeWrap) welcomeWrap.style.display = (currentUser === ADMIN_USER) ? 'none' : '';
+
     if (currentUser === ADMIN_USER) {
       container.classList.remove('user-mode');
       container.classList.add('admin-mode');
