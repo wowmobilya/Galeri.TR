@@ -16142,32 +16142,40 @@ function buildAdminWideCard(card, idx) {
            cursor: pointer;
            border-radius: 14px;
            background: var(--card-bg, #111111);
-           border: 1px solid rgba(255,255,255,0.07);
-           padding: 14px 13px 12px;
+           border: 1px solid rgba(201,168,76,0.25);
+           padding: 11px 13px;
            display: flex;
            flex-direction: row;
            align-items: center;
-           gap: 14px;
+           gap: 12px;
            position: relative;
            overflow: hidden;
            transition: all 0.25s ease;"
          onmouseover="
            this.style.transform='translateY(-2px)';
-           this.style.boxShadow='0 8px 24px rgba(0,0,0,0.5)';
-           this.style.borderColor='rgba(255,255,255,0.13)';"
+           this.style.boxShadow='0 8px 24px rgba(201,168,76,0.15)';
+           this.style.borderColor='rgba(201,168,76,0.5)';"
          onmouseout="
            this.style.transform='translateY(0)';
            this.style.boxShadow='';
-           this.style.borderColor='rgba(255,255,255,0.07)';">
+           this.style.borderColor='rgba(201,168,76,0.25)';">
+
+      <!-- وهج ذهبي خفيف في الخلفية -->
+      <div style="
+        position:absolute;left:-20px;top:-20px;
+        width:100px;height:100px;
+        background:radial-gradient(circle,rgba(201,168,76,0.08) 0%,transparent 70%);
+        pointer-events:none;"></div>
 
       <!-- الرمز -->
       <div style="
-        width:48px;height:48px;flex-shrink:0;
-        border-radius:13px;
-        background:#4f46e5;
+        width:42px;height:42px;flex-shrink:0;
+        border-radius:11px;
+        background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.05));
+        border:1px solid rgba(201,168,76,0.35);
         display:flex;align-items:center;
         justify-content:center;
-        font-size:20px;color:#fff;">
+        font-size:18px;color:#c9a84c;">
         <i class="fas fa-eye"></i>
       </div>
 
@@ -16176,17 +16184,21 @@ function buildAdminWideCard(card, idx) {
         <div style="
           font-size:13px;font-weight:900;
           color:#fff;letter-spacing:0.3px;
-          line-height:1.2;margin-bottom:2px;">
+          line-height:1.2;margin-bottom:1px;">
           ${card.title}
         </div>
         <div style="
-          font-size:11px;font-weight:700;
-          color:#818cf8;letter-spacing:0.5px;">
+          font-size:10px;font-weight:700;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          -webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;
+          background-clip:text;
+          letter-spacing:0.5px;">
           ${card.subtitle}
         </div>
         <div style="
-          font-size:9px;color:rgba(255,255,255,0.35);
-          margin-top:3px;letter-spacing:0.2px;">
+          font-size:9px;color:rgba(255,255,255,0.3);
+          margin-top:2px;letter-spacing:0.2px;">
           ${card.description}
         </div>
       </div>
@@ -16194,21 +16206,22 @@ function buildAdminWideCard(card, idx) {
       <!-- شارة -->
       <div style="
         padding:3px 10px;border-radius:20px;
-        background:#3730a3;
+        background:rgba(201,168,76,0.12);
+        border:1px solid rgba(201,168,76,0.25);
         font-size:8px;font-weight:800;
-        color:#fff;letter-spacing:1px;
+        color:#c9a84c;letter-spacing:1px;
         flex-shrink:0;">
         ${card.count_label}
       </div>
 
       <!-- سهم -->
       <div style="
-        width:32px;height:32px;flex-shrink:0;
-        border-radius:9px;
-        background:#3730a3;
+        width:30px;height:30px;flex-shrink:0;
+        border-radius:8px;
+        background:linear-gradient(135deg,#c9a84c,#f0d080);
         display:flex;align-items:center;
         justify-content:center;
-        color:#fff;font-size:12px;">
+        color:#0a0a0a;font-size:11px;font-weight:900;">
         <i class="fas fa-arrow-right"></i>
       </div>
 
