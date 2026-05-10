@@ -2487,9 +2487,10 @@ body.wow-mode .mobile-menu {
 
 
 
-    <div class="home-footer">
-<div class="home-footer-text"></div>
-    </div>
+  <div class="home-footer">
+  <div class="home-footer-text" id="homeFooterText"></div>
+</div>
+
   </div>
 </div>
 
@@ -4162,6 +4163,20 @@ function showHomeScreen() {
   /* ── حماية من التكرار السريع ── */
   if (hs._rendering) return;
   hs._rendering = true;
+  /* ★ تحديث نص الفوتر بناءً على المستخدم ★ */
+const footerTextEl = document.getElementById('homeFooterText');
+if (footerTextEl) {
+  if (currentUser === ADMIN_USER) {
+    footerTextEl.innerHTML = `
+      <i class="fas fa-code" style="color:var(--gold);margin-right:7px;"></i>
+      Yazılım & Tasarım — Müh. MUATAZ BELLAH
+    `;
+  } else {
+    /* المستخدم العادي — النص يأتي من Supabase */
+    footerTextEl.textContent = localStorage.getItem('wow_footer_copy') || '';
+  }
+}
+
   setTimeout(() => { hs._rendering = false; }, 600);
 
   const isFirstShow = hs.style.display !== 'block';
