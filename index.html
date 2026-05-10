@@ -9636,21 +9636,24 @@ async function doLogin() {
     return;
   }
 
-  /* ── حساب WOW المدمج (لا يحتاج DB) ── */
+  /* ── 1. حساب WOW المدمج ── */
   if (USERS[user] && USERS[user] === pass) {
     const remember = document.getElementById('rememberMe').checked;
     if (remember) saveCredentials(user, pass);
     else clearSavedCredentials();
 
-    currentUser     = user;
-    _currentUserData = { username: user, company_name: 'WOW MOBİLYA', is_active: true };
+    currentUser      = user;
+    _currentUserData = {
+      username     : user,
+      company_name : 'WOW MOBİLYA',
+      is_active    : true,
+    };
 
     hideError('loginError');
     finishLogin();
     return;
   }
 
-  /* ── مستخدمو قاعدة البيانات ── */
   const sb = await initSupabase();
   if (!sb) {
     showError('loginError', 'Bağlantı hatası!');
@@ -9658,57 +9661,146 @@ async function doLogin() {
   }
 
   const btn = document.querySelector('#loginBox .login-btn');
-  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Giriş yapılıyor...'; }
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Giriş yapılıyor...';
+  }
 
   try {
-    const { data: users, error } = await sb
+
+    /* ── 2. فحص جدول admin_accounts ── */
+    const { data: adminRow } = await sb
+      .from('admin_accounts')
+      .select('*')
+      .eq('username', user)
+      .maybeSingle();
+
+    if (adminRow) {
+      /* وُجد في admin_accounts */
+      if (!adminRow.is_active) {
+        showError('loginError', 'Hesap aktif değil!');
+        return;
+      }
+      if (adminRow.is_blocked) {
+        showError('loginError', 'Hesabınız engellendi!');
+        return;
+      }
+
+      const hashed = await hashPassword(pass);
+      if (hashed !== adminRow.password_hash) {
+        showError('loginError', 'Kullanıcı adı veya şifre hatalı!');
+        return;
+      }
+
+      const deviceId   = getDeviceId();
+      const deviceInfo = navigator.userAgent.substring(0, 200);
+
+      /* ★ فحص الجلسة الحصرية ★ */
+      if (adminRow.active_device_id &&
+          adminRow.active_device_id !== deviceId) {
+        /* جهاز آخر نشط — اعرض نافذة التعارض */
+        showSessionConflictModal(
+          {
+            adminId   : adminRow.id,
+            adminName : adminRow.name,
+            isConflict: true,
+          },
+          user,
+          pass
+        );
+        return;
+      }
+
+      /* تسجيل الجهاز الحالي */
+      await sb.from('admin_accounts').update({
+        active_device_id   : deviceId,
+        active_device_info : deviceInfo,
+        active_login_at    : new Date().toISOString(),
+        last_seen          : new Date().toISOString(),
+      }).eq('id', adminRow.id);
+
+      /* ✅ تسجيل دخول ناجح كأدمن */
+      _currentAdminData = adminRow;
+      currentUser       = adminRow.username;
+      _currentUserData  = {
+        id           : adminRow.id,
+        username     : adminRow.username,
+        company_name : adminRow.name,
+        is_active    : true,
+        _isAdmin     : true,          /* ← علامة مميزة */
+        _adminPerms  : {
+          perm_orders    : adminRow.perm_orders,
+          perm_inventory : adminRow.perm_inventory,
+          perm_users     : adminRow.perm_users,
+          perm_messages  : adminRow.perm_messages,
+          perm_settings  : adminRow.perm_settings,
+          perm_cards     : adminRow.perm_cards,
+        },
+      };
+
+      const remember = document.getElementById('rememberMe').checked;
+      if (remember) saveCredentials(user, pass);
+      else clearSavedCredentials();
+
+      hideError('loginError');
+
+      /* بدء نبضة الجلسة */
+      clearInterval(_adminHeartbeatTimer);
+      _adminHeartbeatTimer = setInterval(async () => {
+        const s = await initSupabase();
+        if (!s || !_currentAdminData?.id) return;
+        await s.from('admin_accounts')
+          .update({ last_seen: new Date().toISOString() })
+          .eq('id', _currentAdminData.id);
+      }, 60_000);
+
+      finishLogin();
+      return;
+    }
+
+    /* ── 3. فحص جدول users العادي ── */
+    const { data: userRow, error } = await sb
       .from('users')
       .select('*')
       .eq('username', user)
       .single();
 
-    if (error || !users) {
+    if (error || !userRow) {
       showError('loginError', 'Kullanıcı adı veya şifre hatalı!');
       return;
     }
 
-    /* فحص الحظر */
-    if (users.is_blocked) {
+    if (userRow.is_blocked) {
       showError('loginError', 'Hesabınız engellendi. Yönetici ile iletişime geçin.');
       return;
     }
-
-    /* فحص التفعيل */
-    if (!users.is_active) {
+    if (!userRow.is_active) {
       showError('loginError', 'Hesabınız henüz aktif değil!');
       return;
     }
 
-    /* التحقق من كلمة المرور */
     const hashed = await hashPassword(pass);
-    if (hashed !== users.password_hash) {
+    if (hashed !== userRow.password_hash) {
       showError('loginError', 'Kullanıcı adı veya şifre hatalı!');
       return;
     }
 
-    /* ✅ تسجيل دخول ناجح */
-    currentUser      = users.username;
-    _currentUserData = users;
+    /* ✅ تسجيل دخول ناجح كمستخدم عادي */
+    currentUser      = userRow.username;
+    _currentUserData = userRow;
 
     const remember = document.getElementById('rememberMe').checked;
     if (remember) saveCredentials(user, pass);
     else clearSavedCredentials();
 
-    /* تحديث آخر دخول */
     await sb.from('users').update({
       last_login : new Date().toISOString(),
       last_seen  : new Date().toISOString(),
-    }).eq('id', users.id);
+    }).eq('id', userRow.id);
 
-    /* إنشاء جلسة */
     const { data: session } = await sb.from('user_sessions').insert([{
-      user_id     : users.id,
-      username    : users.username,
+      user_id     : userRow.id,
+      username    : userRow.username,
       device_info : navigator.userAgent.substring(0, 200),
       is_active   : true,
     }]).select().single();
@@ -9719,9 +9811,13 @@ async function doLogin() {
     finishLogin();
 
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> GİRİŞ YAP'; }
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> GİRİŞ YAP';
+    }
   }
 }
+
 
 /* ── إتمام تسجيل الدخول ── */
 function finishLogin() {
