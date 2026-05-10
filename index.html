@@ -17926,6 +17926,8 @@ showHomeScreen = function() {
   /* ══ finishLogin موحدة — كل الـ hooks في مكان واحد ══ */
 const _masterFinishLogin = finishLogin;
 finishLogin = function() {
+  /* منع التكرار إذا كان admin_accounts */
+  if (_currentAdminData && currentUser !== ADMIN_USER) return;
   _masterFinishLogin();
 
   setTimeout(async () => {
@@ -20438,6 +20440,51 @@ async function forceLoginAdminAccount(adminId, username, password) {
 let _currentAdminData    = null;
 let _adminHeartbeatTimer = null;
 
+
+
+
+/* ── إتمام تسجيل دخول admin_accounts ── */
+function finishAdminAccountLogin(admin) {
+  _currentAdminData = admin;
+  currentUser       = admin.username;
+
+  /* نبضة الجلسة */
+  clearInterval(_adminHeartbeatTimer);
+  _adminHeartbeatTimer = setInterval(async () => {
+    if (!_currentAdminData?.id) return;
+    const sb = await initSupabase();
+    if (!sb) return;
+    await sb.from('admin_accounts')
+      .update({ last_seen: new Date().toISOString() })
+      .eq('id', _currentAdminData.id);
+  }, 60_000);
+
+  /* إخفاء شاشة تسجيل الدخول */
+  const ov = document.getElementById('loginOverlay');
+  ov.style.transition = 'opacity 0.7s';
+  ov.style.opacity    = '0';
+
+  setTimeout(async () => {
+    ov.style.display = 'none';
+
+    /* تحميل البيانات الأساسية */
+    await loadInventory();
+    subscribeInventory();
+    await loadHomeCards();
+    subscribeHomeCards();
+    await loadLogoFromDB();
+
+    /* إظهار الهوم الخاص بهذا الأدمن */
+    showAdminAccountHome(admin);
+
+    setTimeout(tryPlayAudio, 600);
+  }, 700);
+}
+
+
+
+  
+  
 /* ── إتمام تسجيل دخول الأدمن ── */
 function finishAdminLogin(admin) {
   _currentAdminData = admin;
