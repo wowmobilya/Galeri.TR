@@ -4249,13 +4249,32 @@ function enterSection(cat){
   hs.style.transition='opacity 0.4s ease';hs.style.opacity='0';
   setTimeout(()=>{hs.style.display='none';document.getElementById('mainSite').style.display='block';showPage(cat);},400);
 }
-function goHome(){
+function goHome() {
   closeMobileMenu();
-  document.body.classList.remove('wow-mode'); /* ★ */
-  const ms=document.getElementById('mainSite');
-  ms.style.transition='opacity 0.35s ease';ms.style.opacity='0';
-  setTimeout(()=>{ms.style.opacity='1';ms.style.transition='';showHomeScreen();selectedIds.clear();selectMode=false;document.body.classList.remove('select-mode');updateBulkBar();},350);
+  document.body.classList.remove('wow-mode');
+
+  const ms = document.getElementById('mainSite');
+  ms.style.transition = 'opacity 0.35s ease';
+  ms.style.opacity    = '0';
+
+  setTimeout(() => {
+    ms.style.opacity   = '1';
+    ms.style.transition = '';
+
+    /* ★ إذا كان حساب admin_accounts → عرض هومه الخاص ★ */
+    if (_currentAdminData && currentUser !== ADMIN_USER) {
+      showAdminAccountHome(_currentAdminData);
+    } else {
+      showHomeScreen();
+    }
+
+    selectedIds.clear();
+    selectMode = false;
+    document.body.classList.remove('select-mode');
+    updateBulkBar();
+  }, 350);
 }
+
 
 function goHomeFromBack(){
   const ms=document.getElementById('mainSite');
@@ -9754,8 +9773,9 @@ async function doLogin() {
           .eq('id', _currentAdminData.id);
       }, 60_000);
 
-      finishLogin();
+           finishAdminAccountLogin(adminRow);
       return;
+
     }
 
     /* ── 3. فحص جدول users العادي ── */
@@ -9819,6 +9839,331 @@ async function doLogin() {
 }
 
 
+
+
+
+/* ============================================================
+   ★ إتمام تسجيل دخول حساب Admin_accounts ★
+============================================================ */
+function finishAdminAccountLogin(admin) {
+  _currentAdminData = admin;
+
+  const ov = document.getElementById('loginOverlay');
+  ov.style.transition = 'opacity 0.7s';
+  ov.style.opacity    = '0';
+
+  setTimeout(async () => {
+    ov.style.display = 'none';
+
+    /* تحميل المخزون */
+    const ok = await testSupabaseConnection();
+    if (ok) {
+      await loadInventory();
+      subscribeInventory();
+    }
+
+    /* تحميل البطاقات واللوجو */
+    await loadHomeCards();
+    subscribeHomeCards();
+    await loadLogoFromDB();
+
+    /* بناء الهوم بناءً على صلاحيات الأدمن */
+    showAdminAccountHome(admin);
+
+    setTimeout(tryPlayAudio, 600);
+  }, 700);
+}
+
+/* ── بناء الهوم الخاص بحساب admin_accounts ── */
+function showAdminAccountHome(admin) {
+  const hs = document.getElementById('homeScreen');
+  document.getElementById('mainSite').style.display = 'none';
+  document.body.style.overflow = '';
+  appState = 'home';
+  pushState('home');
+
+  /* ── إخفاء عناصر الهوم غير المطلوبة ── */
+  const logoWrap    = document.querySelector('.home-logo-wrap');
+  const welcomeWrap = document.querySelector('.home-welcome');
+  if (logoWrap)    logoWrap.style.display    = 'none';
+  if (welcomeWrap) welcomeWrap.style.display = 'none';
+
+  /* ── بناء بطاقات الصلاحيات ── */
+  const container = document.querySelector('.home-cards');
+  if (container) {
+    container.classList.remove('user-mode');
+    container.classList.add('admin-mode');
+    renderAdminAccountCards(container, admin);
+  }
+
+  /* ── إخفاء بطاقة WOW Admin ── */
+  const adminCard = document.getElementById('homeAdminCard');
+  if (adminCard) adminCard.style.display = 'none';
+
+  /* ── تحديث الفوتر ── */
+  const footerEl = document.getElementById('homeFooterText');
+  if (footerEl) {
+    footerEl.innerHTML = `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <span style="color:rgba(139,92,246,0.7);font-weight:700;letter-spacing:2px;">
+          <i class="fas fa-user-shield" style="margin-right:5px;"></i>
+          ${admin.name}
+        </span>
+        <span style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.2);">
+          YÖNETİCİ HESABI
+        </span>
+      </div>`;
+  }
+
+  /* ── إظهار الهوم ── */
+  hs.style.opacity    = '0';
+  hs.style.display    = 'block';
+  hs.style.transition = 'opacity 0.5s ease';
+  window.scrollTo({ top: 0 });
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      hs.style.opacity = '1';
+    });
+  });
+}
+
+/* ── رسم بطاقات الصلاحيات لحساب admin_accounts ── */
+function renderAdminAccountCards(container, admin) {
+  /* تعريف كل الأقسام المتاحة */
+  const allSections = [
+    {
+      key         : 'admin',
+      perm        : 'perm_orders',
+      title       : 'SİPARİŞ',
+      subtitle    : 'PANELİ',
+      description : 'Siparişleri görüntüle & yönet',
+      count_label : 'ORDERS',
+      icon        : 'fa-clipboard-list',
+      color       : '#ef4444',
+      badge       : '#991b1b',
+    },
+    {
+      key         : 'stock',
+      perm        : 'perm_inventory',
+      title       : 'STOK',
+      subtitle    : 'YÖNETİMİ',
+      description : 'Stokları takip et & güncelle',
+      count_label : 'STOCK',
+      icon        : 'fa-boxes',
+      color       : '#f59e0b',
+      badge       : '#b45309',
+    },
+    {
+      key         : 'users_panel',
+      perm        : 'perm_users',
+      title       : 'KULLANICI',
+      subtitle    : 'YÖNETİMİ',
+      description : 'Kullanıcı hesaplarını yönet',
+      count_label : 'USERS',
+      icon        : 'fa-users',
+      color       : '#3b82f6',
+      badge       : '#1d4ed8',
+    },
+    {
+      key         : 'messages',
+      perm        : 'perm_messages',
+      title       : 'MESAJ',
+      subtitle    : 'MERKEZİ',
+      description : 'WhatsApp & e-posta yönetimi',
+      count_label : 'MSG',
+      icon        : 'fa-comments',
+      color       : '#22c55e',
+      badge       : '#15803d',
+    },
+    {
+      key         : 'settings',
+      perm        : 'perm_settings',
+      title       : 'AYARLAR',
+      subtitle    : '& DÜZEN',
+      description : 'Uygulama ayarlarını düzenle',
+      count_label : 'SET',
+      icon        : 'fa-cog',
+      color       : '#c9a84c',
+      badge       : '#92701e',
+    },
+    {
+      key         : 'admin_cards_mgr',
+      perm        : 'perm_cards',
+      title       : 'KART',
+      subtitle    : 'YÖNETİMİ',
+      description : 'Ana sayfa kartlarını düzenle',
+      count_label : 'CARDS',
+      icon        : 'fa-th-large',
+      color       : '#8b5cf6',
+      badge       : '#6d28d9',
+    },
+  ];
+
+  /* فلترة بناءً على الصلاحيات */
+  const allowed = allSections.filter(s => admin[s.perm]);
+
+  if (!allowed.length) {
+    container.innerHTML = `
+      <div style="
+        grid-column:1/-1;
+        text-align:center;padding:40px 20px;
+        color:rgba(255,255,255,0.2);">
+        <i class="fas fa-lock"
+           style="font-size:40px;display:block;margin-bottom:14px;
+                  color:rgba(139,92,246,0.2);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">
+          Henüz yetkiniz bulunmuyor
+        </p>
+        <p style="font-size:10px;margin-top:6px;
+             color:rgba(255,255,255,0.15);">
+          WOW yöneticisi ile iletişime geçin
+        </p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = allowed.map((s, idx) => {
+    const delay = (0.3 + idx * 0.08).toFixed(2);
+    return `
+      <div onclick="enterAdminSection('${s.key}')"
+           style="
+             animation:cardSlideIn 0.6s ease ${delay}s both;
+             cursor:pointer;border-radius:14px;
+             background:#111111;
+             border:1px solid rgba(255,255,255,0.07);
+             padding:14px 13px 12px;
+             display:flex;flex-direction:column;
+             align-items:flex-start;gap:10px;
+             position:relative;overflow:hidden;
+             transition:all 0.25s ease;"
+           onmouseover="
+             this.style.transform='translateY(-2px)';
+             this.style.boxShadow='0 8px 24px rgba(0,0,0,0.5)';
+             this.style.borderColor='rgba(255,255,255,0.13)';"
+           onmouseout="
+             this.style.transform='translateY(0)';
+             this.style.boxShadow='';
+             this.style.borderColor='rgba(255,255,255,0.07)';">
+
+        <!-- صف: الرمز + الشارة -->
+        <div style="display:flex;align-items:center;
+             justify-content:space-between;width:100%;">
+          <div style="
+            width:40px;height:40px;border-radius:11px;
+            background:${s.badge};
+            display:flex;align-items:center;
+            justify-content:center;
+            font-size:18px;color:#fff;">
+            <i class="fas ${s.icon}"></i>
+          </div>
+          <div style="
+            padding:3px 8px;border-radius:20px;
+            background:${s.badge};
+            font-size:8px;font-weight:800;
+            color:#fff;letter-spacing:1px;">
+            ${s.count_label}
+          </div>
+        </div>
+
+        <!-- العنوان -->
+        <div style="width:100%;">
+          <div style="
+            font-size:12px;font-weight:900;
+            color:#fff;letter-spacing:0.3px;
+            line-height:1.2;margin-bottom:2px;">
+            ${s.title}
+          </div>
+          <div style="
+            font-size:10px;font-weight:700;
+            color:${s.color};letter-spacing:0.5px;">
+            ${s.subtitle}
+          </div>
+          <div style="
+            font-size:9px;color:rgba(255,255,255,0.35);
+            margin-top:3px;letter-spacing:0.2px;line-height:1.4;">
+            ${s.description}
+          </div>
+        </div>
+
+        <!-- زر الدخول -->
+        <div style="
+          width:100%;padding:7px 10px;border-radius:8px;
+          background:${s.badge};color:#fff;
+          font-size:8px;font-weight:800;
+          letter-spacing:1.2px;text-transform:uppercase;
+          display:flex;align-items:center;
+          justify-content:space-between;">
+          Gir
+          <i class="fas fa-arrow-right" style="font-size:9px;"></i>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ── enterSection خاص بحسابات admin_accounts ── */
+function enterAdminSection(sectionKey) {
+  const hs = document.getElementById('homeScreen');
+  hs.style.transition = 'opacity 0.4s ease';
+  hs.style.opacity    = '0';
+
+  setTimeout(() => {
+    hs.style.display = 'none';
+    document.getElementById('mainSite').style.display = 'block';
+
+    /* إخفاء الهيدر لحسابات admin_accounts */
+    document.body.classList.add('wow-mode');
+
+    updateAdminAccountNav();
+
+    /* التوجيه للقسم */
+    if (sectionKey === 'admin_cards_mgr') {
+      showPage('settings');
+      setTimeout(() => openHomeCardsModal(), 400);
+    } else {
+      showPage(sectionKey);
+    }
+  }, 400);
+}
+
+/* ── تحديث الهيدر لحسابات admin_accounts ── */
+function updateAdminAccountNav() {
+  if (!_currentAdminData) return;
+  const admin = _currentAdminData;
+
+  /* إخفاء كل روابط الهيدر أولاً */
+  document.querySelectorAll('.nav-link').forEach(a => {
+    a.style.display = 'none';
+  });
+
+  /* إظهار فقط الروابط المسموح بها */
+  const permMap = {
+    'nav-admin'          : 'perm_orders',
+    'nav-orders'         : null,          /* مخفي دائماً للأدمن */
+    'nav-orta'           : null,
+    'nav-tv'             : null,
+    'nav-dresuar'        : null,
+    'nav-messages'       : 'perm_messages',
+    'nav-users'          : 'perm_users',
+    'nav-settings'       : 'perm_settings',
+    'nav-admin-accounts' : null,          /* مخفي للأدمن الفرعي */
+  };
+
+  /* زر المخزون */
+  const invBtn = document.getElementById('invOpenBtn');
+  if (invBtn) {
+    invBtn.style.display = admin.perm_inventory ? 'flex' : 'none';
+  }
+
+  /* إظهار زر الرجوع للهوم فقط */
+  /* الهيدر مخفي بـ wow-mode — لا حاجة لتعديل */
+}
+
+
+
+
+
+
+  
 /* ── إتمام تسجيل الدخول ── */
 function finishLogin() {
   if (_loginInProgress) return;
@@ -20061,11 +20406,53 @@ async function logoutCurrentAdmin() {
 ============================================================ */
 const _origDoLogout_admin = doLogout;
 doLogout = async function() {
-  if (_currentAdminData) {
-    await logoutCurrentAdmin();
+  /* إنهاء جلسة admin_accounts إذا كان مسجلاً */
+  if (_currentAdminData && currentUser !== ADMIN_USER) {
+    clearInterval(_adminHeartbeatTimer);
+    await logoutAdminAccount(_currentAdminData.id);
+    _currentAdminData = null;
   }
-  _origDoLogout_admin();
+
+  /* إنهاء جلسة user_sessions العادية */
+  if (_currentSessionId) {
+    const sb = await initSupabase();
+    if (sb) {
+      await sb.from('user_sessions').update({
+        logout_at : new Date().toISOString(),
+        is_active : false,
+      }).eq('id', _currentSessionId);
+    }
+    _currentSessionId = null;
+  }
+
+  clearInterval(_heartbeatTimer);
+  _currentUserData  = null;
+  _currentAdminData = null;
+
+  /* إعادة تعيين الحالة */
+  document.body.classList.remove('wow-mode');
+  localStorage.removeItem('wow_order_cart');
+  Object.keys(orderCart).forEach(k => delete orderCart[k]);
+
+  document.getElementById('mainSite').style.display  = 'none';
+  document.getElementById('homeScreen').style.display = 'none';
+
+  const ov = document.getElementById('loginOverlay');
+  ov.style.display    = 'flex';
+  ov.style.opacity    = '1';
+  ov.style.transition = '';
+
+  loadSavedCredentials();
+  selectedIds.clear();
+  selectMode = false;
+  document.body.classList.remove('select-mode');
+  updateBulkBar();
+  pauseAudio();
+  closeMobileMenu();
+  appState = 'login';
+  replaceState('login');
 };
+
 
 /* ============================================================
    ★ ربط صفحة إدارة الأدمن بنظام التنقل ★
