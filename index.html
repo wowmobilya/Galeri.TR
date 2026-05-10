@@ -7336,7 +7336,7 @@ async function saveOrderToSupabase(orderNum, items, note) {
 
 
 function updateAdminNavVisibility() {
-  const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
   ['nav-admin','mob-admin', 'invOpenBtn'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? '' : 'none';
@@ -8605,7 +8605,7 @@ async function buildMyOrdersPage() {
 const _origShowPage = showPage;
 showPage = function(cat) {
   if (cat === 'admin') {
-    if (currentUser !== ADMIN_USER) return;
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
     currentPage = 'admin';
     document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
     const el = document.getElementById('nav-admin');
@@ -12091,7 +12091,8 @@ doLogout = async function() {
 const _origShowPage_auth = showPage;
 showPage = function(cat) {
   if (cat === 'users') {
-    if (currentUser !== ADMIN_USER) return;
+    // استبدل الشرط هنا
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
     currentPage = 'users';
     document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
     filteredImages = [];
@@ -12167,7 +12168,7 @@ showPage = function(cat) {
 const _origUpdateAdminNav = updateAdminNavVisibility;
 updateAdminNavVisibility = function() {
   _origUpdateAdminNav();
-  const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
 
   /* إظهار/إخفاء روابط المستخدمين */
   ['nav-users', 'mob-users'].forEach(id => {
@@ -12209,7 +12210,7 @@ updateAdminNavVisibility = function() {
 const _origEnterSection_auth = enterSection;
 enterSection = function(cat) {
   setTimeout(() => {
-    const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
     const mobAccBtn = document.getElementById('mobAccSettingsBtn');
     if (mobAccBtn) mobAccBtn.style.display = isAdmin ? 'none' : 'flex';
   }, 300);
@@ -15731,7 +15732,8 @@ function showDeleteAllMsgsConfirm(count, filter) {
 const _origShowPage_msgs = showPage;
 showPage = function(cat) {
   if (cat === 'messages') {
-    if (currentUser !== ADMIN_USER) return;
+    // استبدل الشرط هنا
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
     currentPage = 'messages';
     document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
     const el = document.getElementById('nav-messages');
@@ -15806,7 +15808,7 @@ enterSection = function(cat) {
 const _origUpdateAdminNav_msgs = updateAdminNavVisibility;
 updateAdminNavVisibility = function() {
   _origUpdateAdminNav_msgs();
-  const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
   ['nav-messages', 'mob-messages'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? '' : 'none';
@@ -15815,7 +15817,7 @@ updateAdminNavVisibility = function() {
 
 /* ── شارة عدد الرسائل الجديدة في الهيدر ── */
 async function updateMsgBadge() {
-  if (currentUser !== ADMIN_USER) return;
+if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
   const sb = await initSupabase();
   if (!sb) return;
 
@@ -16443,7 +16445,7 @@ function renderHomeCards() {
   const container = document.querySelector('.home-cards');
   if (!container) return;
 
-  const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
   if (isAdmin) {
     renderAdminHomeCards(container);
   } else {
@@ -17715,7 +17717,8 @@ async function subscribeHomeCards() {
 const _origShowPage_stock = showPage;
 showPage = function(cat) {
   if (cat === 'stock') {
-    if (currentUser !== ADMIN_USER) return;
+    // استبدل الشرط هنا
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
     currentPage = 'stock';
     document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
     filteredImages = [];
@@ -17828,7 +17831,7 @@ enterSection = function(cat) {
 const _origUpdateAdminNav_settings = updateAdminNavVisibility;
 updateAdminNavVisibility = function() {
   _origUpdateAdminNav_settings();
-  const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
   ['nav-settings', 'mob-settings'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? '' : 'none';
@@ -17884,7 +17887,7 @@ showHomeScreen = function() {
   _origShowHomeScreen_settings();
 
   setTimeout(() => {
-    const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
 
     /* بطاقة الإعدادات */
     const settingsCard = document.getElementById('homeSettingsCard');
@@ -19014,7 +19017,8 @@ async function saveAppTexts() {
 const _origShowPage_for_settings = showPage;
 showPage = function(cat) {
   if (cat === 'settings') {
-    if (currentUser !== ADMIN_USER) return;
+    // استبدل الشرط هنا
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
     currentPage = 'settings';
     
     // إزالة التفعيل من الروابط الأخرى
@@ -20603,7 +20607,8 @@ doLogout = async function() {
 const _origShowPage_adminAcc = showPage;
 showPage = function(cat) {
   if (cat === 'admin_accounts') {
-    if (currentUser !== ADMIN_USER) return;
+    // استبدل الشرط هنا
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
     currentPage = 'admin_accounts';
     document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
     filteredImages = [];
@@ -20713,7 +20718,7 @@ handleAdminCardClick = function(sectionKey) {
 const _origUpdateAdminNav_adminAcc = updateAdminNavVisibility;
 updateAdminNavVisibility = function() {
   _origUpdateAdminNav_adminAcc();
-  const isAdmin = currentUser === ADMIN_USER;
+const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
   ['nav-admin-accounts', 'mob-admin-accounts'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? '' : 'none';
