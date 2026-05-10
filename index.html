@@ -4281,24 +4281,89 @@ function goHomeFromBack(){
   ms.style.transition='opacity 0.35s ease';ms.style.opacity='0';
   setTimeout(()=>{ms.style.opacity='1';ms.style.transition='';showHomeScreen();selectedIds.clear();selectMode=false;document.body.classList.remove('select-mode');updateBulkBar();},350);
 }
+
+
+
+
+
 function doLogoutFromBack(){
-  document.getElementById('mainSite').style.display='none';
-  document.getElementById('homeScreen').style.display='none';
-  const ov=document.getElementById('loginOverlay');
-  ov.style.display='flex';ov.style.opacity='1';ov.style.transition='';
-  loadSavedCredentials();selectedIds.clear();selectMode=false;
-  document.body.classList.remove('select-mode');updateBulkBar();pauseAudio();appState='login';replaceState('login');
+  doLogout();
 }
-function doLogout(){
-  localStorage.removeItem('wow_order_cart'); /* ← أضف هذا */
-  Object.keys(orderCart).forEach(k => delete orderCart[k]);
-  document.getElementById('mainSite').style.display='none';
-  document.getElementById('homeScreen').style.display='none';
-  const ov=document.getElementById('loginOverlay');
-  ov.style.display='flex';ov.style.opacity='1';ov.style.transition='';
-  loadSavedCredentials();selectedIds.clear();selectMode=false;
-  document.body.classList.remove('select-mode');updateBulkBar();pauseAudio();closeMobileMenu();appState='login';replaceState('login');
+
+async function doLogout() {
+  // 1. إيقاف جميع مؤقتات الجلسة (النبضات)
+  if (typeof _adminHeartbeatTimer !== 'undefined') clearInterval(_adminHeartbeatTimer);
+  if (typeof _heartbeatTimer !== 'undefined') clearInterval(_heartbeatTimer);
+
+  const sb = await initSupabase();
+
+  if (sb) {
+    try {
+      // 2. إنهاء جلسة الأدمن (إذا كان مسجلاً)
+      if (typeof _currentAdminData !== 'undefined' && _currentAdminData?.id && currentUser !== ADMIN_USER) {
+        await sb.from('admin_accounts').update({
+          active_device_id: null,
+          active_device_info: null,
+          active_login_at: null
+        }).eq('id', _currentAdminData.id);
+      }
+      
+      // 3. إنهاء جلسة المستخدم العادي (إذا كان مسجلاً)
+      if (typeof _currentSessionId !== 'undefined' && _currentSessionId) {
+        await sb.from('user_sessions').update({
+          is_active: false,
+          logout_at: new Date().toISOString()
+        }).eq('id', _currentSessionId);
+      }
+    } catch (error) {
+      console.error('[Logout Error]', error);
+    }
+  }
+
+  // 4. تصفير المتغيرات المحلية في الذاكرة
+  currentUser       = null;
+  _currentUserData  = null;
+  _currentAdminData = null;
+  _currentSessionId = null;
+
+  // 5. مسح سلة المشتريات
+  localStorage.removeItem('wow_order_cart');
+  if (typeof orderCart !== 'undefined') {
+    Object.keys(orderCart).forEach(k => delete orderCart[k]);
+  }
+
+  // 6. إعادة ضبط واجهة المستخدم وإخفاء الشاشات
+  document.body.classList.remove('wow-mode');
+  
+  const mainSite = document.getElementById('mainSite');
+  const homeScreen = document.getElementById('homeScreen');
+  const ov = document.getElementById('loginOverlay');
+  
+  if (mainSite) mainSite.style.display = 'none';
+  if (homeScreen) homeScreen.style.display = 'none';
+  
+  if (ov) {
+    ov.style.display = 'flex';
+    ov.style.opacity = '1';
+    ov.style.transition = '';
+  }
+
+  // 7. إعادة تهيئة المتغيرات العامة
+  loadSavedCredentials();
+  if (typeof selectedIds !== 'undefined') selectedIds.clear();
+  selectMode = false;
+  document.body.classList.remove('select-mode');
+  
+  if (typeof updateBulkBar === 'function') updateBulkBar();
+  if (typeof pauseAudio === 'function') pauseAudio();
+  if (typeof closeMobileMenu === 'function') closeMobileMenu();
+  
+  appState = 'login';
+  if (typeof replaceState === 'function') replaceState('login');
 }
+
+
+  
 
 /* ============================================================
    بناء الصفحة
@@ -12068,27 +12133,7 @@ function filterUsersAdmin(filter, btn) {
   }
 }
 
-/* ============================================================
-   ★ تعديل doLogout لإغلاق الجلسة ★
-============================================================ */
-const _origDoLogout_auth = doLogout;
-doLogout = async function() {
-  /* إغلاق الجلسة في Supabase */
-  if (_currentSessionId) {
-    const sb = await initSupabase();
-    if (sb) {
-      await sb.from('user_sessions').update({
-        logout_at : new Date().toISOString(),
-        is_active : false,
-      }).eq('id', _currentSessionId);
-    }
-    _currentSessionId = null;
-  }
 
-  clearInterval(_heartbeatTimer);
-  _currentUserData = null;
-  _origDoLogout_auth();
-};
 
 /* ============================================================
    ★ تعديل showPage لدعم صفحة المستخدمين ★
@@ -20630,57 +20675,6 @@ async function logoutCurrentAdmin() {
   _currentAdminData = null;
 }
 
-/* ============================================================
-   ★ تعديل doLogout لدعم الأدمن ★
-============================================================ */
-const _origDoLogout_admin = doLogout;
-doLogout = async function() {
-  /* إنهاء جلسة admin_accounts إذا كان مسجلاً */
-  if (_currentAdminData && currentUser !== ADMIN_USER) {
-    clearInterval(_adminHeartbeatTimer);
-    await logoutAdminAccount(_currentAdminData.id);
-    _currentAdminData = null;
-  }
-
-  /* إنهاء جلسة user_sessions العادية */
-  if (_currentSessionId) {
-    const sb = await initSupabase();
-    if (sb) {
-      await sb.from('user_sessions').update({
-        logout_at : new Date().toISOString(),
-        is_active : false,
-      }).eq('id', _currentSessionId);
-    }
-    _currentSessionId = null;
-  }
-
-  clearInterval(_heartbeatTimer);
-  _currentUserData  = null;
-  _currentAdminData = null;
-
-  /* إعادة تعيين الحالة */
-  document.body.classList.remove('wow-mode');
-  localStorage.removeItem('wow_order_cart');
-  Object.keys(orderCart).forEach(k => delete orderCart[k]);
-
-  document.getElementById('mainSite').style.display  = 'none';
-  document.getElementById('homeScreen').style.display = 'none';
-
-  const ov = document.getElementById('loginOverlay');
-  ov.style.display    = 'flex';
-  ov.style.opacity    = '1';
-  ov.style.transition = '';
-
-  loadSavedCredentials();
-  selectedIds.clear();
-  selectMode = false;
-  document.body.classList.remove('select-mode');
-  updateBulkBar();
-  pauseAudio();
-  closeMobileMenu();
-  appState = 'login';
-  replaceState('login');
-};
 
 
 /* ============================================================
