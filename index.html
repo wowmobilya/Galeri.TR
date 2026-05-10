@@ -16140,104 +16140,192 @@ function buildAdminWideCard(card, idx) {
            grid-column: 1 / -1;
            animation: cardSlideIn 0.7s ease ${delay}s both;
            cursor:pointer;
-           border-radius:18px;
+           border-radius:20px;
            overflow:hidden;
            position:relative;
-           min-height:120px;
-           border:1px solid rgba(201,168,76,0.3);
-           background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(240,208,128,0.06),rgba(201,168,76,0.08));
-           transition:all 0.3s ease;"
+           min-height:130px;
+           border:1px solid rgba(201,168,76,0.45);
+           background:linear-gradient(135deg,#1a1500 0%,#0f0c00 40%,#1a1400 70%,#0d0b00 100%);
+           transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);"
          onmouseover="
-           this.style.transform='translateY(-3px)';
-           this.style.boxShadow='0 16px 40px rgba(201,168,76,0.2)';
-           this.style.borderColor='rgba(201,168,76,0.55)';"
+           this.style.transform='translateY(-4px) scale(1.01)';
+           this.style.boxShadow='0 20px 60px rgba(201,168,76,0.3), 0 0 0 1px rgba(201,168,76,0.4)';
+           this.style.borderColor='rgba(240,208,128,0.7)';"
          onmouseout="
-           this.style.transform='';
-           this.style.boxShadow='';
-           this.style.borderColor='rgba(201,168,76,0.3)';">
+           this.style.transform='translateY(0) scale(1)';
+           this.style.boxShadow='0 8px 32px rgba(201,168,76,0.12)';
+           this.style.borderColor='rgba(201,168,76,0.45)';"
+         >
 
-      <!-- تدرج ذهبي خلفي -->
+      <!-- طبقة الإضاءة الذهبية العميقة -->
       <div style="
         position:absolute;inset:0;
         background:
-          radial-gradient(ellipse at 15% 50%, rgba(201,168,76,0.18) 0%, transparent 55%),
-          radial-gradient(ellipse at 85% 50%, rgba(240,208,128,0.12) 0%, transparent 55%),
-          radial-gradient(ellipse at 50% 0%,  rgba(201,168,76,0.08) 0%, transparent 60%);
-        pointer-events:none;"></div>
+          radial-gradient(ellipse at 0% 50%,   rgba(201,168,76,0.22) 0%, transparent 50%),
+          radial-gradient(ellipse at 100% 50%,  rgba(240,208,128,0.14) 0%, transparent 50%),
+          radial-gradient(ellipse at 50% 100%,  rgba(201,168,76,0.10) 0%, transparent 50%),
+          radial-gradient(ellipse at 50% -20%,  rgba(255,220,100,0.08) 0%, transparent 60%);
+        pointer-events:none;z-index:0;"></div>
 
-      <!-- خط ذهبي علوي -->
+      <!-- نمط الشبكة الدقيقة -->
+      <div style="
+        position:absolute;inset:0;
+        background-image:
+          linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+        background-size:28px 28px;
+        pointer-events:none;z-index:0;"></div>
+
+      <!-- خط علوي ذهبي متوهج -->
       <div style="
         position:absolute;top:0;left:0;right:0;height:2px;
-        background:linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
-        pointer-events:none;"></div>
+        background:linear-gradient(90deg,
+          transparent 0%,
+          rgba(201,168,76,0.4) 15%,
+          #c9a84c 30%,
+          #f0d080 50%,
+          #c9a84c 70%,
+          rgba(201,168,76,0.4) 85%,
+          transparent 100%);
+        z-index:2;"></div>
+
+      <!-- وهج سفلي -->
+      <div style="
+        position:absolute;bottom:0;left:0;right:0;height:1px;
+        background:linear-gradient(90deg,
+          transparent,rgba(201,168,76,0.2),transparent);
+        z-index:2;"></div>
+
+      <!-- بريق متحرك في الزاوية -->
+      <div style="
+        position:absolute;top:-40px;right:-40px;
+        width:160px;height:160px;
+        background:radial-gradient(circle,
+          rgba(240,208,128,0.12) 0%,
+          rgba(201,168,76,0.06) 40%,
+          transparent 70%);
+        pointer-events:none;z-index:0;"></div>
 
       <!-- المحتوى -->
       <div style="
-        position:relative;z-index:2;
-        padding:22px 22px 20px;
+        position:relative;z-index:3;
+        padding:24px 24px 22px;
         display:flex;align-items:center;
-        justify-content:space-between;gap:16px;">
+        justify-content:space-between;gap:20px;">
 
-        <div style="display:flex;align-items:center;gap:16px;">
-          <!-- رمز العين -->
-          <div style="
-            width:56px;height:56px;flex-shrink:0;
-            border-radius:16px;
-            background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
-            border:1px solid rgba(201,168,76,0.4);
-            display:flex;align-items:center;
-            justify-content:center;
-            font-size:24px;color:#c9a84c;">
-            <i class="fas fa-eye"></i>
+        <div style="display:flex;align-items:center;gap:18px;">
+
+          <!-- أيقونة متطورة -->
+          <div style="position:relative;flex-shrink:0;">
+            <!-- الهالة الخارجية -->
+            <div style="
+              position:absolute;inset:-6px;
+              border-radius:20px;
+              background:linear-gradient(135deg,
+                rgba(201,168,76,0.2),
+                rgba(240,208,128,0.05));
+              border:1px solid rgba(201,168,76,0.2);
+              animation:avatarRing 3s ease infinite;"></div>
+            <!-- الأيقونة الرئيسية -->
+            <div style="
+              position:relative;
+              width:58px;height:58px;
+              border-radius:16px;
+              background:linear-gradient(135deg,#c9a84c,#f0d080,#c9a84c);
+              display:flex;align-items:center;
+              justify-content:center;
+              font-size:24px;color:#0a0a0a;
+              box-shadow:
+                0 4px 20px rgba(201,168,76,0.5),
+                0 0 0 1px rgba(255,255,255,0.1) inset;">
+              <i class="fas fa-eye"></i>
+            </div>
           </div>
 
           <div>
+            <!-- شارة -->
             <div style="
-              font-size:9px;letter-spacing:3px;
-              color:rgba(201,168,76,0.65);
-              text-transform:uppercase;margin-bottom:5px;">
-              MÜŞTERİ GÖRÜNÜMÜ
+              display:inline-flex;align-items:center;gap:6px;
+              background:rgba(201,168,76,0.12);
+              border:1px solid rgba(201,168,76,0.3);
+              border-radius:50px;
+              padding:3px 12px;
+              margin-bottom:8px;">
+              <div style="
+                width:6px;height:6px;border-radius:50%;
+                background:#c9a84c;
+                box-shadow:0 0 6px rgba(201,168,76,0.8);
+                animation:iconPulse 2s infinite;"></div>
+              <span style="
+                font-size:8px;letter-spacing:3px;
+                color:rgba(201,168,76,0.85);
+                text-transform:uppercase;font-weight:700;">
+                MÜŞTERİ GÖRÜNÜMÜ
+              </span>
             </div>
+
+            <!-- العنوان الكبير -->
             <div style="
-              font-size:clamp(18px,4vw,26px);
+              font-size:clamp(20px,4vw,28px);
               font-weight:900;color:#fff;
-              letter-spacing:1px;line-height:1.1;">
+              letter-spacing:1px;line-height:1.1;
+              text-shadow:0 2px 20px rgba(0,0,0,0.5);">
               ${card.title}
               <span style="
-                background:linear-gradient(135deg,#c9a84c,#f0d080);
+                background:linear-gradient(135deg,#c9a84c,#f0d080,#ffe87c);
                 -webkit-background-clip:text;
                 -webkit-text-fill-color:transparent;
                 background-clip:text;">
                 ${card.subtitle}
               </span>
             </div>
+
+            <!-- الوصف -->
             <div style="
-              font-size:11px;color:rgba(255,255,255,0.35);
-              margin-top:5px;letter-spacing:0.3px;">
+              font-size:11px;color:rgba(255,255,255,0.4);
+              margin-top:6px;letter-spacing:0.5px;
+              display:flex;align-items:center;gap:6px;">
+              <i class="fas fa-info-circle"
+                 style="color:rgba(201,168,76,0.4);font-size:10px;"></i>
               ${card.description}
             </div>
           </div>
         </div>
 
-        <!-- زر الدخول -->
+        <!-- زر الدخول المتطور -->
         <div style="
           flex-shrink:0;
-          padding:10px 18px;
-          border-radius:11px;
-          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          position:relative;
+          padding:12px 22px;
+          border-radius:12px;
+          background:linear-gradient(135deg,#c9a84c,#f0d080,#c9a84c);
           color:#0a0a0a;
           font-size:10px;font-weight:900;
-          letter-spacing:1.5px;
-          display:flex;align-items:center;gap:7px;
+          letter-spacing:2px;
+          display:flex;align-items:center;gap:8px;
           white-space:nowrap;
-          box-shadow:0 4px 16px rgba(201,168,76,0.35);">
-          <i class="fas fa-eye"></i>
-          ${card.btn_text}
+          box-shadow:
+            0 6px 24px rgba(201,168,76,0.45),
+            0 0 0 1px rgba(255,255,255,0.15) inset;
+          overflow:hidden;">
+          <!-- بريق الزر -->
+          <div style="
+            position:absolute;top:0;left:-100%;
+            width:60%;height:100%;
+            background:linear-gradient(90deg,
+              transparent,
+              rgba(255,255,255,0.25),
+              transparent);
+            transform:skewX(-20deg);
+            animation:updShine 2.5s ease infinite;"></div>
+          <i class="fas fa-eye" style="position:relative;z-index:1;"></i>
+          <span style="position:relative;z-index:1;">${card.btn_text}</span>
         </div>
 
       </div>
     </div>`;
 }
+
 
 
 /* ─────────────────────────────────────────
