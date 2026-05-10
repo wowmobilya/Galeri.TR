@@ -10175,12 +10175,12 @@ function renderAdminAccountCards(container, admin) {
 
 
 /* ── enterSection خاص بحسابات admin_accounts ── */
-function enterAdminSection(sectionKey) {
+async function enterAdminSection(sectionKey) {
   const hs = document.getElementById('homeScreen');
   hs.style.transition = 'opacity 0.4s ease';
   hs.style.opacity    = '0';
 
-  setTimeout(() => {
+  setTimeout(async () => {
     hs.style.display = 'none';
     document.getElementById('mainSite').style.display = 'block';
 
@@ -10189,10 +10189,25 @@ function enterAdminSection(sectionKey) {
 
     updateAdminAccountNav();
 
+    /* ★ انتظر تحميل المنتجات أولاً ★ */
+    if (!images || images.length === 0) {
+      const ok = await testSupabaseConnection();
+      if (ok) {
+        await loadInventory();
+        subscribeInventory();
+      }
+    }
+
     /* التوجيه للقسم */
     if (sectionKey === 'admin_cards_mgr') {
       showPage('settings');
       setTimeout(() => openHomeCardsModal(), 400);
+    } else if (sectionKey === 'stock_panel') {
+      showPage('stock');
+    } else if (sectionKey === 'users_panel') {
+      showPage('users');
+    } else if (sectionKey === 'messages') {
+      showPage('messages');
     } else {
       showPage(sectionKey);
     }
@@ -20448,7 +20463,6 @@ function finishAdminAccountLogin(admin) {
   _currentAdminData = admin;
   currentUser       = admin.username;
 
-  /* نبضة الجلسة */
   clearInterval(_adminHeartbeatTimer);
   _adminHeartbeatTimer = setInterval(async () => {
     if (!_currentAdminData?.id) return;
@@ -20459,7 +20473,6 @@ function finishAdminAccountLogin(admin) {
       .eq('id', _currentAdminData.id);
   }, 60_000);
 
-  /* إخفاء شاشة تسجيل الدخول */
   const ov = document.getElementById('loginOverlay');
   ov.style.transition = 'opacity 0.7s';
   ov.style.opacity    = '0';
@@ -20467,14 +20480,17 @@ function finishAdminAccountLogin(admin) {
   setTimeout(async () => {
     ov.style.display = 'none';
 
-    /* تحميل البيانات الأساسية */
-    await loadInventory();
-    subscribeInventory();
-    await loadHomeCards();
+    /* ★ تحميل كل البيانات أولاً قبل أي شيء ★ */
+    const ok = await testSupabaseConnection();
+    if (ok) {
+      await loadInventory();        /* ← المنتجات */
+      subscribeInventory();
+    }
+    await loadHomeCards();          /* ← بطاقات الهوم */
     subscribeHomeCards();
-    await loadLogoFromDB();
+    await loadLogoFromDB();         /* ← اللوجو */
 
-    /* إظهار الهوم الخاص بهذا الأدمن */
+    /* الآن اعرض الهوم */
     showAdminAccountHome(admin);
 
     setTimeout(tryPlayAudio, 600);
