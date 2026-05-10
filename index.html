@@ -9845,80 +9845,128 @@ async function doLogin() {
 /* ============================================================
    ★ إتمام تسجيل دخول حساب Admin_accounts ★
 ============================================================ */
-function finishAdminAccountLogin(admin) {
-  _currentAdminData = admin;
-
-  const ov = document.getElementById('loginOverlay');
-  ov.style.transition = 'opacity 0.7s';
-  ov.style.opacity    = '0';
-
-  setTimeout(async () => {
-    ov.style.display = 'none';
-
-    /* تحميل المخزون */
-    const ok = await testSupabaseConnection();
-    if (ok) {
-      await loadInventory();
-      subscribeInventory();
-    }
-
-    /* تحميل البطاقات واللوجو */
-    await loadHomeCards();
-    subscribeHomeCards();
-    await loadLogoFromDB();
-
-    /* بناء الهوم بناءً على صلاحيات الأدمن */
-    showAdminAccountHome(admin);
-
-    setTimeout(tryPlayAudio, 600);
-  }, 700);
-}
-
-/* ── بناء الهوم الخاص بحساب admin_accounts ── */
 function showAdminAccountHome(admin) {
-  const hs = document.getElementById('homeScreen');
+  /* ── إخفاء mainSite ── */
   document.getElementById('mainSite').style.display = 'none';
+  document.body.classList.remove('wow-mode');
   document.body.style.overflow = '';
   appState = 'home';
   pushState('home');
 
-  /* ── إخفاء عناصر الهوم غير المطلوبة ── */
-  const logoWrap    = document.querySelector('.home-logo-wrap');
-  const welcomeWrap = document.querySelector('.home-welcome');
-  if (logoWrap)    logoWrap.style.display    = 'none';
-  if (welcomeWrap) welcomeWrap.style.display = 'none';
-
-  /* ── بناء بطاقات الصلاحيات ── */
-  const container = document.querySelector('.home-cards');
-  if (container) {
-    container.classList.remove('user-mode');
-    container.classList.add('admin-mode');
-    renderAdminAccountCards(container, admin);
-  }
-
-  /* ── إخفاء بطاقة WOW Admin ── */
-  const adminCard = document.getElementById('homeAdminCard');
-  if (adminCard) adminCard.style.display = 'none';
-
-  /* ── تحديث الفوتر ── */
-  const footerEl = document.getElementById('homeFooterText');
-  if (footerEl) {
-    footerEl.innerHTML = `
-      <div style="display:flex;flex-direction:column;align-items:center;gap:5px;">
-        <span style="color:rgba(139,92,246,0.7);font-weight:700;letter-spacing:2px;">
-          <i class="fas fa-user-shield" style="margin-right:5px;"></i>
-          ${admin.name}
-        </span>
-        <span style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.2);">
-          YÖNETİCİ HESABI
-        </span>
-      </div>`;
-  }
-
-  /* ── إظهار الهوم ── */
-  hs.style.opacity    = '0';
+  /* ── بناء الهوم من الصفر ── */
+  let hs = document.getElementById('homeScreen');
   hs.style.display    = 'block';
+  hs.style.opacity    = '0';
   hs.style.transition = 'opacity 0.5s ease';
+
+  /* ── حقن المحتوى كاملاً ── */
+  hs.innerHTML = `
+    <!-- خلفية الجسيمات إن وُجدت -->
+    <canvas id="particleCanvas"
+            style="position:fixed;inset:0;z-index:0;pointer-events:none;"></canvas>
+
+    <div style="
+      position:relative;z-index:1;
+      min-height:100vh;
+      display:flex;flex-direction:column;
+      align-items:center;
+      padding:40px 16px 60px;">
+
+      <!-- ══ الهيدر ══ -->
+      <div style="
+        width:100%;max-width:520px;
+        display:flex;flex-direction:column;
+        align-items:center;gap:6px;
+        margin-bottom:32px;
+        animation:cardSlideIn 0.6s ease 0.1s both;">
+
+        <!-- أيقونة الأدمن -->
+        <div style="
+          width:72px;height:72px;border-radius:50%;
+          background:linear-gradient(135deg,
+            rgba(139,92,246,0.2),rgba(139,92,246,0.05));
+          border:2px solid rgba(139,92,246,0.35);
+          display:flex;align-items:center;justify-content:center;
+          font-size:30px;color:#a78bfa;margin-bottom:8px;
+          box-shadow:0 0 30px rgba(139,92,246,0.15);
+          position:relative;">
+          <i class="fas fa-user-shield"></i>
+          <div style="
+            position:absolute;bottom:2px;right:2px;
+            width:18px;height:18px;border-radius:50%;
+            background:#4ade80;border:3px solid #0a0a0a;
+            animation:iconPulse 2s infinite;"></div>
+        </div>
+
+        <!-- اسم الأدمن -->
+        <div style="
+          font-size:22px;font-weight:900;
+          color:#fff;letter-spacing:1px;
+          text-align:center;">
+          ${admin.name}
+        </div>
+        <div style="
+          font-size:9px;letter-spacing:4px;
+          color:rgba(139,92,246,0.6);
+          font-weight:700;text-transform:uppercase;">
+          YÖNETİCİ PANELİ
+        </div>
+
+        <!-- فاصل -->
+        <div style="
+          width:60px;height:2px;border-radius:2px;
+          background:linear-gradient(90deg,
+            transparent,rgba(139,92,246,0.5),transparent);
+          margin-top:8px;"></div>
+      </div>
+
+      <!-- ══ شبكة البطاقات ══ -->
+      <div id="adminAccHomeGrid" style="
+        width:100%;max-width:520px;
+        display:grid;
+        grid-template-columns:repeat(2,1fr);
+        gap:12px;">
+        <!-- تُملأ بـ renderAdminAccountCards -->
+      </div>
+
+      <!-- ══ زر تسجيل الخروج ══ -->
+      <div style="
+        margin-top:32px;
+        animation:cardSlideIn 0.6s ease 0.8s both;">
+        <button onclick="doLogout()" style="
+          padding:11px 28px;border-radius:50px;
+          border:1px solid rgba(239,68,68,0.25);
+          background:rgba(239,68,68,0.07);
+          color:rgba(239,68,68,0.6);
+          font-family:'Montserrat',sans-serif;
+          font-size:10px;font-weight:700;
+          letter-spacing:2px;cursor:pointer;
+          transition:all 0.25s;
+          display:flex;align-items:center;gap:8px;"
+          onmouseover="
+            this.style.background='rgba(239,68,68,0.15)';
+            this.style.color='#ef4444';
+            this.style.borderColor='rgba(239,68,68,0.4)';"
+          onmouseout="
+            this.style.background='rgba(239,68,68,0.07)';
+            this.style.color='rgba(239,68,68,0.6)';
+            this.style.borderColor='rgba(239,68,68,0.25)';">
+          <i class="fas fa-sign-out-alt"></i>
+          ÇIKIŞ YAP
+        </button>
+      </div>
+    </div>`;
+
+  /* ── رسم البطاقات ── */
+  const grid = document.getElementById('adminAccHomeGrid');
+  if (grid) renderAdminAccountCards(grid, admin);
+
+  /* ── إعادة تشغيل الجسيمات إن وُجدت ── */
+  if (typeof initParticles === 'function') {
+    setTimeout(initParticles, 100);
+  }
+
+  /* ── إظهار الهوم بتأثير ── */
   window.scrollTo({ top: 0 });
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
@@ -9927,9 +9975,9 @@ function showAdminAccountHome(admin) {
   });
 }
 
+
 /* ── رسم بطاقات الصلاحيات لحساب admin_accounts ── */
 function renderAdminAccountCards(container, admin) {
-  /* تعريف كل الأقسام المتاحة */
   const allSections = [
     {
       key         : 'admin',
@@ -9999,18 +10047,29 @@ function renderAdminAccountCards(container, admin) {
     },
   ];
 
-  /* فلترة بناءً على الصلاحيات */
-  const allowed = allSections.filter(s => admin[s.perm]);
+  /* ── فلترة بناءً على الصلاحيات ── */
+  const allowed = allSections.filter(s => admin[s.perm] === true);
+
+  console.log('[AdminCards] admin perms:', {
+    perm_orders    : admin.perm_orders,
+    perm_inventory : admin.perm_inventory,
+    perm_users     : admin.perm_users,
+    perm_messages  : admin.perm_messages,
+    perm_settings  : admin.perm_settings,
+    perm_cards     : admin.perm_cards,
+  });
+  console.log('[AdminCards] allowed sections:', allowed.map(s => s.key));
 
   if (!allowed.length) {
     container.innerHTML = `
       <div style="
-        grid-column:1/-1;
-        text-align:center;padding:40px 20px;
+        grid-column:1/-1;text-align:center;
+        padding:50px 20px;
         color:rgba(255,255,255,0.2);">
-        <i class="fas fa-lock"
-           style="font-size:40px;display:block;margin-bottom:14px;
-                  color:rgba(139,92,246,0.2);"></i>
+        <i class="fas fa-lock" style="
+          font-size:40px;display:block;
+          margin-bottom:14px;
+          color:rgba(139,92,246,0.2);"></i>
         <p style="font-size:12px;letter-spacing:2px;">
           Henüz yetkiniz bulunmuyor
         </p>
@@ -10023,82 +10082,97 @@ function renderAdminAccountCards(container, admin) {
   }
 
   container.innerHTML = allowed.map((s, idx) => {
-    const delay = (0.3 + idx * 0.08).toFixed(2);
+    const delay = (0.25 + idx * 0.09).toFixed(2);
     return `
       <div onclick="enterAdminSection('${s.key}')"
            style="
-             animation:cardSlideIn 0.6s ease ${delay}s both;
-             cursor:pointer;border-radius:14px;
-             background:#111111;
-             border:1px solid rgba(255,255,255,0.07);
-             padding:14px 13px 12px;
+             animation:cardSlideIn 0.55s ease ${delay}s both;
+             cursor:pointer;
+             border-radius:16px;
+             background:rgba(255,255,255,0.03);
+             border:1px solid rgba(255,255,255,0.08);
+             padding:16px 14px 14px;
              display:flex;flex-direction:column;
-             align-items:flex-start;gap:10px;
+             align-items:flex-start;gap:12px;
              position:relative;overflow:hidden;
-             transition:all 0.25s ease;"
+             transition:transform 0.25s ease,
+                         box-shadow 0.25s ease,
+                         border-color 0.25s ease;"
            onmouseover="
-             this.style.transform='translateY(-2px)';
-             this.style.boxShadow='0 8px 24px rgba(0,0,0,0.5)';
-             this.style.borderColor='rgba(255,255,255,0.13)';"
+             this.style.transform='translateY(-3px)';
+             this.style.boxShadow='0 12px 32px rgba(0,0,0,0.6)';
+             this.style.borderColor='${s.color}40';"
            onmouseout="
              this.style.transform='translateY(0)';
-             this.style.boxShadow='';
-             this.style.borderColor='rgba(255,255,255,0.07)';">
+             this.style.boxShadow='none';
+             this.style.borderColor='rgba(255,255,255,0.08)';">
 
-        <!-- صف: الرمز + الشارة -->
-        <div style="display:flex;align-items:center;
-             justify-content:space-between;width:100%;">
+        <!-- خط علوي ملون -->
+        <div style="
+          position:absolute;top:0;left:0;right:0;
+          height:2px;
+          background:linear-gradient(90deg,
+            transparent,${s.color}80,transparent);"></div>
+
+        <!-- أيقونة + شارة -->
+        <div style="
+          display:flex;align-items:center;
+          justify-content:space-between;width:100%;">
           <div style="
-            width:40px;height:40px;border-radius:11px;
+            width:44px;height:44px;border-radius:12px;
             background:${s.badge};
             display:flex;align-items:center;
             justify-content:center;
-            font-size:18px;color:#fff;">
+            font-size:20px;color:#fff;
+            box-shadow:0 4px 12px ${s.color}30;">
             <i class="fas ${s.icon}"></i>
           </div>
           <div style="
-            padding:3px 8px;border-radius:20px;
+            padding:3px 9px;border-radius:20px;
             background:${s.badge};
             font-size:8px;font-weight:800;
-            color:#fff;letter-spacing:1px;">
+            color:#fff;letter-spacing:1.5px;">
             ${s.count_label}
           </div>
         </div>
 
-        <!-- العنوان -->
+        <!-- النصوص -->
         <div style="width:100%;">
           <div style="
-            font-size:12px;font-weight:900;
-            color:#fff;letter-spacing:0.3px;
+            font-size:13px;font-weight:900;
+            color:#fff;letter-spacing:0.5px;
             line-height:1.2;margin-bottom:2px;">
             ${s.title}
           </div>
           <div style="
-            font-size:10px;font-weight:700;
-            color:${s.color};letter-spacing:0.5px;">
+            font-size:11px;font-weight:700;
+            color:${s.color};letter-spacing:1px;">
             ${s.subtitle}
           </div>
           <div style="
-            font-size:9px;color:rgba(255,255,255,0.35);
-            margin-top:3px;letter-spacing:0.2px;line-height:1.4;">
+            font-size:9px;color:rgba(255,255,255,0.3);
+            margin-top:4px;line-height:1.5;">
             ${s.description}
           </div>
         </div>
 
         <!-- زر الدخول -->
         <div style="
-          width:100%;padding:7px 10px;border-radius:8px;
-          background:${s.badge};color:#fff;
-          font-size:8px;font-weight:800;
-          letter-spacing:1.2px;text-transform:uppercase;
+          width:100%;padding:8px 12px;
+          border-radius:9px;
+          background:${s.badge};
+          color:#fff;font-size:9px;
+          font-weight:800;letter-spacing:1.5px;
           display:flex;align-items:center;
-          justify-content:space-between;">
-          Gir
-          <i class="fas fa-arrow-right" style="font-size:9px;"></i>
+          justify-content:space-between;
+          box-sizing:border-box;">
+          <span>GİR</span>
+          <i class="fas fa-arrow-right" style="font-size:10px;"></i>
         </div>
       </div>`;
   }).join('');
 }
+
 
 /* ── enterSection خاص بحسابات admin_accounts ── */
 function enterAdminSection(sectionKey) {
