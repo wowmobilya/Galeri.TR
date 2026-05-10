@@ -6299,9 +6299,15 @@ async function loadInventory() {
     refreshStockBadges();
     
     // إعادة بناء الصفحة الحالية لتظهر المنتجات الجديدة
-    if (appState === 'section' && currentPage !== 'admin' && currentPage !== 'myorders') {
-      showPage(currentPage);
-    }
+   // إعادة بناء الصفحة فقط إذا كانت مفتوحة فعلاً (ليس أثناء التحميل الأولي)
+if (appState === 'section' 
+    && currentPage 
+    && currentPage !== 'admin' 
+    && currentPage !== 'myorders'
+    && document.getElementById('pageContent')?.innerHTML?.trim() !== '') {
+  showPage(currentPage);
+}
+
 
   } catch(e) {
     console.error('[Supabase] loadInventory exception:', e);
@@ -10183,22 +10189,22 @@ async function enterAdminSection(sectionKey) {
   setTimeout(async () => {
     hs.style.display = 'none';
     document.getElementById('mainSite').style.display = 'block';
-
-    /* إخفاء الهيدر لحسابات admin_accounts */
     document.body.classList.add('wow-mode');
-
     updateAdminAccountNav();
 
-    /* ★ انتظر تحميل المنتجات أولاً ★ */
+    /* ★ تحميل المنتجات أولاً — ثم رسم الصفحة ★ */
     if (!images || images.length === 0) {
       const ok = await testSupabaseConnection();
       if (ok) {
+        /* ★ نعطّل الـ auto-redirect داخل loadInventory مؤقتاً ★ */
+        const savedPage = appState;
         await loadInventory();
         subscribeInventory();
+        appState = savedPage; /* نُعيد الحالة لمنع redirect غير مرغوب */
       }
     }
 
-    /* التوجيه للقسم */
+    /* ★ الآن نرسم الصفحة بعد اكتمال التحميل ★ */
     if (sectionKey === 'admin_cards_mgr') {
       showPage('settings');
       setTimeout(() => openHomeCardsModal(), 400);
