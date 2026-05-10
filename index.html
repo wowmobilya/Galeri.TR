@@ -18500,6 +18500,1647 @@ showPage = function(cat) {
 };
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ نظام إدارة حسابات الأدمن — Admin Accounts System ★
+============================================================ */
+
+const ADMIN_ACCOUNTS_TABLE = 'admin_accounts';
+
+/* ── توليد Device ID ثابت لكل جهاز ── */
+function getDeviceId() {
+  const KEY = 'wow_device_id';
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = 'dev_' + Date.now().toString(36) +
+         '_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
+/* ── تسجيل الدخول لحساب أدمن ── */
+async function loginAdminAccount(username, password) {
+  const sb = await initSupabase();
+  if (!sb) return { success: false, msg: 'Bağlantı hatası!' };
+
+  const { data: admin } = await sb
+    .from(ADMIN_ACCOUNTS_TABLE)
+    .select('*')
+    .eq('username', username)
+    .maybeSingle();
+
+  if (!admin)
+    return { success: false, msg: 'Kullanıcı adı veya şifre hatalı!' };
+
+  if (!admin.is_active)
+    return { success: false, msg: 'Hesap aktif değil!' };
+
+  if (admin.is_blocked)
+    return { success: false, msg: 'Hesabınız engellendi!' };
+
+  const hashed = await hashPassword(password);
+  if (hashed !== admin.password_hash)
+    return { success: false, msg: 'Kullanıcı adı veya şifre hatalı!' };
+
+  const deviceId   = getDeviceId();
+  const deviceInfo = navigator.userAgent.substring(0, 200);
+
+  /* ★ فحص الجلسة الحصرية ★ */
+  if (admin.active_device_id &&
+      admin.active_device_id !== deviceId) {
+    return {
+      success    : false,
+      isConflict : true,
+      adminId    : admin.id,
+      adminName  : admin.name,
+      msg        : `"${admin.name}" hesabı başka bir cihazda aktif!\n` +
+                   `Önce o cihazdan çıkış yapın veya zorla çıkış yapın.`,
+    };
+  }
+
+  /* تسجيل الجهاز الحالي */
+  await sb.from(ADMIN_ACCOUNTS_TABLE).update({
+    active_device_id   : deviceId,
+    active_device_info : deviceInfo,
+    active_login_at    : new Date().toISOString(),
+    last_seen          : new Date().toISOString(),
+  }).eq('id', admin.id);
+
+  return { success: true, admin };
+}
+
+/* ── تسجيل الخروج وإلغاء الجلسة ── */
+async function logoutAdminAccount(adminId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+  await sb.from(ADMIN_ACCOUNTS_TABLE).update({
+    active_device_id   : null,
+    active_device_info : null,
+    active_login_at    : null,
+  }).eq('id', adminId);
+}
+
+/* ── طرد جهاز آخر (Force Logout) ── */
+async function forceLogoutAdminDevice(adminId) {
+  const sb = await initSupabase();
+  if (!sb) return false;
+  const { error } = await sb
+    .from(ADMIN_ACCOUNTS_TABLE)
+    .update({
+      active_device_id   : null,
+      active_device_info : null,
+      active_login_at    : null,
+    })
+    .eq('id', adminId);
+  return !error;
+}
+
+/* ============================================================
+   ★ صفحة لوحة إدارة الأدمن ★
+============================================================ */
+let _allAdminAccounts = [];
+
+async function buildAdminAccountsPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div>
+          <div class="section-banner-tag">✦ ADMİN HESAP YÖNETİMİ</div>
+          <div class="section-banner-title">
+            ADMİN <span class="accent">PANELİ</span>
+          </div>
+          <div class="section-banner-count" id="adminAccCount">
+            Yükleniyor...
+          </div>
+          <div class="section-banner-line"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button onclick="openAddAdminModal()" style="
+            padding:9px 18px;border-radius:9px;border:none;
+            background:linear-gradient(135deg,#8b5cf6,#a78bfa);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:1.5px;
+            cursor:pointer;display:flex;align-items:center;gap:7px;
+            transition:all 0.25s;"
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">
+            <i class="fas fa-user-plus"></i> YENİ ADMİN
+          </button>
+          <button onclick="loadAdminAccounts()" style="
+            padding:9px 18px;border-radius:9px;
+            border:1px solid rgba(139,92,246,0.3);
+            background:rgba(139,92,246,0.08);
+            color:#a78bfa;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;display:flex;align-items:center;gap:7px;
+            transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(139,92,246,0.16)'"
+            onmouseout="this.style.background='rgba(139,92,246,0.08)'">
+            <i class="fas fa-sync-alt"></i> YENİLE
+          </button>
+        </div>
+      </div>
+
+      <!-- قائمة الأدمن -->
+      <div style="padding:18px 22px 40px;" id="adminAccList">
+        <div style="text-align:center;padding:40px;">
+          <i class="fas fa-spinner fa-spin"
+             style="font-size:28px;color:rgba(139,92,246,0.4);"></i>
+        </div>
+      </div>
+    </div>`;
+
+  await loadAdminAccounts();
+}
+
+/* ── تحميل الحسابات ── */
+async function loadAdminAccounts() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const listEl  = document.getElementById('adminAccList');
+  const countEl = document.getElementById('adminAccCount');
+
+  if (listEl) listEl.innerHTML = `
+    <div style="text-align:center;padding:40px;">
+      <i class="fas fa-spinner fa-spin"
+         style="font-size:28px;color:rgba(139,92,246,0.4);"></i>
+    </div>`;
+
+  const { data, error } = await sb
+    .from(ADMIN_ACCOUNTS_TABLE)
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error || !data) {
+    if (listEl) listEl.innerHTML = `
+      <div style="text-align:center;padding:40px;color:#ef4444;">
+        <i class="fas fa-exclamation-circle" style="font-size:28px;"></i>
+        <p style="margin-top:12px;font-size:12px;">Yükleme hatası</p>
+      </div>`;
+    return;
+  }
+
+  _allAdminAccounts = data;
+  if (countEl) countEl.textContent =
+    `${data.length} yönetici hesabı`;
+
+  if (!data.length) {
+    if (listEl) listEl.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;
+           color:rgba(255,255,255,0.2);">
+        <i class="fas fa-user-shield"
+           style="font-size:40px;display:block;margin-bottom:14px;
+                  color:rgba(139,92,246,0.2);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">
+          Henüz admin hesabı yok
+        </p>
+        <p style="font-size:10px;margin-top:6px;
+             color:rgba(255,255,255,0.15);">
+          "YENİ ADMİN" butonuna tıklayın
+        </p>
+      </div>`;
+    return;
+  }
+
+  if (listEl) listEl.innerHTML =
+    data.map(acc => buildAdminAccountCard(acc)).join('');
+}
+
+/* ── بناء بطاقة حساب أدمن ── */
+function buildAdminAccountCard(acc) {
+  const deviceId = getDeviceId();
+  const isOnline = acc.active_device_id !== null;
+  const isMe     = acc.active_device_id === deviceId;
+
+  const statusColor = acc.is_blocked ? '#ef4444' :
+                      isOnline       ? '#4ade80' : '#6b7280';
+  const statusLabel = acc.is_blocked ? '🚫 Engellendi' :
+                      isOnline       ? (isMe ? '🟢 Bu Cihaz' : '🟢 Aktif') :
+                      '⚫ Çevrimdışı';
+
+  /* الصلاحيات */
+  const perms = [
+    { key:'perm_orders',    label:'Siparişler',  icon:'fa-clipboard-list', color:'#ef4444' },
+    { key:'perm_inventory', label:'Stok',        icon:'fa-boxes',          color:'#f59e0b' },
+    { key:'perm_users',     label:'Kullanıcılar',icon:'fa-users',          color:'#3b82f6' },
+    { key:'perm_messages',  label:'Mesajlar',    icon:'fa-comments',       color:'#22c55e' },
+    { key:'perm_settings',  label:'Ayarlar',     icon:'fa-cog',            color:'#c9a84c' },
+    { key:'perm_cards',     label:'Kartlar',     icon:'fa-th-large',       color:'#8b5cf6' },
+  ];
+
+  const permBadges = perms.map(p => `
+    <div style="
+      display:inline-flex;align-items:center;gap:4px;
+      padding:3px 9px;border-radius:50px;
+      background:${acc[p.key] ? p.color+'18' : 'rgba(255,255,255,0.03)'};
+      border:1px solid ${acc[p.key] ? p.color+'40' : 'rgba(255,255,255,0.06)'};
+      color:${acc[p.key] ? p.color : 'rgba(255,255,255,0.2)'};
+      font-size:9px;font-weight:700;letter-spacing:0.5px;
+      transition:all 0.25s;cursor:pointer;"
+      onclick="toggleAdminPerm(${acc.id},'${p.key}',${!acc[p.key]},this)"
+      title="${acc[p.key] ? 'Kaldırmak için tıkla' : 'Eklemek için tıkla'}">
+      <i class="fas ${p.icon}" style="font-size:8px;"></i>
+      ${p.label}
+    </div>`).join('');
+
+  const lastSeen = acc.last_seen
+    ? (() => {
+        const diff = Date.now() - new Date(acc.last_seen).getTime();
+        const mins = Math.floor(diff / 60000);
+        const hrs  = Math.floor(diff / 3600000);
+        if (mins < 1)   return '🟢 Şu an aktif';
+        if (mins < 60)  return `${mins} dk önce`;
+        if (hrs < 24)   return `${hrs} saat önce`;
+        return new Date(acc.last_seen).toLocaleDateString('tr-TR');
+      })()
+    : 'Hiç giriş yapmadı';
+
+  return `
+    <div id="adminAccCard-${acc.id}" style="
+      background:rgba(255,255,255,0.025);
+      border:1px solid rgba(139,92,246,0.15);
+      border-left:3px solid ${statusColor}80;
+      border-radius:16px;margin-bottom:14px;
+      overflow:hidden;transition:all 0.3s ease;">
+
+      <!-- ══ الهيدر ══ -->
+      <div style="
+        padding:14px 16px 12px;
+        display:flex;align-items:center;
+        justify-content:space-between;
+        flex-wrap:wrap;gap:10px;
+        border-bottom:1px solid rgba(255,255,255,0.04);">
+
+        <!-- معلومات الحساب -->
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+          <div style="position:relative;flex-shrink:0;">
+            <div style="
+              width:48px;height:48px;border-radius:50%;
+              background:linear-gradient(135deg,rgba(139,92,246,0.2),rgba(139,92,246,0.04));
+              border:2px solid ${statusColor}40;
+              display:flex;align-items:center;justify-content:center;
+              font-size:20px;color:#a78bfa;">
+              <i class="fas fa-user-shield"></i>
+            </div>
+            <div style="
+              position:absolute;bottom:1px;right:1px;
+              width:13px;height:13px;border-radius:50%;
+              background:${statusColor};
+              border:2.5px solid #111;
+              ${isOnline && !acc.is_blocked ? 'animation:iconPulse 2s infinite;' : ''}">
+            </div>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span style="font-size:15px;font-weight:900;color:#fff;">
+                ${acc.name}
+              </span>
+              <span style="
+                font-size:9px;font-weight:700;padding:3px 10px;
+                border-radius:50px;letter-spacing:1px;
+                background:${acc.is_blocked ? 'rgba(239,68,68,0.12)' :
+                             isOnline ? 'rgba(74,222,128,0.1)' :
+                             'rgba(255,255,255,0.04)'};
+                border:1px solid ${acc.is_blocked ? 'rgba(239,68,68,0.3)' :
+                                   isOnline ? 'rgba(74,222,128,0.3)' :
+                                   'rgba(255,255,255,0.08)'};
+                color:${statusColor};">
+                ${statusLabel}
+              </span>
+            </div>
+            <div style="font-size:11px;color:rgba(139,92,246,0.7);
+                 letter-spacing:1px;margin-top:3px;font-weight:600;">
+              @${acc.username}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.2);
+                 margin-top:2px;">
+              <i class="fas fa-clock" style="margin-right:4px;"></i>
+              ${lastSeen}
+            </div>
+          </div>
+        </div>
+
+        <!-- أزرار الإجراء -->
+        <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;">
+
+          <!-- تعديل -->
+          <button onclick="openEditAdminModal(${acc.id})" style="
+            padding:6px 12px;border-radius:7px;
+            background:rgba(96,165,250,0.1);
+            border:1px solid rgba(96,165,250,0.25);
+            color:#60a5fa;font-family:'Montserrat',sans-serif;
+            font-size:9px;font-weight:700;cursor:pointer;
+            transition:all 0.2s;display:flex;align-items:center;gap:5px;"
+            onmouseover="this.style.background='rgba(96,165,250,0.2)'"
+            onmouseout="this.style.background='rgba(96,165,250,0.1)'">
+            <i class="fas fa-edit"></i> Düzenle
+          </button>
+
+          <!-- تغيير كلمة المرور -->
+          <button onclick="openChangeAdminPassModal(${acc.id},'${acc.name}')" style="
+            padding:6px 12px;border-radius:7px;
+            background:rgba(251,191,36,0.1);
+            border:1px solid rgba(251,191,36,0.25);
+            color:#fbbf24;font-family:'Montserrat',sans-serif;
+            font-size:9px;font-weight:700;cursor:pointer;
+            transition:all 0.2s;display:flex;align-items:center;gap:5px;"
+            onmouseover="this.style.background='rgba(251,191,36,0.2)'"
+            onmouseout="this.style.background='rgba(251,191,36,0.1)'">
+            <i class="fas fa-key"></i> Şifre Değiştir
+          </button>
+
+          <!-- إنهاء الجلسة -->
+          ${isOnline ? `
+          <button onclick="forceLogoutAdminFromPanel(${acc.id})" style="
+            padding:6px 12px;border-radius:7px;
+            background:rgba(249,115,22,0.1);
+            border:1px solid rgba(249,115,22,0.25);
+            color:#fb923c;font-family:'Montserrat',sans-serif;
+            font-size:9px;font-weight:700;cursor:pointer;
+            transition:all 0.2s;display:flex;align-items:center;gap:5px;"
+            onmouseover="this.style.background='rgba(249,115,22,0.2)'"
+            onmouseout="this.style.background='rgba(249,115,22,0.1)'">
+            <i class="fas fa-sign-out-alt"></i> Oturumu Kapat
+          </button>` : ''}
+
+          <!-- حظر/رفع الحظر -->
+          <button onclick="toggleAdminBlock(${acc.id},${acc.is_blocked})" style="
+            padding:6px 12px;border-radius:7px;
+            background:${acc.is_blocked ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'};
+            border:1px solid ${acc.is_blocked ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.25)'};
+            color:${acc.is_blocked ? '#4ade80' : '#ef4444'};
+            font-family:'Montserrat',sans-serif;
+            font-size:9px;font-weight:700;cursor:pointer;
+            transition:all 0.2s;display:flex;align-items:center;gap:5px;"
+            onmouseover="this.style.opacity='0.7'"
+            onmouseout="this.style.opacity='1'">
+            <i class="fas ${acc.is_blocked ? 'fa-unlock' : 'fa-ban'}"></i>
+            ${acc.is_blocked ? 'Engeli Kaldır' : 'Engelle'}
+          </button>
+
+          <!-- حذف -->
+          <button onclick="deleteAdminAccount(${acc.id},'${acc.name}')" style="
+            padding:6px 12px;border-radius:7px;
+            background:rgba(239,68,68,0.08);
+            border:1px solid rgba(239,68,68,0.2);
+            color:rgba(239,68,68,0.6);font-family:'Montserrat',sans-serif;
+            font-size:9px;font-weight:700;cursor:pointer;
+            transition:all 0.2s;display:flex;align-items:center;gap:5px;"
+            onmouseover="this.style.background='rgba(239,68,68,0.18)';this.style.color='#ef4444'"
+            onmouseout="this.style.background='rgba(239,68,68,0.08)';this.style.color='rgba(239,68,68,0.6)'">
+            <i class="fas fa-trash-alt"></i> Sil
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ الصلاحيات ══ -->
+      <div style="padding:12px 16px 14px;">
+        <div style="font-size:8px;letter-spacing:2px;
+             color:rgba(255,255,255,0.2);font-weight:700;
+             text-transform:uppercase;margin-bottom:8px;
+             display:flex;align-items:center;gap:6px;">
+          <i class="fas fa-shield-alt"
+             style="color:rgba(139,92,246,0.5);"></i>
+          YETKİLER — Tıklayarak aç/kapat
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          ${permBadges}
+        </div>
+      </div>
+
+      <!-- ══ معلومات الجهاز ══ -->
+      ${isOnline ? `
+      <div style="
+        padding:10px 16px 12px;
+        border-top:1px solid rgba(255,255,255,0.04);
+        background:rgba(74,222,128,0.03);">
+        <div style="font-size:9px;letter-spacing:1.5px;
+             color:rgba(74,222,128,0.5);font-weight:700;
+             text-transform:uppercase;margin-bottom:5px;">
+          <i class="fas fa-desktop" style="margin-right:5px;"></i>
+          AKTİF CİHAZ
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.25);
+             line-height:1.5;word-break:break-all;">
+          ${(acc.active_device_info || '').substring(0, 80)}...
+        </div>
+      </div>` : ''}
+    </div>`;
+}
+
+/* ── تبديل صلاحية ── */
+async function toggleAdminPerm(adminId, permKey, newVal, badgeEl) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from(ADMIN_ACCOUNTS_TABLE)
+    .update({ [permKey]: newVal, updated_at: new Date().toISOString() })
+    .eq('id', adminId);
+
+  if (error) {
+    showInvToast('Güncelleme hatası!', 'error');
+    return;
+  }
+
+  /* تحديث محلي */
+  const idx = _allAdminAccounts.findIndex(a => a.id === adminId);
+  if (idx !== -1) _allAdminAccounts[idx][permKey] = newVal;
+
+  /* تأثير بصري على الشارة */
+  const permColors = {
+    perm_orders   : '#ef4444',
+    perm_inventory: '#f59e0b',
+    perm_users    : '#3b82f6',
+    perm_messages : '#22c55e',
+    perm_settings : '#c9a84c',
+    perm_cards    : '#8b5cf6',
+  };
+  const color = permColors[permKey] || '#c9a84c';
+
+  if (badgeEl) {
+    badgeEl.style.background  = newVal ? color+'18' : 'rgba(255,255,255,0.03)';
+    badgeEl.style.borderColor = newVal ? color+'40' : 'rgba(255,255,255,0.06)';
+    badgeEl.style.color       = newVal ? color : 'rgba(255,255,255,0.2)';
+    badgeEl.setAttribute('onclick',
+      `toggleAdminPerm(${adminId},'${permKey}',${!newVal},this)`);
+  }
+
+  showInvToast(
+    newVal ? 'Yetki eklendi ✓' : 'Yetki kaldırıldı ✓',
+    newVal ? 'success' : 'info'
+  );
+}
+
+/* ── حظر/رفع الحظر ── */
+async function toggleAdminBlock(adminId, isBlocked) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const newBlocked = !isBlocked;
+  const { error } = await sb
+    .from(ADMIN_ACCOUNTS_TABLE)
+    .update({
+      is_blocked : newBlocked,
+      updated_at : new Date().toISOString(),
+      ...(newBlocked ? {
+        active_device_id   : null,
+        active_device_info : null,
+      } : {}),
+    })
+    .eq('id', adminId);
+
+  if (error) { showInvToast('Hata!', 'error'); return; }
+
+  const idx = _allAdminAccounts.findIndex(a => a.id === adminId);
+  if (idx !== -1) {
+    _allAdminAccounts[idx].is_blocked = newBlocked;
+    if (newBlocked) {
+      _allAdminAccounts[idx].active_device_id   = null;
+      _allAdminAccounts[idx].active_device_info = null;
+    }
+  }
+
+  const card = document.getElementById('adminAccCard-' + adminId);
+  if (card) card.outerHTML = buildAdminAccountCard(_allAdminAccounts[idx]);
+
+  showInvToast(
+    newBlocked ? 'Hesap engellendi ✓' : 'Engel kaldırıldı ✓',
+    newBlocked ? 'error' : 'success'
+  );
+}
+
+/* ── إنهاء الجلسة من اللوحة ── */
+async function forceLogoutAdminFromPanel(adminId) {
+  const ok = await forceLogoutAdminDevice(adminId);
+  if (!ok) { showInvToast('Hata!', 'error'); return; }
+
+  const idx = _allAdminAccounts.findIndex(a => a.id === adminId);
+  if (idx !== -1) {
+    _allAdminAccounts[idx].active_device_id   = null;
+    _allAdminAccounts[idx].active_device_info = null;
+    _allAdminAccounts[idx].active_login_at    = null;
+  }
+
+  const card = document.getElementById('adminAccCard-' + adminId);
+  if (card) card.outerHTML = buildAdminAccountCard(_allAdminAccounts[idx]);
+
+  showInvToast('Oturum kapatıldı ✓', 'success');
+}
+
+/* ── حذف حساب أدمن ── */
+async function deleteAdminAccount(adminId, name) {
+  const confirmed = await showDeleteConfirm();
+  if (!confirmed) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const card = document.getElementById('adminAccCard-' + adminId);
+  if (card) { card.style.opacity = '0.4'; card.style.transform = 'scale(0.98)'; }
+
+  const { error } = await sb
+    .from(ADMIN_ACCOUNTS_TABLE)
+    .delete()
+    .eq('id', adminId);
+
+  if (error) {
+    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
+    showInvToast('Silme hatası: ' + error.message, 'error');
+    return;
+  }
+
+  _allAdminAccounts = _allAdminAccounts.filter(a => a.id !== adminId);
+
+  if (card) {
+    card.style.maxHeight    = card.offsetHeight + 'px';
+    card.style.overflow     = 'hidden';
+    requestAnimationFrame(() => {
+      card.style.transition   = 'all 0.4s ease';
+      card.style.maxHeight    = '0';
+      card.style.opacity      = '0';
+      card.style.marginBottom = '0';
+      card.style.border       = 'none';
+      setTimeout(() => card.remove(), 420);
+    });
+  }
+
+  const countEl = document.getElementById('adminAccCount');
+  if (countEl) countEl.textContent =
+    `${_allAdminAccounts.length} yönetici hesabı`;
+
+  showInvToast(`"${name}" hesabı silindi ✓`, 'success');
+}
+
+/* ============================================================
+   ★ نافذة إضافة/تعديل حساب أدمن ★
+============================================================ */
+function openAddAdminModal(editData = null) {
+  document.getElementById('adminAccModal')?.remove();
+
+  const isEdit = !!editData;
+  const modal  = document.createElement('div');
+  modal.id = 'adminAccModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9500;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);
+    backdrop-filter:blur(18px);
+    padding:16px;
+    animation:updBgIn 0.3s ease forwards;`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:460px;
+      background:linear-gradient(145deg,#0d0a12,#120f1a);
+      border:1px solid rgba(139,92,246,0.3);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.9),
+                 0 0 60px rgba(139,92,246,0.06);
+      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      max-height:92vh;overflow-y:auto;">
+
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#8b5cf6 30%,#a78bfa 50%,#8b5cf6 70%,transparent);"></div>
+
+      <!-- هيدر -->
+      <div style="padding:18px 20px 14px;display:flex;align-items:center;
+           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:44px;height:44px;flex-shrink:0;
+               background:rgba(139,92,246,0.15);
+               border:1px solid rgba(139,92,246,0.35);
+               border-radius:12px;display:flex;align-items:center;
+               justify-content:center;color:#a78bfa;font-size:18px;">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(139,92,246,0.6);text-transform:uppercase;margin-bottom:3px;">
+              ADMİN HESABI
+            </div>
+            <div style="font-size:16px;font-weight:900;color:#fff;">
+              ${isEdit ? 'Hesabı Düzenle' : 'Yeni Admin Ekle'}
+            </div>
+          </div>
+        </div>
+        <div onclick="closeAdminAccModal()" style="
+          width:32px;height:32px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+          color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <!-- جسم النافذة -->
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+
+        <input type="hidden" id="adminAccEditId"
+               value="${isEdit ? editData.id : ''}"/>
+
+        <!-- الاسم -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-id-card"
+               style="color:rgba(139,92,246,0.5);margin-right:5px;"></i>
+            ADMİN ADI
+          </label>
+          <input type="text" id="adminAccName"
+            value="${isEdit ? editData.name : ''}"
+            placeholder="Örn: Ahmet Yönetici"
+            style="
+              width:100%;padding:12px 14px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(139,92,246,0.2);
+              border-radius:10px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:13px;outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+            onfocus="this.style.borderColor='rgba(139,92,246,0.6)'"
+            onfocusout="this.style.borderColor='rgba(139,92,246,0.2)'"/>
+        </div>
+
+        <!-- اسم المستخدم -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-at"
+               style="color:rgba(139,92,246,0.5);margin-right:5px;"></i>
+            KULLANICI ADI
+          </label>
+          <input type="text" id="adminAccUsername"
+            value="${isEdit ? editData.username : ''}"
+            placeholder="Örn: ahmet_admin"
+            ${isEdit ? 'readonly style="opacity:0.6;"' : ''}
+            style="
+              width:100%;padding:12px 14px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(139,92,246,0.2);
+              border-radius:10px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:13px;outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+            onfocus="this.style.borderColor='rgba(139,92,246,0.6)'"
+            onfocusout="this.style.borderColor='rgba(139,92,246,0.2)'"/>
+        </div>
+
+        ${!isEdit ? `
+        <!-- كلمة المرور — فقط عند الإضافة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-lock"
+               style="color:rgba(139,92,246,0.5);margin-right:5px;"></i>
+            ŞİFRE
+          </label>
+          <div style="position:relative;">
+            <input type="password" id="adminAccPass"
+              placeholder="En az 4 karakter"
+              style="
+                width:100%;padding:12px 44px 12px 14px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(139,92,246,0.2);
+                border-radius:10px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:13px;outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+              onfocus="this.style.borderColor='rgba(139,92,246,0.6)'"
+              onfocusout="this.style.borderColor='rgba(139,92,246,0.2)'"/>
+            <button type="button"
+              onclick="
+                const i=document.getElementById('adminAccPass');
+                i.type=i.type==='password'?'text':'password';"
+              style="position:absolute;right:12px;top:50%;
+                     transform:translateY(-50%);background:none;
+                     border:none;color:rgba(139,92,246,0.5);
+                     cursor:pointer;font-size:14px;padding:4px;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>` : ''}
+
+        <!-- الصلاحيات -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:10px;display:block;">
+            <i class="fas fa-shield-alt"
+               style="color:rgba(139,92,246,0.5);margin-right:5px;"></i>
+            YETKİLER
+          </label>
+          <div style="
+            background:rgba(255,255,255,0.025);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:14px;
+            display:flex;flex-direction:column;gap:10px;">
+            ${[
+              { key:'perm_orders',    label:'Siparişleri Görüntüle & Yönet', icon:'fa-clipboard-list', color:'#ef4444', def: isEdit ? editData.perm_orders    : true  },
+              { key:'perm_inventory', label:'Stok Yönetimi',                 icon:'fa-boxes',          color:'#f59e0b', def: isEdit ? editData.perm_inventory : true  },
+              { key:'perm_users',     label:'Kullanıcı Yönetimi',            icon:'fa-users',          color:'#3b82f6', def: isEdit ? editData.perm_users     : false },
+              { key:'perm_messages',  label:'Mesaj Merkezi',                 icon:'fa-comments',       color:'#22c55e', def: isEdit ? editData.perm_messages  : false },
+              { key:'perm_settings',  label:'Ayarlar & Düzen',               icon:'fa-cog',            color:'#c9a84c', def: isEdit ? editData.perm_settings  : false },
+              { key:'perm_cards',     label:'Ana Sayfa Kartları',            icon:'fa-th-large',       color:'#8b5cf6', def: isEdit ? editData.perm_cards     : false },
+            ].map(p => `
+              <label style="
+                display:flex;align-items:center;justify-content:space-between;
+                cursor:pointer;padding:8px 10px;border-radius:9px;
+                transition:background 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.03)'"
+                onmouseout="this.style.background='transparent'">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="
+                    width:30px;height:30px;border-radius:8px;
+                    background:${p.color}18;border:1px solid ${p.color}30;
+                    display:flex;align-items:center;justify-content:center;
+                    color:${p.color};font-size:12px;">
+                    <i class="fas ${p.icon}"></i>
+                  </div>
+                  <span style="font-size:12px;font-weight:600;color:rgba(255,255,255,0.7);">
+                    ${p.label}
+                  </span>
+                </div>
+                <!-- Toggle Switch -->
+                <div style="position:relative;width:44px;height:24px;flex-shrink:0;">
+                  <input type="checkbox" id="perm_${p.key}"
+                         ${p.def ? 'checked' : ''}
+                         onchange="updatePermToggle(this,'${p.color}')"
+                         style="opacity:0;width:0;height:0;position:absolute;"/>
+                  <div id="toggle_${p.key}" onclick="
+                    const cb=document.getElementById('perm_${p.key}');
+                    cb.checked=!cb.checked;
+                    updatePermToggle(cb,'${p.color}');"
+                    style="
+                      position:absolute;inset:0;border-radius:12px;
+                      background:${p.def ? p.color : 'rgba(255,255,255,0.1)'};
+                      cursor:pointer;transition:all 0.3s ease;">
+                    <div style="
+                      position:absolute;top:3px;
+                      left:${p.def ? '23px' : '3px'};
+                      width:18px;height:18px;border-radius:50%;
+                      background:#fff;transition:all 0.3s ease;
+                      box-shadow:0 2px 4px rgba(0,0,0,0.3);"
+                      id="knob_${p.key}">
+                    </div>
+                  </div>
+                </div>
+              </label>`).join('')}
+          </div>
+        </div>
+
+        <!-- رسالة الحالة -->
+        <div id="adminAccMsg" style="display:none;padding:10px 14px;
+             border-radius:9px;font-size:11px;font-weight:700;
+             text-align:center;font-family:'Montserrat',sans-serif;"></div>
+
+        <!-- أزرار -->
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeAdminAccModal()" style="
+            flex:1;padding:13px;border-radius:10px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            İPTAL
+          </button>
+          <button onclick="saveAdminAccount()" id="adminAccSaveBtn" style="
+            flex:2;padding:13px;border-radius:10px;border:none;
+            background:linear-gradient(135deg,#8b5cf6,#a78bfa);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:2px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:7px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+                         this.style.boxShadow='0 8px 24px rgba(139,92,246,0.35)'"
+            onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <i class="fas fa-save"></i>
+            ${isEdit ? 'GÜNCELLE' : 'HESAP OLUŞTUR'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeAdminAccModal();
+  });
+  setTimeout(() => document.getElementById('adminAccName')?.focus(), 300);
+}
+
+/* ── تحديث Toggle Switch بصرياً ── */
+function updatePermToggle(cb, color) {
+  const key   = cb.id.replace('perm_', '');
+  const track = document.getElementById('toggle_' + key);
+  const knob  = document.getElementById('knob_'   + key);
+  if (!track || !knob) return;
+  track.style.background = cb.checked ? color : 'rgba(255,255,255,0.1)';
+  knob.style.left        = cb.checked ? '23px' : '3px';
+}
+
+/* ── فتح نافذة التعديل ── */
+async function openEditAdminModal(adminId) {
+  const acc = _allAdminAccounts.find(a => a.id === adminId);
+  if (!acc) return;
+  openAddAdminModal(acc);
+}
+
+/* ── حفظ حساب أدمن ── */
+async function saveAdminAccount() {
+  const editId   = document.getElementById('adminAccEditId')?.value;
+  const name     = document.getElementById('adminAccName')?.value.trim();
+  const username = document.getElementById('adminAccUsername')?.value.trim();
+  const passEl   = document.getElementById('adminAccPass');
+  const pass     = passEl?.value?.trim();
+  const btn      = document.getElementById('adminAccSaveBtn');
+  const msgEl    = document.getElementById('adminAccMsg');
+
+  const showMsg = (msg, type) => {
+    if (!msgEl) return;
+    const colors = {
+      error   : { bg:'rgba(239,68,68,0.08)',   border:'rgba(239,68,68,0.3)',   color:'#ef4444' },
+      success : { bg:'rgba(74,222,128,0.08)',  border:'rgba(74,222,128,0.3)',  color:'#4ade80' },
+    };
+    const c = colors[type] || colors.error;
+    msgEl.style.display    = 'block';
+    msgEl.style.background = c.bg;
+    msgEl.style.border     = `1px solid ${c.border}`;
+    msgEl.style.color      = c.color;
+    msgEl.innerHTML = msg;
+  };
+
+  if (!name)     { showMsg('<i class="fas fa-exclamation-circle"></i> Ad gereklidir!', 'error'); return; }
+  if (!username) { showMsg('<i class="fas fa-exclamation-circle"></i> Kullanıcı adı gereklidir!', 'error'); return; }
+  if (!editId && (!pass || pass.length < 4)) {
+    showMsg('<i class="fas fa-exclamation-circle"></i> Şifre en az 4 karakter olmalıdır!', 'error');
+    return;
+  }
+
+  /* جمع الصلاحيات */
+  const perms = {};
+  ['perm_orders','perm_inventory','perm_users',
+   'perm_messages','perm_settings','perm_cards'].forEach(key => {
+    const cb = document.getElementById('perm_' + key);
+    perms[key] = cb ? cb.checked : false;
+  });
+
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    showMsg('Bağlantı hatası!', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> KAYDET'; }
+    return;
+  }
+
+  try {
+    if (editId) {
+      /* ── تعديل ── */
+      const { error } = await sb
+        .from(ADMIN_ACCOUNTS_TABLE)
+        .update({
+          name       : name,
+          ...perms,
+          updated_at : new Date().toISOString(),
+        })
+        .eq('id', Number(editId));
+
+      if (error) throw error;
+
+      /* تحديث محلي */
+      const idx = _allAdminAccounts.findIndex(a => a.id === Number(editId));
+      if (idx !== -1) Object.assign(_allAdminAccounts[idx], { name, ...perms });
+
+      showMsg('<i class="fas fa-check-circle"></i> Hesap güncellendi ✓', 'success');
+      setTimeout(() => { closeAdminAccModal(); loadAdminAccounts(); }, 900);
+
+    } else {
+      /* ── إضافة جديدة ── */
+      /* التحقق من تكرار اسم المستخدم */
+      const { data: exists } = await sb
+        .from(ADMIN_ACCOUNTS_TABLE)
+        .select('id')
+        .eq('username', username)
+        .maybeSingle();
+
+      if (exists) {
+        showMsg('<i class="fas fa-exclamation-circle"></i> Bu kullanıcı adı zaten kullanılıyor!', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> HESAP OLUŞTUR'; }
+        return;
+      }
+
+      const hashed = await hashPassword(pass);
+
+      const { error } = await sb
+        .from(ADMIN_ACCOUNTS_TABLE)
+        .insert([{
+          name           : name,
+          username       : username,
+          password_hash  : hashed,
+          password_plain : pass,
+          is_active      : true,
+          is_blocked     : false,
+          ...perms,
+        }]);
+
+      if (error) throw error;
+
+      showMsg('<i class="fas fa-check-circle"></i> Admin hesabı oluşturuldu ✓', 'success');
+      setTimeout(() => { closeAdminAccModal(); loadAdminAccounts(); }, 900);
+    }
+
+  } catch(e) {
+    console.error('[AdminAcc]', e);
+    showMsg('<i class="fas fa-exclamation-circle"></i> Hata: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = editId
+        ? '<i class="fas fa-save"></i> GÜNCELLE'
+        : '<i class="fas fa-save"></i> HESAP OLUŞTUR';
+    }
+  }
+}
+
+function closeAdminAccModal() {
+  document.getElementById('adminAccModal')?.remove();
+}
+
+/* ============================================================
+   ★ نافذة تغيير كلمة المرور عن بُعد ★
+============================================================ */
+function openChangeAdminPassModal(adminId, adminName) {
+  document.getElementById('changeAdminPassModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'changeAdminPassModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9600;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter:blur(20px);
+    padding:16px;
+    animation:updBgIn 0.3s ease forwards;`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:420px;
+      background:linear-gradient(145deg,#0d0a12,#120f1a);
+      border:1px solid rgba(251,191,36,0.3);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 80px rgba(0,0,0,0.95);
+      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#fbbf24 30%,#fde68a 50%,#fbbf24 70%,transparent);"></div>
+
+      <div style="padding:20px 20px 14px;display:flex;align-items:center;
+           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:44px;height:44px;flex-shrink:0;
+               background:rgba(251,191,36,0.12);
+               border:1px solid rgba(251,191,36,0.35);
+               border-radius:12px;display:flex;align-items:center;
+               justify-content:center;color:#fbbf24;font-size:18px;">
+            <i class="fas fa-key"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(251,191,36,0.6);text-transform:uppercase;margin-bottom:3px;">
+              UZAKTAN ŞİFRE DEĞİŞTİR
+            </div>
+            <div style="font-size:15px;font-weight:900;color:#fff;">
+              ${adminName}
+            </div>
+          </div>
+        </div>
+        <div onclick="closeChangeAdminPassModal()" style="
+          width:30px;height:30px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+          color:rgba(255,255,255,0.3);font-size:13px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+
+        <div style="
+          background:rgba(251,191,36,0.06);
+          border:1px solid rgba(251,191,36,0.15);
+          border-radius:10px;padding:11px 14px;
+          font-size:11px;color:rgba(255,255,255,0.35);
+          line-height:1.7;display:flex;gap:10px;align-items:flex-start;">
+          <i class="fas fa-info-circle"
+             style="color:#fbbf24;margin-top:2px;flex-shrink:0;"></i>
+          <span>
+            Bu işlem <strong style="color:#fbbf24;">${adminName}</strong>
+            hesabının şifresini uzaktan değiştirir.
+            Hesap aktif oturumu varsa otomatik kapatılır.
+          </span>
+        </div>
+
+        <!-- كلمة المرور الجديدة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:6px;display:block;">
+            YENİ ŞİFRE
+          </label>
+          <div style="position:relative;">
+            <input type="password" id="newAdminPassInput"
+              placeholder="Yeni şifre (min. 4 karakter)"
+              style="
+                width:100%;padding:12px 44px 12px 14px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(251,191,36,0.2);
+                border-radius:10px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:14px;font-weight:700;
+                outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+              onfocus="this.style.borderColor='rgba(251,191,36,0.6)'"
+              onfocusout="this.style.borderColor='rgba(251,191,36,0.2)'"/>
+            <button type="button" onclick="
+              const i=document.getElementById('newAdminPassInput');
+              i.type=i.type==='password'?'text':'password';"
+              style="position:absolute;right:12px;top:50%;
+                     transform:translateY(-50%);background:none;
+                     border:none;color:rgba(251,191,36,0.5);
+                     cursor:pointer;font-size:14px;padding:4px;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- تأكيد كلمة المرور -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:6px;display:block;">
+            YENİ ŞİFRE (TEKRAR)
+          </label>
+          <div style="position:relative;">
+            <input type="password" id="newAdminPassConfirm"
+              placeholder="Şifreyi tekrar girin"
+              style="
+                width:100%;padding:12px 44px 12px 14px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(251,191,36,0.2);
+                border-radius:10px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:14px;font-weight:700;
+                outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+              onfocus="this.style.borderColor='rgba(251,191,36,0.6)'"
+              onfocusout="this.style.borderColor='rgba(251,191,36,0.2)'"
+              onkeydown="if(event.key==='Enter')saveAdminPassRemote(${adminId})"/>
+            <button type="button" onclick="
+              const i=document.getElementById('newAdminPassConfirm');
+              i.type=i.type==='password'?'text':'password';"
+              style="position:absolute;right:12px;top:50%;
+                     transform:translateY(-50%);background:none;
+                     border:none;color:rgba(251,191,36,0.5);
+                     cursor:pointer;font-size:14px;padding:4px;">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- رسالة الحالة -->
+        <div id="changePassMsg" style="display:none;padding:10px 14px;
+             border-radius:9px;font-size:11px;font-weight:700;
+             text-align:center;font-family:'Montserrat',sans-serif;"></div>
+
+        <!-- أزرار -->
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeChangeAdminPassModal()" style="
+            flex:1;padding:13px;border-radius:10px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            İPTAL
+          </button>
+          <button onclick="saveAdminPassRemote(${adminId})"
+                  id="changePassSaveBtn" style="
+            flex:2;padding:13px;border-radius:10px;border:none;
+            background:linear-gradient(135deg,#d97706,#fbbf24);
+            color:#0a0a0a;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:2px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:7px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+                         this.style.boxShadow='0 8px 24px rgba(251,191,36,0.35)'"
+            onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <i class="fas fa-key"></i> ŞİFREYİ KAYDET
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeChangeAdminPassModal();
+  });
+  setTimeout(() => document.getElementById('newAdminPassInput')?.focus(), 300);
+}
+
+function closeChangeAdminPassModal() {
+  document.getElementById('changeAdminPassModal')?.remove();
+}
+
+/* ── حفظ كلمة المرور الجديدة عن بُعد ── */
+async function saveAdminPassRemote(adminId) {
+  const pass1  = document.getElementById('newAdminPassInput')?.value.trim();
+  const pass2  = document.getElementById('newAdminPassConfirm')?.value.trim();
+  const btn    = document.getElementById('changePassSaveBtn');
+  const msgEl  = document.getElementById('changePassMsg');
+
+  const showMsg = (msg, type) => {
+    if (!msgEl) return;
+    const colors = {
+      error   : { bg:'rgba(239,68,68,0.08)',  border:'rgba(239,68,68,0.3)',  color:'#ef4444' },
+      success : { bg:'rgba(74,222,128,0.08)', border:'rgba(74,222,128,0.3)', color:'#4ade80' },
+    };
+    const c = colors[type] || colors.error;
+    msgEl.style.display    = 'block';
+    msgEl.style.background = c.bg;
+    msgEl.style.border     = `1px solid ${c.border}`;
+    msgEl.style.color      = c.color;
+    msgEl.innerHTML        = msg;
+  };
+
+  if (!pass1 || pass1.length < 4) {
+    showMsg('<i class="fas fa-exclamation-circle"></i> Şifre en az 4 karakter olmalıdır!', 'error');
+    return;
+  }
+  if (pass1 !== pass2) {
+    showMsg('<i class="fas fa-exclamation-circle"></i> Şifreler eşleşmiyor!', 'error');
+    return;
+  }
+
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    showMsg('Bağlantı hatası!', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-key"></i> ŞİFREYİ KAYDET'; }
+    return;
+  }
+
+  try {
+    const hashed = await hashPassword(pass1);
+
+    const { error } = await sb
+      .from(ADMIN_ACCOUNTS_TABLE)
+      .update({
+        password_hash      : hashed,
+        password_plain     : pass1,
+        /* إنهاء الجلسة الحالية تلقائياً */
+        active_device_id   : null,
+        active_device_info : null,
+        active_login_at    : null,
+        updated_at         : new Date().toISOString(),
+      })
+      .eq('id', adminId);
+
+    if (error) throw error;
+
+    /* تحديث محلي */
+    const idx = _allAdminAccounts.findIndex(a => a.id === adminId);
+    if (idx !== -1) {
+      _allAdminAccounts[idx].password_plain     = pass1;
+      _allAdminAccounts[idx].password_hash      = hashed;
+      _allAdminAccounts[idx].active_device_id   = null;
+      _allAdminAccounts[idx].active_device_info = null;
+    }
+
+    showMsg('<i class="fas fa-check-circle"></i> Şifre güncellendi ve oturum kapatıldı ✓', 'success');
+    showInvToast('Şifre uzaktan güncellendi ✓', 'success');
+
+    setTimeout(() => {
+      closeChangeAdminPassModal();
+      /* إعادة رسم البطاقة */
+      if (idx !== -1) {
+        const card = document.getElementById('adminAccCard-' + adminId);
+        if (card) card.outerHTML = buildAdminAccountCard(_allAdminAccounts[idx]);
+      }
+    }, 1200);
+
+  } catch(e) {
+    console.error('[AdminPass]', e);
+    showMsg('<i class="fas fa-exclamation-circle"></i> Hata: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-key"></i> ŞİFREYİ KAYDET';
+    }
+  }
+}
+
+/* ============================================================
+   ★ نافذة تعارض الجلسة (جهاز آخر نشط) ★
+============================================================ */
+function showSessionConflictModal(result, username, password) {
+  document.getElementById('sessionConflictModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'sessionConflictModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9700;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.95);
+    backdrop-filter:blur(20px);
+    padding:16px;
+    animation:updBgIn 0.3s ease forwards;`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:420px;
+      background:linear-gradient(145deg,#120808,#1a0f0f);
+      border:1px solid rgba(249,115,22,0.35);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 80px rgba(0,0,0,0.98);
+      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#f97316 30%,#fb923c 50%,#f97316 70%,transparent);"></div>
+
+      <div style="padding:28px 24px 22px;text-align:center;">
+        <div style="
+          width:68px;height:68px;border-radius:50%;
+          background:rgba(249,115,22,0.1);
+          border:2px solid rgba(249,115,22,0.35);
+          display:flex;align-items:center;justify-content:center;
+          margin:0 auto 18px;font-size:28px;color:#f97316;
+          position:relative;">
+          <i class="fas fa-mobile-alt"></i>
+          <div style="
+            position:absolute;inset:-6px;border-radius:50%;
+            border:2px solid rgba(249,115,22,0.2);
+            animation:avatarRing 2s ease infinite;"></div>
+        </div>
+
+        <div style="font-size:8px;letter-spacing:4px;
+             color:rgba(249,115,22,0.6);text-transform:uppercase;
+             font-weight:700;margin-bottom:10px;">
+          CİHAZ ÇAKIŞMASI
+        </div>
+
+        <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:12px;">
+          Başka Cihazda Aktif!
+        </div>
+
+        <div style="
+          background:rgba(249,115,22,0.07);
+          border:1px solid rgba(249,115,22,0.2);
+          border-radius:12px;padding:14px;
+          margin-bottom:18px;
+          font-size:12px;color:rgba(255,255,255,0.5);
+          line-height:1.8;text-align:left;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <i class="fas fa-user-shield" style="color:#f97316;"></i>
+            <strong style="color:#fff;">${result.adminName}</strong>
+            hesabı şu anda başka bir cihazda aktif.
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.25);">
+            Aynı anda birden fazla cihazda giriş yapılamaz.
+            Diğer cihazı kapatarak devam edebilirsiniz.
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <!-- زر الطرد القسري -->
+          <button onclick="forceLoginAdminAccount(${result.adminId},'${username}','${password}')"
+                  id="forceLoginBtn" style="
+            width:100%;padding:13px;border-radius:11px;border:none;
+            background:linear-gradient(135deg,#c2410c,#f97316);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:1.5px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:8px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+                         this.style.boxShadow='0 8px 24px rgba(249,115,22,0.35)'"
+            onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <i class="fas fa-sign-out-alt"></i>
+            DİĞER CİHAZI KAPAT & GİRİŞ YAP
+          </button>
+
+          <!-- زر الإلغاء -->
+          <button onclick="document.getElementById('sessionConflictModal').remove()" style="
+            width:100%;padding:12px;border-radius:11px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            <i class="fas fa-arrow-left"></i> GERİ DÖN
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+}
+
+/* ── تسجيل دخول قسري بعد طرد الجهاز الآخر ── */
+async function forceLoginAdminAccount(adminId, username, password) {
+  const btn = document.getElementById('forceLoginBtn');
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> İşleniyor...';
+  }
+
+  /* طرد الجهاز الآخر */
+  const ok = await forceLogoutAdminDevice(adminId);
+  if (!ok) {
+    showInvToast('Hata oluştu!', 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-sign-out-alt"></i> DİĞER CİHAZI KAPAT & GİRİŞ YAP'; }
+    return;
+  }
+
+  /* إغلاق النافذة */
+  document.getElementById('sessionConflictModal')?.remove();
+
+  /* إعادة المحاولة */
+  const result = await loginAdminAccount(username, password);
+  if (result.success) {
+    _currentAdminData = result.admin;
+    finishAdminLogin(result.admin);
+  } else {
+    showInvToast(result.msg, 'error');
+  }
+}
+
+/* ============================================================
+   ★ متغيرات وحالة الأدمن المسجّل دخوله ★
+============================================================ */
+let _currentAdminData    = null;
+let _adminHeartbeatTimer = null;
+
+/* ── إتمام تسجيل دخول الأدمن ── */
+function finishAdminLogin(admin) {
+  _currentAdminData = admin;
+
+  /* نبضة الجلسة كل دقيقة */
+  clearInterval(_adminHeartbeatTimer);
+  _adminHeartbeatTimer = setInterval(async () => {
+    if (!_currentAdminData?.id) return;
+    const sb = await initSupabase();
+    if (!sb) return;
+    await sb.from(ADMIN_ACCOUNTS_TABLE)
+      .update({ last_seen: new Date().toISOString() })
+      .eq('id', _currentAdminData.id);
+  }, 60_000);
+
+  showInvToast(`Hoş geldiniz, ${admin.name}! ✓`, 'success');
+
+  /* التوجيه بناءً على الصلاحيات */
+  if (admin.perm_orders) {
+    enterSection('admin');
+  } else if (admin.perm_inventory) {
+    enterSection('stock');
+  } else if (admin.perm_users) {
+    enterSection('users_panel');
+  } else {
+    showHomeScreen();
+  }
+}
+
+/* ── تسجيل خروج الأدمن ── */
+async function logoutCurrentAdmin() {
+  if (!_currentAdminData?.id) return;
+  clearInterval(_adminHeartbeatTimer);
+  await logoutAdminAccount(_currentAdminData.id);
+  _currentAdminData = null;
+}
+
+/* ============================================================
+   ★ تعديل doLogout لدعم الأدمن ★
+============================================================ */
+const _origDoLogout_admin = doLogout;
+doLogout = async function() {
+  if (_currentAdminData) {
+    await logoutCurrentAdmin();
+  }
+  _origDoLogout_admin();
+};
+
+/* ============================================================
+   ★ ربط صفحة إدارة الأدمن بنظام التنقل ★
+============================================================ */
+const _origShowPage_adminAcc = showPage;
+showPage = function(cat) {
+  if (cat === 'admin_accounts') {
+    if (currentUser !== ADMIN_USER) return;
+    currentPage = 'admin_accounts';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    filteredImages = [];
+    buildAdminAccountsPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'admin_accounts' });
+    return;
+  }
+  _origShowPage_adminAcc(cat);
+};
+
+/* ── enterSection لدعم admin_accounts ── */
+const _origEnterSection_adminAcc = enterSection;
+enterSection = function(cat) {
+  if (cat === 'admin_accounts') {
+    const hs = document.getElementById('homeScreen');
+    hs.style.transition = 'opacity 0.4s ease';
+    hs.style.opacity    = '0';
+    setTimeout(() => {
+      hs.style.display = 'none';
+      document.getElementById('mainSite').style.display = 'block';
+      if (currentUser === ADMIN_USER) document.body.classList.add('wow-mode');
+      updateAdminNavVisibility();
+      showPage('admin_accounts');
+    }, 400);
+    return;
+  }
+  _origEnterSection_adminAcc(cat);
+};
+
+/* ============================================================
+   ★ إضافة بطاقة "إدارة الأدمن" في renderAdminHomeCards ★
+   أضف هذا الكائن لمصفوفة controlPanels داخل renderAdminHomeCards
+============================================================ */
+
+/* ── تعديل renderAdminHomeCards لإضافة بطاقة admin_accounts ── */
+const _origRenderAdminHomeCards = renderAdminHomeCards;
+renderAdminHomeCards = function(container) {
+  _origRenderAdminHomeCards(container);
+
+  /* إضافة بطاقة إدارة الأدمن بعد الرسم */
+  const existingGrid = container.innerHTML;
+
+  /* بطاقة إدارة الأدمن */
+  const adminAccCard = buildControlCard({
+    section_key : 'admin_accounts',
+    title       : 'ADMİN',
+    subtitle    : 'HESAPLARI',
+    description : 'Yönetici hesaplarını düzenle',
+    count_label : 'ADMINS',
+    btn_text    : 'Hesaplara Git',
+    _icon       : 'fa-user-shield',
+    _color      : '#8b5cf6',
+  }, 5);
+
+  container.innerHTML = existingGrid + adminAccCard;
+};
+
+/* ── تحديث handleAdminCardClick لدعم admin_accounts ── */
+const _origHandleAdminCardClick = handleAdminCardClick;
+handleAdminCardClick = function(sectionKey) {
+  if (sectionKey === 'admin_accounts') {
+    enterSection('admin_accounts');
+    return;
+  }
+  _origHandleAdminCardClick(sectionKey);
+};
+
+/* ============================================================
+   ★ إضافة روابط في الهيدر والموبايل ★
+============================================================ */
+(function addAdminAccNavLinks() {
+  setTimeout(() => {
+    const navCapsule = document.querySelector('.nav-capsule');
+    if (navCapsule && !document.getElementById('nav-admin-accounts')) {
+      const link = document.createElement('a');
+      link.id        = 'nav-admin-accounts';
+      link.className = 'nav-link';
+      link.href      = '#';
+      link.style.display = 'none';
+      link.innerHTML = `<i class="fas fa-user-shield"></i> ADMİNLER`;
+      link.onclick   = (e) => { e.preventDefault(); showPage('admin_accounts'); };
+      navCapsule.appendChild(link);
+    }
+
+    const mobMenu = document.querySelector('.mobile-menu-inner');
+    if (mobMenu && !document.getElementById('mob-admin-accounts')) {
+      const mobLink = document.createElement('a');
+      mobLink.id        = 'mob-admin-accounts';
+      mobLink.href      = '#';
+      mobLink.style.display = 'none';
+      mobLink.innerHTML = `<i class="fas fa-user-shield"></i> ADMİN HESAPLARI`;
+      mobLink.onclick   = (e) => {
+        e.preventDefault();
+        showPage('admin_accounts');
+        closeMobileMenu();
+      };
+      const settingsLink = document.getElementById('mob-settings');
+      if (settingsLink) settingsLink.after(mobLink);
+      else mobMenu.appendChild(mobLink);
+    }
+  }, 900);
+})();
+
+/* ── تحديث updateAdminNavVisibility ── */
+const _origUpdateAdminNav_adminAcc = updateAdminNavVisibility;
+updateAdminNavVisibility = function() {
+  _origUpdateAdminNav_adminAcc();
+  const isAdmin = currentUser === ADMIN_USER;
+  ['nav-admin-accounts', 'mob-admin-accounts'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? '' : 'none';
+  });
+};
+
+/* ============================================================
+   ★ إضافة بطاقة الأدمن في صفحة الإعدادات ★
+============================================================ */
+const _origBuildSettingsPage = buildSettingsPage;
+buildSettingsPage = function() {
+  _origBuildSettingsPage();
+
+  /* إضافة قسم إدارة الأدمن في نهاية الصفحة */
+  const wrap = document.querySelector('.settings-page-wrap');
+  if (!wrap) return;
+
+  const adminSection = document.createElement('div');
+  adminSection.innerHTML = `
+    <div class="settings-section-title" style="margin-top:28px;">
+      <i class="fas fa-user-shield" style="color:rgba(139,92,246,0.5);"></i>
+      ADMİN HESAP YÖNETİMİ
+    </div>
+
+    <div class="settings-btn-card"
+         onclick="showPage('admin_accounts')"
+         style="border-color:rgba(139,92,246,0.15);">
+      <div class="settings-btn-icon"
+           style="background:linear-gradient(135deg,rgba(139,92,246,0.18),rgba(139,92,246,0.04));
+                  border-color:rgba(139,92,246,0.3);color:#a78bfa;">
+        <i class="fas fa-user-shield"></i>
+      </div>
+      <div class="settings-btn-info">
+        <div class="settings-btn-title">Admin Hesaplarını Yönet</div>
+        <div class="settings-btn-desc">
+          Yeni admin ekleyin, şifre değiştirin, yetkileri düzenleyin.<br/>
+          Her hesap yalnızca <strong style="color:rgba(255,255,255,0.5);">
+          bir cihazda</strong> aktif olabilir.
+        </div>
+      </div>
+      <i class="fas fa-chevron-right settings-btn-arrow"
+         style="color:rgba(139,92,246,0.4);"></i>
+    </div>`;
+
+  wrap.appendChild(adminSection);
+};
+ 
+
+
+
+
+  
+
 </script>
 </body>
 </html>
