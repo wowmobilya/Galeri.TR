@@ -4,8 +4,15 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
 <!-- Supabase Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <!-- الاتصال المسبق لتسريع جلب البيانات والخطوط -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://sldthbnigivpsqixccah.supabase.co">
+
+<!-- Supabase & EmailJS (مع خاصية defer لتسريع تحميل الصفحة) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js" defer></script>
+
 
 <!-- =====================================================
      PWA — تثبيت كتطبيق
@@ -1958,6 +1965,26 @@ body.wow-mode .mobile-menu {
 }
 
 
+
+
+
+
+    /* =====================================================
+   PERFORMANCE OPTIMIZATIONS (تسريع الرسوميات)
+===================================================== */
+.dev-modal-box, .dims-modal-box, .order-confirm-box, .hcm-box, .hcme-box {
+  will-change: transform, opacity;
+}
+
+/* تقليل الضغط على معالج الرسوميات في الموبايل */
+@media (max-width: 768px) {
+  #loginOverlay, #devModal, #dimsModal, #orderConfirmModal, #inventoryModal {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(10, 10, 10, 0.98) !important;
+  }
+}
+
     
     
 
@@ -2984,7 +3011,7 @@ body.wow-mode .mobile-menu {
       <div style="display:flex; gap:10px; margin-bottom:10px;">
         <div class="inv-search" style="flex:1; margin-bottom:0;">
           <i class="fas fa-search"></i>
-          <input type="text" id="invSearchInput" placeholder="Model ara..." oninput="filterInvList(this.value)" autocomplete="off"/>
+          <input type="text" oninput="filterInvList(this.value)" placeholder="Model ara..." oninput="filterInvList(this.value)" autocomplete="off"/>
         </div>
         <button onclick="openProductEditor()" style="padding:0 15px; background:linear-gradient(135deg,#c9a84c,#f0d080); border:none; border-radius:10px; color:#0a0a0a; font-weight:bold; cursor:pointer; font-size:12px;">
           <i class="fas fa-plus"></i> YENİ MODEL
@@ -4006,6 +4033,17 @@ function hideBackToast(){
 /* ============================================================
    أدوات مساعدة
 ============================================================ */
+// دالة تسريع البحث (تمنع التقطيع أثناء الكتابة)
+function debounce(func, wait) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+const debouncedFilterStock = debounce((val) => filterStockPage(val), 300);
+const debouncedFilterInv = debounce((val) => filterInvList(val), 300);
+
 function getHighQualityUrl(url){
   if(!url||!url.includes('wixstatic.com'))return url;
   try{const v=url.indexOf('/v1/');if(v===-1)return url;return url.substring(0,v);}catch(e){return url;}
@@ -4460,7 +4498,7 @@ function buildCard(img,idx){
       <div class="select-badge" id="badge-${img.id}" onclick="handleBadgeClick(event,${img.id})"><i class="fas fa-check"></i></div>
       ${hasDims?`<button class="dims-btn" onclick="openDimsModal(event,${img.id})"><i class="fas fa-ruler-combined"></i> ÖLÇÜLER</button>`:''}
       <div class="card-img-wrap">
-        <img src="${img.src}" alt="${img.title}" loading="lazy" draggable="false"
+<img src="${img.src}" alt="${img.title}" loading="lazy" decoding="async" draggable="false"
              onerror="this.src='https://placehold.co/600x400/1a1a1a/c9a84c?text=WOW+MOBİLYA'"/>
         <div class="card-label">
           <div class="card-label-title">${img.title}</div>
@@ -18583,7 +18621,7 @@ function buildStockPage() {
           <input type="text"
             id="stockPageSearch"
             placeholder="Model ara..."
-            oninput="filterStockPage(this.value)"
+            oninput="debouncedFilterStock(this.value)"
             autocomplete="off"
             style="
               width:100%;padding:10px 14px 10px 38px;
