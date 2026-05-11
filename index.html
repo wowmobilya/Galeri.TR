@@ -1590,94 +1590,80 @@ html { scroll-behavior: auto; }
 
 
 
-/* =====================================================
-   SETTINGS PAGE — صفحة الإعدادات (مضغوطة وبدون شرح)
+    /* =====================================================
+   SETTINGS PAGE — صفحة الإعدادات
 ===================================================== */
 .settings-page-wrap {
-  padding: 20px 18px 40px;
-  max-width: 500px; /* مساحة أصغر */
+  padding: 24px 22px 48px;
+  max-width: 700px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 8px; /* مسافة صغيرة بين الأزرار */
 }
-
 .settings-section-title {
   font-size: 10px;
   letter-spacing: 3px;
   color: rgba(201,168,76,0.6);
   text-transform: uppercase;
   font-weight: 700;
-  margin: 12px 0 2px;
+  margin-bottom: 14px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-
 .settings-btn-card {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 16px;
+  padding: 18px 20px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: 14px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  margin-bottom: 12px;
 }
-
 .settings-btn-card:hover {
-  background: rgba(201,168,76,0.05);
-  border-color: rgba(201,168,76,0.2);
+  background: rgba(201,168,76,0.06);
+  border-color: rgba(201,168,76,0.25);
   transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
-
 .settings-btn-icon {
-  width: 34px;
-  height: 34px;
+  width: 48px;
+  height: 48px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.03));
-  border: 1px solid rgba(201,168,76,0.25);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center; /* الرمز في المنتصف تماماً */
-  color: var(--gold);
-  font-size: 14px;
-  line-height: 0; /* 👈 يمنع الفراغ الافتراضي الذي يدفع الرمز للأسفل */
-}
-
-/* 👈 هذا الجزء يضمن أن أيقونة FontAwesome نفسها متمركزة 100% */
-.settings-btn-icon i {
+  background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.04));
+  border: 1px solid rgba(201,168,76,0.3);
+  border-radius: 13px;
   display: flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-  margin: 0;
-  padding: 0;
+  color: var(--gold);
+  font-size: 20px;
 }
-
+.settings-btn-info { flex: 1; min-width: 0; }
 .settings-btn-title {
-  flex: 1;
-  font-size: 12px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 900;
   color: #fff;
   letter-spacing: 0.5px;
+  margin-bottom: 4px;
 }
-
-
+.settings-btn-desc {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 1px;
+  line-height: 1.5;
+}
 .settings-btn-arrow {
-  color: rgba(201,168,76,0.3);
-  font-size: 12px;
-  transition: transform 0.3s;
+  color: rgba(201,168,76,0.4);
+  font-size: 16px;
+  transition: transform 0.3s, color 0.3s;
 }
-
 .settings-btn-card:hover .settings-btn-arrow {
-  transform: translateX(3px);
+  transform: translateX(4px);
   color: var(--gold);
 }
-
-
 
 
 
@@ -17296,47 +17282,217 @@ function buildSettingsPage() {
           <div class="section-banner-title">
             AYARLAR & <span class="accent">YÖNETİM</span>
           </div>
+          <div class="section-banner-count">WOW hesabı özel kontrol paneli</div>
           <div class="section-banner-line"></div>
         </div>
       </div>
 
-      <div class="settings-page-wrap">
+      <div style="padding:16px 18px 40px; max-width:680px; margin:0 auto;">
 
-        <div class="settings-section-title">
-          <i class="fas fa-home" style="color:rgba(201,168,76,0.5);"></i>
-          ANA SAYFA
-        </div>
-        <div class="settings-btn-card" onclick="openHomeCardsModal()">
-          <div class="settings-btn-icon"><i class="fas fa-th-large"></i></div>
-          <div class="settings-btn-title">Ana Sayfa Kartlarını Düzenle</div>
-          <i class="fas fa-chevron-right settings-btn-arrow"></i>
+        <!-- ══ قسم: الصفحة الرئيسية ══ -->
+        <div style="font-size:9px;letter-spacing:3px;color:rgba(201,168,76,0.55);
+             text-transform:uppercase;font-weight:700;margin-bottom:10px;
+             display:flex;align-items:center;gap:7px;">
+          <i class="fas fa-home" style="font-size:10px;"></i>
+          ANA SAYFA YÖNETİMİ
         </div>
 
-        <div class="settings-section-title">
-          <i class="fas fa-image" style="color:rgba(201,168,76,0.5);"></i>
-          GÖRSEL & METİN
-        </div>
-        <div class="settings-btn-card" onclick="openLogoModal()">
-          <div class="settings-btn-icon"><i class="fas fa-image"></i></div>
-          <div class="settings-btn-title">Uygulama Logosunu Değiştir</div>
-          <i class="fas fa-chevron-right settings-btn-arrow"></i>
-        </div>
-        <div class="settings-btn-card" onclick="openTextsModal()">
-          <div class="settings-btn-icon"><i class="fas fa-font"></i></div>
-          <div class="settings-btn-title">Uygulama Metinlerini Düzenle</div>
-          <i class="fas fa-chevron-right settings-btn-arrow"></i>
-        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">
 
-        <div class="settings-section-title">
-          <i class="fas fa-server" style="color:rgba(74,222,128,0.5);"></i>
-          SİSTEM
-        </div>
-        <div class="settings-btn-card" onclick="openServerInfoPage()" style="border-color:rgba(74,222,128,0.15);">
-          <div class="settings-btn-icon" style="background:linear-gradient(135deg,rgba(74,222,128,0.18),rgba(74,222,128,0.04));border-color:rgba(74,222,128,0.3);color:#4ade80;">
-            <i class="fas fa-server"></i>
+          <!-- بطاقة الكروت -->
+          <div onclick="openHomeCardsModal()" style="
+            background:rgba(255,255,255,0.025);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:12px;padding:13px 14px;
+            cursor:pointer;transition:all 0.25s ease;
+            display:flex;align-items:center;gap:11px;"
+            onmouseover="this.style.background='rgba(201,168,76,0.06)';
+                         this.style.borderColor='rgba(201,168,76,0.25)';
+                         this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.025)';
+                        this.style.borderColor='rgba(255,255,255,0.07)';
+                        this.style.transform=''">
+            <div style="
+              width:36px;height:36px;flex-shrink:0;border-radius:10px;
+              background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+              border:1px solid rgba(201,168,76,0.3);
+              display:flex;align-items:center;justify-content:center;
+              color:#c9a84c;font-size:15px;">
+              <i class="fas fa-th-large"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:900;color:#fff;
+                   margin-bottom:2px;white-space:nowrap;overflow:hidden;
+                   text-overflow:ellipsis;">Kart Düzeni</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.28);
+                   letter-spacing:0.5px;line-height:1.4;">
+                Sıralama & görseller
+              </div>
+            </div>
+            <i class="fas fa-chevron-right"
+               style="color:rgba(201,168,76,0.35);font-size:11px;flex-shrink:0;"></i>
           </div>
-          <div class="settings-btn-title">Sunucu Durumu & Depolama</div>
-          <i class="fas fa-chevron-right settings-btn-arrow" style="color:rgba(74,222,128,0.4);"></i>
+
+          <!-- بطاقة اللوجو -->
+          <div onclick="openLogoModal()" style="
+            background:rgba(255,255,255,0.025);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:12px;padding:13px 14px;
+            cursor:pointer;transition:all 0.25s ease;
+            display:flex;align-items:center;gap:11px;"
+            onmouseover="this.style.background='rgba(201,168,76,0.06)';
+                         this.style.borderColor='rgba(201,168,76,0.25)';
+                         this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.025)';
+                        this.style.borderColor='rgba(255,255,255,0.07)';
+                        this.style.transform=''">
+            <div style="
+              width:36px;height:36px;flex-shrink:0;border-radius:10px;
+              background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+              border:1px solid rgba(201,168,76,0.3);
+              display:flex;align-items:center;justify-content:center;
+              color:#c9a84c;font-size:15px;">
+              <i class="fas fa-image"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:900;color:#fff;
+                   margin-bottom:2px;">Logo Değiştir</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.28);
+                   letter-spacing:0.5px;line-height:1.4;">
+                URL veya dosya yükle
+              </div>
+            </div>
+            <i class="fas fa-chevron-right"
+               style="color:rgba(201,168,76,0.35);font-size:11px;flex-shrink:0;"></i>
+          </div>
+
+          <!-- بطاقة النصوص -->
+          <div onclick="openTextsModal()" style="
+            background:rgba(255,255,255,0.025);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:12px;padding:13px 14px;
+            cursor:pointer;transition:all 0.25s ease;
+            display:flex;align-items:center;gap:11px;"
+            onmouseover="this.style.background='rgba(201,168,76,0.06)';
+                         this.style.borderColor='rgba(201,168,76,0.25)';
+                         this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.025)';
+                        this.style.borderColor='rgba(255,255,255,0.07)';
+                        this.style.transform=''">
+            <div style="
+              width:36px;height:36px;flex-shrink:0;border-radius:10px;
+              background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+              border:1px solid rgba(201,168,76,0.3);
+              display:flex;align-items:center;justify-content:center;
+              color:#c9a84c;font-size:15px;">
+              <i class="fas fa-font"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:900;color:#fff;
+                   margin-bottom:2px;">Metinler</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.28);
+                   letter-spacing:0.5px;line-height:1.4;">
+                Slogan & telif hakkı
+              </div>
+            </div>
+            <i class="fas fa-chevron-right"
+               style="color:rgba(201,168,76,0.35);font-size:11px;flex-shrink:0;"></i>
+          </div>
+
+          <!-- بطاقة الخادم -->
+          <div onclick="openServerInfoPage()" style="
+            background:rgba(74,222,128,0.03);
+            border:1px solid rgba(74,222,128,0.12);
+            border-radius:12px;padding:13px 14px;
+            cursor:pointer;transition:all 0.25s ease;
+            display:flex;align-items:center;gap:11px;"
+            onmouseover="this.style.background='rgba(74,222,128,0.07)';
+                         this.style.borderColor='rgba(74,222,128,0.28)';
+                         this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.background='rgba(74,222,128,0.03)';
+                        this.style.borderColor='rgba(74,222,128,0.12)';
+                        this.style.transform=''">
+            <div style="
+              width:36px;height:36px;flex-shrink:0;border-radius:10px;
+              background:rgba(74,222,128,0.1);
+              border:1px solid rgba(74,222,128,0.25);
+              display:flex;align-items:center;justify-content:center;
+              color:#4ade80;font-size:15px;">
+              <i class="fas fa-server"></i>
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:900;color:#fff;
+                   margin-bottom:2px;">Sunucu Durumu</div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.28);
+                   letter-spacing:0.5px;line-height:1.4;">
+                DB & depolama bilgisi
+              </div>
+            </div>
+            <i class="fas fa-chevron-right"
+               style="color:rgba(74,222,128,0.4);font-size:11px;flex-shrink:0;"></i>
+          </div>
+
+        </div>
+
+        <!-- ══ قسم: إدارة الأدمن ══ -->
+        <div style="font-size:9px;letter-spacing:3px;color:rgba(139,92,246,0.55);
+             text-transform:uppercase;font-weight:700;margin-bottom:10px;
+             display:flex;align-items:center;gap:7px;">
+          <i class="fas fa-user-shield" style="font-size:10px;"></i>
+          ADMİN YÖNETİMİ
+        </div>
+
+        <div onclick="showPage('admin_accounts')" style="
+          background:rgba(139,92,246,0.04);
+          border:1px solid rgba(139,92,246,0.14);
+          border-radius:12px;padding:13px 14px;
+          cursor:pointer;transition:all 0.25s ease;
+          display:flex;align-items:center;gap:11px;
+          margin-bottom:20px;"
+          onmouseover="this.style.background='rgba(139,92,246,0.09)';
+                       this.style.borderColor='rgba(139,92,246,0.3)';
+                       this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.background='rgba(139,92,246,0.04)';
+                      this.style.borderColor='rgba(139,92,246,0.14)';
+                      this.style.transform=''">
+          <div style="
+            width:36px;height:36px;flex-shrink:0;border-radius:10px;
+            background:rgba(139,92,246,0.15);
+            border:1px solid rgba(139,92,246,0.3);
+            display:flex;align-items:center;justify-content:center;
+            color:#a78bfa;font-size:15px;">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:900;color:#fff;margin-bottom:2px;">
+              Admin Hesapları
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.28);
+                 letter-spacing:0.5px;line-height:1.4;">
+              Yeni admin ekle · şifre · yetkiler · cihaz kilidi
+            </div>
+          </div>
+          <i class="fas fa-chevron-right"
+             style="color:rgba(139,92,246,0.4);font-size:11px;flex-shrink:0;"></i>
+        </div>
+
+        <!-- ══ ملاحظة معلوماتية مضغوطة ══ -->
+        <div style="
+          background:rgba(201,168,76,0.03);
+          border:1px solid rgba(201,168,76,0.1);
+          border-radius:10px;padding:11px 13px;
+          display:flex;gap:9px;align-items:flex-start;">
+          <i class="fas fa-info-circle"
+             style="color:rgba(201,168,76,0.4);font-size:12px;
+                    margin-top:1px;flex-shrink:0;"></i>
+          <div style="font-size:10px;color:rgba(255,255,255,0.25);
+               line-height:1.7;letter-spacing:0.2px;">
+            Değişiklikler <strong style="color:rgba(255,255,255,0.4);">
+            gerçek zamanlı</strong> uygulanır.
+            Görseller Supabase Storage'a otomatik yüklenir.
+            Sıra numarası küçük olan kart <strong style="color:rgba(255,255,255,0.4);">
+            önce</strong> görünür.
+          </div>
         </div>
 
       </div>
