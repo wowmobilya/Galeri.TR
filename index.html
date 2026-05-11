@@ -21628,6 +21628,43 @@ async function siLoadData() {
                           color:${plan.color};">
                 <i class="fas ${plan.icon}" style="font-size:7px;"></i>
                 ${plan.label}
+
+            </div>
+            <!-- ✅ إشارة الحالة -->
+            <div style="
+              display:flex;align-items:center;gap:5px;
+              margin-top:5px;">
+              <div style="
+                width:16px;height:16px;border-radius:50%;
+                background:${
+                  dbPct < 80
+                    ? 'rgba(74,222,128,0.15)'
+                    : 'rgba(239,68,68,0.15)'};
+                border:1.5px solid ${
+                  dbPct < 80
+                    ? 'rgba(74,222,128,0.4)'
+                    : 'rgba(239,68,68,0.4)'};
+                display:flex;align-items:center;
+                justify-content:center;
+                box-shadow:0 0 6px ${
+                  dbPct < 80
+                    ? 'rgba(74,222,128,0.3)'
+                    : 'rgba(239,68,68,0.3)'};
+                animation:siPulse2 2s infinite;
+                flex-shrink:0;">
+                <i class="fas ${dbPct < 80 ? 'fa-check' : 'fa-times'}"
+                   style="
+                     font-size:7px;
+                     color:${dbPct < 80 ? '#4ade80' : '#ef4444'};"></i>
+              </div>
+              <span style="
+                font-size:9px;font-weight:700;letter-spacing:0.5px;
+                color:${dbPct < 80 ? '#4ade80' : '#ef4444'};">
+                ${dbPct < 80 ? 'Normal' : 'Kritik'}
+              </span>
+            </div>
+
+                
               </div>
             </div>
           </div>
