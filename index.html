@@ -17364,7 +17364,7 @@ function buildSettingsPage() {
           <i class="fas fa-server" style="color:rgba(74,222,128,0.5);"></i>
           SUNUCU BİLGİLERİ
         </div>
-        <div class="settings-btn-card" onclick="openServerInfoModal()"
+        <div class="settings-btn-card" onclick="openServerInfoPage()"
              style="border-color:rgba(74,222,128,0.15);">
           <div class="settings-btn-icon"
                style="background:linear-gradient(135deg,
@@ -21094,8 +21094,7 @@ function showStrictDeviceConflictModal(adminName) {
 
 
  /* ============================================================
-   ★ SUPABASE SERVER INFO SYSTEM ★
-   متوافق مع جميع أحجام شاشات الهاتف
+   ★ SUPABASE SERVER INFO — صفحة كاملة ★
 ============================================================ */
 
 const SUPABASE_PLANS = {
@@ -21115,8 +21114,7 @@ const SUPABASE_PLANS = {
   },
 };
 
-/* ★ غيّر هذا حسب خطتك ★ */
-const CURRENT_PLAN = 'free';
+const CURRENT_PLAN = 'free'; /* ★ غيّر حسب خطتك ★ */
 
 /* ── تنسيق الحجم ── */
 function fmtBytes(bytes) {
@@ -21134,404 +21132,361 @@ function progressColor(pct) {
   return '#ef4444';
 }
 
-/* ── حقن CSS مرة واحدة ── */
-function injectServerInfoStyles() {
-  if (document.getElementById('siStyles')) return;
-  const st = document.createElement('style');
-  st.id = 'siStyles';
-  st.textContent = `
-    @keyframes siSlideUp {
-      from { opacity:0; transform:translateY(30px) scale(0.97); }
-      to   { opacity:1; transform:translateY(0)    scale(1);    }
-    }
-    @keyframes siBgIn {
-      from { opacity:0; }
-      to   { opacity:1; }
-    }
-    @keyframes siSpin {
-      from { transform:rotate(0deg); }
-      to   { transform:rotate(360deg); }
-    }
-    @keyframes siPulse {
-      0%,100% { opacity:1;   transform:scale(1);    }
-      50%      { opacity:0.5; transform:scale(0.85); }
-    }
-    @keyframes siShine {
-      0%   { left:-60%; }
-      100% { left:120%; }
-    }
-    @keyframes siCountUp {
-      from { opacity:0; transform:translateY(8px); }
-      to   { opacity:1; transform:translateY(0);   }
-    }
+/* ════════════════════════════════════════
+   فتح صفحة السيرفر
+════════════════════════════════════════ */
+async function openServerInfoPage() {
 
-    /* ── النافذة الخارجية ── */
-    #serverInfoModal {
-      position:fixed;inset:0;z-index:8500;
-      display:flex;align-items:flex-end;justify-content:center;
-      background:rgba(0,0,0,0.85);
-      backdrop-filter:blur(20px);
-      -webkit-backdrop-filter:blur(20px);
-      padding:0;
-      animation:siBgIn 0.3s ease forwards;
-    }
-    @media(min-width:600px){
-      #serverInfoModal {
-        align-items:center;
-        padding:16px;
+  /* ── حقن CSS ── */
+  if (!document.getElementById('siPageStyles')) {
+    const st = document.createElement('style');
+    st.id = 'siPageStyles';
+    st.textContent = `
+      /* ── الصفحة الكاملة ── */
+      #siPage {
+        position:fixed;inset:0;z-index:7000;
+        background:linear-gradient(160deg,#060d06,#0a140a);
+        display:flex;flex-direction:column;
+        overflow:hidden;
+        animation:siPageIn 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
       }
-    }
-
-    /* ── الصندوق الداخلي ── */
-    #siBox {
-      width:100%;
-      max-width:620px;
-      background:linear-gradient(160deg,#060d06,#0b160b);
-      border:1px solid rgba(74,222,128,0.18);
-      border-radius:24px 24px 0 0;
-      overflow:hidden;
-      box-shadow:0 -20px 60px rgba(0,0,0,0.8),
-                 0 0 80px rgba(74,222,128,0.03);
-      animation:siSlideUp 0.45s cubic-bezier(0.34,1.4,0.64,1) forwards;
-      max-height:92vh;
-      display:flex;flex-direction:column;
-    }
-    @media(min-width:600px){
-      #siBox {
-        border-radius:24px;
-        max-height:90vh;
+      @keyframes siPageIn {
+        from { opacity:0; transform:translateX(40px); }
+        to   { opacity:1; transform:translateX(0);    }
       }
-    }
+      @keyframes siPageOut {
+        from { opacity:1; transform:translateX(0);    }
+        to   { opacity:0; transform:translateX(40px); }
+      }
 
-    /* ── شريط السحب (هاتف) ── */
-    #siDragBar {
-      width:40px;height:4px;
-      background:rgba(255,255,255,0.12);
-      border-radius:4px;
-      margin:10px auto 0;
-      flex-shrink:0;
-    }
-    @media(min-width:600px){ #siDragBar { display:none; } }
+      /* ── هيدر الصفحة ── */
+      #siPageHeader {
+        flex-shrink:0;
+        background:rgba(6,13,6,0.95);
+        border-bottom:1px solid rgba(74,222,128,0.1);
+        backdrop-filter:blur(20px);
+        -webkit-backdrop-filter:blur(20px);
+        padding:0;
+        position:sticky;top:0;z-index:2;
+      }
 
-    /* ── الهيدر ── */
-    #siHeader {
-      padding:12px 16px 12px;
-      display:flex;align-items:center;justify-content:space-between;
-      border-bottom:1px solid rgba(255,255,255,0.05);
-      flex-shrink:0;
-      position:sticky;top:0;
-      background:linear-gradient(160deg,#060d06,#0b160b);
-      z-index:2;
-    }
+      /* ── خط أخضر علوي ── */
+      #siPageTopBar {
+        height:2px;
+        background:linear-gradient(90deg,
+          transparent,#4ade80 25%,#86efac 50%,#4ade80 75%,transparent);
+      }
 
-    /* ── منطقة التمرير ── */
-    #serverInfoContent {
-      overflow-y:auto;
-      flex:1;
-      padding:14px 14px 28px;
-      scrollbar-width:thin;
-      scrollbar-color:rgba(74,222,128,0.2) transparent;
-      -webkit-overflow-scrolling:touch;
-    }
-    #serverInfoContent::-webkit-scrollbar { width:4px; }
-    #serverInfoContent::-webkit-scrollbar-thumb {
-      background:rgba(74,222,128,0.2);border-radius:4px;
-    }
+      /* ── محتوى الهيدر ── */
+      #siPageHeaderInner {
+        display:flex;align-items:center;
+        gap:12px;padding:12px 14px;
+      }
 
-    /* ── عناوين الأقسام ── */
-    .si-title {
-      font-size:9px;letter-spacing:2.5px;font-weight:700;
-      text-transform:uppercase;margin-bottom:10px;
-      display:flex;align-items:center;gap:7px;
-    }
+      /* ── زر الرجوع ── */
+      #siBackBtn {
+        width:38px;height:38px;flex-shrink:0;
+        background:rgba(74,222,128,0.08);
+        border:1px solid rgba(74,222,128,0.22);
+        border-radius:11px;
+        color:#4ade80;font-size:15px;
+        cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
+        transition:all 0.2s;
+        -webkit-tap-highlight-color:transparent;
+      }
+      #siBackBtn:active {
+        background:rgba(74,222,128,0.18);
+        transform:scale(0.93);
+      }
+      @media(hover:hover){
+        #siBackBtn:hover {
+          background:rgba(74,222,128,0.16);
+        }
+      }
 
-    /* ── بطاقة عامة ── */
-    .si-card {
-      background:rgba(255,255,255,0.025);
-      border:1px solid rgba(255,255,255,0.07);
-      border-radius:14px;overflow:hidden;
-      margin-bottom:16px;
-    }
+      /* ── عنوان الهيدر ── */
+      #siPageTitle {
+        flex:1;min-width:0;
+      }
+      #siPageTitle .sub {
+        font-size:7px;letter-spacing:3px;
+        color:rgba(74,222,128,0.5);
+        text-transform:uppercase;margin-bottom:2px;
+      }
+      #siPageTitle .main {
+        font-size:16px;font-weight:900;color:#fff;line-height:1;
+      }
+      @media(max-width:360px){
+        #siPageTitle .main { font-size:14px; }
+      }
 
-    /* ── صف داخل البطاقة ── */
-    .si-row {
-      display:flex;align-items:center;
-      justify-content:space-between;
-      padding:10px 13px;
-      border-bottom:1px solid rgba(255,255,255,0.04);
-      transition:background 0.2s;
-      gap:8px;
-    }
-    .si-row:last-child { border-bottom:none; }
-    .si-row:active { background:rgba(255,255,255,0.04); }
-    @media(hover:hover){
-      .si-row:hover { background:rgba(255,255,255,0.03); }
-    }
+      /* ── زر يenile ── */
+      #siRefreshBtn2 {
+        padding:7px 13px;border-radius:9px;
+        border:1px solid rgba(74,222,128,0.25);
+        background:rgba(74,222,128,0.07);
+        color:#4ade80;
+        font-family:'Montserrat',sans-serif;
+        font-size:9px;font-weight:700;
+        cursor:pointer;letter-spacing:1px;
+        display:flex;align-items:center;gap:5px;
+        transition:all 0.2s;flex-shrink:0;
+        -webkit-tap-highlight-color:transparent;
+      }
+      #siRefreshBtn2:active {
+        background:rgba(74,222,128,0.18);
+        transform:scale(0.95);
+      }
+      @media(hover:hover){
+        #siRefreshBtn2:hover {
+          background:rgba(74,222,128,0.16);
+        }
+      }
 
-    /* ── شبكة الإحصاءات ── */
-    .si-grid {
-      display:grid;
-      grid-template-columns:repeat(3,1fr);
-      gap:8px;
-      margin-bottom:16px;
-    }
-    @media(max-width:360px){
-      .si-grid { grid-template-columns:repeat(2,1fr); }
-    }
+      /* ── منطقة التمرير ── */
+      #siPageBody {
+        flex:1;overflow-y:auto;
+        padding:14px 14px 40px;
+        -webkit-overflow-scrolling:touch;
+        scrollbar-width:thin;
+        scrollbar-color:rgba(74,222,128,0.18) transparent;
+      }
+      #siPageBody::-webkit-scrollbar { width:3px; }
+      #siPageBody::-webkit-scrollbar-thumb {
+        background:rgba(74,222,128,0.18);border-radius:3px;
+      }
 
-    /* ── بطاقة إحصاء ── */
-    .si-stat {
-      background:rgba(255,255,255,0.025);
-      border:1px solid rgba(255,255,255,0.07);
-      border-radius:13px;
-      padding:12px 8px 10px;
-      text-align:center;
-      transition:all 0.25s;
-      cursor:default;
-    }
-    .si-stat:active {
-      transform:scale(0.96);
-      background:rgba(255,255,255,0.04);
-    }
-    @media(hover:hover){
-      .si-stat:hover {
+      /* ── عناوين الأقسام ── */
+      .si2-title {
+        font-size:9px;letter-spacing:2.5px;font-weight:700;
+        text-transform:uppercase;margin-bottom:10px;
+        display:flex;align-items:center;gap:7px;
+        margin-top:20px;
+      }
+      .si2-title:first-child { margin-top:0; }
+
+      /* ── بطاقة عامة ── */
+      .si2-card {
+        background:rgba(255,255,255,0.025);
+        border:1px solid rgba(255,255,255,0.07);
+        border-radius:14px;overflow:hidden;
+        margin-bottom:4px;
+      }
+
+      /* ── صف ── */
+      .si2-row {
+        display:flex;align-items:center;
+        justify-content:space-between;
+        padding:11px 13px;
+        border-bottom:1px solid rgba(255,255,255,0.04);
+        transition:background 0.18s;
+        gap:8px;
+      }
+      .si2-row:last-child { border-bottom:none; }
+      .si2-row:active { background:rgba(255,255,255,0.04); }
+      @media(hover:hover){
+        .si2-row:hover { background:rgba(255,255,255,0.03); }
+      }
+
+      /* ── شبكة الإحصاءات ── */
+      .si2-grid {
+        display:grid;
+        grid-template-columns:repeat(3,1fr);
+        gap:8px;margin-bottom:4px;
+      }
+      @media(max-width:360px){
+        .si2-grid { grid-template-columns:repeat(2,1fr); }
+      }
+
+      /* ── بطاقة إحصاء ── */
+      .si2-stat {
+        background:rgba(255,255,255,0.025);
+        border:1px solid rgba(255,255,255,0.07);
+        border-radius:13px;
+        padding:13px 8px 11px;
+        text-align:center;
+        transition:all 0.22s;cursor:default;
+      }
+      .si2-stat:active {
+        transform:scale(0.95);
         background:rgba(255,255,255,0.04);
-        transform:translateY(-2px);
       }
-    }
+      @media(hover:hover){
+        .si2-stat:hover {
+          background:rgba(255,255,255,0.04);
+          transform:translateY(-2px);
+        }
+      }
 
-    /* ── شريط التقدم ── */
-    .si-bar-wrap {
-      height:9px;
-      background:rgba(255,255,255,0.06);
-      border-radius:9px;overflow:hidden;
-      position:relative;
-    }
-    .si-bar-fill {
-      height:100%;border-radius:9px;
-      transition:width 1.3s cubic-bezier(0.4,0,0.2,1);
-      position:relative;overflow:hidden;
-    }
-    .si-bar-shine {
-      position:absolute;top:0;bottom:0;width:60%;
-      background:linear-gradient(90deg,
-        transparent,rgba(255,255,255,0.22),transparent);
-      animation:siShine 2.5s ease infinite;
-      left:-60%;
-    }
+      /* ── أيقونة صغيرة ── */
+      .si2-icon {
+        width:34px;height:34px;border-radius:10px;
+        flex-shrink:0;
+        display:flex;align-items:center;justify-content:center;
+        font-size:14px;
+      }
 
-    /* ── أيقونة صغيرة ── */
-    .si-icon {
-      width:32px;height:32px;border-radius:9px;
-      flex-shrink:0;
-      display:flex;align-items:center;justify-content:center;
-      font-size:13px;
-    }
-    @media(min-width:400px){
-      .si-icon { width:34px;height:34px;font-size:14px; }
-    }
+      /* ── badge ── */
+      .si2-badge {
+        padding:3px 10px;border-radius:50px;
+        font-size:9px;font-weight:700;
+        white-space:nowrap;flex-shrink:0;
+        display:inline-flex;align-items:center;gap:3px;
+      }
 
-    /* ── badge ── */
-    .si-badge {
-      padding:3px 10px;border-radius:50px;
-      font-size:9px;font-weight:700;
-      white-space:nowrap;flex-shrink:0;
-    }
+      /* ── شريط التقدم ── */
+      .si2-bar-wrap {
+        height:9px;
+        background:rgba(255,255,255,0.06);
+        border-radius:9px;overflow:hidden;
+        position:relative;
+      }
+      .si2-bar-fill {
+        height:100%;border-radius:9px;
+        transition:width 1.3s cubic-bezier(0.4,0,0.2,1);
+        position:relative;overflow:hidden;
+      }
+      .si2-bar-shine {
+        position:absolute;top:0;bottom:0;width:60%;
+        background:linear-gradient(90deg,
+          transparent,rgba(255,255,255,0.2),transparent);
+        animation:siShine2 2.5s ease infinite;left:-60%;
+      }
+      @keyframes siShine2 {
+        0%   { left:-60%; }
+        100% { left:120%; }
+      }
 
-    /* ── تحذير ── */
-    .si-alert {
-      border-radius:10px;padding:10px 12px;
-      display:flex;gap:9px;align-items:flex-start;
-      margin-top:12px;
-    }
-    .si-alert i { flex-shrink:0;margin-top:1px;font-size:12px; }
-    .si-alert span {
-      font-size:10px;line-height:1.65;
-      font-family:'Montserrat',sans-serif;
-    }
+      /* ── تحذير ── */
+      .si2-alert {
+        border-radius:10px;padding:10px 12px;
+        display:flex;gap:9px;align-items:flex-start;
+        margin-top:11px;
+      }
+      .si2-alert i { flex-shrink:0;margin-top:1px;font-size:12px; }
+      .si2-alert span {
+        font-size:10px;line-height:1.65;
+      }
+
+      /* ── أنيميشن عداد ── */
+      @keyframes siCount {
+        from { opacity:0;transform:translateY(6px); }
+        to   { opacity:1;transform:translateY(0);   }
+      }
+      @keyframes siPulse2 {
+        0%,100%{ opacity:1;   transform:scale(1);    }
+        50%    { opacity:0.5; transform:scale(0.85); }
+      }
+      @keyframes siSpin2 {
+        from{ transform:rotate(0deg); }
+        to  { transform:rotate(360deg); }
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  /* ── بناء الصفحة ── */
+  const page = document.createElement('div');
+  page.id = 'siPage';
+  page.innerHTML = `
+
+    <!-- هيدر -->
+    <div id="siPageHeader">
+      <div id="siPageTopBar"></div>
+      <div id="siPageHeaderInner">
+
+        <!-- زر الرجوع -->
+        <button id="siBackBtn" onclick="closeServerInfoPage()">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+
+        <!-- العنوان -->
+        <div id="siPageTitle">
+          <div class="sub">SUPABASE — CANLI VERİ</div>
+          <div class="main">Sunucu Bilgileri</div>
+        </div>
+
+        <!-- زر التحديث -->
+        <button id="siRefreshBtn2" onclick="siLoadData()">
+          <i class="fas fa-sync-alt" id="siSpinIcon"></i>
+          YENİLE
+        </button>
+
+      </div>
+    </div>
+
+    <!-- جسم الصفحة -->
+    <div id="siPageBody">
+      <div style="
+        display:flex;flex-direction:column;
+        align-items:center;justify-content:center;
+        padding:60px 20px;gap:14px;">
+        <div style="
+          width:54px;height:54px;border-radius:50%;
+          background:rgba(74,222,128,0.07);
+          border:2px solid rgba(74,222,128,0.18);
+          display:flex;align-items:center;justify-content:center;
+          animation:siPulse2 1.5s infinite;">
+          <i class="fas fa-server"
+             style="font-size:22px;color:rgba(74,222,128,0.55);"></i>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:12px;font-weight:700;
+               color:rgba(255,255,255,0.3);letter-spacing:2px;
+               margin-bottom:4px;">Yükleniyor...</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.12);
+               letter-spacing:1px;">Sunucu verileri çekiliyor</div>
+        </div>
+      </div>
+    </div>
   `;
-  document.head.appendChild(st);
+
+  document.body.appendChild(page);
+  document.body.style.overflow = 'hidden';
+
+  /* زر الرجوع الفيزيائي (Android) */
+  window._siPopState = () => closeServerInfoPage();
+  window.history.pushState({ siPage: true }, '');
+  window.addEventListener('popstate', window._siPopState);
+
+  await siLoadData();
 }
 
 /* ════════════════════════════════════════
-   فتح النافذة
+   إغلاق الصفحة
 ════════════════════════════════════════ */
-async function openServerInfoModal() {
-  document.getElementById('serverInfoModal')?.remove();
-  injectServerInfoStyles();
+function closeServerInfoPage() {
+  const page = document.getElementById('siPage');
+  if (!page) return;
 
-  const modal = document.createElement('div');
-  modal.id = 'serverInfoModal';
+  /* إزالة listener الزر الفيزيائي */
+  window.removeEventListener('popstate', window._siPopState);
+  if (window.history.state?.siPage) window.history.back();
 
-  modal.innerHTML = `
-    <div id="siBox">
-
-      <!-- شريط السحب -->
-      <div id="siDragBar"></div>
-
-      <!-- خط أخضر -->
-      <div style="height:2px;flex-shrink:0;
-           background:linear-gradient(90deg,
-             transparent,#4ade80 25%,#86efac 50%,#4ade80 75%,transparent);">
-      </div>
-
-      <!-- هيدر -->
-      <div id="siHeader">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="
-            width:38px;height:38px;flex-shrink:0;
-            background:rgba(74,222,128,0.1);
-            border:1px solid rgba(74,222,128,0.28);
-            border-radius:11px;
-            display:flex;align-items:center;justify-content:center;
-            color:#4ade80;font-size:16px;">
-            <i class="fas fa-server"></i>
-          </div>
-          <div>
-            <div style="font-size:7px;letter-spacing:3px;
-                 color:rgba(74,222,128,0.5);text-transform:uppercase;
-                 margin-bottom:2px;">
-              SUPABASE — CANLI
-            </div>
-            <div style="font-size:15px;font-weight:900;color:#fff;
-                 line-height:1;">
-              Sunucu Bilgileri
-            </div>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:7px;align-items:center;">
-          <button id="siRefreshBtn" onclick="refreshServerInfo()" style="
-            padding:6px 12px;border-radius:8px;
-            border:1px solid rgba(74,222,128,0.28);
-            background:rgba(74,222,128,0.07);
-            color:#4ade80;
-            font-family:'Montserrat',sans-serif;
-            font-size:9px;font-weight:700;cursor:pointer;
-            display:flex;align-items:center;gap:5px;
-            transition:all 0.2s;letter-spacing:1px;
-            -webkit-tap-highlight-color:transparent;">
-            <i class="fas fa-sync-alt" id="serverRefreshIcon"></i>
-            YENİLE
-          </button>
-          <button onclick="closeServerInfoModal()" style="
-            width:32px;height:32px;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(255,255,255,0.07);
-            border-radius:9px;
-            color:rgba(255,255,255,0.3);
-            font-size:13px;cursor:pointer;
-            display:flex;align-items:center;justify-content:center;
-            transition:all 0.2s;
-            -webkit-tap-highlight-color:transparent;">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- المحتوى -->
-      <div id="serverInfoContent">
-        <div style="
-          display:flex;flex-direction:column;
-          align-items:center;justify-content:center;
-          padding:50px 20px;gap:14px;">
-          <div style="
-            width:52px;height:52px;border-radius:50%;
-            background:rgba(74,222,128,0.07);
-            border:2px solid rgba(74,222,128,0.18);
-            display:flex;align-items:center;justify-content:center;
-            animation:siPulse 1.5s infinite;">
-            <i class="fas fa-server"
-               style="font-size:20px;color:rgba(74,222,128,0.55);"></i>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:12px;font-weight:700;
-                 color:rgba(255,255,255,0.35);letter-spacing:2px;
-                 margin-bottom:4px;">
-              Yükleniyor...
-            </div>
-            <div style="font-size:10px;color:rgba(255,255,255,0.12);
-                 letter-spacing:1px;">
-              Sunucu verileri çekiliyor
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>`;
-
-  document.body.appendChild(modal);
-  document.body.style.overflow = 'hidden';
-
-  /* إغلاق بالنقر خارج الصندوق */
-  modal.addEventListener('click', e => {
-    if (e.target === modal) closeServerInfoModal();
-  });
-
-  /* سحب للإغلاق على الهاتف */
-  let startY = 0, isDragging = false;
-  const box = document.getElementById('siBox');
-  const bar = document.getElementById('siDragBar');
-  if (bar) {
-    bar.addEventListener('touchstart', e => {
-      startY = e.touches[0].clientY;
-      isDragging = true;
-    }, { passive:true });
-    document.addEventListener('touchmove', e => {
-      if (!isDragging) return;
-      const dy = e.touches[0].clientY - startY;
-      if (dy > 0) box.style.transform = `translateY(${dy}px)`;
-    }, { passive:true });
-    document.addEventListener('touchend', e => {
-      if (!isDragging) return;
-      isDragging = false;
-      const dy = e.changedTouches[0].clientY - startY;
-      if (dy > 100) {
-        closeServerInfoModal();
-      } else {
-        box.style.transition = 'transform 0.3s ease';
-        box.style.transform  = 'translateY(0)';
-        setTimeout(() => box.style.transition = '', 300);
-      }
-    }, { passive:true });
-  }
-
-  await refreshServerInfo();
-}
-
-/* ── إغلاق ── */
-function closeServerInfoModal() {
-  const modal = document.getElementById('serverInfoModal');
-  const box   = document.getElementById('siBox');
-  if (!modal) return;
-  if (box) {
-    box.style.transition  = 'transform 0.3s ease, opacity 0.3s ease';
-    box.style.transform   = 'translateY(60px)';
-    box.style.opacity     = '0';
-  }
-  modal.style.transition = 'opacity 0.3s ease';
-  modal.style.opacity    = '0';
+  page.style.animation = 'siPageOut 0.3s cubic-bezier(0.4,0,0.2,1) forwards';
   setTimeout(() => {
-    modal.remove();
+    page.remove();
     document.body.style.overflow = '';
   }, 280);
 }
 
 /* ════════════════════════════════════════
-   جلب البيانات وعرضها
+   جلب البيانات
 ════════════════════════════════════════ */
-async function refreshServerInfo() {
-  const icon    = document.getElementById('serverRefreshIcon');
-  const content = document.getElementById('serverInfoContent');
-  if (!content) return;
+async function siLoadData() {
+  const body = document.getElementById('siPageBody');
+  const spin = document.getElementById('siSpinIcon');
+  if (!body) return;
 
-  if (icon) icon.style.animation = 'siSpin 0.8s linear infinite';
+  if (spin) spin.style.animation = 'siSpin2 0.8s linear infinite';
 
   const sb = await initSupabase();
   if (!sb) {
-    content.innerHTML = `
-      <div style="text-align:center;padding:40px 20px;">
+    body.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;">
         <div style="
-          width:54px;height:54px;border-radius:50%;
+          width:56px;height:56px;border-radius:50%;
           background:rgba(239,68,68,0.08);
           border:2px solid rgba(239,68,68,0.2);
           display:flex;align-items:center;justify-content:center;
@@ -21545,7 +21500,7 @@ async function refreshServerInfo() {
           Supabase bağlantısını kontrol edin
         </p>
       </div>`;
-    if (icon) icon.style.animation = '';
+    if (spin) spin.style.animation = '';
     return;
   }
 
@@ -21595,31 +21550,31 @@ async function refreshServerInfo() {
     const pingLabel = pingMs < 300 ? 'İyi' : pingMs < 800 ? 'Orta' : 'Yavaş';
 
     const totalRows = Object.values(counts)
-      .filter(v => v !== null).reduce((a,b) => a + b, 0);
+      .filter(v => v !== null).reduce((a, b) => a + b, 0);
 
     const now = new Date();
-    if (icon) icon.style.animation = '';
+    if (spin) spin.style.animation = '';
 
     /* ════════════════════════════════════════
-       HTML الكامل
+       HTML المحتوى
     ════════════════════════════════════════ */
-    content.innerHTML = `
+    body.innerHTML = `
 
       <!-- ══ شريط الحالة ══ -->
       <div style="
         display:flex;align-items:center;
         justify-content:space-between;
         flex-wrap:wrap;gap:6px;
-        padding:9px 12px;margin-bottom:16px;
+        padding:9px 12px;margin-bottom:18px;
         background:rgba(74,222,128,0.05);
-        border:1px solid rgba(74,222,128,0.14);
+        border:1px solid rgba(74,222,128,0.13);
         border-radius:11px;">
         <div style="display:flex;align-items:center;gap:7px;">
           <div style="
             width:8px;height:8px;border-radius:50%;
             background:#4ade80;
             box-shadow:0 0 7px rgba(74,222,128,0.7);
-            animation:siPulse 2s infinite;flex-shrink:0;"></div>
+            animation:siPulse2 2s infinite;flex-shrink:0;"></div>
           <span style="font-size:10px;font-weight:700;
                 color:rgba(74,222,128,0.75);letter-spacing:1.5px;">
             CANLI BAĞLANTI
@@ -21633,7 +21588,7 @@ async function refreshServerInfo() {
               ${pingMs}ms
             </span>
             <span style="font-size:9px;color:rgba(255,255,255,0.18);">
-              ${pingLabel}
+              (${pingLabel})
             </span>
           </div>
           <span style="font-size:9px;color:rgba(255,255,255,0.18);">
@@ -21645,7 +21600,7 @@ async function refreshServerInfo() {
       <!-- ══════════════════════════════
            📊 DEPOLAMA KULLANIMI
       ══════════════════════════════ -->
-      <div class="si-title" style="color:rgba(74,222,128,0.6);">
+      <div class="si2-title" style="color:rgba(74,222,128,0.6);">
         <i class="fas fa-hdd"></i>
         DEPOLAMA KULLANIMI
       </div>
@@ -21654,49 +21609,43 @@ async function refreshServerInfo() {
         background:rgba(255,255,255,0.025);
         border:1px solid rgba(255,255,255,0.07);
         border-radius:15px;padding:15px 14px;
-        margin-bottom:16px;position:relative;overflow:hidden;">
+        margin-bottom:4px;position:relative;overflow:hidden;">
 
-        <!-- وهج ── -->
         <div style="
           position:absolute;right:-10px;top:-10px;
           width:90px;height:90px;pointer-events:none;
           background:radial-gradient(circle,${dbClr}07 0%,transparent 70%);"></div>
 
-        <!-- صف أعلى: أيقونة + اسم + badge + الأرقام ── -->
+        <!-- صف أعلى ── -->
         <div style="
           display:flex;align-items:center;
           justify-content:space-between;
           gap:8px;margin-bottom:13px;flex-wrap:wrap;">
 
           <div style="display:flex;align-items:center;gap:9px;">
-            <div class="si-icon"
+            <div class="si2-icon"
                  style="background:${dbClr}18;border:1px solid ${dbClr}35;
                         color:${dbClr};">
               <i class="fas fa-database"></i>
             </div>
             <div>
               <div style="font-size:13px;font-weight:900;color:#fff;
-                   margin-bottom:3px;line-height:1;">
-                Veritabanı
-              </div>
-              <div class="si-badge"
+                   margin-bottom:3px;line-height:1;">Veritabanı</div>
+              <div class="si2-badge"
                    style="background:${plan.color}18;
                           border:1px solid ${plan.color}35;
-                          color:${plan.color};
-                          display:inline-flex;align-items:center;gap:4px;">
+                          color:${plan.color};">
                 <i class="fas ${plan.icon}" style="font-size:7px;"></i>
                 ${plan.label}
               </div>
             </div>
           </div>
 
-          <!-- الأرقام ── -->
           <div style="text-align:right;">
             <div style="
-              font-size:clamp(17px,5.5vw,23px);
-              font-weight:900;color:${dbClr};
-              line-height:1;margin-bottom:2px;
-              animation:siCountUp 0.5s ease;">
+              font-size:clamp(17px,5.5vw,23px);font-weight:900;
+              color:${dbClr};line-height:1;margin-bottom:2px;
+              animation:siCount 0.5s ease;">
               ${fmtBytes(dbBytes)}
             </div>
             <div style="font-size:10px;color:rgba(255,255,255,0.25);">
@@ -21705,48 +21654,43 @@ async function refreshServerInfo() {
           </div>
         </div>
 
-        <!-- شريط التقدم ── -->
-        <div class="si-bar-wrap" style="margin-bottom:8px;">
-          <div class="si-bar-fill"
+        <!-- شريط ── -->
+        <div class="si2-bar-wrap" style="margin-bottom:8px;">
+          <div class="si2-bar-fill"
                style="width:${dbPct}%;
                       background:linear-gradient(90deg,${dbClr}aa,${dbClr});">
-            <div class="si-bar-shine"></div>
+            <div class="si2-bar-shine"></div>
           </div>
-          <!-- علامة 80% ── -->
           <div style="
             position:absolute;top:0;bottom:0;left:80%;
             width:1px;background:rgba(255,255,255,0.1);"></div>
         </div>
 
-        <!-- نص تحت الشريط ── -->
+        <!-- نص ── -->
         <div style="
           display:flex;justify-content:space-between;
           align-items:center;flex-wrap:wrap;gap:6px;">
           <div style="display:flex;align-items:center;gap:5px;">
             <div style="
               width:7px;height:7px;border-radius:50%;
-              background:${dbClr};
-              box-shadow:0 0 5px ${dbClr}70;"></div>
+              background:${dbClr};box-shadow:0 0 5px ${dbClr}70;"></div>
             <span style="font-size:10px;color:rgba(255,255,255,0.35);">
-              <strong style="color:${dbClr};">${dbPct}%</strong>
-              kullanıldı
+              <strong style="color:${dbClr};">${dbPct}%</strong> kullanıldı
             </span>
           </div>
           <div style="
             display:inline-flex;align-items:center;gap:5px;
             padding:3px 10px;border-radius:50px;
             background:${dbClr}10;border:1px solid ${dbClr}22;">
-            <i class="fas fa-arrow-right"
-               style="font-size:8px;color:${dbClr};"></i>
+            <i class="fas fa-arrow-right" style="font-size:8px;color:${dbClr};"></i>
             <span style="font-size:10px;font-weight:700;color:${dbClr};">
               ${fmtBytes(dbLeft)} kaldı
             </span>
           </div>
         </div>
 
-        <!-- تحذير 80%+ ── -->
         ${dbPct >= 80 ? `
-        <div class="si-alert"
+        <div class="si2-alert"
              style="background:rgba(239,68,68,0.07);
                     border:1px solid rgba(239,68,68,0.22);">
           <i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>
@@ -21756,9 +21700,8 @@ async function refreshServerInfo() {
           </span>
         </div>` : ''}
 
-        <!-- تحذير 60%+ ── -->
         ${dbPct >= 60 && dbPct < 80 ? `
-        <div class="si-alert"
+        <div class="si2-alert"
              style="background:rgba(251,191,36,0.05);
                     border:1px solid rgba(251,191,36,0.18);">
           <i class="fas fa-info-circle" style="color:#fbbf24;"></i>
@@ -21773,121 +21716,84 @@ async function refreshServerInfo() {
       <!-- ══════════════════════════════
            ⚡ HIZLI İSTATİSTİKLER
       ══════════════════════════════ -->
-      <div class="si-title" style="color:rgba(96,165,250,0.6);">
+      <div class="si2-title" style="color:rgba(96,165,250,0.6);">
         <i class="fas fa-bolt"></i>
         HIZLI İSTATİSTİKLER
       </div>
 
-      <div class="si-grid">
-
+      <div class="si2-grid">
         ${[
-          {
-            icon:'fa-bolt', color:'#60a5fa',
-            val: dbInfo?.active_connections ?? '—',
-            lbl:'Aktif Bağlantı', small:false,
-          },
-          {
-            icon:'fa-network-wired', color:'#a78bfa',
-            val: dbInfo?.total_connections ?? '—',
-            lbl:'Toplam Bağlantı', small:false,
-          },
-          {
-            icon:'fa-tachometer-alt', color:'#fbbf24',
-            val: (dbInfo?.cache_hit_ratio ?? '—') + '%',
-            lbl:'Cache Oranı', small:false,
-          },
-          {
-            icon:'fa-wifi', color: pingClr,
-            val: pingMs + 'ms',
-            lbl:'Gecikme', small:false,
-          },
-          {
-            icon:'fa-database', color:'#4ade80',
-            val: fmtBytes(dbBytes),
-            lbl:'DB Boyutu', small:true,
-          },
-          {
-            icon:'fa-table', color:'#fb923c',
-            val: tableList.length,
-            lbl:'Tablo Sayısı', small:false,
-          },
+          { icon:'fa-bolt',           color:'#60a5fa', val: dbInfo?.active_connections ?? '—',           lbl:'Aktif Bağlantı',  small:false },
+          { icon:'fa-network-wired',  color:'#a78bfa', val: dbInfo?.total_connections  ?? '—',           lbl:'Toplam Bağlantı', small:false },
+          { icon:'fa-tachometer-alt', color:'#fbbf24', val: (dbInfo?.cache_hit_ratio   ?? '—') + '%',    lbl:'Cache Oranı',     small:false },
+          { icon:'fa-wifi',           color: pingClr,  val: pingMs + 'ms',                               lbl:'Gecikme',         small:false },
+          { icon:'fa-database',       color:'#4ade80', val: fmtBytes(dbBytes),                           lbl:'DB Boyutu',       small:true  },
+          { icon:'fa-table',          color:'#fb923c', val: tableList.length,                            lbl:'Tablo Sayısı',    small:false },
         ].map(s => `
-          <div class="si-stat"
+          <div class="si2-stat"
                style="border-color:${s.color}20;"
                onmouseover="this.style.borderColor='${s.color}45'"
                onmouseout="this.style.borderColor='${s.color}20'">
-            <div class="si-icon"
-                 style="background:${s.color}14;
-                        border:1px solid ${s.color}28;
-                        color:${s.color};
-                        margin:0 auto 8px;">
+            <div class="si2-icon"
+                 style="background:${s.color}14;border:1px solid ${s.color}28;
+                        color:${s.color};margin:0 auto 8px;">
               <i class="fas ${s.icon}"></i>
             </div>
             <div style="
-              font-size:${s.small ? 'clamp(12px,3.8vw,16px)' : 'clamp(17px,5vw,21px)'};
+              font-size:${s.small ? 'clamp(12px,3.8vw,16px)' : 'clamp(16px,5vw,21px)'};
               font-weight:900;color:${s.color};
               margin-bottom:3px;line-height:1.1;
-              animation:siCountUp 0.5s ease;">
+              animation:siCount 0.5s ease;">
               ${s.val}
             </div>
             <div style="font-size:8px;letter-spacing:0.8px;
-                 color:rgba(255,255,255,0.2);
-                 text-transform:uppercase;line-height:1.3;">
+                 color:rgba(255,255,255,0.2);text-transform:uppercase;
+                 line-height:1.3;">
               ${s.lbl}
             </div>
           </div>`).join('')}
-
       </div>
 
       <!-- ══════════════════════════════
            📋 TABLO İSTATİSTİKLERİ
       ══════════════════════════════ -->
-      <div class="si-title" style="color:rgba(201,168,76,0.6);">
+      <div class="si2-title" style="color:rgba(201,168,76,0.6);">
         <i class="fas fa-table"></i>
         TABLO İSTATİSTİKLERİ
-        <span style="margin-left:auto;" class="si-badge"
-              style="background:rgba(201,168,76,0.1);
-                     border:1px solid rgba(201,168,76,0.22);
-                     color:rgba(201,168,76,0.7);">
+        <span class="si2-badge" style="margin-left:auto;
+              background:rgba(201,168,76,0.1);
+              border:1px solid rgba(201,168,76,0.2);
+              color:rgba(201,168,76,0.7);">
           ${totalRows.toLocaleString('tr-TR')} toplam
         </span>
       </div>
 
-      <div class="si-card">
+      <div class="si2-card">
         ${tableList.map(t => {
           const cnt = counts[t.name];
           const pct = cnt && totalRows > 0
             ? Math.round((cnt / totalRows) * 100) : 0;
           return `
-          <div class="si-row">
-
-            <!-- يسار: أيقونة + اسم ── -->
-            <div style="display:flex;align-items:center;
-                 gap:9px;flex:1;min-width:0;">
-              <div class="si-icon"
-                   style="background:${t.color}14;
-                          border:1px solid ${t.color}28;
+          <div class="si2-row">
+            <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">
+              <div class="si2-icon"
+                   style="background:${t.color}14;border:1px solid ${t.color}28;
                           color:${t.color};">
                 <i class="fas ${t.icon}"></i>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="
-                  font-size:11px;font-weight:700;color:#fff;
-                  font-family:monospace;
-                  white-space:nowrap;overflow:hidden;
-                  text-overflow:ellipsis;">
+                <div style="font-size:11px;font-weight:700;color:#fff;
+                     font-family:monospace;white-space:nowrap;
+                     overflow:hidden;text-overflow:ellipsis;">
                   ${t.name}
                 </div>
                 <div style="font-size:9px;color:rgba(255,255,255,0.2);
                      margin-top:1px;">${t.label}</div>
               </div>
             </div>
-
-            <!-- يمين: العدد ── -->
-            <div style="
-              display:flex;flex-direction:column;
-              align-items:flex-end;gap:3px;flex-shrink:0;">
-              <div class="si-badge"
+            <div style="display:flex;flex-direction:column;
+                 align-items:flex-end;gap:4px;flex-shrink:0;">
+              <div class="si2-badge"
                    style="background:${cnt !== null ? t.color+'14' : 'rgba(255,255,255,0.04)'};
                           border:1px solid ${cnt !== null ? t.color+'28' : 'rgba(255,255,255,0.06)'};
                           color:${cnt !== null ? t.color : 'rgba(255,255,255,0.2)'};">
@@ -21896,18 +21802,14 @@ async function refreshServerInfo() {
                   : '— erişim yok'}
               </div>
               ${cnt !== null && totalRows > 0 ? `
-              <div style="
-                width:50px;height:3px;
-                background:rgba(255,255,255,0.05);
-                border-radius:3px;overflow:hidden;">
-                <div style="
-                  height:100%;width:${pct}%;
-                  background:${t.color};
-                  border-radius:3px;
-                  transition:width 1s ease;"></div>
+              <div style="width:52px;height:3px;
+                   background:rgba(255,255,255,0.05);
+                   border-radius:3px;overflow:hidden;">
+                <div style="height:100%;width:${pct}%;
+                     background:${t.color};border-radius:3px;
+                     transition:width 1s ease;"></div>
               </div>` : ''}
             </div>
-
           </div>`;
         }).join('')}
       </div>
@@ -21915,33 +21817,31 @@ async function refreshServerInfo() {
       <!-- ══════════════════════════════
            ☁️ STORAGE BUCKETS
       ══════════════════════════════ -->
-      <div class="si-title" style="color:rgba(167,139,250,0.6);">
+      <div class="si2-title" style="color:rgba(167,139,250,0.6);">
         <i class="fas fa-cloud"></i>
         STORAGE BUCKETS
-        <span style="margin-left:auto;" class="si-badge"
-              style="background:rgba(167,139,250,0.1);
-                     border:1px solid rgba(167,139,250,0.22);
-                     color:rgba(167,139,250,0.7);">
+        <span class="si2-badge" style="margin-left:auto;
+              background:rgba(167,139,250,0.1);
+              border:1px solid rgba(167,139,250,0.2);
+              color:rgba(167,139,250,0.7);">
           ${buckets.length} bucket
         </span>
       </div>
 
-      <div class="si-card" style="margin-bottom:16px;">
+      <div class="si2-card">
         ${buckets.length ? buckets.map(b => `
-          <div class="si-row">
+          <div class="si2-row">
             <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">
-              <div class="si-icon"
+              <div class="si2-icon"
                    style="background:rgba(167,139,250,0.1);
                           border:1px solid rgba(167,139,250,0.22);
                           color:#a78bfa;">
                 <i class="fas fa-folder"></i>
               </div>
               <div style="flex:1;min-width:0;">
-                <div style="
-                  font-size:12px;font-weight:700;color:#fff;
-                  font-family:monospace;
-                  white-space:nowrap;overflow:hidden;
-                  text-overflow:ellipsis;">
+                <div style="font-size:12px;font-weight:700;color:#fff;
+                     font-family:monospace;white-space:nowrap;
+                     overflow:hidden;text-overflow:ellipsis;">
                   ${b.name}
                 </div>
                 <div style="font-size:9px;color:rgba(255,255,255,0.18);
@@ -21952,7 +21852,7 @@ async function refreshServerInfo() {
                 </div>
               </div>
             </div>
-            <span class="si-badge"
+            <span class="si2-badge"
                   style="background:${b.public
                     ? 'rgba(74,222,128,0.09)' : 'rgba(239,68,68,0.09)'};
                          border:1px solid ${b.public
@@ -21961,9 +21861,8 @@ async function refreshServerInfo() {
               ${b.public ? 'PUBLIC' : 'PRIVATE'}
             </span>
           </div>`).join('')
-        : `<div style="
-             padding:24px;text-align:center;
-             color:rgba(255,255,255,0.18);font-size:11px;">
+        : `<div style="padding:24px;text-align:center;
+               color:rgba(255,255,255,0.18);font-size:11px;">
              <i class="fas fa-folder-open"
                 style="font-size:22px;display:block;
                        margin-bottom:9px;opacity:0.25;"></i>
@@ -21975,7 +21874,7 @@ async function refreshServerInfo() {
            🔧 VERSİYON
       ══════════════════════════════ -->
       ${dbInfo?.pg_version ? `
-      <div class="si-title" style="color:rgba(96,165,250,0.5);">
+      <div class="si2-title" style="color:rgba(96,165,250,0.5);">
         <i class="fas fa-code-branch"></i>
         VERSİYON
       </div>
@@ -21983,21 +21882,20 @@ async function refreshServerInfo() {
         background:rgba(255,255,255,0.02);
         border:1px solid rgba(255,255,255,0.06);
         border-radius:12px;padding:11px 13px;
-        margin-bottom:16px;
+        margin-bottom:4px;
         display:flex;align-items:flex-start;gap:9px;">
         <i class="fas fa-database"
            style="color:rgba(96,165,250,0.35);
                   margin-top:2px;flex-shrink:0;font-size:12px;"></i>
-        <span style="
-          font-size:9px;color:rgba(255,255,255,0.25);
-          line-height:1.7;font-family:monospace;
-          word-break:break-all;">
+        <span style="font-size:9px;color:rgba(255,255,255,0.25);
+              line-height:1.7;font-family:monospace;word-break:break-all;">
           ${dbInfo.pg_version.substring(0, 100)}
         </span>
       </div>` : ''}
 
       <!-- ══ ملاحظة CPU/RAM ══ -->
       <div style="
+        margin-top:20px;
         background:rgba(255,255,255,0.018);
         border:1px solid rgba(255,255,255,0.055);
         border-radius:11px;padding:11px 13px;
@@ -22021,23 +21919,21 @@ async function refreshServerInfo() {
 
   } catch(e) {
     console.error('[ServerInfo]', e);
-    if (icon) icon.style.animation = '';
-    content.innerHTML = `
-      <div style="text-align:center;padding:40px 20px;">
+    if (spin) spin.style.animation = '';
+    body.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;">
         <div style="
-          width:54px;height:54px;border-radius:50%;
+          width:56px;height:56px;border-radius:50%;
           background:rgba(239,68,68,0.08);
           border:2px solid rgba(239,68,68,0.2);
           display:flex;align-items:center;justify-content:center;
           margin:0 auto 14px;font-size:22px;color:#ef4444;">
           <i class="fas fa-exclamation-triangle"></i>
         </div>
-        <p style="font-size:13px;font-weight:700;
-             color:#ef4444;margin-bottom:6px;">
+        <p style="font-size:13px;font-weight:700;color:#ef4444;margin-bottom:6px;">
           Veri yüklenemedi
         </p>
-        <p style="font-size:10px;color:rgba(255,255,255,0.2);
-             margin-bottom:4px;">
+        <p style="font-size:10px;color:rgba(255,255,255,0.2);margin-bottom:4px;">
           ${e.message || 'Bilinmeyen hata'}
         </p>
         <p style="font-size:10px;color:rgba(255,255,255,0.13);">
