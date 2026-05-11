@@ -1992,6 +1992,44 @@ body.wow-mode .mobile-menu {
 }
 
     
+
+
+
+
+
+
+/* ── زر الرجوع في الهيدر — ديسكتوب فقط ── */
+#headerBackBtn {
+  display: none; /* مخفي افتراضياً */
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 15px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.5);
+  font-family: 'Montserrat', sans-serif;
+  transition: all 0.25s;
+  flex-shrink: 0;
+}
+#headerBackBtn:hover {
+  background: rgba(201,168,76,0.12);
+  border-color: rgba(201,168,76,0.3);
+  color: var(--gold);
+}
+/* يظهر فقط في وضع الكمبيوتر */
+@media (max-width: 900px) {
+  #headerBackBtn {
+    display: none !important;
+  }
+}
+
+
+
+
     
 
   </style>
@@ -2534,6 +2572,10 @@ body.wow-mode .mobile-menu {
       <img src="https://up6.cc/2026/04/177695590342861.png"
            onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
     </div>
+    <!-- ★ أضف هذا السطر هنا ★ -->
+  <button id="headerBackBtn" onclick="goHome()" title="Ana Sayfaya Dön">
+    <i class="fas fa-arrow-left"></i>
+  </button>
     <div class="nav-capsule">
       <a class="nav-link active" id="nav-orta"   href="#" onclick="showPage('orta');return false;">ORTA SEHPA</a>
       <a class="nav-link"        id="nav-tv"      href="#" onclick="showPage('tv');return false;">TV ÜNİTESİ</a>
@@ -22244,6 +22286,63 @@ async function siLoadData() {
 }
 
 
+
+
+
+
+
+  
+
+
+
+
+
+  /* ============================================================
+   ★ زر الرجوع في الهيدر — يظهر عند دخول أي قسم ★
+============================================================ */
+
+function updateHeaderBackBtn() {
+  const btn = document.getElementById('headerBackBtn');
+  if (!btn) return;
+
+  /* يظهر فقط في وضع الكمبيوتر (> 900px) وعند وجود قسم مفتوح */
+  const isDesktop = window.innerWidth > 900;
+  const isInSection = appState === 'section' || appState === 'lightbox' || appState === 'dims';
+
+  if (isDesktop && isInSection) {
+    btn.style.display = 'flex';
+  } else {
+    btn.style.display = 'none';
+  }
+}
+
+/* ── تحديث الزر عند تغيير حجم النافذة ── */
+window.addEventListener('resize', updateHeaderBackBtn);
+
+/* ── Hook على showPage لتحديث الزر عند كل انتقال ── */
+const _origShowPage_backBtn = showPage;
+showPage = function(cat) {
+  _origShowPage_backBtn(cat);
+  /* تأخير بسيط لضمان تحديث appState أولاً */
+  setTimeout(updateHeaderBackBtn, 50);
+};
+
+/* ── Hook على goHome لإخفاء الزر عند الرجوع ── */
+const _origGoHome_backBtn = goHome;
+goHome = function() {
+  _origGoHome_backBtn();
+  setTimeout(updateHeaderBackBtn, 50);
+};
+
+/* ── Hook على enterSection لإظهار الزر عند الدخول ── */
+const _origEnterSection_backBtn = enterSection;
+enterSection = function(cat) {
+  _origEnterSection_backBtn(cat);
+  setTimeout(updateHeaderBackBtn, 450); /* بعد انتهاء الـ animation */
+};
+
+/* ── تحديث أولي ── */
+setTimeout(updateHeaderBackBtn, 100);
 
   
 
