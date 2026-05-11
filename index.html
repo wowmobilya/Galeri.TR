@@ -1998,9 +1998,8 @@ body.wow-mode .mobile-menu {
 
 
 
-/* ── زر الرجوع في الهيدر — ديسكتوب فقط ── */
+/* ── زر الرجوع في الهيدر ── */
 #headerBackBtn {
-  display: none; /* مخفي افتراضياً */
   width: 36px;
   height: 36px;
   border-radius: 10px;
@@ -2014,17 +2013,15 @@ body.wow-mode .mobile-menu {
   font-family: 'Montserrat', sans-serif;
   transition: all 0.25s;
   flex-shrink: 0;
+  display: none; /* مخفي افتراضياً */
 }
 #headerBackBtn:hover {
   background: rgba(201,168,76,0.12);
   border-color: rgba(201,168,76,0.3);
   color: var(--gold);
 }
-/* يظهر فقط في وضع الكمبيوتر */
 @media (max-width: 900px) {
-  #headerBackBtn {
-    display: none !important;
-  }
+  #headerBackBtn { display: none !important; }
 }
 
 
@@ -2569,6 +2566,10 @@ body.wow-mode .mobile-menu {
 <div id="mainSite">
   <header id="header">
     <div class="header-logo" onclick="goHome()">
+      <button id="headerBackBtn" onclick="goHome()">
+  <i class="fas fa-arrow-left"></i>
+</button>
+
       <img src="https://up6.cc/2026/04/177695590342861.png"
            onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
     </div>
@@ -22297,52 +22298,52 @@ async function siLoadData() {
 
 
 
-  /* ============================================================
-   ★ زر الرجوع في الهيدر — يظهر عند دخول أي قسم ★
+/* ============================================================
+   ★ زر الرجوع في الهيدر — نسخة مضمونة ★
 ============================================================ */
-
-function updateHeaderBackBtn() {
+function showHeaderBackBtn() {
   const btn = document.getElementById('headerBackBtn');
   if (!btn) return;
-
-  /* يظهر فقط في وضع الكمبيوتر (> 900px) وعند وجود قسم مفتوح */
-  const isDesktop = window.innerWidth > 900;
-  const isInSection = appState === 'section' || appState === 'lightbox' || appState === 'dims';
-
-  if (isDesktop && isInSection) {
+  if (window.innerWidth > 900) {
     btn.style.display = 'flex';
-  } else {
-    btn.style.display = 'none';
   }
 }
 
-/* ── تحديث الزر عند تغيير حجم النافذة ── */
-window.addEventListener('resize', updateHeaderBackBtn);
+function hideHeaderBackBtn() {
+  const btn = document.getElementById('headerBackBtn');
+  if (!btn) return;
+  btn.style.display = 'none';
+}
 
-/* ── Hook على showPage لتحديث الزر عند كل انتقال ── */
-const _origShowPage_backBtn = showPage;
-showPage = function(cat) {
-  _origShowPage_backBtn(cat);
-  /* تأخير بسيط لضمان تحديث appState أولاً */
-  setTimeout(updateHeaderBackBtn, 50);
-};
+window.addEventListener('resize', function() {
+  const btn = document.getElementById('headerBackBtn');
+  if (!btn) return;
+  if (btn.style.display === 'flex' && window.innerWidth <= 900) {
+    btn.style.display = 'none';
+  }
+});
 
-/* ── Hook على goHome لإخفاء الزر عند الرجوع ── */
-const _origGoHome_backBtn = goHome;
-goHome = function() {
-  _origGoHome_backBtn();
-  setTimeout(updateHeaderBackBtn, 50);
-};
-
-/* ── Hook على enterSection لإظهار الزر عند الدخول ── */
-const _origEnterSection_backBtn = enterSection;
+/* ── Hook على enterSection ── */
+const _origEnterSection_back = enterSection;
 enterSection = function(cat) {
-  _origEnterSection_backBtn(cat);
-  setTimeout(updateHeaderBackBtn, 450); /* بعد انتهاء الـ animation */
+  _origEnterSection_back(cat);
+  setTimeout(showHeaderBackBtn, 500);
 };
 
-/* ── تحديث أولي ── */
-setTimeout(updateHeaderBackBtn, 100);
+/* ── Hook على goHome ── */
+const _origGoHome_back = goHome;
+goHome = function() {
+  hideHeaderBackBtn();
+  _origGoHome_back();
+};
+
+/* ── Hook على showPage ── */
+const _origShowPage_back = showPage;
+showPage = function(cat) {
+  _origShowPage_back(cat);
+  setTimeout(showHeaderBackBtn, 100);
+};
+
 
   
 
