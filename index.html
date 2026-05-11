@@ -1992,6 +1992,41 @@ body.wow-mode .mobile-menu {
 }
 
     
+
+
+
+
+
+
+/* =====================================================
+   SECTION BACK BUTTON (Desktop Only)
+===================================================== */
+.section-back-btn {
+  width: 42px; height: 42px; flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  color: rgba(255,255,255,0.6);
+  font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s ease;
+  margin-top: 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+.section-back-btn:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  border-color: rgba(255,255,255,0.15);
+}
+.section-back-btn:active {
+  transform: scale(0.92);
+}
+@media (max-width: 900px) {
+  .section-back-btn { display: none; }
+}
+
+
+
     
 
   </style>
@@ -4445,11 +4480,16 @@ function buildPage(cat){
   document.getElementById('pageContent').innerHTML=`
     <div class="page-transition">
       <div class="section-banner">
-        <div>
-          <div class="section-banner-tag">✦ ${L.tag}</div>
-          <div class="section-banner-title">${L.title} <span class="accent">${L.accent}</span></div>
-          <div class="section-banner-count">${cnt} model mevcut</div>
-          <div class="section-banner-line"></div>
+        <div style="display:flex; align-items:flex-start; gap:16px;">
+          <button class="section-back-btn" onclick="goHome()" title="Ana Sayfaya Dön">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <div class="section-banner-tag">✦ ${L.tag}</div>
+            <div class="section-banner-title">${L.title} <span class="accent">${L.accent}</span></div>
+            <div class="section-banner-count">${cnt} model mevcut</div>
+            <div class="section-banner-line"></div>
+          </div>
         </div>
       </div>
       <div class="gallery-toolbar">
@@ -4935,15 +4975,20 @@ function buildOrderPage() {
     <div class="page-transition">
       <!-- بانر الصفحة -->
       <div class="section-banner">
-        <div>
-          <div class="section-banner-tag">✦ ${L.tag}</div>
-          <div class="section-banner-title">
-            ${L.title} <span class="accent">${L.accent}</span>
+        <div style="display:flex; align-items:flex-start; gap:16px;">
+          <button class="section-back-btn" onclick="goHome()" title="Ana Sayfaya Dön">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <div class="section-banner-tag">✦ ${L.tag}</div>
+            <div class="section-banner-title">
+              ${L.title} <span class="accent">${L.accent}</span>
+            </div>
+            <div class="section-banner-count">
+              ${allImages.length} model mevcut — Adet seçin ve gönderin
+            </div>
+            <div class="section-banner-line"></div>
           </div>
-          <div class="section-banner-count">
-            ${allImages.length} model mevcut — Adet seçin ve gönderin
-          </div>
-          <div class="section-banner-line"></div>
         </div>
       </div>
 
