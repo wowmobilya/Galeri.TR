@@ -1992,41 +1992,6 @@ body.wow-mode .mobile-menu {
 }
 
     
-
-
-
-
-
-
-/* ── زر الرجوع في الهيدر ── */
-#headerBackBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 15px;
-  border: 1px solid rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.04);
-  color: rgba(255,255,255,0.5);
-  font-family: 'Montserrat', sans-serif;
-  transition: all 0.25s;
-  flex-shrink: 0;
-  display: none; /* مخفي افتراضياً */
-}
-#headerBackBtn:hover {
-  background: rgba(201,168,76,0.12);
-  border-color: rgba(201,168,76,0.3);
-  color: var(--gold);
-}
-@media (max-width: 900px) {
-  #headerBackBtn { display: none !important; }
-}
-
-
-
-
     
 
   </style>
@@ -2566,17 +2531,9 @@ body.wow-mode .mobile-menu {
 <div id="mainSite">
   <header id="header">
     <div class="header-logo" onclick="goHome()">
-      <button id="headerBackBtn" onclick="goHome()">
-  <i class="fas fa-arrow-left"></i>
-</button>
-
       <img src="https://up6.cc/2026/04/177695590342861.png"
            onerror="this.style.display='none'" alt="WOW MOBİLYA" draggable="false"/>
     </div>
-    <!-- ★ أضف هذا السطر هنا ★ -->
-  <button id="headerBackBtn" onclick="goHome()" title="Ana Sayfaya Dön">
-    <i class="fas fa-arrow-left"></i>
-  </button>
     <div class="nav-capsule">
       <a class="nav-link active" id="nav-orta"   href="#" onclick="showPage('orta');return false;">ORTA SEHPA</a>
       <a class="nav-link"        id="nav-tv"      href="#" onclick="showPage('tv');return false;">TV ÜNİTESİ</a>
@@ -22286,63 +22243,6 @@ async function siLoadData() {
   }
 }
 
-
-
-
-
-
-
-  
-
-
-
-
-
-/* ============================================================
-   ★ زر الرجوع في الهيدر — نسخة مضمونة ★
-============================================================ */
-function showHeaderBackBtn() {
-  const btn = document.getElementById('headerBackBtn');
-  if (!btn) return;
-  if (window.innerWidth > 900) {
-    btn.style.display = 'flex';
-  }
-}
-
-function hideHeaderBackBtn() {
-  const btn = document.getElementById('headerBackBtn');
-  if (!btn) return;
-  btn.style.display = 'none';
-}
-
-window.addEventListener('resize', function() {
-  const btn = document.getElementById('headerBackBtn');
-  if (!btn) return;
-  if (btn.style.display === 'flex' && window.innerWidth <= 900) {
-    btn.style.display = 'none';
-  }
-});
-
-/* ── Hook على enterSection ── */
-const _origEnterSection_back = enterSection;
-enterSection = function(cat) {
-  _origEnterSection_back(cat);
-  setTimeout(showHeaderBackBtn, 500);
-};
-
-/* ── Hook على goHome ── */
-const _origGoHome_back = goHome;
-goHome = function() {
-  hideHeaderBackBtn();
-  _origGoHome_back();
-};
-
-/* ── Hook على showPage ── */
-const _origShowPage_back = showPage;
-showPage = function(cat) {
-  _origShowPage_back(cat);
-  setTimeout(showHeaderBackBtn, 100);
-};
 
 
   
