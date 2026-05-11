@@ -10465,26 +10465,28 @@ function renderAdminAccountCards(container, admin) {
 
 
 /* ── enterSection خاص بحسابات admin_accounts ── */
+/* ── enterSection خاص بحسابات admin_accounts ── */
 async function enterAdminSection(sectionKey) {
   const hs = document.getElementById('homeScreen');
   hs.style.transition = 'opacity 0.4s ease';
   hs.style.opacity    = '0';
 
+  /* ★ الحل: إضافة الكلاس فوراً بمجرد النقر ★ */
+  document.body.classList.add('wow-mode');
+
   setTimeout(async () => {
     hs.style.display = 'none';
     document.getElementById('mainSite').style.display = 'block';
-    document.body.classList.add('wow-mode');
     updateAdminAccountNav();
 
     /* ★ تحميل المنتجات أولاً — ثم رسم الصفحة ★ */
     if (!images || images.length === 0) {
       const ok = await testSupabaseConnection();
       if (ok) {
-        /* ★ نعطّل الـ auto-redirect داخل loadInventory مؤقتاً ★ */
         const savedPage = appState;
         await loadInventory();
         subscribeInventory();
-        appState = savedPage; /* نُعيد الحالة لمنع redirect غير مرغوب */
+        appState = savedPage;
       }
     }
 
@@ -10503,6 +10505,7 @@ async function enterAdminSection(sectionKey) {
     }
   }, 400);
 }
+
 
 /* ── تحديث الهيدر لحسابات admin_accounts ── */
 function updateAdminAccountNav() {
@@ -18139,39 +18142,34 @@ enterSection = function(cat) {
 
 
 /* ── تعديل enterSection لدعم settings ── */
+/* ── تعديل enterSection لدعم settings ── */
 const _origEnterSection_settings = enterSection;
 enterSection = function(cat) {
+  
+  /* ★ الحل: إضافة الكلاس فوراً بمجرد النقر وقبل أي تأخير ★ */
+  if (currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData && _currentUserData._isAdmin)) {
+    document.body.classList.add('wow-mode');
+  } else {
+    document.body.classList.remove('wow-mode');
+  }
+
   if (cat === 'settings') {
     const hs = document.getElementById('homeScreen');
     hs.style.transition = 'opacity 0.4s ease';
     hs.style.opacity    = '0';
     setTimeout(() => {
       hs.style.display = 'none';
-
-      /* ★ أضف wow-mode قبل إظهار mainSite ★ */
-      if (currentUser === ADMIN_USER) {
-        document.body.classList.add('wow-mode');
-      } else {
-        document.body.classList.remove('wow-mode');
-      }
-
       document.getElementById('mainSite').style.display = 'block';
       showPage('settings');
     }, 400);
     return;
   }
 
-  /* لبقية الأقسام */
-  setTimeout(() => {
-    if (currentUser === ADMIN_USER) {
-      document.body.classList.add('wow-mode');
-    } else {
-      document.body.classList.remove('wow-mode');
-    }
-  }, 410);
+  /* تم إزالة الـ setTimeout(..., 410) الذي كان يسبب الوميض المزعج */
 
   _origEnterSection_settings(cat);
 };
+
 
 
 /* ============================================================
