@@ -21567,7 +21567,7 @@ async function siLoadData() {
         </div>
       </div>
 
-      <!-- ══════════════════════════════
+           <!-- ══════════════════════════════
            📊 DEPOLAMA KULLANIMI
       ══════════════════════════════ -->
       <div class="si2-title">
@@ -21581,23 +21581,42 @@ async function siLoadData() {
         border-radius:15px;padding:15px 14px;
         margin-bottom:4px;position:relative;overflow:hidden;">
 
+        <!-- وهج خلفي يتغير حسب النسبة -->
         <div style="
-          position:absolute;right:-10px;top:-10px;
-          width:90px;height:90px;pointer-events:none;
-          background:radial-gradient(circle,
-            rgba(255,255,255,0.03) 0%,transparent 70%);"></div>
+          position:absolute;inset:0;pointer-events:none;
+          background:radial-gradient(ellipse at top right,
+            ${dbPct  < 30 ? 'rgba(255,255,255,0.015)'  :
+              dbPct  < 60 ? 'rgba(163,230,53,0.04)'    :
+              dbPct  < 80 ? 'rgba(251,191,36,0.05)'    :
+                            'rgba(239,68,68,0.06)'}
+          0%,transparent 65%);
+          transition:all 1s ease;"></div>
 
-        <!-- صف أعلى -->
+        <!-- ══ صف العنوان ══ -->
         <div style="
           display:flex;align-items:center;
           justify-content:space-between;
-          gap:8px;margin-bottom:13px;flex-wrap:wrap;">
+          gap:8px;margin-bottom:14px;flex-wrap:wrap;">
 
           <div style="display:flex;align-items:center;gap:9px;">
-            <div class="si2-icon"
-                 style="background:rgba(255,255,255,0.06);
-                        border:1px solid rgba(255,255,255,0.1);
-                        color:rgba(255,255,255,0.7);">
+            <!-- أيقونة تتغير لونها -->
+            <div class="si2-icon" style="
+              background:${
+                dbPct < 30 ? 'rgba(255,255,255,0.06)'  :
+                dbPct < 60 ? 'rgba(163,230,53,0.1)'    :
+                dbPct < 80 ? 'rgba(251,191,36,0.1)'    :
+                             'rgba(239,68,68,0.1)'};
+              border:1px solid ${
+                dbPct < 30 ? 'rgba(255,255,255,0.1)'   :
+                dbPct < 60 ? 'rgba(163,230,53,0.22)'   :
+                dbPct < 80 ? 'rgba(251,191,36,0.22)'   :
+                             'rgba(239,68,68,0.22)'};
+              color:${
+                dbPct < 30 ? 'rgba(255,255,255,0.6)'   :
+                dbPct < 60 ? '#a3e635'                  :
+                dbPct < 80 ? '#fbbf24'                  :
+                             '#ef4444'};
+              transition:all 0.5s ease;">
               <i class="fas fa-database"></i>
             </div>
             <div>
@@ -21613,11 +21632,17 @@ async function siLoadData() {
             </div>
           </div>
 
+          <!-- الأرقام بلون متغير -->
           <div style="text-align:right;">
             <div style="
               font-size:clamp(17px,5.5vw,23px);font-weight:900;
-              color:${dbClr};line-height:1;margin-bottom:2px;
-              animation:siCount 0.5s ease;">
+              line-height:1;margin-bottom:2px;
+              animation:siCount 0.5s ease;
+              color:${
+                dbPct < 30 ? '#fff'      :
+                dbPct < 60 ? '#a3e635'   :
+                dbPct < 80 ? '#fbbf24'   :
+                             '#ef4444'};">
               ${fmtBytes(dbBytes)}
             </div>
             <div style="font-size:10px;color:rgba(255,255,255,0.2);">
@@ -21626,70 +21651,219 @@ async function siLoadData() {
           </div>
         </div>
 
-        <!-- شريط -->
-        <div class="si2-bar-wrap" style="margin-bottom:8px;">
-          <div class="si2-bar-fill"
-               style="width:${dbPct}%;
-                      background:linear-gradient(90deg,
-                        ${dbClr}99,${dbClr});">
+        <!-- ══ شريط التقدم المتدرج ══ -->
+        <div class="si2-bar-wrap" style="margin-bottom:10px;height:11px;">
+
+          <!-- الشريط الخلفي مقسّم لمناطق -->
+          <div style="
+            position:absolute;inset:0;
+            display:flex;border-radius:9px;overflow:hidden;">
+            <!-- منطقة 0-60% رمادية -->
+            <div style="width:60%;background:rgba(255,255,255,0.04);"></div>
+            <!-- منطقة 60-80% صفراء خافتة -->
+            <div style="width:20%;background:rgba(251,191,36,0.06);"></div>
+            <!-- منطقة 80-100% حمراء خافتة -->
+            <div style="width:20%;background:rgba(239,68,68,0.07);
+                 border-radius:0 9px 9px 0;"></div>
+          </div>
+
+          <!-- الشريط الفعلي بتدرج لوني -->
+          <div style="
+            position:absolute;top:0;bottom:0;left:0;
+            width:${dbPct}%;
+            border-radius:9px;
+            background:${
+              dbPct < 30
+                ? 'linear-gradient(90deg,rgba(255,255,255,0.3),rgba(255,255,255,0.6))'
+                : dbPct < 60
+                ? 'linear-gradient(90deg,rgba(255,255,255,0.4),#a3e635)'
+                : dbPct < 80
+                ? 'linear-gradient(90deg,rgba(255,255,255,0.3),#a3e635 40%,#fbbf24)'
+                : 'linear-gradient(90deg,rgba(255,255,255,0.2),#a3e635 25%,#fbbf24 55%,#ef4444)'};
+            transition:width 1.3s cubic-bezier(0.4,0,0.2,1);
+            overflow:hidden;">
             <div class="si2-bar-shine"></div>
           </div>
+
+          <!-- علامات النسب -->
+          <!-- 60% -->
           <div style="
-            position:absolute;top:0;bottom:0;left:80%;
-            width:1px;background:rgba(255,255,255,0.08);"></div>
+            position:absolute;top:-1px;bottom:-1px;
+            left:60%;width:1px;
+            background:rgba(251,191,36,0.3);"></div>
+          <!-- 80% -->
+          <div style="
+            position:absolute;top:-1px;bottom:-1px;
+            left:80%;width:1px;
+            background:rgba(239,68,68,0.35);"></div>
+
+          <!-- نقطة متحركة عند نهاية الشريط -->
+          ${dbPct > 2 ? `
+          <div style="
+            position:absolute;top:50%;
+            left:calc(${dbPct}% - 6px);
+            transform:translateY(-50%);
+            width:11px;height:11px;border-radius:50%;
+            background:${
+              dbPct < 30 ? '#fff'    :
+              dbPct < 60 ? '#a3e635' :
+              dbPct < 80 ? '#fbbf24' :
+                           '#ef4444'};
+            box-shadow:0 0 8px ${
+              dbPct < 30 ? 'rgba(255,255,255,0.6)' :
+              dbPct < 60 ? 'rgba(163,230,53,0.7)'  :
+              dbPct < 80 ? 'rgba(251,191,36,0.7)'  :
+                           'rgba(239,68,68,0.7)'};
+            border:2px solid rgba(10,10,10,0.8);
+            animation:siPulse2 2s infinite;
+            z-index:2;"></div>` : ''}
+
         </div>
 
-        <!-- نص تحت الشريط -->
+        <!-- ══ تسميات المناطق ══ -->
+        <div style="
+          display:flex;margin-bottom:10px;
+          font-size:8px;letter-spacing:0.5px;
+          color:rgba(255,255,255,0.15);
+          position:relative;">
+          <div style="width:60%;padding-left:2px;">آمن</div>
+          <div style="width:20%;text-align:center;color:rgba(251,191,36,0.4);">
+            تحذير
+          </div>
+          <div style="width:20%;text-align:right;padding-right:2px;
+               color:rgba(239,68,68,0.4);">
+            خطر
+          </div>
+        </div>
+
+        <!-- ══ نص المعلومات ══ -->
         <div style="
           display:flex;justify-content:space-between;
           align-items:center;flex-wrap:wrap;gap:6px;">
-          <div style="display:flex;align-items:center;gap:5px;">
+
+          <!-- النسبة -->
+          <div style="display:flex;align-items:center;gap:6px;">
             <div style="
               width:7px;height:7px;border-radius:50%;
-              background:${dbClr};
-              box-shadow:0 0 5px ${dbClr}60;"></div>
-            <span style="font-size:10px;color:rgba(255,255,255,0.3);">
-              <strong style="color:${dbClr};">${dbPct}%</strong>
+              background:${
+                dbPct < 30 ? '#fff'    :
+                dbPct < 60 ? '#a3e635' :
+                dbPct < 80 ? '#fbbf24' :
+                             '#ef4444'};
+              box-shadow:0 0 5px ${
+                dbPct < 30 ? 'rgba(255,255,255,0.5)' :
+                dbPct < 60 ? 'rgba(163,230,53,0.6)'  :
+                dbPct < 80 ? 'rgba(251,191,36,0.6)'  :
+                             'rgba(239,68,68,0.6)'};
+              animation:siPulse2 2s infinite;"></div>
+            <span style="font-size:11px;font-weight:700;
+                  color:${
+                    dbPct < 30 ? 'rgba(255,255,255,0.7)' :
+                    dbPct < 60 ? '#a3e635'                :
+                    dbPct < 80 ? '#fbbf24'                :
+                                 '#ef4444'};">
+              ${dbPct}%
+            </span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.25);">
               kullanıldı
             </span>
           </div>
+
+          <!-- المساحة المتبقية -->
           <div style="
             display:inline-flex;align-items:center;gap:5px;
-            padding:3px 10px;border-radius:50px;
-            background:rgba(255,255,255,0.05);
-            border:1px solid rgba(255,255,255,0.08);">
-            <i class="fas fa-arrow-right"
-               style="font-size:8px;color:rgba(255,255,255,0.4);"></i>
+            padding:4px 11px;border-radius:50px;
+            background:${
+              dbPct < 30 ? 'rgba(255,255,255,0.05)'  :
+              dbPct < 60 ? 'rgba(163,230,53,0.07)'   :
+              dbPct < 80 ? 'rgba(251,191,36,0.07)'   :
+                           'rgba(239,68,68,0.07)'};
+            border:1px solid ${
+              dbPct < 30 ? 'rgba(255,255,255,0.08)'  :
+              dbPct < 60 ? 'rgba(163,230,53,0.18)'   :
+              dbPct < 80 ? 'rgba(251,191,36,0.18)'   :
+                           'rgba(239,68,68,0.18)'};">
+            <i class="fas fa-hdd" style="
+              font-size:9px;
+              color:${
+                dbPct < 30 ? 'rgba(255,255,255,0.4)' :
+                dbPct < 60 ? '#a3e635'                :
+                dbPct < 80 ? '#fbbf24'                :
+                             '#ef4444'};"></i>
             <span style="font-size:10px;font-weight:700;
-                  color:rgba(255,255,255,0.6);">
+                  color:${
+                    dbPct < 30 ? 'rgba(255,255,255,0.55)' :
+                    dbPct < 60 ? '#a3e635'                 :
+                    dbPct < 80 ? '#fbbf24'                 :
+                                 '#ef4444'};">
               ${fmtBytes(dbLeft)} kaldı
             </span>
           </div>
         </div>
 
+        <!-- ══ مؤشر الحالة النصي ══ -->
+        <div style="
+          margin-top:10px;
+          padding:8px 11px;border-radius:9px;
+          display:flex;align-items:center;gap:8px;
+          background:${
+            dbPct < 30 ? 'rgba(255,255,255,0.03)'  :
+            dbPct < 60 ? 'rgba(163,230,53,0.05)'   :
+            dbPct < 80 ? 'rgba(251,191,36,0.05)'   :
+                         'rgba(239,68,68,0.06)'};
+          border:1px solid ${
+            dbPct < 30 ? 'rgba(255,255,255,0.06)'  :
+            dbPct < 60 ? 'rgba(163,230,53,0.14)'   :
+            dbPct < 80 ? 'rgba(251,191,36,0.14)'   :
+                         'rgba(239,68,68,0.18)'};">
+          <i class="fas ${
+            dbPct < 30 ? 'fa-check-circle'         :
+            dbPct < 60 ? 'fa-check-circle'         :
+            dbPct < 80 ? 'fa-exclamation-circle'   :
+                         'fa-exclamation-triangle'}"
+             style="font-size:13px;flex-shrink:0;
+                    color:${
+                      dbPct < 30 ? 'rgba(255,255,255,0.4)' :
+                      dbPct < 60 ? '#a3e635'                :
+                      dbPct < 80 ? '#fbbf24'                :
+                                   '#ef4444'};"></i>
+          <div>
+            <div style="font-size:10px;font-weight:700;
+                 color:${
+                   dbPct < 30 ? 'rgba(255,255,255,0.55)' :
+                   dbPct < 60 ? '#a3e635'                 :
+                   dbPct < 80 ? '#fbbf24'                 :
+                                '#ef4444'};">
+              ${dbPct < 30 ? 'Depolama durumu iyi'              :
+                dbPct < 60 ? 'Depolama normal seviyede'         :
+                dbPct < 80 ? 'Depolama dolmaya başlıyor'        :
+                             'Depolama kritik seviyede!'}
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);
+                 margin-top:1px;">
+              ${dbPct < 30 ? `${fmtBytes(dbLeft)} boş alan mevcut`                          :
+                dbPct < 60 ? `${fmtBytes(dbLeft)} kaldı, takip edin`                        :
+                dbPct < 80 ? `Sadece ${fmtBytes(dbLeft)} kaldı, plan yükseltmeyi düşünün`   :
+                             `Acil! Sadece ${fmtBytes(dbLeft)} kaldı`}
+            </div>
+          </div>
+        </div>
+
+        <!-- تحذير 80%+ منفصل -->
         ${dbPct >= 80 ? `
         <div class="si2-alert"
              style="background:rgba(239,68,68,0.07);
                     border:1px solid rgba(239,68,68,0.2);">
           <i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>
           <span style="color:rgba(255,255,255,0.4);">
-            Depolama <strong style="color:#ef4444;">%${dbPct}</strong> dolu!
-            Plan yükseltmeyi düşünün.
-          </span>
-        </div>` : ''}
-
-        ${dbPct >= 60 && dbPct < 80 ? `
-        <div class="si2-alert"
-             style="background:rgba(251,191,36,0.05);
-                    border:1px solid rgba(251,191,36,0.15);">
-          <i class="fas fa-info-circle" style="color:#fbbf24;"></i>
-          <span style="color:rgba(255,255,255,0.35);">
-            Depolama <strong style="color:#fbbf24;">%${dbPct}</strong> dolu.
-            Yakında plan yükseltme gerekebilir.
+            Supabase Free Plan limitine
+            <strong style="color:#ef4444;">%${dbPct}</strong>
+            ulaştınız. Veri kaybını önlemek için planı yükseltin.
           </span>
         </div>` : ''}
 
       </div>
+
 
       <!-- ══════════════════════════════
            ⚡ HIZLI İSTATİSTİKLER
