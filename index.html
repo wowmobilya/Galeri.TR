@@ -1590,21 +1590,16 @@ html { scroll-behavior: auto; }
 
 
 
-  /* =====================================================
-   SETTINGS PAGE — صفحة الإعدادات (شكل أصغر وأرتب)
+/* =====================================================
+   SETTINGS PAGE — صفحة الإعدادات (مضغوطة وبدون شرح)
 ===================================================== */
 .settings-page-wrap {
   padding: 20px 18px 40px;
-  max-width: 800px;
+  max-width: 500px; /* مساحة أصغر */
   margin: 0 auto;
-}
-
-/* حاوية جديدة لتنظيم الأزرار بشكل شبكي */
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 10px;
-  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* مسافة صغيرة بين الأزرار */
 }
 
 .settings-section-title {
@@ -1613,70 +1608,58 @@ html { scroll-behavior: auto; }
   color: rgba(201,168,76,0.6);
   text-transform: uppercase;
   font-weight: 700;
-  margin-bottom: 10px;
+  margin: 12px 0 2px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* تصغير حجم البطاقة */
 .settings-btn-card {
   background: rgba(255,255,255,0.02);
   border: 1px solid rgba(255,255,255,0.05);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border-radius: 10px;
+  padding: 10px 14px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
+
 .settings-btn-card:hover {
   background: rgba(201,168,76,0.05);
   border-color: rgba(201,168,76,0.2);
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.25);
 }
 
-/* تصغير الأيقونة */
 .settings-btn-icon {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.03));
   border: 1px solid rgba(201,168,76,0.25);
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: center; /* الرمز في المنتصف تماماً */
   color: var(--gold);
-  font-size: 16px;
+  font-size: 14px;
 }
 
-.settings-btn-info { flex: 1; min-width: 0; }
-
-/* تصغير النصوص */
 .settings-btn-title {
+  flex: 1;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   color: #fff;
-  letter-spacing: 0.3px;
-  margin-bottom: 3px;
-}
-.settings-btn-desc {
-  font-size: 9px;
-  color: rgba(255,255,255,0.35);
   letter-spacing: 0.5px;
-  line-height: 1.4;
 }
 
-/* تصغير السهم */
 .settings-btn-arrow {
   color: rgba(201,168,76,0.3);
   font-size: 12px;
-  transition: transform 0.3s, color 0.3s;
+  transition: transform 0.3s;
 }
+
 .settings-btn-card:hover .settings-btn-arrow {
   transform: translateX(3px);
   color: var(--gold);
@@ -17294,9 +17277,6 @@ function buildSettingsPage() {
           <div class="section-banner-title">
             AYARLAR & <span class="accent">YÖNETİM</span>
           </div>
-          <div class="section-banner-count">
-            WOW hesabı özel kontrol paneli
-          </div>
           <div class="section-banner-line"></div>
         </div>
       </div>
@@ -17305,64 +17285,46 @@ function buildSettingsPage() {
 
         <div class="settings-section-title">
           <i class="fas fa-home" style="color:rgba(201,168,76,0.5);"></i>
-          ANA SAYFA YÖNETİMİ
+          ANA SAYFA
         </div>
-        <div class="settings-grid">
-          <div class="settings-btn-card" onclick="openHomeCardsModal()">
-            <div class="settings-btn-icon"><i class="fas fa-th-large"></i></div>
-            <div class="settings-btn-info">
-              <div class="settings-btn-title">Ana Sayfa Kartlarını Düzenle</div>
-              <div class="settings-btn-desc">Kartların sıralamasını, görsellerini, başlıklarını yönetin.</div>
-            </div>
-            <i class="fas fa-chevron-right settings-btn-arrow"></i>
-          </div>
+        <div class="settings-btn-card" onclick="openHomeCardsModal()">
+          <div class="settings-btn-icon"><i class="fas fa-th-large"></i></div>
+          <div class="settings-btn-title">Ana Sayfa Kartlarını Düzenle</div>
+          <i class="fas fa-chevron-right settings-btn-arrow"></i>
         </div>
 
         <div class="settings-section-title">
           <i class="fas fa-image" style="color:rgba(201,168,76,0.5);"></i>
-          GÖRSEL & METİN YÖNETİMİ
+          GÖRSEL & METİN
         </div>
-        <div class="settings-grid">
-          <div class="settings-btn-card" onclick="openLogoModal()">
-            <div class="settings-btn-icon"><i class="fas fa-image"></i></div>
-            <div class="settings-btn-info">
-              <div class="settings-btn-title">Uygulama Logosunu Değiştir</div>
-              <div class="settings-btn-desc">Tüm sayfalarda görünen logoyu güncelleyin.</div>
-            </div>
-            <i class="fas fa-chevron-right settings-btn-arrow"></i>
-          </div>
-
-          <div class="settings-btn-card" onclick="openTextsModal()">
-            <div class="settings-btn-icon"><i class="fas fa-font"></i></div>
-            <div class="settings-btn-info">
-              <div class="settings-btn-title">Uygulama Metinlerini Düzenle</div>
-              <div class="settings-btn-desc">Slogan ve telif hakkı metnini güncelleyin.</div>
-            </div>
-            <i class="fas fa-chevron-right settings-btn-arrow"></i>
-          </div>
+        <div class="settings-btn-card" onclick="openLogoModal()">
+          <div class="settings-btn-icon"><i class="fas fa-image"></i></div>
+          <div class="settings-btn-title">Uygulama Logosunu Değiştir</div>
+          <i class="fas fa-chevron-right settings-btn-arrow"></i>
+        </div>
+        <div class="settings-btn-card" onclick="openTextsModal()">
+          <div class="settings-btn-icon"><i class="fas fa-font"></i></div>
+          <div class="settings-btn-title">Uygulama Metinlerini Düzenle</div>
+          <i class="fas fa-chevron-right settings-btn-arrow"></i>
         </div>
 
         <div class="settings-section-title">
           <i class="fas fa-server" style="color:rgba(74,222,128,0.5);"></i>
-          SİSTEM & SUNUCU
+          SİSTEM
         </div>
-        <div class="settings-grid">
-          <div class="settings-btn-card" onclick="openServerInfoPage()" style="border-color:rgba(74,222,128,0.15);">
-            <div class="settings-btn-icon" style="background:linear-gradient(135deg,rgba(74,222,128,0.18),rgba(74,222,128,0.04));border-color:rgba(74,222,128,0.3);color:#4ade80;">
-              <i class="fas fa-server"></i>
-            </div>
-            <div class="settings-btn-info">
-              <div class="settings-btn-title">Sunucu Durumu & Depolama</div>
-              <div class="settings-btn-desc">Veritabanı kullanımı, kalan alan ve bağlantılar.</div>
-            </div>
-            <i class="fas fa-chevron-right settings-btn-arrow" style="color:rgba(74,222,128,0.4);"></i>
+        <div class="settings-btn-card" onclick="openServerInfoPage()" style="border-color:rgba(74,222,128,0.15);">
+          <div class="settings-btn-icon" style="background:linear-gradient(135deg,rgba(74,222,128,0.18),rgba(74,222,128,0.04));border-color:rgba(74,222,128,0.3);color:#4ade80;">
+            <i class="fas fa-server"></i>
           </div>
+          <div class="settings-btn-title">Sunucu Durumu & Depolama</div>
+          <i class="fas fa-chevron-right settings-btn-arrow" style="color:rgba(74,222,128,0.4);"></i>
         </div>
 
       </div>
     </div>`;
 }
 
+  
 /* ── فتح نافذة إدارة البطاقات ── */
 async function openHomeCardsModal() {
   document.getElementById('homeCardsModal').classList.add('active');
