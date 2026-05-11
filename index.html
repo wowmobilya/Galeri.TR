@@ -1644,6 +1644,17 @@ html { scroll-behavior: auto; }
   justify-content: center; /* الرمز في المنتصف تماماً */
   color: var(--gold);
   font-size: 14px;
+  line-height: 0; /* 👈 يمنع الفراغ الافتراضي الذي يدفع الرمز للأسفل */
+}
+
+/* 👈 هذا الجزء يضمن أن أيقونة FontAwesome نفسها متمركزة 100% */
+.settings-btn-icon i {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+  padding: 0;
 }
 
 .settings-btn-title {
@@ -1653,6 +1664,7 @@ html { scroll-behavior: auto; }
   color: #fff;
   letter-spacing: 0.5px;
 }
+
 
 .settings-btn-arrow {
   color: rgba(201,168,76,0.3);
@@ -1665,6 +1677,13 @@ html { scroll-behavior: auto; }
   color: var(--gold);
 }
 
+
+
+
+
+
+
+    
 
 /* =====================================================
    HOME CARDS MANAGER — نافذة إدارة البطاقات
