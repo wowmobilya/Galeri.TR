@@ -21093,22 +21093,25 @@ function showStrictDeviceConflictModal(adminName) {
 
 
 
-  /* ============================================================
-   ★ نظام معلومات السيرفر — Storage + DB ★
+ /* ============================================================
+   ★ SUPABASE SERVER INFO SYSTEM ★
+   متوافق مع جميع أحجام شاشات الهاتف
 ============================================================ */
 
 const SUPABASE_PLANS = {
   free: {
     label        : 'Free Plan',
     db_limit     : 500 * 1024 * 1024,
-    storage_limit: 1 * 1024 * 1024 * 1024,
+    storage_limit: 1   * 1024 * 1024 * 1024,
     color        : '#60a5fa',
+    icon         : 'fa-star',
   },
   pro: {
     label        : 'Pro Plan',
-    db_limit     : 8 * 1024 * 1024 * 1024,
+    db_limit     : 8   * 1024 * 1024 * 1024,
     storage_limit: 100 * 1024 * 1024 * 1024,
     color        : '#c9a84c',
+    icon         : 'fa-crown',
   },
 };
 
@@ -21117,50 +21120,428 @@ const CURRENT_PLAN = 'free';
 
 /* ── تنسيق الحجم ── */
 function fmtBytes(bytes) {
-  if (!bytes || bytes <= 0)   return '0 B';
-  if (bytes < 1024)           return bytes + ' B';
-  if (bytes < 1024 * 1024)    return (bytes / 1024).toFixed(1) + ' KB';
-  if (bytes < 1024 * 1024 * 1024)
-    return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  if (!bytes || bytes <= 0)        return '0 B';
+  if (bytes < 1024)                return bytes + ' B';
+  if (bytes < 1024 * 1024)         return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024)  return (bytes / 1024 / 1024).toFixed(1) + ' MB';
   return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
 }
 
-/* ── لون الشريط حسب النسبة ── */
+/* ── لون الشريط ── */
 function progressColor(pct) {
   if (pct < 60) return '#4ade80';
   if (pct < 80) return '#fbbf24';
   return '#ef4444';
 }
 
-/* ── فتح النافذة ── */
+/* ── حقن CSS مرة واحدة ── */
+function injectServerInfoStyles() {
+  if (document.getElementById('siStyles')) return;
+  const st = document.createElement('style');
+  st.id = 'siStyles';
+  st.textContent = `
+    @keyframes siSlideUp {
+      from { opacity:0; transform:translateY(30px) scale(0.97); }
+      to   { opacity:1; transform:translateY(0)    scale(1);    }
+    }
+    @keyframes siBgIn {
+      from { opacity:0; }
+      to   { opacity:1; }
+    }
+    @keyframes siSpin {
+      from { transform:rotate(0deg); }
+      to   { transform:rotate(360deg); }
+    }
+    @keyframes siPulse {
+      0%,100% { opacity:1;   transform:scale(1);    }
+      50%      { opacity:0.5; transform:scale(0.85); }
+    }
+    @keyframes siShine {
+      0%   { left:-60%; }
+      100% { left:120%; }
+    }
+    @keyframes siCountUp {
+      from { opacity:0; transform:translateY(8px); }
+      to   { opacity:1; transform:translateY(0);   }
+    }
+
+    /* ── النافذة الخارجية ── */
+    #serverInfoModal {
+      position:fixed;inset:0;z-index:8500;
+      display:flex;align-items:flex-end;justify-content:center;
+      background:rgba(0,0,0,0.85);
+      backdrop-filter:blur(20px);
+      -webkit-backdrop-filter:blur(20px);
+      padding:0;
+      animation:siBgIn 0.3s ease forwards;
+    }
+    @media(min-width:600px){
+      #serverInfoModal {
+        align-items:center;
+        padding:16px;
+      }
+    }
+
+    /* ── الصندوق الداخلي ── */
+    #siBox {
+      width:100%;
+      max-width:620px;
+      background:linear-gradient(160deg,#060d06,#0b160b);
+      border:1px solid rgba(74,222,128,0.18);
+      border-radius:24px 24px 0 0;
+      overflow:hidden;
+      box-shadow:0 -20px 60px rgba(0,0,0,0.8),
+                 0 0 80px rgba(74,222,128,0.03);
+      animation:siSlideUp 0.45s cubic-bezier(0.34,1.4,0.64,1) forwards;
+      max-height:92vh;
+      display:flex;flex-direction:column;
+    }
+    @media(min-width:600px){
+      #siBox {
+        border-radius:24px;
+        max-height:90vh;
+      }
+    }
+
+    /* ── شريط السحب (هاتف) ── */
+    #siDragBar {
+      width:40px;height:4px;
+      background:rgba(255,255,255,0.12);
+      border-radius:4px;
+      margin:10px auto 0;
+      flex-shrink:0;
+    }
+    @media(min-width:600px){ #siDragBar { display:none; } }
+
+    /* ── الهيدر ── */
+    #siHeader {
+      padding:12px 16px 12px;
+      display:flex;align-items:center;justify-content:space-between;
+      border-bottom:1px solid rgba(255,255,255,0.05);
+      flex-shrink:0;
+      position:sticky;top:0;
+      background:linear-gradient(160deg,#060d06,#0b160b);
+      z-index:2;
+    }
+
+    /* ── منطقة التمرير ── */
+    #serverInfoContent {
+      overflow-y:auto;
+      flex:1;
+      padding:14px 14px 28px;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(74,222,128,0.2) transparent;
+      -webkit-overflow-scrolling:touch;
+    }
+    #serverInfoContent::-webkit-scrollbar { width:4px; }
+    #serverInfoContent::-webkit-scrollbar-thumb {
+      background:rgba(74,222,128,0.2);border-radius:4px;
+    }
+
+    /* ── عناوين الأقسام ── */
+    .si-title {
+      font-size:9px;letter-spacing:2.5px;font-weight:700;
+      text-transform:uppercase;margin-bottom:10px;
+      display:flex;align-items:center;gap:7px;
+    }
+
+    /* ── بطاقة عامة ── */
+    .si-card {
+      background:rgba(255,255,255,0.025);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:14px;overflow:hidden;
+      margin-bottom:16px;
+    }
+
+    /* ── صف داخل البطاقة ── */
+    .si-row {
+      display:flex;align-items:center;
+      justify-content:space-between;
+      padding:10px 13px;
+      border-bottom:1px solid rgba(255,255,255,0.04);
+      transition:background 0.2s;
+      gap:8px;
+    }
+    .si-row:last-child { border-bottom:none; }
+    .si-row:active { background:rgba(255,255,255,0.04); }
+    @media(hover:hover){
+      .si-row:hover { background:rgba(255,255,255,0.03); }
+    }
+
+    /* ── شبكة الإحصاءات ── */
+    .si-grid {
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:8px;
+      margin-bottom:16px;
+    }
+    @media(max-width:360px){
+      .si-grid { grid-template-columns:repeat(2,1fr); }
+    }
+
+    /* ── بطاقة إحصاء ── */
+    .si-stat {
+      background:rgba(255,255,255,0.025);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:13px;
+      padding:12px 8px 10px;
+      text-align:center;
+      transition:all 0.25s;
+      cursor:default;
+    }
+    .si-stat:active {
+      transform:scale(0.96);
+      background:rgba(255,255,255,0.04);
+    }
+    @media(hover:hover){
+      .si-stat:hover {
+        background:rgba(255,255,255,0.04);
+        transform:translateY(-2px);
+      }
+    }
+
+    /* ── شريط التقدم ── */
+    .si-bar-wrap {
+      height:9px;
+      background:rgba(255,255,255,0.06);
+      border-radius:9px;overflow:hidden;
+      position:relative;
+    }
+    .si-bar-fill {
+      height:100%;border-radius:9px;
+      transition:width 1.3s cubic-bezier(0.4,0,0.2,1);
+      position:relative;overflow:hidden;
+    }
+    .si-bar-shine {
+      position:absolute;top:0;bottom:0;width:60%;
+      background:linear-gradient(90deg,
+        transparent,rgba(255,255,255,0.22),transparent);
+      animation:siShine 2.5s ease infinite;
+      left:-60%;
+    }
+
+    /* ── أيقونة صغيرة ── */
+    .si-icon {
+      width:32px;height:32px;border-radius:9px;
+      flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;
+      font-size:13px;
+    }
+    @media(min-width:400px){
+      .si-icon { width:34px;height:34px;font-size:14px; }
+    }
+
+    /* ── badge ── */
+    .si-badge {
+      padding:3px 10px;border-radius:50px;
+      font-size:9px;font-weight:700;
+      white-space:nowrap;flex-shrink:0;
+    }
+
+    /* ── تحذير ── */
+    .si-alert {
+      border-radius:10px;padding:10px 12px;
+      display:flex;gap:9px;align-items:flex-start;
+      margin-top:12px;
+    }
+    .si-alert i { flex-shrink:0;margin-top:1px;font-size:12px; }
+    .si-alert span {
+      font-size:10px;line-height:1.65;
+      font-family:'Montserrat',sans-serif;
+    }
+  `;
+  document.head.appendChild(st);
+}
+
+/* ════════════════════════════════════════
+   فتح النافذة
+════════════════════════════════════════ */
+async function openServerInfoModal() {
+  document.getElementById('serverInfoModal')?.remove();
+  injectServerInfoStyles();
+
+  const modal = document.createElement('div');
+  modal.id = 'serverInfoModal';
+
+  modal.innerHTML = `
+    <div id="siBox">
+
+      <!-- شريط السحب -->
+      <div id="siDragBar"></div>
+
+      <!-- خط أخضر -->
+      <div style="height:2px;flex-shrink:0;
+           background:linear-gradient(90deg,
+             transparent,#4ade80 25%,#86efac 50%,#4ade80 75%,transparent);">
+      </div>
+
+      <!-- هيدر -->
+      <div id="siHeader">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="
+            width:38px;height:38px;flex-shrink:0;
+            background:rgba(74,222,128,0.1);
+            border:1px solid rgba(74,222,128,0.28);
+            border-radius:11px;
+            display:flex;align-items:center;justify-content:center;
+            color:#4ade80;font-size:16px;">
+            <i class="fas fa-server"></i>
+          </div>
+          <div>
+            <div style="font-size:7px;letter-spacing:3px;
+                 color:rgba(74,222,128,0.5);text-transform:uppercase;
+                 margin-bottom:2px;">
+              SUPABASE — CANLI
+            </div>
+            <div style="font-size:15px;font-weight:900;color:#fff;
+                 line-height:1;">
+              Sunucu Bilgileri
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:7px;align-items:center;">
+          <button id="siRefreshBtn" onclick="refreshServerInfo()" style="
+            padding:6px 12px;border-radius:8px;
+            border:1px solid rgba(74,222,128,0.28);
+            background:rgba(74,222,128,0.07);
+            color:#4ade80;
+            font-family:'Montserrat',sans-serif;
+            font-size:9px;font-weight:700;cursor:pointer;
+            display:flex;align-items:center;gap:5px;
+            transition:all 0.2s;letter-spacing:1px;
+            -webkit-tap-highlight-color:transparent;">
+            <i class="fas fa-sync-alt" id="serverRefreshIcon"></i>
+            YENİLE
+          </button>
+          <button onclick="closeServerInfoModal()" style="
+            width:32px;height:32px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.07);
+            border-radius:9px;
+            color:rgba(255,255,255,0.3);
+            font-size:13px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:all 0.2s;
+            -webkit-tap-highlight-color:transparent;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- المحتوى -->
+      <div id="serverInfoContent">
+        <div style="
+          display:flex;flex-direction:column;
+          align-items:center;justify-content:center;
+          padding:50px 20px;gap:14px;">
+          <div style="
+            width:52px;height:52px;border-radius:50%;
+            background:rgba(74,222,128,0.07);
+            border:2px solid rgba(74,222,128,0.18);
+            display:flex;align-items:center;justify-content:center;
+            animation:siPulse 1.5s infinite;">
+            <i class="fas fa-server"
+               style="font-size:20px;color:rgba(74,222,128,0.55);"></i>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:12px;font-weight:700;
+                 color:rgba(255,255,255,0.35);letter-spacing:2px;
+                 margin-bottom:4px;">
+              Yükleniyor...
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.12);
+                 letter-spacing:1px;">
+              Sunucu verileri çekiliyor
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  document.body.style.overflow = 'hidden';
+
+  /* إغلاق بالنقر خارج الصندوق */
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeServerInfoModal();
+  });
+
+  /* سحب للإغلاق على الهاتف */
+  let startY = 0, isDragging = false;
+  const box = document.getElementById('siBox');
+  const bar = document.getElementById('siDragBar');
+  if (bar) {
+    bar.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY;
+      isDragging = true;
+    }, { passive:true });
+    document.addEventListener('touchmove', e => {
+      if (!isDragging) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy > 0) box.style.transform = `translateY(${dy}px)`;
+    }, { passive:true });
+    document.addEventListener('touchend', e => {
+      if (!isDragging) return;
+      isDragging = false;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (dy > 100) {
+        closeServerInfoModal();
+      } else {
+        box.style.transition = 'transform 0.3s ease';
+        box.style.transform  = 'translateY(0)';
+        setTimeout(() => box.style.transition = '', 300);
+      }
+    }, { passive:true });
+  }
+
+  await refreshServerInfo();
+}
+
+/* ── إغلاق ── */
+function closeServerInfoModal() {
+  const modal = document.getElementById('serverInfoModal');
+  const box   = document.getElementById('siBox');
+  if (!modal) return;
+  if (box) {
+    box.style.transition  = 'transform 0.3s ease, opacity 0.3s ease';
+    box.style.transform   = 'translateY(60px)';
+    box.style.opacity     = '0';
+  }
+  modal.style.transition = 'opacity 0.3s ease';
+  modal.style.opacity    = '0';
+  setTimeout(() => {
+    modal.remove();
+    document.body.style.overflow = '';
+  }, 280);
+}
+
+/* ════════════════════════════════════════
+   جلب البيانات وعرضها
+════════════════════════════════════════ */
 async function refreshServerInfo() {
   const icon    = document.getElementById('serverRefreshIcon');
   const content = document.getElementById('serverInfoContent');
   if (!content) return;
 
-  if (icon) {
-    icon.style.transition = 'none';
-    icon.style.animation  = 'spin 0.7s linear infinite';
-  }
-  if (!document.getElementById('siSpinCSS')) {
-    const s = document.createElement('style');
-    s.id = 'siSpinCSS';
-    s.textContent =
-      '@keyframes spin{to{transform:rotate(360deg)}}';
-    document.head.appendChild(s);
-  }
+  if (icon) icon.style.animation = 'siSpin 0.8s linear infinite';
 
   const sb = await initSupabase();
   if (!sb) {
     content.innerHTML = `
       <div style="text-align:center;padding:40px 20px;">
-        <i class="fas fa-wifi"
-           style="font-size:32px;color:rgba(239,68,68,0.5);
-                  display:block;margin-bottom:14px;"></i>
+        <div style="
+          width:54px;height:54px;border-radius:50%;
+          background:rgba(239,68,68,0.08);
+          border:2px solid rgba(239,68,68,0.2);
+          display:flex;align-items:center;justify-content:center;
+          margin:0 auto 14px;font-size:22px;color:#ef4444;">
+          <i class="fas fa-wifi"></i>
+        </div>
         <p style="font-size:13px;font-weight:700;color:#ef4444;">
           Bağlantı hatası!
         </p>
-        <p style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:6px;">
+        <p style="font-size:10px;color:rgba(255,255,255,0.2);margin-top:5px;">
           Supabase bağlantısını kontrol edin
         </p>
       </div>`;
@@ -21169,14 +21550,14 @@ async function refreshServerInfo() {
   }
 
   try {
-    const t0 = performance.now();
+    const t0 = Date.now();
 
     const [dbRes, bktRes] = await Promise.allSettled([
       sb.rpc('get_server_info'),
       sb.storage.listBuckets(),
     ]);
 
-    const pingMs = Math.round(performance.now() - t0);
+    const pingMs = Date.now() - t0;
     const dbInfo = dbRes.status === 'fulfilled' ? dbRes.value.data : null;
     const buckets = bktRes.status === 'fulfilled'
       ? (bktRes.value.data || []) : [];
@@ -21189,14 +21570,15 @@ async function refreshServerInfo() {
       { name:'messages',       icon:'fa-comments',       color:'#22c55e', label:'Mesajlar'    },
       { name:'home_cards',     icon:'fa-th-large',       color:'#8b5cf6', label:'Kartlar'     },
       { name:'admin_accounts', icon:'fa-user-shield',    color:'#a78bfa', label:'Adminler'    },
-      { name:'otp_codes',      icon:'fa-key',            color:'#fbbf24', label:'OTP'         },
+      { name:'otp_codes',      icon:'fa-key',            color:'#fbbf24', label:'OTP Kodlar'  },
     ];
 
     const counts = {};
     await Promise.all(tableList.map(async t => {
       try {
         const { count } = await sb
-          .from(t.name).select('*', { count:'exact', head:true });
+          .from(t.name)
+          .select('*', { count:'exact', head:true });
         counts[t.name] = count ?? 0;
       } catch { counts[t.name] = null; }
     }));
@@ -21204,381 +21586,462 @@ async function refreshServerInfo() {
     /* ── حسابات ── */
     const plan    = SUPABASE_PLANS[CURRENT_PLAN];
     const dbBytes = dbInfo?.db_size_bytes || 0;
-    const dbPct   = Math.min(Math.round(dbBytes / plan.db_limit * 100), 100);
+    const dbPct   = Math.min(Math.round((dbBytes / plan.db_limit) * 100), 100);
     const dbLeft  = plan.db_limit - dbBytes;
     const dbClr   = progressColor(dbPct);
 
-    const pingClr = pingMs < 300 ? '#4ade80'
-                  : pingMs < 700 ? '#fbbf24' : '#ef4444';
-    const pingLbl = pingMs < 300 ? 'İyi' : pingMs < 700 ? 'Orta' : 'Yavaş';
+    const pingClr   = pingMs < 300 ? '#4ade80'
+                    : pingMs < 800 ? '#fbbf24' : '#ef4444';
+    const pingLabel = pingMs < 300 ? 'İyi' : pingMs < 800 ? 'Orta' : 'Yavaş';
+
+    const totalRows = Object.values(counts)
+      .filter(v => v !== null).reduce((a,b) => a + b, 0);
 
     const now = new Date();
     if (icon) icon.style.animation = '';
 
     /* ════════════════════════════════════════
-       HTML
+       HTML الكامل
     ════════════════════════════════════════ */
     content.innerHTML = `
 
-    <!-- ══ شريط الحالة ══ -->
-    <div style="
-      display:flex;align-items:center;justify-content:space-between;
-      flex-wrap:wrap;gap:6px;
-      padding:9px 12px;margin-bottom:14px;
-      background:rgba(74,222,128,0.05);
-      border:1px solid rgba(74,222,128,0.15);
-      border-radius:11px;">
-      <div style="display:flex;align-items:center;gap:7px;">
-        <div style="
-          width:8px;height:8px;border-radius:50%;
-          background:#4ade80;
-          box-shadow:0 0 7px rgba(74,222,128,.7);
-          animation:siPulse 2s infinite;flex-shrink:0;"></div>
-        <span style="font-size:9.5px;font-weight:700;
-              color:rgba(74,222,128,.8);letter-spacing:1.5px;">
-          CANLI BAĞLANTI
-        </span>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <div style="display:flex;align-items:center;gap:4px;">
-          <i class="fas fa-wifi" style="font-size:9px;color:${pingClr};"></i>
-          <span style="font-size:9.5px;font-weight:700;color:${pingClr};">
-            ${pingMs}ms
-          </span>
-          <span style="font-size:8.5px;color:rgba(255,255,255,0.2);">
-            ${pingLbl}
-          </span>
-        </div>
-        <span style="font-size:8.5px;color:rgba(255,255,255,0.18);">
-          ${now.toLocaleTimeString('tr-TR')}
-        </span>
-      </div>
-    </div>
-
-    <!-- ══════════════════════════════════
-         📊 DEPOLAMA
-    ══════════════════════════════════ -->
-    <div class="si-ttl" style="color:rgba(74,222,128,.6);">
-      <i class="fas fa-hdd" style="font-size:10px;"></i>
-      DEPOLAMA KULLANIMI
-    </div>
-
-    <div style="
-      background:rgba(255,255,255,0.025);
-      border:1px solid rgba(255,255,255,0.07);
-      border-radius:15px;padding:14px;
-      margin-bottom:14px;position:relative;overflow:hidden;">
-
-      <div style="
-        position:absolute;right:-15px;top:-15px;
-        width:90px;height:90px;pointer-events:none;
-        background:radial-gradient(circle,${dbClr}09 0%,transparent 70%);"></div>
-
-      <!-- صف أعلى -->
+      <!-- ══ شريط الحالة ══ -->
       <div style="
         display:flex;align-items:center;
         justify-content:space-between;
-        flex-wrap:wrap;gap:10px;margin-bottom:12px;">
-
-        <div style="display:flex;align-items:center;gap:9px;">
+        flex-wrap:wrap;gap:6px;
+        padding:9px 12px;margin-bottom:16px;
+        background:rgba(74,222,128,0.05);
+        border:1px solid rgba(74,222,128,0.14);
+        border-radius:11px;">
+        <div style="display:flex;align-items:center;gap:7px;">
           <div style="
-            width:38px;height:38px;border-radius:10px;flex-shrink:0;
-            background:${dbClr}18;border:1px solid ${dbClr}35;
-            display:flex;align-items:center;justify-content:center;
-            font-size:16px;color:${dbClr};">
-            <i class="fas fa-database"></i>
-          </div>
-          <div>
-            <div style="font-size:13px;font-weight:900;color:#fff;
-                 margin-bottom:4px;">Veritabanı</div>
-            <div class="si-badge"
-                 style="background:${plan.color}18;
-                        border:1px solid ${plan.color}35;
-                        color:${plan.color};">
-              <i class="fas fa-tag" style="font-size:7px;"></i>
-              ${plan.label}
-            </div>
-          </div>
+            width:8px;height:8px;border-radius:50%;
+            background:#4ade80;
+            box-shadow:0 0 7px rgba(74,222,128,0.7);
+            animation:siPulse 2s infinite;flex-shrink:0;"></div>
+          <span style="font-size:10px;font-weight:700;
+                color:rgba(74,222,128,0.75);letter-spacing:1.5px;">
+            CANLI BAĞLANTI
+          </span>
         </div>
-
-        <div style="text-align:right;">
-          <div style="
-            font-size:clamp(19px,5.5vw,25px);
-            font-weight:900;color:${dbClr};line-height:1;">
-            ${fmtBytes(dbBytes)}
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;align-items:center;gap:4px;">
+            <i class="fas fa-wifi"
+               style="font-size:9px;color:${pingClr};"></i>
+            <span style="font-size:10px;font-weight:700;color:${pingClr};">
+              ${pingMs}ms
+            </span>
+            <span style="font-size:9px;color:rgba(255,255,255,0.18);">
+              ${pingLabel}
+            </span>
           </div>
-          <div style="font-size:10.5px;color:rgba(255,255,255,0.28);
-               margin-top:2px;">
-            / ${fmtBytes(plan.db_limit)}
-          </div>
+          <span style="font-size:9px;color:rgba(255,255,255,0.18);">
+            ${now.toLocaleTimeString('tr-TR')}
+          </span>
         </div>
       </div>
 
-      <!-- شريط التقدم -->
-      <div class="si-bar-wrap" style="margin-bottom:8px;">
-        <div class="si-bar-fill"
-             style="width:${dbPct}%;
-                    background:linear-gradient(90deg,${dbClr}bb,${dbClr});"></div>
-        <div style="
-          position:absolute;top:0;bottom:0;left:80%;
-          width:1.5px;background:rgba(255,255,255,0.1);"></div>
+      <!-- ══════════════════════════════
+           📊 DEPOLAMA KULLANIMI
+      ══════════════════════════════ -->
+      <div class="si-title" style="color:rgba(74,222,128,0.6);">
+        <i class="fas fa-hdd"></i>
+        DEPOLAMA KULLANIMI
       </div>
 
-      <!-- نص تحت الشريط -->
       <div style="
-        display:flex;justify-content:space-between;
-        align-items:center;flex-wrap:wrap;gap:6px;">
-        <div style="display:flex;align-items:center;gap:5px;">
-          <div style="
-            width:7px;height:7px;border-radius:50%;
-            background:${dbClr};box-shadow:0 0 5px ${dbClr}80;"></div>
-          <span style="font-size:10px;color:rgba(255,255,255,0.35);">
-            <strong style="color:${dbClr};">${dbPct}%</strong> kullanıldı
-          </span>
-        </div>
+        background:rgba(255,255,255,0.025);
+        border:1px solid rgba(255,255,255,0.07);
+        border-radius:15px;padding:15px 14px;
+        margin-bottom:16px;position:relative;overflow:hidden;">
+
+        <!-- وهج ── -->
         <div style="
-          display:flex;align-items:center;gap:4px;
-          padding:3px 10px;border-radius:50px;
-          background:${dbClr}12;border:1px solid ${dbClr}25;">
-          <i class="fas fa-layer-group"
-             style="font-size:8px;color:${dbClr};"></i>
-          <span style="font-size:10px;font-weight:700;color:${dbClr};">
-            ${fmtBytes(dbLeft)} kaldı
-          </span>
-        </div>
-      </div>
+          position:absolute;right:-10px;top:-10px;
+          width:90px;height:90px;pointer-events:none;
+          background:radial-gradient(circle,${dbClr}07 0%,transparent 70%);"></div>
 
-      ${dbPct >= 80 ? `
-      <div class="si-alert"
-           style="background:rgba(239,68,68,.08);
-                  border:1px solid rgba(239,68,68,.22);">
-        <i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>
-        <span style="color:rgba(255,255,255,.45);">
-          Depolama <strong style="color:#ef4444;">%${dbPct}</strong>
-          dolu! Plan yükseltmeyi düşünün.
-        </span>
-      </div>` : ''}
+        <!-- صف أعلى: أيقونة + اسم + badge + الأرقام ── -->
+        <div style="
+          display:flex;align-items:center;
+          justify-content:space-between;
+          gap:8px;margin-bottom:13px;flex-wrap:wrap;">
 
-      ${dbPct >= 60 && dbPct < 80 ? `
-      <div class="si-alert"
-           style="background:rgba(251,191,36,.06);
-                  border:1px solid rgba(251,191,36,.2);">
-        <i class="fas fa-info-circle" style="color:#fbbf24;"></i>
-        <span style="color:rgba(255,255,255,.4);">
-          Depolama <strong style="color:#fbbf24;">%${dbPct}</strong>
-          dolu. Yakında plan yükseltme gerekebilir.
-        </span>
-      </div>` : ''}
-    </div>
-
-    <!-- ══════════════════════════════════
-         ⚡ HIZLI İSTATİSTİKLER
-    ══════════════════════════════════ -->
-    <div class="si-ttl" style="color:rgba(96,165,250,.6);">
-      <i class="fas fa-bolt" style="font-size:10px;"></i>
-      HIZLI İSTATİSTİKLER
-    </div>
-
-    <div class="si-grid">
-      ${[
-        { icon:'fa-bolt',          color:'#60a5fa', val:dbInfo?.active_connections??'—', lbl:'Aktif Bağlantı'  },
-        { icon:'fa-network-wired', color:'#a78bfa', val:dbInfo?.total_connections??'—',  lbl:'Toplam Bağlantı' },
-        { icon:'fa-tachometer-alt',color:'#fbbf24', val:(dbInfo?.cache_hit_ratio??'—')+'%', lbl:'Cache Oranı' },
-        { icon:'fa-wifi',          color:pingClr,   val:pingMs+'ms',                     lbl:pingLbl           },
-        { icon:'fa-database',      color:'#4ade80', val:fmtBytes(dbBytes),               lbl:'DB Boyutu'       },
-        { icon:'fa-table',         color:'#fb923c', val:tableList.length,                lbl:'Tablo Sayısı'    },
-      ].map(s => `
-        <div class="si-stat"
-             style="border-color:${s.color}22;"
-             ontouchstart="this.style.transform='scale(.95)';
-                           this.style.background='rgba(255,255,255,.04)'"
-             ontouchend="this.style.transform='scale(1)';
-                         this.style.background='rgba(255,255,255,.025)'">
-          <div style="
-            width:30px;height:30px;border-radius:9px;
-            background:${s.color}15;border:1px solid ${s.color}28;
-            display:flex;align-items:center;justify-content:center;
-            margin:0 auto 7px;font-size:13px;color:${s.color};">
-            <i class="fas ${s.icon}"></i>
-          </div>
-          <div style="
-            font-size:clamp(13px,3.8vw,18px);
-            font-weight:900;color:${s.color};
-            margin-bottom:3px;line-height:1.1;
-            word-break:break-all;">
-            ${s.val}
-          </div>
-          <div style="font-size:7.5px;letter-spacing:.8px;
-               color:rgba(255,255,255,.2);text-transform:uppercase;
-               line-height:1.3;">
-            ${s.lbl}
-          </div>
-        </div>`).join('')}
-    </div>
-
-    <!-- ══════════════════════════════════
-         📋 TABLO İSTATİSTİKLERİ
-    ══════════════════════════════════ -->
-    <div class="si-ttl" style="color:rgba(201,168,76,.6);">
-      <i class="fas fa-table" style="font-size:10px;"></i>
-      TABLO İSTATİSTİKLERİ
-    </div>
-
-    <div class="si-card">
-      ${tableList.map(t => {
-        const c = counts[t.name];
-        return `
-        <div class="si-row"
-             ontouchstart="this.style.background='rgba(255,255,255,.04)'"
-             ontouchend="this.style.background='transparent'">
-          <div style="display:flex;align-items:center;gap:9px;
-               flex:1;min-width:0;">
-            <div style="
-              width:28px;height:28px;border-radius:8px;flex-shrink:0;
-              background:${t.color}15;border:1px solid ${t.color}28;
-              display:flex;align-items:center;justify-content:center;
-              font-size:11px;color:${t.color};">
-              <i class="fas ${t.icon}"></i>
-            </div>
-            <div style="min-width:0;">
-              <div style="font-size:11.5px;font-weight:700;color:#fff;
-                   font-family:monospace;white-space:nowrap;
-                   overflow:hidden;text-overflow:ellipsis;">
-                ${t.name}
-              </div>
-              <div style="font-size:9px;color:rgba(255,255,255,.2);
-                   margin-top:1px;">${t.label}</div>
-            </div>
-          </div>
-          <div style="
-            padding:3px 11px;border-radius:50px;flex-shrink:0;
-            background:${c !== null ? t.color+'15' : 'rgba(255,255,255,.04)'};
-            border:1px solid ${c !== null ? t.color+'28' : 'rgba(255,255,255,.06)'};
-            font-size:11px;font-weight:900;
-            color:${c !== null ? t.color : 'rgba(255,255,255,.2)'};">
-            ${c !== null ? c.toLocaleString('tr-TR') : '—'}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>
-
-    <!-- ══════════════════════════════════
-         ☁️ STORAGE BUCKETS
-    ══════════════════════════════════ -->
-    <div class="si-ttl" style="color:rgba(167,139,250,.6);">
-      <i class="fas fa-cloud" style="font-size:10px;"></i>
-      STORAGE BUCKETS
-      <span style="
-        margin-left:auto;padding:2px 8px;border-radius:50px;
-        background:rgba(167,139,250,.12);
-        border:1px solid rgba(167,139,250,.25);
-        font-size:8.5px;color:#a78bfa;letter-spacing:0;font-weight:700;">
-        ${buckets.length}
-      </span>
-    </div>
-
-    <div class="si-card">
-      ${buckets.length ? buckets.map(b => `
-        <div class="si-row"
-             ontouchstart="this.style.background='rgba(255,255,255,.04)'"
-             ontouchend="this.style.background='transparent'">
           <div style="display:flex;align-items:center;gap:9px;">
-            <div style="
-              width:28px;height:28px;border-radius:8px;flex-shrink:0;
-              background:rgba(167,139,250,.12);
-              border:1px solid rgba(167,139,250,.25);
-              display:flex;align-items:center;justify-content:center;
-              font-size:12px;color:#a78bfa;">
-              <i class="fas fa-folder"></i>
+            <div class="si-icon"
+                 style="background:${dbClr}18;border:1px solid ${dbClr}35;
+                        color:${dbClr};">
+              <i class="fas fa-database"></i>
             </div>
             <div>
-              <div style="font-size:12px;font-weight:700;color:#fff;
-                   font-family:monospace;">${b.name}</div>
-              <div style="font-size:9px;color:rgba(255,255,255,.2);margin-top:1px;">
-                ${b.file_size_limit ? fmtBytes(b.file_size_limit)+' limit' : 'Limit yok'}
+              <div style="font-size:13px;font-weight:900;color:#fff;
+                   margin-bottom:3px;line-height:1;">
+                Veritabanı
+              </div>
+              <div class="si-badge"
+                   style="background:${plan.color}18;
+                          border:1px solid ${plan.color}35;
+                          color:${plan.color};
+                          display:inline-flex;align-items:center;gap:4px;">
+                <i class="fas ${plan.icon}" style="font-size:7px;"></i>
+                ${plan.label}
               </div>
             </div>
           </div>
-          <span style="
+
+          <!-- الأرقام ── -->
+          <div style="text-align:right;">
+            <div style="
+              font-size:clamp(17px,5.5vw,23px);
+              font-weight:900;color:${dbClr};
+              line-height:1;margin-bottom:2px;
+              animation:siCountUp 0.5s ease;">
+              ${fmtBytes(dbBytes)}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.25);">
+              / ${fmtBytes(plan.db_limit)}
+            </div>
+          </div>
+        </div>
+
+        <!-- شريط التقدم ── -->
+        <div class="si-bar-wrap" style="margin-bottom:8px;">
+          <div class="si-bar-fill"
+               style="width:${dbPct}%;
+                      background:linear-gradient(90deg,${dbClr}aa,${dbClr});">
+            <div class="si-bar-shine"></div>
+          </div>
+          <!-- علامة 80% ── -->
+          <div style="
+            position:absolute;top:0;bottom:0;left:80%;
+            width:1px;background:rgba(255,255,255,0.1);"></div>
+        </div>
+
+        <!-- نص تحت الشريط ── -->
+        <div style="
+          display:flex;justify-content:space-between;
+          align-items:center;flex-wrap:wrap;gap:6px;">
+          <div style="display:flex;align-items:center;gap:5px;">
+            <div style="
+              width:7px;height:7px;border-radius:50%;
+              background:${dbClr};
+              box-shadow:0 0 5px ${dbClr}70;"></div>
+            <span style="font-size:10px;color:rgba(255,255,255,0.35);">
+              <strong style="color:${dbClr};">${dbPct}%</strong>
+              kullanıldı
+            </span>
+          </div>
+          <div style="
+            display:inline-flex;align-items:center;gap:5px;
             padding:3px 10px;border-radius:50px;
-            background:${b.public
-              ? 'rgba(74,222,128,.1)' : 'rgba(239,68,68,.1)'};
-            border:1px solid ${b.public
-              ? 'rgba(74,222,128,.25)' : 'rgba(239,68,68,.25)'};
-            font-size:8.5px;font-weight:700;
-            color:${b.public ? '#4ade80' : '#ef4444'};">
-            ${b.public ? 'PUBLIC' : 'PRIVATE'}
+            background:${dbClr}10;border:1px solid ${dbClr}22;">
+            <i class="fas fa-arrow-right"
+               style="font-size:8px;color:${dbClr};"></i>
+            <span style="font-size:10px;font-weight:700;color:${dbClr};">
+              ${fmtBytes(dbLeft)} kaldı
+            </span>
+          </div>
+        </div>
+
+        <!-- تحذير 80%+ ── -->
+        ${dbPct >= 80 ? `
+        <div class="si-alert"
+             style="background:rgba(239,68,68,0.07);
+                    border:1px solid rgba(239,68,68,0.22);">
+          <i class="fas fa-exclamation-triangle" style="color:#ef4444;"></i>
+          <span style="color:rgba(255,255,255,0.45);">
+            Depolama <strong style="color:#ef4444;">%${dbPct}</strong> dolu!
+            Plan yükseltmeyi düşünün.
           </span>
-        </div>`).join('')
-      : `<div style="padding:20px;text-align:center;">
-           <i class="fas fa-folder-open"
-              style="font-size:22px;color:rgba(255,255,255,.1);
-                     display:block;margin-bottom:9px;"></i>
-           <span style="font-size:10px;color:rgba(255,255,255,.2);
-                 letter-spacing:1px;">Bucket bulunamadı</span>
-         </div>`}
-    </div>
+        </div>` : ''}
 
-    <!-- ══ PostgreSQL ══ -->
-    ${dbInfo?.pg_version ? `
-    <div class="si-ttl" style="color:rgba(96,165,250,.45);">
-      <i class="fas fa-code-branch" style="font-size:10px;"></i>
-      VERSİYON
-    </div>
-    <div style="
-      background:rgba(255,255,255,.025);
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:12px;padding:11px 13px;
-      margin-bottom:14px;
-      display:flex;align-items:flex-start;gap:9px;">
-      <i class="fas fa-database"
-         style="color:rgba(96,165,250,.35);margin-top:2px;flex-shrink:0;"></i>
-      <span style="font-size:9.5px;color:rgba(255,255,255,.28);
-            line-height:1.7;font-family:monospace;word-break:break-all;">
-        ${dbInfo.pg_version.substring(0,100)}
-      </span>
-    </div>` : ''}
+        <!-- تحذير 60%+ ── -->
+        ${dbPct >= 60 && dbPct < 80 ? `
+        <div class="si-alert"
+             style="background:rgba(251,191,36,0.05);
+                    border:1px solid rgba(251,191,36,0.18);">
+          <i class="fas fa-info-circle" style="color:#fbbf24;"></i>
+          <span style="color:rgba(255,255,255,0.38);">
+            Depolama <strong style="color:#fbbf24;">%${dbPct}</strong> dolu.
+            Yakında plan yükseltme gerekebilir.
+          </span>
+        </div>` : ''}
 
-    <!-- ══ ملاحظة ══ -->
-    <div style="
-      background:rgba(255,255,255,.02);
-      border:1px solid rgba(255,255,255,.06);
-      border-radius:11px;padding:11px 13px;
-      display:flex;gap:9px;align-items:flex-start;">
-      <i class="fas fa-info-circle"
-         style="color:rgba(201,168,76,.45);margin-top:2px;
-                flex-shrink:0;font-size:12px;"></i>
-      <div style="font-size:9.5px;color:rgba(255,255,255,.22);line-height:1.8;">
-        CPU ve RAM bilgileri Supabase API üzerinden erişilemez.
-        <a href="https://supabase.com/dashboard" target="_blank"
-           rel="noopener"
-           style="color:rgba(201,168,76,.55);text-decoration:none;font-weight:700;">
-          Dashboard → Settings → Infrastructure
-        </a>
-        bölümünden görüntülenebilir.
       </div>
-    </div>
+
+      <!-- ══════════════════════════════
+           ⚡ HIZLI İSTATİSTİKLER
+      ══════════════════════════════ -->
+      <div class="si-title" style="color:rgba(96,165,250,0.6);">
+        <i class="fas fa-bolt"></i>
+        HIZLI İSTATİSTİKLER
+      </div>
+
+      <div class="si-grid">
+
+        ${[
+          {
+            icon:'fa-bolt', color:'#60a5fa',
+            val: dbInfo?.active_connections ?? '—',
+            lbl:'Aktif Bağlantı', small:false,
+          },
+          {
+            icon:'fa-network-wired', color:'#a78bfa',
+            val: dbInfo?.total_connections ?? '—',
+            lbl:'Toplam Bağlantı', small:false,
+          },
+          {
+            icon:'fa-tachometer-alt', color:'#fbbf24',
+            val: (dbInfo?.cache_hit_ratio ?? '—') + '%',
+            lbl:'Cache Oranı', small:false,
+          },
+          {
+            icon:'fa-wifi', color: pingClr,
+            val: pingMs + 'ms',
+            lbl:'Gecikme', small:false,
+          },
+          {
+            icon:'fa-database', color:'#4ade80',
+            val: fmtBytes(dbBytes),
+            lbl:'DB Boyutu', small:true,
+          },
+          {
+            icon:'fa-table', color:'#fb923c',
+            val: tableList.length,
+            lbl:'Tablo Sayısı', small:false,
+          },
+        ].map(s => `
+          <div class="si-stat"
+               style="border-color:${s.color}20;"
+               onmouseover="this.style.borderColor='${s.color}45'"
+               onmouseout="this.style.borderColor='${s.color}20'">
+            <div class="si-icon"
+                 style="background:${s.color}14;
+                        border:1px solid ${s.color}28;
+                        color:${s.color};
+                        margin:0 auto 8px;">
+              <i class="fas ${s.icon}"></i>
+            </div>
+            <div style="
+              font-size:${s.small ? 'clamp(12px,3.8vw,16px)' : 'clamp(17px,5vw,21px)'};
+              font-weight:900;color:${s.color};
+              margin-bottom:3px;line-height:1.1;
+              animation:siCountUp 0.5s ease;">
+              ${s.val}
+            </div>
+            <div style="font-size:8px;letter-spacing:0.8px;
+                 color:rgba(255,255,255,0.2);
+                 text-transform:uppercase;line-height:1.3;">
+              ${s.lbl}
+            </div>
+          </div>`).join('')}
+
+      </div>
+
+      <!-- ══════════════════════════════
+           📋 TABLO İSTATİSTİKLERİ
+      ══════════════════════════════ -->
+      <div class="si-title" style="color:rgba(201,168,76,0.6);">
+        <i class="fas fa-table"></i>
+        TABLO İSTATİSTİKLERİ
+        <span style="margin-left:auto;" class="si-badge"
+              style="background:rgba(201,168,76,0.1);
+                     border:1px solid rgba(201,168,76,0.22);
+                     color:rgba(201,168,76,0.7);">
+          ${totalRows.toLocaleString('tr-TR')} toplam
+        </span>
+      </div>
+
+      <div class="si-card">
+        ${tableList.map(t => {
+          const cnt = counts[t.name];
+          const pct = cnt && totalRows > 0
+            ? Math.round((cnt / totalRows) * 100) : 0;
+          return `
+          <div class="si-row">
+
+            <!-- يسار: أيقونة + اسم ── -->
+            <div style="display:flex;align-items:center;
+                 gap:9px;flex:1;min-width:0;">
+              <div class="si-icon"
+                   style="background:${t.color}14;
+                          border:1px solid ${t.color}28;
+                          color:${t.color};">
+                <i class="fas ${t.icon}"></i>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="
+                  font-size:11px;font-weight:700;color:#fff;
+                  font-family:monospace;
+                  white-space:nowrap;overflow:hidden;
+                  text-overflow:ellipsis;">
+                  ${t.name}
+                </div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.2);
+                     margin-top:1px;">${t.label}</div>
+              </div>
+            </div>
+
+            <!-- يمين: العدد ── -->
+            <div style="
+              display:flex;flex-direction:column;
+              align-items:flex-end;gap:3px;flex-shrink:0;">
+              <div class="si-badge"
+                   style="background:${cnt !== null ? t.color+'14' : 'rgba(255,255,255,0.04)'};
+                          border:1px solid ${cnt !== null ? t.color+'28' : 'rgba(255,255,255,0.06)'};
+                          color:${cnt !== null ? t.color : 'rgba(255,255,255,0.2)'};">
+                ${cnt !== null
+                  ? cnt.toLocaleString('tr-TR') + ' kayıt'
+                  : '— erişim yok'}
+              </div>
+              ${cnt !== null && totalRows > 0 ? `
+              <div style="
+                width:50px;height:3px;
+                background:rgba(255,255,255,0.05);
+                border-radius:3px;overflow:hidden;">
+                <div style="
+                  height:100%;width:${pct}%;
+                  background:${t.color};
+                  border-radius:3px;
+                  transition:width 1s ease;"></div>
+              </div>` : ''}
+            </div>
+
+          </div>`;
+        }).join('')}
+      </div>
+
+      <!-- ══════════════════════════════
+           ☁️ STORAGE BUCKETS
+      ══════════════════════════════ -->
+      <div class="si-title" style="color:rgba(167,139,250,0.6);">
+        <i class="fas fa-cloud"></i>
+        STORAGE BUCKETS
+        <span style="margin-left:auto;" class="si-badge"
+              style="background:rgba(167,139,250,0.1);
+                     border:1px solid rgba(167,139,250,0.22);
+                     color:rgba(167,139,250,0.7);">
+          ${buckets.length} bucket
+        </span>
+      </div>
+
+      <div class="si-card" style="margin-bottom:16px;">
+        ${buckets.length ? buckets.map(b => `
+          <div class="si-row">
+            <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">
+              <div class="si-icon"
+                   style="background:rgba(167,139,250,0.1);
+                          border:1px solid rgba(167,139,250,0.22);
+                          color:#a78bfa;">
+                <i class="fas fa-folder"></i>
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div style="
+                  font-size:12px;font-weight:700;color:#fff;
+                  font-family:monospace;
+                  white-space:nowrap;overflow:hidden;
+                  text-overflow:ellipsis;">
+                  ${b.name}
+                </div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.18);
+                     margin-top:1px;">
+                  ${b.file_size_limit
+                    ? 'Max: ' + fmtBytes(b.file_size_limit)
+                    : 'Limit yok'}
+                </div>
+              </div>
+            </div>
+            <span class="si-badge"
+                  style="background:${b.public
+                    ? 'rgba(74,222,128,0.09)' : 'rgba(239,68,68,0.09)'};
+                         border:1px solid ${b.public
+                    ? 'rgba(74,222,128,0.22)' : 'rgba(239,68,68,0.22)'};
+                         color:${b.public ? '#4ade80' : '#ef4444'};">
+              ${b.public ? 'PUBLIC' : 'PRIVATE'}
+            </span>
+          </div>`).join('')
+        : `<div style="
+             padding:24px;text-align:center;
+             color:rgba(255,255,255,0.18);font-size:11px;">
+             <i class="fas fa-folder-open"
+                style="font-size:22px;display:block;
+                       margin-bottom:9px;opacity:0.25;"></i>
+             Bucket bulunamadı
+           </div>`}
+      </div>
+
+      <!-- ══════════════════════════════
+           🔧 VERSİYON
+      ══════════════════════════════ -->
+      ${dbInfo?.pg_version ? `
+      <div class="si-title" style="color:rgba(96,165,250,0.5);">
+        <i class="fas fa-code-branch"></i>
+        VERSİYON
+      </div>
+      <div style="
+        background:rgba(255,255,255,0.02);
+        border:1px solid rgba(255,255,255,0.06);
+        border-radius:12px;padding:11px 13px;
+        margin-bottom:16px;
+        display:flex;align-items:flex-start;gap:9px;">
+        <i class="fas fa-database"
+           style="color:rgba(96,165,250,0.35);
+                  margin-top:2px;flex-shrink:0;font-size:12px;"></i>
+        <span style="
+          font-size:9px;color:rgba(255,255,255,0.25);
+          line-height:1.7;font-family:monospace;
+          word-break:break-all;">
+          ${dbInfo.pg_version.substring(0, 100)}
+        </span>
+      </div>` : ''}
+
+      <!-- ══ ملاحظة CPU/RAM ══ -->
+      <div style="
+        background:rgba(255,255,255,0.018);
+        border:1px solid rgba(255,255,255,0.055);
+        border-radius:11px;padding:11px 13px;
+        display:flex;gap:9px;align-items:flex-start;">
+        <i class="fas fa-info-circle"
+           style="color:rgba(201,168,76,0.45);
+                  margin-top:2px;flex-shrink:0;font-size:12px;"></i>
+        <div style="font-size:9px;color:rgba(255,255,255,0.22);line-height:1.8;">
+          CPU ve RAM bilgileri Supabase API üzerinden erişilemez.
+          <a href="https://supabase.com/dashboard"
+             target="_blank" rel="noopener"
+             style="color:rgba(201,168,76,0.55);
+                    text-decoration:none;font-weight:700;">
+            Dashboard → Settings → Infrastructure
+          </a>
+          bölümünden görüntülenebilir.
+        </div>
+      </div>
 
     `;
 
   } catch(e) {
-    console.error('[SI]', e);
+    console.error('[ServerInfo]', e);
     if (icon) icon.style.animation = '';
     content.innerHTML = `
       <div style="text-align:center;padding:40px 20px;">
         <div style="
-          width:56px;height:56px;border-radius:50%;
-          background:rgba(239,68,68,.1);
-          border:2px solid rgba(239,68,68,.25);
+          width:54px;height:54px;border-radius:50%;
+          background:rgba(239,68,68,0.08);
+          border:2px solid rgba(239,68,68,0.2);
           display:flex;align-items:center;justify-content:center;
           margin:0 auto 14px;font-size:22px;color:#ef4444;">
           <i class="fas fa-exclamation-triangle"></i>
         </div>
-        <p style="font-size:13px;font-weight:700;color:#ef4444;margin-bottom:6px;">
+        <p style="font-size:13px;font-weight:700;
+             color:#ef4444;margin-bottom:6px;">
           Veri yüklenemedi
         </p>
-        <p style="font-size:10px;color:rgba(255,255,255,.2);">
+        <p style="font-size:10px;color:rgba(255,255,255,0.2);
+             margin-bottom:4px;">
           ${e.message || 'Bilinmeyen hata'}
+        </p>
+        <p style="font-size:10px;color:rgba(255,255,255,0.13);">
+          get_server_info() fonksiyonunun oluşturulduğundan emin olun.
         </p>
       </div>`;
   }
