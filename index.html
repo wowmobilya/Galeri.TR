@@ -3533,8 +3533,8 @@ body.wow-mode .mobile-menu {
     <div style="padding:18px 20px 22px;display:flex;flex-direction:column;gap:15px;">
       <input type="hidden" id="hcmeId"/>
 
-           <!-- الترتيب والقسم -->
-      <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+      <!-- الترتيب والقسم -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div>
           <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
                text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
@@ -3548,12 +3548,29 @@ body.wow-mode .mobile-menu {
             outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;"
             onfocus="this.style.borderColor='#c9a84c'"
             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
-          
-          <!-- حقل مخفي لتوليد وحفظ القسم برمجياً -->
-          <input type="hidden" id="hcmeSectionKey" />
+        </div>
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-link" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+            BAĞLI BÖLÜM
+          </label>
+          <select id="hcmeSectionKey" style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;cursor:pointer;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'">
+            <option value="tv">TV Ünitesi</option>
+            <option value="orta">Orta Sehpa</option>
+            <option value="dresuar">Dresuar</option>
+            <option value="orders">Sipariş Ver</option>
+            <option value="admin">Admin Panel</option>
+            <option value="settings">Ayarlar</option>
+          </select>
         </div>
       </div>
-
 
       <!-- العنوان والعنوان الفرعي -->
       <div>
@@ -4536,17 +4553,7 @@ window.scrollTo({ top: 0, behavior: 'smooth' }); // ← هذا يكفي
 
 
 function buildPage(cat){
-  let L = labels[cat];
-  if (!L) {
-    const card = _homeCards.find(c => c.section_key === cat);
-    if (card) {
-      L = {tag: (card.title + ' KOLEKSİYONU').toUpperCase(), title: card.title, accent: card.subtitle || 'MODELLERİ'};
-    } else {
-      L = {tag: 'KOLEKSİYON', title: cat.toUpperCase(), accent: 'MODELLERİ'};
-    }
-  }
-  const cnt=filteredImages.length;
-
+  const L=labels[cat];const cnt=filteredImages.length;
   document.getElementById('pageContent').innerHTML=`
     <div class="page-transition">
       <div class="section-banner">
@@ -9687,18 +9694,6 @@ function openProductEditor(id = null) {
   const modal = document.getElementById('productEditorModal');
   const dimsContainer = document.getElementById('peDimsContainer');
   dimsContainer.innerHTML = ''; // تفريغ الحاوية
-  // جلب الفئات ديناميكياً من البطاقات النشطة
-  const catSelect = document.getElementById('peCat');
-  if (catSelect) {
-    const validCards = _homeCards.filter(c => c.is_active !== false
-                && !['admin','settings','users_panel','stock_panel','messages','user_preview'].includes(c.section_key));
-    
-    if (validCards.length > 0) {
-      catSelect.innerHTML = validCards.map(c => `<option value="${c.section_key}">${c.title}</option>`).join('');
-    } else {
-      catSelect.innerHTML = `<option value="genel">Genel</option>`;
-    }
-  }
 
   if (id) {
     const img = images.find(i => i.id === id);
@@ -17870,9 +17865,8 @@ async function openHcmEdit(cardId) {
   if (titleEl) titleEl.textContent = cardId ? 'Kartı Düzenle' : 'Yeni Kart Ekle';
 
   /* مسح الحقول */
-    ['hcmeId','hcmeOrder','hcmeTitle2','hcmeSubtitle',
-   'hcmeDesc','hcmeCount','hcmeBtnText','hcmeImageUrl','hcmeSectionKey'].forEach(id => {
-
+  ['hcmeId','hcmeOrder','hcmeTitle2','hcmeSubtitle',
+   'hcmeDesc','hcmeCount','hcmeBtnText','hcmeImageUrl'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -18075,10 +18069,7 @@ async function saveHcmCard() {
   const desc       = document.getElementById('hcmeDesc')?.value.trim();
   const countLabel = document.getElementById('hcmeCount')?.value.trim();
   const btnText    = document.getElementById('hcmeBtnText')?.value.trim();
-  let sectionKey = document.getElementById('hcmeSectionKey')?.value;
-  if (!sectionKey) {
-    sectionKey = 'sec_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-  }
+  const sectionKey = document.getElementById('hcmeSectionKey')?.value;
   const imageUrl   = _hcmUploadedUrl ||
                      document.getElementById('hcmeImageUrl')?.value.trim() || '';
 
@@ -18979,15 +18970,8 @@ function buildStockPage() {
             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
         </div>
         <!-- فلاتر الفئات -->
-               <!-- فلاتر الفئات -->
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          ${['all', ..._homeCards.filter(c => c.is_active !== false && !['admin','settings','users_panel','stock_panel','messages','user_preview'].includes(c.section_key)).map(c => c.section_key)].map(cat => {
-            let catName = cat === 'all' ? 'TÜMÜ' : cat;
-            if (cat !== 'all') {
-              const card = _homeCards.find(c => c.section_key === cat);
-              if (card) catName = card.title.toUpperCase();
-            }
-            return `
+          ${['all','orta','tv','dresuar'].map(cat => `
             <button onclick="filterStockByCat('${cat}',this)"
               class="stock-cat-btn ${cat==='all'?'stock-cat-active':''}"
               data-cat="${cat}"
@@ -18999,10 +18983,10 @@ function buildStockPage() {
                 font-family:'Montserrat',sans-serif;
                 font-size:9px;font-weight:700;letter-spacing:1px;
                 cursor:pointer;transition:all 0.25s;">
-              ${catName}
-            </button>`
-          }).join('')}
+              ${cat==='all'?'TÜMÜ':cat==='orta'?'ORTA SEHPA':cat==='tv'?'TV ÜNİTESİ':'DRESUAR'}
+            </button>`).join('')}
         </div>
+      </div>
 
       <!-- شبكة المنتجات -->
       <div style="padding:18px 22px 40px;">
@@ -23765,9 +23749,8 @@ async function openHcmEditInPage(cardId) {
   const titleEl = document.getElementById('hcmeTitle');
   if (titleEl) titleEl.textContent = cardId ? 'Kartı Düzenle' : 'Yeni Kart Ekle';
 
-   ['hcmeId','hcmeOrder','hcmeTitle2','hcmeSubtitle',
-   'hcmeDesc','hcmeCount','hcmeBtnText','hcmeImageUrl','hcmeSectionKey'].forEach(id => {
-
+  ['hcmeId','hcmeOrder','hcmeTitle2','hcmeSubtitle',
+   'hcmeDesc','hcmeCount','hcmeBtnText','hcmeImageUrl'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
