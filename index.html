@@ -3549,27 +3549,7 @@ body.wow-mode .mobile-menu {
             onfocus="this.style.borderColor='#c9a84c'"
             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
         </div>
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
-            <i class="fas fa-link" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
-            BAĞLI BÖLÜM
-          </label>
-          <select id="hcmeSectionKey" style="width:100%;padding:11px 13px;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
-            font-family:'Montserrat',sans-serif;font-size:12px;
-            outline:none;transition:all 0.3s;cursor:pointer;"
-            onfocus="this.style.borderColor='#c9a84c'"
-            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'">
-            <option value="tv">TV Ünitesi</option>
-            <option value="orta">Orta Sehpa</option>
-            <option value="dresuar">Dresuar</option>
-            <option value="orders">Sipariş Ver</option>
-            <option value="admin">Admin Panel</option>
-            <option value="settings">Ayarlar</option>
-          </select>
-        </div>
+      
       </div>
 
       <!-- العنوان والعنوان الفرعي -->
@@ -9721,6 +9701,8 @@ function openProductEditor(id = null) {
     document.getElementById('peImage').value = '';
     addDimCard(); // إضافة بطاقة فارغة افتراضياً
   }
+    syncHcmCardsToProductCat();
+
   modal.style.display = 'flex';
 }
 
@@ -18130,6 +18112,8 @@ async function saveHcmCard() {
     }
 
     if (error) throw error;
+    
+    syncHcmCardsToProductCat();
 
     showInvToast(id ? 'Kart güncellendi ✓' : 'Yeni kart eklendi ✓', 'success');
   if (typeof window._hcmSaveCallback === 'function') {
@@ -23801,6 +23785,61 @@ async function openHcmEditInPage(cardId) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ مزامنة بطاقات الهوم مع قائمة Kategori في إضافة موديل ★
+============================================================ */
+function syncHcmCardsToProductCat() {
+  const select = document.getElementById('peCat');
+  if (!select) return;
+
+  /* الفئات الثابتة الأصلية */
+  const staticCats = [
+    { value: 'orta',    label: 'Orta Sehpa' },
+    { value: 'tv',      label: 'TV Ünitesi' },
+    { value: 'dresuar', label: 'Dresuar'    },
+  ];
+
+  /* جمع البطاقات الديناميكية من _homeCards */
+  const dynamicCats = (_homeCards || [])
+    .filter(card =>
+      card.is_active !== false &&
+      card.section_key &&
+      !['admin','settings','users_panel',
+        'stock_panel','messages','user_preview'].includes(card.section_key) &&
+      !staticCats.find(s => s.value === card.section_key)
+    )
+    .map(card => ({
+      value : card.section_key,
+      label : (card.title || card.section_key) +
+              (card.subtitle ? ' ' + card.subtitle : ''),
+    }));
+
+  /* دمج الكل */
+  const allCats = [...staticCats, ...dynamicCats];
+
+  /* حفظ القيمة الحالية */
+  const currentVal = select.value;
+
+  /* إعادة بناء الـ options */
+  select.innerHTML = allCats
+    .map(c => `<option value="${c.value}">${c.label}</option>`)
+    .join('');
+
+  /* استعادة القيمة إن أمكن */
+  if (allCats.find(c => c.value === currentVal)) {
+    select.value = currentVal;
+  }
+}
 
   
   
