@@ -17736,13 +17736,19 @@ async function refreshHcmList() {
     return;
   }
 
+const isMobile = window.innerWidth <= 600;
+
 listEl.innerHTML = data.map((card, idx) => `
   <div class="hcm-card" id="cmcard-${card.id}"
-       style="margin-bottom:10px; flex-wrap:wrap; align-items:center;">
+       style="margin-bottom:10px;
+              display:flex;
+              flex-direction:${isMobile ? 'column' : 'row'};
+              align-items:${isMobile ? 'flex-start' : 'center'};
+              gap:12px;">
 
     <!-- ── الصف الرئيسي: ترتيب + صورة + نص ── -->
-    <div class="cmcard-top-row"
-         style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+    <div style="display:flex; align-items:center; gap:12px;
+                flex:1; min-width:0; width:100%;">
       <div class="hcm-card-order">${card.order_num}</div>
       <img class="hcm-card-thumb"
            src="${card.image_url || 'https://placehold.co/64x50/1a1a1a/c9a84c?text=W'}"
@@ -17763,8 +17769,11 @@ listEl.innerHTML = data.map((card, idx) => `
       </div>
     </div>
 
-    <!-- ── الأزرار: بجانب النص في الديسكتوب، تحته في الموبايل ── -->
-    <div class="cmcard-actions-row hcm-card-actions">
+    <!-- ── الأزرار ── -->
+    <div style="display:flex; gap:6px; flex-shrink:0;
+                ${isMobile
+                  ? 'width:100%; justify-content:flex-end; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06);'
+                  : 'align-items:center;'}">
       <button class="hcm-action-btn up"
               onclick="moveCardMgr(${card.id},-1)"
               title="Yukarı"
