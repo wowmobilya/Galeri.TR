@@ -18051,7 +18051,7 @@ async function saveHcmCard() {
   const desc       = document.getElementById('hcmeDesc')?.value.trim();
   const countLabel = document.getElementById('hcmeCount')?.value.trim();
   const btnText    = document.getElementById('hcmeBtnText')?.value.trim();
-  const sectionKey = document.getElementById('hcmeSectionKey')?.value;
+const sectionKey = document.getElementById('hcmeSectionKey')?.value || 'orta';
   const imageUrl   = _hcmUploadedUrl ||
                      document.getElementById('hcmeImageUrl')?.value.trim() || '';
 
@@ -18061,10 +18061,7 @@ async function saveHcmCard() {
     document.getElementById('hcmeTitle2')?.focus();
     return;
   }
-  if (!sectionKey) {
-    showInvToast('Lütfen bir bölüm seçin!', 'error');
-    return;
-  }
+  
 
   /* تعطيل الزر */
   if (btn) {
