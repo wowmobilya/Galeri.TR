@@ -3549,27 +3549,7 @@ body.wow-mode .mobile-menu {
             onfocus="this.style.borderColor='#c9a84c'"
             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
         </div>
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
-            <i class="fas fa-link" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
-            BAĞLI BÖLÜM
-          </label>
-          <select id="hcmeSectionKey" style="width:100%;padding:11px 13px;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
-            font-family:'Montserrat',sans-serif;font-size:12px;
-            outline:none;transition:all 0.3s;cursor:pointer;"
-            onfocus="this.style.borderColor='#c9a84c'"
-            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'">
-            <option value="tv">TV Ünitesi</option>
-            <option value="orta">Orta Sehpa</option>
-            <option value="dresuar">Dresuar</option>
-            <option value="orders">Sipariş Ver</option>
-            <option value="admin">Admin Panel</option>
-            <option value="settings">Ayarlar</option>
-          </select>
-        </div>
+
       </div>
 
       <!-- العنوان والعنوان الفرعي -->
@@ -9690,39 +9670,64 @@ function buildInvList(filter) {
 
 // 2. فتح نافذة التعديل/الإضافة
 // 1. فتح نافذة التعديل وتعبئة المقاسات كبطاقات
-function openProductEditor(id = null) {
+async function openProductEditor(id = null) {
   const modal = document.getElementById('productEditorModal');
   const dimsContainer = document.getElementById('peDimsContainer');
-  dimsContainer.innerHTML = ''; // تفريغ الحاوية
+  dimsContainer.innerHTML = '';
+
+  /* ★ جلب الكروت من Supabase لاستخدامها كـ Kategori ★ */
+  const sb = await initSupabase();
+  let dynamicCategories = [];
+  if (sb) {
+    const { data: cards } = await sb
+      .from(HC_TABLE)
+      .select('id, title, subtitle, section_key')
+      .eq('is_active', true)
+      .order('order_num', { ascending: true });
+    if (cards && cards.length) {
+      dynamicCategories = cards;
+    }
+  }
+
+  /* بناء خيارات الـ select ديناميكياً */
+  const catSelect = document.getElementById('peCat');
+  if (catSelect) {
+    catSelect.innerHTML = dynamicCategories.length
+      ? dynamicCategories.map(c => `
+          <option value="${c.section_key}">
+            ${c.title}${c.subtitle ? ' ' + c.subtitle : ''}
+          </option>`).join('')
+      : `<option value="orta">Orta Sehpa</option>
+         <option value="tv">TV Ünitesi</option>
+         <option value="dresuar">Dresuar</option>`;
+  }
 
   if (id) {
     const img = images.find(i => i.id === id);
     document.getElementById('prodEditorTitle').textContent = 'Modeli Düzenle';
-    document.getElementById('peId').value = img.id;
+    document.getElementById('peId').value    = img.id;
     document.getElementById('peTitle').value = img.title;
-    document.getElementById('peCat').value = img.cat;
+    document.getElementById('peCat').value   = img.cat;
     document.getElementById('peLabel').value = img.catLabel;
     document.getElementById('pePrice').value = img.price;
     document.getElementById('peImage').value = img.src;
-    
-    // رسم بطاقات المقاسات الموجودة
-    if (img.dims && img.dims.length > 0) {
+    if (img.dims && img.dims.length) {
       img.dims.forEach(dim => addDimCard(dim));
     } else {
-      addDimCard(); // إضافة بطاقة فارغة افتراضياً
+      addDimCard();
     }
   } else {
     document.getElementById('prodEditorTitle').textContent = 'Yeni Model Ekle';
-    document.getElementById('peId').value = '';
+    document.getElementById('peId').value    = '';
     document.getElementById('peTitle').value = '';
-    document.getElementById('peCat').value = 'orta';
     document.getElementById('peLabel').value = '';
     document.getElementById('pePrice').value = '';
     document.getElementById('peImage').value = '';
-    addDimCard(); // إضافة بطاقة فارغة افتراضياً
+    addDimCard();
   }
   modal.style.display = 'flex';
 }
+
 
 function closeProductEditor() {
   document.getElementById('productEditorModal').style.display = 'none';
@@ -9800,7 +9805,15 @@ async function saveProductToDB() {
   const productData = {
     title: document.getElementById('peTitle').value.trim() || 'İsimsiz Model',
     cat: document.getElementById('peCat').value,
-    cat_label: document.getElementById('peLabel').value.trim(),
+cat_label: (() => {
+  const labelInput = document.getElementById('peLabel').value.trim();
+  if (labelInput) return labelInput;
+  /* إذا كان الحقل فارغاً، نأخذ اسم الكرت المختار */
+  const catSelect = document.getElementById('peCat');
+  const selectedOpt = catSelect?.options[catSelect.selectedIndex];
+  return selectedOpt?.text || catSelect?.value || '';
+})(),
+
     price: Number(document.getElementById('pePrice').value) || 0,
     image_url: document.getElementById('peImage').value.trim(),
     dims: dimsArray, // المصفوفة الجاهزة
@@ -18069,7 +18082,12 @@ async function saveHcmCard() {
   const desc       = document.getElementById('hcmeDesc')?.value.trim();
   const countLabel = document.getElementById('hcmeCount')?.value.trim();
   const btnText    = document.getElementById('hcmeBtnText')?.value.trim();
-  const sectionKey = document.getElementById('hcmeSectionKey')?.value;
+// section_key يُولَّد تلقائياً من العنوان
+const rawTitle   = title.toLowerCase()
+                        .replace(/\s+/g, '_')
+                        .replace(/[^a-z0-9_]/g, '')
+                        .substring(0, 30);
+const sectionKey = 'cat_' + rawTitle + '_' + Date.now().toString().slice(-4);
   const imageUrl   = _hcmUploadedUrl ||
                      document.getElementById('hcmeImageUrl')?.value.trim() || '';
 
