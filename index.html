@@ -3157,10 +3157,123 @@ body.wow-mode .mobile-menu {
         <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Fiyat (₺)</label>
         <input type="number" id="pePrice" placeholder="Örn: 9500" style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; outline:none;" />
       </div>
-      <div style="flex:2;">
-        <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Görsel URL</label>
-        <input type="text" id="peImage" placeholder="https://..." style="width:100%; padding:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:10px; outline:none;" />
+     <div style="flex:2;">
+  <label style="color:#aaa; font-size:11px; font-weight:bold; margin-bottom:5px; display:block;">Görsel</label>
+
+  <!-- معاينة الصورة -->
+  <div id="peImgPreviewWrap" style="display:none; margin-bottom:8px; position:relative;">
+    <img id="peImgPreview" src="" alt="Preview"
+         style="width:100%; max-height:140px; object-fit:cover;
+                border-radius:9px; border:1px solid rgba(255,255,255,0.1);
+                display:block;"/>
+    <button type="button" onclick="clearPeImage()" style="
+      position:absolute; top:6px; right:6px;
+      width:26px; height:26px; border-radius:50%;
+      background:rgba(239,68,68,0.85); border:none;
+      color:#fff; font-size:11px; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:all 0.2s;">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- حقل URL -->
+  <div style="position:relative; margin-bottom:8px;">
+    <i class="fas fa-link" style="
+      position:absolute; left:11px; top:50%;
+      transform:translateY(-50%);
+      color:rgba(201,168,76,0.5); font-size:12px;
+      pointer-events:none;"></i>
+    <input type="url" id="peImage"
+      placeholder="https://... (Görsel URL)"
+      oninput="onPeImageUrlInput(this.value)"
+      style="
+        width:100%; padding:11px 11px 11px 32px;
+        background:rgba(0,0,0,0.3);
+        border:1px solid rgba(255,255,255,0.1);
+        color:#fff; border-radius:9px; outline:none;
+        font-family:'Montserrat',sans-serif; font-size:12px;
+        transition:all 0.3s; box-sizing:border-box;
+        -webkit-user-select:text; user-select:text;"
+      onfocus="this.style.borderColor='rgba(201,168,76,0.5)'"
+      onfocusout="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+  </div>
+
+  <!-- أزرار الرفع -->
+  <div style="display:flex; gap:7px;">
+
+    <!-- معرض الصور -->
+    <label style="flex:1; cursor:pointer;">
+      <input type="file" id="peFileGallery"
+        accept="image/*"
+        onchange="handlePeFileUpload(this)"
+        style="display:none;"/>
+      <div style="
+        padding:9px 6px; border-radius:8px;
+        border:1px solid rgba(201,168,76,0.25);
+        background:rgba(201,168,76,0.07);
+        color:rgba(201,168,76,0.8);
+        font-family:'Montserrat',sans-serif;
+        font-size:9px; font-weight:700; letter-spacing:1px;
+        text-align:center; transition:all 0.25s;
+        display:flex; flex-direction:column;
+        align-items:center; gap:5px;"
+        onmouseover="this.style.background='rgba(201,168,76,0.16)'"
+        onmouseout="this.style.background='rgba(201,168,76,0.07)'">
+        <i class="fas fa-images" style="font-size:18px;"></i>
+        GALERİ
       </div>
+    </label>
+
+    <!-- الكاميرا -->
+    <label style="flex:1; cursor:pointer;">
+      <input type="file" id="peFileCamera"
+        accept="image/*" capture="environment"
+        onchange="handlePeFileUpload(this)"
+        style="display:none;"/>
+      <div style="
+        padding:9px 6px; border-radius:8px;
+        border:1px solid rgba(96,165,250,0.25);
+        background:rgba(96,165,250,0.07);
+        color:rgba(96,165,250,0.8);
+        font-family:'Montserrat',sans-serif;
+        font-size:9px; font-weight:700; letter-spacing:1px;
+        text-align:center; transition:all 0.25s;
+        display:flex; flex-direction:column;
+        align-items:center; gap:5px;"
+        onmouseover="this.style.background='rgba(96,165,250,0.16)'"
+        onmouseout="this.style.background='rgba(96,165,250,0.07)'">
+        <i class="fas fa-camera" style="font-size:18px;"></i>
+        KAMERA
+      </div>
+    </label>
+
+  </div>
+
+  <!-- شريط تقدم الرفع -->
+  <div id="peUploadProgress" style="display:none; margin-top:8px;">
+    <div style="display:flex; align-items:center;
+         justify-content:space-between; margin-bottom:4px;">
+      <span style="font-size:9px; color:rgba(255,255,255,0.3);
+            letter-spacing:1px;">
+        <i class="fas fa-cloud-upload-alt"
+           style="color:rgba(201,168,76,0.5); margin-right:4px;"></i>
+        Supabase'e yükleniyor...
+      </span>
+      <span id="peUploadPct"
+            style="font-size:10px; font-weight:700; color:#c9a84c;">0%</span>
+    </div>
+    <div style="height:4px; background:rgba(255,255,255,0.06);
+         border-radius:4px; overflow:hidden;">
+      <div id="peUploadBar" style="
+        height:100%; width:0%;
+        background:linear-gradient(90deg,#c9a84c,#f0d080);
+        border-radius:4px; transition:width 0.3s ease;"></div>
+    </div>
+  </div>
+
+</div>
+
     </div>
 
     <!-- قسم المقاسات الجديد -->
@@ -9731,6 +9844,13 @@ async function openProductEditor(id = null) {
     document.getElementById('peLabel').value = img.catLabel;
     document.getElementById('pePrice').value = img.price;
     document.getElementById('peImage').value = img.src;
+if (img.src) {
+  const wrap    = document.getElementById('peImgPreviewWrap');
+  const preview = document.getElementById('peImgPreview');
+  if (wrap)    wrap.style.display = 'block';
+  if (preview) preview.src        = img.src;
+}
+    
     if (img.dims && img.dims.length) {
       img.dims.forEach(dim => addDimCard(dim));
     } else {
@@ -9753,6 +9873,135 @@ function closeProductEditor() {
   document.getElementById('productEditorModal').style.display = 'none';
 }
 
+
+
+
+/* ── معاينة URL يدوي ── */
+function onPeImageUrlInput(val) {
+  const wrap    = document.getElementById('peImgPreviewWrap');
+  const preview = document.getElementById('peImgPreview');
+  if (!wrap || !preview) return;
+  if (val.trim()) {
+    preview.src        = val.trim();
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+    preview.src        = '';
+  }
+}
+
+/* ── مسح الصورة ── */
+function clearPeImage() {
+  const wrap    = document.getElementById('peImgPreviewWrap');
+  const preview = document.getElementById('peImgPreview');
+  const urlInp  = document.getElementById('peImage');
+  if (wrap)    wrap.style.display = 'none';
+  if (preview) preview.src        = '';
+  if (urlInp)  urlInp.value       = '';
+}
+
+/* ── رفع صورة لـ Supabase Storage ── */
+async function handlePeFileUpload(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showInvToast('Lütfen bir görsel dosyası seçin!', 'error');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showInvToast('Dosya 10MB\'dan küçük olmalıdır!', 'error');
+    return;
+  }
+
+  const progressWrap = document.getElementById('peUploadProgress');
+  const progressBar  = document.getElementById('peUploadBar');
+  const progressPct  = document.getElementById('peUploadPct');
+  if (progressWrap) progressWrap.style.display = 'block';
+
+  const updateProg = (pct) => {
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressPct) progressPct.textContent  = pct + '%';
+  };
+
+  updateProg(15);
+
+  try {
+    const sb = await initSupabase();
+    if (!sb) throw new Error('Supabase bağlantısı yok');
+
+    updateProg(40);
+
+    const ext      = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const fileName = `product_${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+    const filePath = `products/${fileName}`;
+
+    updateProg(55);
+
+    const { error: uploadErr } = await sb.storage
+      .from('home-images')
+      .upload(filePath, file, {
+        cacheControl : '3600',
+        upsert       : false,
+        contentType  : file.type,
+      });
+
+    if (uploadErr) throw uploadErr;
+
+    updateProg(85);
+
+    const { data: urlData } = sb.storage
+      .from('home-images')
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData?.publicUrl;
+    if (!publicUrl) throw new Error('URL alınamadı');
+
+    updateProg(100);
+
+    /* تحديث الحقل والمعاينة */
+    const urlInp = document.getElementById('peImage');
+    if (urlInp) urlInp.value = publicUrl;
+
+    const wrap    = document.getElementById('peImgPreviewWrap');
+    const preview = document.getElementById('peImgPreview');
+    if (wrap)    wrap.style.display = 'block';
+    if (preview) preview.src        = publicUrl;
+
+    showInvToast('Görsel başarıyla yüklendi ✓', 'success');
+
+    setTimeout(() => {
+      if (progressWrap) progressWrap.style.display = 'none';
+      updateProg(0);
+    }, 1500);
+
+  } catch(e) {
+    console.error('[Product Upload]', e);
+    if (progressWrap) progressWrap.style.display = 'none';
+    updateProg(0);
+
+    /* احتياط: معاينة محلية */
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const urlInp  = document.getElementById('peImage');
+      const wrap    = document.getElementById('peImgPreviewWrap');
+      const preview = document.getElementById('peImgPreview');
+      if (urlInp)  urlInp.value       = ev.target.result;
+      if (wrap)    wrap.style.display = 'block';
+      if (preview) preview.src        = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    showInvToast('Storage hatası — URL olarak kaydedildi', 'error');
+  }
+
+  input.value = '';
+}
+
+
+
+
+  
 // 2. دالة إضافة بطاقة مقاس جديدة
 function addDimCard(dim = { name: '', l: '', w: '', h: '', kg: '' }) {
   const container = document.getElementById('peDimsContainer');
