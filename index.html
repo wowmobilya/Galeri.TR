@@ -9673,39 +9673,46 @@ function buildInvList(filter) {
 function openProductEditor(id = null) {
   const modal = document.getElementById('productEditorModal');
   const dimsContainer = document.getElementById('peDimsContainer');
-  dimsContainer.innerHTML = ''; // تفريغ الحاوية
+  dimsContainer.innerHTML = '';
 
   if (id) {
     const img = images.find(i => i.id === id);
     document.getElementById('prodEditorTitle').textContent = 'Modeli Düzenle';
-    document.getElementById('peId').value = img.id;
+    document.getElementById('peId').value    = img.id;
     document.getElementById('peTitle').value = img.title;
-    document.getElementById('peCat').value = img.cat;
     document.getElementById('peLabel').value = img.catLabel;
     document.getElementById('pePrice').value = img.price;
     document.getElementById('peImage').value = img.src;
-    
-    // رسم بطاقات المقاسات الموجودة
+
+    // ★ أولاً حدّث القائمة ثم اضبط القيمة ★
+    syncHcmCardsToProductCat();
+    document.getElementById('peCat').value = img.cat;
+
     if (img.dims && img.dims.length > 0) {
       img.dims.forEach(dim => addDimCard(dim));
     } else {
-      addDimCard(); // إضافة بطاقة فارغة افتراضياً
+      addDimCard();
     }
   } else {
     document.getElementById('prodEditorTitle').textContent = 'Yeni Model Ekle';
-    document.getElementById('peId').value = '';
+    document.getElementById('peId').value    = '';
     document.getElementById('peTitle').value = '';
-    document.getElementById('peCat').value = 'orta';
+    document.getElementById('peCat').value   = 'orta';
     document.getElementById('peLabel').value = '';
     document.getElementById('pePrice').value = '';
     document.getElementById('peImage').value = '';
-    addDimCard(); // إضافة بطاقة فارغة افتراضياً
-  }
+
+    // ★ تحديث القائمة ★
     syncHcmCardsToProductCat();
+
+    addDimCard();
+  }
 
   modal.style.display = 'flex';
 }
 
+
+  
 function closeProductEditor() {
   document.getElementById('productEditorModal').style.display = 'none';
 }
@@ -18113,13 +18120,18 @@ const sectionKey = document.getElementById('hcmeSectionKey')?.value || 'orta';
     syncHcmCardsToProductCat();
 
     showInvToast(id ? 'Kart güncellendi ✓' : 'Yeni kart eklendi ✓', 'success');
-  if (typeof window._hcmSaveCallback === 'function') {
+ if (typeof window._hcmSaveCallback === 'function') {
   await window._hcmSaveCallback();
   window._hcmSaveCallback = null;
 } else {
   closeHcmEdit();
   await refreshHcmList();
 }
+
+// ★ تحديث قائمة Kategori بعد تحديث _homeCards ★
+await loadHomeCards();
+syncHcmCardsToProductCat();
+
 
   } catch(e) {
     console.error('[HomeCards] kaydetme hatası:', e);
@@ -23799,40 +23811,44 @@ function syncHcmCardsToProductCat() {
   const select = document.getElementById('peCat');
   if (!select) return;
 
-  /* الفئات الثابتة الأصلية */
+  /* الفئات الثابتة */
   const staticCats = [
     { value: 'orta',    label: 'Orta Sehpa' },
     { value: 'tv',      label: 'TV Ünitesi' },
     { value: 'dresuar', label: 'Dresuar'    },
   ];
 
-  /* جمع البطاقات الديناميكية من _homeCards */
+  /* الفئات المحظورة */
+  const excluded = [
+    'admin', 'settings', 'users_panel',
+    'stock_panel', 'messages', 'user_preview',
+    'stock', 'orders'
+  ];
+
+  /* البطاقات الديناميكية من _homeCards */
   const dynamicCats = (_homeCards || [])
     .filter(card =>
       card.is_active !== false &&
       card.section_key &&
-      !['admin','settings','users_panel',
-        'stock_panel','messages','user_preview'].includes(card.section_key) &&
+      !excluded.includes(card.section_key) &&
       !staticCats.find(s => s.value === card.section_key)
     )
     .map(card => ({
       value : card.section_key,
-      label : (card.title || card.section_key) +
-              (card.subtitle ? ' ' + card.subtitle : ''),
+      label : (card.title || '') +
+              (card.subtitle ? ' ' + card.subtitle : '') ||
+              card.section_key,
     }));
 
-  /* دمج الكل */
-  const allCats = [...staticCats, ...dynamicCats];
+  console.log('[syncHcmCardsToProductCat] dynamic:', dynamicCats);
 
-  /* حفظ القيمة الحالية */
+  const allCats = [...staticCats, ...dynamicCats];
   const currentVal = select.value;
 
-  /* إعادة بناء الـ options */
   select.innerHTML = allCats
     .map(c => `<option value="${c.value}">${c.label}</option>`)
     .join('');
 
-  /* استعادة القيمة إن أمكن */
   if (allCats.find(c => c.value === currentVal)) {
     select.value = currentVal;
   }
