@@ -3549,7 +3549,27 @@ body.wow-mode .mobile-menu {
             onfocus="this.style.borderColor='#c9a84c'"
             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
         </div>
-      
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-link" style="color:rgba(201,168,76,0.5);margin-right:4px;"></i>
+            BAĞLI BÖLÜM
+          </label>
+          <select id="hcmeSectionKey" style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;cursor:pointer;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'">
+            <option value="tv">TV Ünitesi</option>
+            <option value="orta">Orta Sehpa</option>
+            <option value="dresuar">Dresuar</option>
+            <option value="orders">Sipariş Ver</option>
+            <option value="admin">Admin Panel</option>
+            <option value="settings">Ayarlar</option>
+          </select>
+        </div>
       </div>
 
       <!-- العنوان والعنوان الفرعي -->
@@ -9673,44 +9693,37 @@ function buildInvList(filter) {
 function openProductEditor(id = null) {
   const modal = document.getElementById('productEditorModal');
   const dimsContainer = document.getElementById('peDimsContainer');
-  dimsContainer.innerHTML = '';
-
-  /* ★ أولاً: حدّث القائمة ★ */
-  syncHcmCardsToProductCat();
+  dimsContainer.innerHTML = ''; // تفريغ الحاوية
 
   if (id) {
     const img = images.find(i => i.id === id);
     document.getElementById('prodEditorTitle').textContent = 'Modeli Düzenle';
-    document.getElementById('peId').value    = img.id;
+    document.getElementById('peId').value = img.id;
     document.getElementById('peTitle').value = img.title;
+    document.getElementById('peCat').value = img.cat;
     document.getElementById('peLabel').value = img.catLabel;
     document.getElementById('pePrice').value = img.price;
     document.getElementById('peImage').value = img.src;
-
-    /* ★ بعد بناء القائمة، اضبط القيمة ★ */
-    document.getElementById('peCat').value = img.cat;
-
+    
+    // رسم بطاقات المقاسات الموجودة
     if (img.dims && img.dims.length > 0) {
       img.dims.forEach(dim => addDimCard(dim));
     } else {
-      addDimCard();
+      addDimCard(); // إضافة بطاقة فارغة افتراضياً
     }
   } else {
     document.getElementById('prodEditorTitle').textContent = 'Yeni Model Ekle';
-    document.getElementById('peId').value    = '';
+    document.getElementById('peId').value = '';
     document.getElementById('peTitle').value = '';
+    document.getElementById('peCat').value = 'orta';
     document.getElementById('peLabel').value = '';
     document.getElementById('pePrice').value = '';
     document.getElementById('peImage').value = '';
-    addDimCard();
+    addDimCard(); // إضافة بطاقة فارغة افتراضياً
   }
-
   modal.style.display = 'flex';
 }
 
-
-
-  
 function closeProductEditor() {
   document.getElementById('productEditorModal').style.display = 'none';
 }
@@ -18056,7 +18069,7 @@ async function saveHcmCard() {
   const desc       = document.getElementById('hcmeDesc')?.value.trim();
   const countLabel = document.getElementById('hcmeCount')?.value.trim();
   const btnText    = document.getElementById('hcmeBtnText')?.value.trim();
-const sectionKey = document.getElementById('hcmeSectionKey')?.value || 'orta';
+  const sectionKey = document.getElementById('hcmeSectionKey')?.value;
   const imageUrl   = _hcmUploadedUrl ||
                      document.getElementById('hcmeImageUrl')?.value.trim() || '';
 
@@ -18066,7 +18079,10 @@ const sectionKey = document.getElementById('hcmeSectionKey')?.value || 'orta';
     document.getElementById('hcmeTitle2')?.focus();
     return;
   }
-  
+  if (!sectionKey) {
+    showInvToast('Lütfen bir bölüm seçin!', 'error');
+    return;
+  }
 
   /* تعطيل الزر */
   if (btn) {
@@ -18114,24 +18130,15 @@ const sectionKey = document.getElementById('hcmeSectionKey')?.value || 'orta';
     }
 
     if (error) throw error;
-    
-    syncHcmCardsToProductCat();
 
     showInvToast(id ? 'Kart güncellendi ✓' : 'Yeni kart eklendi ✓', 'success');
- if (typeof window._hcmSaveCallback === 'function') {
+  if (typeof window._hcmSaveCallback === 'function') {
   await window._hcmSaveCallback();
   window._hcmSaveCallback = null;
 } else {
   closeHcmEdit();
   await refreshHcmList();
 }
-
-// ★ تحديث قائمة Kategori بعد تحديث _homeCards ★
-await loadHomeCards();
-// انتظر قليلاً حتى تكتمل loadHomeCards وتُحدّث _homeCards
-setTimeout(() => syncHcmCardsToProductCat(), 300);
-
-
 
   } catch(e) {
     console.error('[HomeCards] kaydetme hatası:', e);
@@ -18467,7 +18474,6 @@ finishLogin = function() {
 
     /* ★ تحميل البطاقات بعد اكتمال الـ animation (500ms) + هامش أمان ★ */
     await loadHomeCards();        /* ← لن تستدعي showHomeScreen بعد الآن */
-    setTimeout(() => syncHcmCardsToProductCat(), 500); // ← أضف هذا
     subscribeHomeCards();
     await loadLogoFromDB();        /* ← أضف هذا السطر هنا */
     await loadOgSettings();
@@ -23795,65 +23801,6 @@ async function openHcmEditInPage(cardId) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-  /* ============================================================
-   ★ مزامنة بطاقات الهوم مع قائمة Kategori في إضافة موديل ★
-============================================================ */
-function syncHcmCardsToProductCat() {
-  const select = document.getElementById('peCat');
-  if (!select) return;
-
-  /* الفئات الثابتة */
-  const staticCats = [
-    { value: 'orta',    label: 'Orta Sehpa' },
-    { value: 'tv',      label: 'TV Ünitesi' },
-    { value: 'dresuar', label: 'Dresuar'    },
-  ];
-
-  /* الفئات المحظورة */
-  const excluded = [
-    'admin', 'settings', 'users_panel',
-    'stock_panel', 'messages', 'user_preview',
-    'stock', 'orders'
-  ];
-
-  /* البطاقات الديناميكية من _homeCards */
-  const dynamicCats = (_homeCards || [])
-    .filter(card =>
-      card.is_active !== false &&
-      card.section_key &&
-      !excluded.includes(card.section_key) &&
-      !staticCats.find(s => s.value === card.section_key)
-    )
-    .map(card => ({
-      value : card.section_key,
-      label : (card.title || '') +
-              (card.subtitle ? ' ' + card.subtitle : '') ||
-              card.section_key,
-    }));
-
-  console.log('[syncHcmCardsToProductCat] dynamic:', dynamicCats);
-
-  const allCats = [...staticCats, ...dynamicCats];
-  const currentVal = select.value;
-
-  select.innerHTML = allCats
-    .map(c => `<option value="${c.value}">${c.label}</option>`)
-    .join('');
-
-  if (allCats.find(c => c.value === currentVal)) {
-    select.value = currentVal;
-  }
-}
 
   
   
