@@ -17399,7 +17399,7 @@ function buildSettingsPage() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">
 
           <!-- بطاقة الكروت -->
-          <div onclick="openHomeCardsModal()" style="
+          <div onclick="showPage('card_manager')" style="
             background:rgba(255,255,255,0.025);
             border:1px solid rgba(255,255,255,0.07);
             border-radius:12px;padding:13px 14px;
@@ -18061,8 +18061,13 @@ async function saveHcmCard() {
     if (error) throw error;
 
     showInvToast(id ? 'Kart güncellendi ✓' : 'Yeni kart eklendi ✓', 'success');
-    closeHcmEdit();
-    await refreshHcmList();
+    if (typeof window._hcmSaveCallback === 'function') {
+  await window._hcmSaveCallback();
+  window._hcmSaveCallback = null;
+} else {
+  closeHcmEdit();
+  await refreshHcmList();
+}
 
   } catch(e) {
     console.error('[HomeCards] kaydetme hatası:', e);
@@ -19445,12 +19450,28 @@ async function saveAppTexts() {
 
 
 
-  /* ============================================================
-   ★ ربط صفحة الإعدادات بنظام التنقل (showPage) ★
-============================================================ */
+/* ── صفحة إدارة البطاقات المدمجة ── */
+const _origShowPage_cardMgr = showPage;
+showPage = function(cat) {
+  if (cat === 'card_manager') {
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
+    currentPage = 'card_manager';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    filteredImages = [];
+    buildCardManagerPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    appState = 'section';
+    pushState('section', { cat: 'card_manager' });
+    return;
+  }
+  _origShowPage_cardMgr(cat);
+};
+
+/* ── ربط صفحة الإعدادات بنظام التنقل (showPage) ★ */
 const _origShowPage_for_settings = showPage;
 showPage = function(cat) {
   if (cat === 'settings') {
+
     // استبدل الشرط هنا
     if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
     currentPage = 'settings';
@@ -23393,6 +23414,312 @@ async function saveOgSettings() {
         '<i class="fas fa-save"></i> KAYDET & UYGULA';
     }
   }
+}
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ صفحة إدارة البطاقات المدمجة (بدلاً من Modal) ★
+============================================================ */
+async function buildCardManagerPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <button class="section-back-btn" onclick="showPage('settings')" title="Ayarlara Dön">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <div class="section-banner-tag">✦ ANA SAYFA YÖNETİMİ</div>
+            <div class="section-banner-title">
+              KART <span class="accent">DÜZENİ</span>
+            </div>
+            <div class="section-banner-count">Sıralama & görseller</div>
+            <div class="section-banner-line"></div>
+          </div>
+        </div>
+        <button onclick="openHcmEditInPage(null)" style="
+          padding:9px 18px;border-radius:9px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:1.5px;
+          cursor:pointer;display:flex;align-items:center;gap:7px;
+          transition:all 0.25s;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform=''">
+          <i class="fas fa-plus"></i> YENİ KART
+        </button>
+      </div>
+
+      <!-- قائمة البطاقات -->
+      <div style="padding:18px 22px 40px;" id="cardMgrList">
+        <div style="text-align:center;padding:40px;">
+          <i class="fas fa-spinner fa-spin"
+             style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
+        </div>
+      </div>
+
+      <!-- ملاحظة -->
+      <div style="
+        margin:0 22px 32px;
+        background:rgba(201,168,76,0.03);
+        border:1px solid rgba(201,168,76,0.1);
+        border-radius:10px;padding:11px 13px;
+        display:flex;gap:9px;align-items:flex-start;">
+        <i class="fas fa-info-circle"
+           style="color:rgba(201,168,76,0.4);font-size:12px;
+                  margin-top:1px;flex-shrink:0;"></i>
+        <div style="font-size:10px;color:rgba(255,255,255,0.25);
+             line-height:1.7;letter-spacing:0.2px;">
+          Değişiklikler <strong style="color:rgba(255,255,255,0.4);">
+          gerçek zamanlı</strong> uygulanır.
+          Görseller Supabase Storage'a otomatik yüklenir.
+          Sıra numarası küçük olan kart <strong style="color:rgba(255,255,255,0.4);">
+          önce</strong> görünür.
+        </div>
+      </div>
+    </div>`;
+
+  await refreshCardMgrList();
+}
+
+/* ── تحديث قائمة البطاقات في الصفحة ── */
+async function refreshCardMgrList() {
+  const listEl = document.getElementById('cardMgrList');
+  if (!listEl) return;
+
+  listEl.innerHTML = `
+    <div style="text-align:center;padding:30px;">
+      <i class="fas fa-spinner fa-spin"
+         style="font-size:24px;color:rgba(201,168,76,0.4);"></i>
+    </div>`;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data, error } = await sb
+    .from(HC_TABLE)
+    .select('*')
+    .order('order_num', { ascending: true });
+
+  if (error || !data) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:30px;color:#ef4444;">
+        <i class="fas fa-exclamation-circle" style="font-size:24px;"></i>
+        <p style="margin-top:10px;font-size:11px;">Yükleme hatası</p>
+      </div>`;
+    return;
+  }
+
+  _homeCards = data.filter(c => c.is_active);
+
+  if (!data.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
+        <i class="fas fa-th-large"
+           style="font-size:36px;display:block;margin-bottom:14px;
+                  color:rgba(201,168,76,0.15);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">Henüz kart yok</p>
+        <p style="font-size:10px;margin-top:6px;color:rgba(255,255,255,0.15);">
+          "YENİ KART" butonuna tıklayın
+        </p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = data.map((card, idx) => `
+    <div class="hcm-card" id="cmcard-${card.id}"
+         style="margin-bottom:10px;">
+      <div class="hcm-card-order">${card.order_num}</div>
+      <img class="hcm-card-thumb"
+           src="${card.image_url || 'https://placehold.co/64x50/1a1a1a/c9a84c?text=W'}"
+           alt="${card.title}"
+           onerror="this.src='https://placehold.co/64x50/1a1a1a/c9a84c?text=W'"
+           draggable="false"/>
+      <div class="hcm-card-info">
+        <div class="hcm-card-title">
+          ${card.title}
+          ${card.subtitle
+            ? `<span style="color:#c9a84c;font-size:11px;">
+               ${card.subtitle}</span>`
+            : ''}
+        </div>
+        <div class="hcm-card-sub">${card.section_key}</div>
+        ${card.description
+          ? `<div class="hcm-card-desc">${card.description}</div>`
+          : ''}
+      </div>
+      <div class="hcm-card-actions">
+        <button class="hcm-action-btn up"
+                onclick="moveCardMgr(${card.id},-1)"
+                title="Yukarı"
+                ${idx === 0
+                  ? 'disabled style="opacity:0.3;cursor:not-allowed;"'
+                  : ''}>
+          <i class="fas fa-chevron-up"></i>
+        </button>
+        <button class="hcm-action-btn dn"
+                onclick="moveCardMgr(${card.id},+1)"
+                title="Aşağı"
+                ${idx === data.length - 1
+                  ? 'disabled style="opacity:0.3;cursor:not-allowed;"'
+                  : ''}>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <button class="hcm-action-btn edit"
+                onclick="openHcmEditInPage(${card.id})"
+                title="Düzenle">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="hcm-action-btn del"
+                onclick="deleteCardMgr(${card.id})"
+                title="Sil">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>`).join('');
+
+  renderHomeCards();
+}
+
+/* ── تحريك بطاقة (في الصفحة) ── */
+async function moveCardMgr(cardId, direction) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: allCards } = await sb
+    .from(HC_TABLE)
+    .select('id, order_num')
+    .order('order_num', { ascending: true });
+
+  if (!allCards) return;
+
+  const idx = allCards.findIndex(c => c.id === cardId);
+  if (idx === -1) return;
+
+  const swapIdx = idx + direction;
+  if (swapIdx < 0 || swapIdx >= allCards.length) return;
+
+  const cardA = allCards[idx];
+  const cardB = allCards[swapIdx];
+
+  await Promise.all([
+    sb.from(HC_TABLE).update({ order_num: cardB.order_num }).eq('id', cardA.id),
+    sb.from(HC_TABLE).update({ order_num: cardA.order_num }).eq('id', cardB.id),
+  ]);
+
+  await refreshCardMgrList();
+  showInvToast('Sıralama güncellendi ✓', 'success');
+}
+
+/* ── حذف بطاقة (في الصفحة) ── */
+async function deleteCardMgr(cardId) {
+  const confirmed = await showDeleteConfirm();
+  if (!confirmed) return;
+
+  const card = document.getElementById('cmcard-' + cardId);
+  if (card) {
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity    = '0.4';
+    card.style.transform  = 'scale(0.97)';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from(HC_TABLE)
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq('id', cardId);
+
+  if (error) {
+    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
+    showInvToast('Silme hatası: ' + error.message, 'error');
+    return;
+  }
+
+  if (card) {
+    card.style.maxHeight    = card.offsetHeight + 'px';
+    card.style.overflow     = 'hidden';
+    requestAnimationFrame(() => {
+      card.style.transition   = 'all 0.4s ease';
+      card.style.maxHeight    = '0';
+      card.style.opacity      = '0';
+      card.style.marginBottom = '0';
+      card.style.padding      = '0';
+      card.style.border       = 'none';
+      setTimeout(() => card.remove(), 420);
+    });
+  }
+
+  _homeCards = _homeCards.filter(c => c.id !== cardId);
+  renderHomeCards();
+  showInvToast('Kart silindi ✓', 'success');
+}
+
+/* ── فتح نافذة التعديل من الصفحة ── */
+async function openHcmEditInPage(cardId) {
+  /* نستخدم نفس نافذة hcmEditModal الموجودة */
+  _hcmEditingId   = cardId;
+  _hcmUploadedUrl = '';
+
+  const titleEl = document.getElementById('hcmeTitle');
+  if (titleEl) titleEl.textContent = cardId ? 'Kartı Düzenle' : 'Yeni Kart Ekle';
+
+  ['hcmeId','hcmeOrder','hcmeTitle2','hcmeSubtitle',
+   'hcmeDesc','hcmeCount','hcmeBtnText','hcmeImageUrl'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  clearHcmeImage();
+
+  if (cardId) {
+    const sb = await initSupabase();
+    if (!sb) return;
+    const { data } = await sb
+      .from(HC_TABLE).select('*').eq('id', cardId).single();
+    if (data) {
+      document.getElementById('hcmeId').value         = data.id;
+      document.getElementById('hcmeOrder').value      = data.order_num;
+      document.getElementById('hcmeTitle2').value     = data.title;
+      document.getElementById('hcmeSubtitle').value   = data.subtitle || '';
+      document.getElementById('hcmeDesc').value       = data.description || '';
+      document.getElementById('hcmeCount').value      = data.count_label || '';
+      document.getElementById('hcmeBtnText').value    = data.btn_text || '';
+      document.getElementById('hcmeImageUrl').value   = data.image_url || '';
+      document.getElementById('hcmeSectionKey').value = data.section_key || 'orta';
+      if (data.image_url) {
+        _hcmUploadedUrl = data.image_url;
+        showHcmeImagePreview(data.image_url);
+      }
+    }
+  } else {
+    const maxOrder = _homeCards.length > 0
+      ? Math.max(..._homeCards.map(c => c.order_num)) + 1
+      : 1;
+    document.getElementById('hcmeOrder').value   = maxOrder;
+    document.getElementById('hcmeBtnText').value = 'Koleksiyonu Gör';
+  }
+
+  /* ★ بعد الحفظ نعود للصفحة بدلاً من إغلاق Modal ★ */
+  window._hcmSaveCallback = async () => {
+    document.getElementById('hcmEditModal').classList.remove('active');
+    document.body.style.overflow = '';
+    _hcmEditingId   = null;
+    _hcmUploadedUrl = '';
+    clearHcmeImage();
+    await refreshCardMgrList();
+  };
+
+  document.getElementById('hcmEditModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
 }
 
 
