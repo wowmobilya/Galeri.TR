@@ -1668,7 +1668,10 @@ html { scroll-behavior: auto; }
 
 
 
- /* =====================================================
+
+    
+
+/* =====================================================
    HOME CARDS MANAGER — نافذة إدارة البطاقات
 ===================================================== */
 #homeCardsModal {
@@ -2023,13 +2026,7 @@ body.wow-mode .mobile-menu {
 
 
 
-
-
-
-
-
-
-
+    
     
     
 
@@ -17402,7 +17399,7 @@ function buildSettingsPage() {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;">
 
           <!-- بطاقة الكروت -->
-          <div onclick="showPage('card_manager')" style="
+           <div onclick="showPage('card_manager')" style="
             background:rgba(255,255,255,0.025);
             border:1px solid rgba(255,255,255,0.07);
             border-radius:12px;padding:13px 14px;
@@ -18064,7 +18061,7 @@ async function saveHcmCard() {
     if (error) throw error;
 
     showInvToast(id ? 'Kart güncellendi ✓' : 'Yeni kart eklendi ✓', 'success');
-    if (typeof window._hcmSaveCallback === 'function') {
+  if (typeof window._hcmSaveCallback === 'function') {
   await window._hcmSaveCallback();
   window._hcmSaveCallback = null;
 } else {
@@ -18173,6 +18170,7 @@ showPage = function(cat) {
   _origShowPage_stock(cat);
 };
 
+  
 /* ── دعم enterSection لـ stock ── */
 const _origEnterSection_stock = enterSection;
 enterSection = function(cat) {
@@ -19453,6 +19451,9 @@ async function saveAppTexts() {
 
 
 
+  /* ============================================================
+   ★ ربط صفحة الإعدادات بنظام التنقل (showPage) ★
+============================================================ */
 /* ── صفحة إدارة البطاقات المدمجة ── */
 const _origShowPage_cardMgr = showPage;
 showPage = function(cat) {
@@ -19470,7 +19471,6 @@ showPage = function(cat) {
   _origShowPage_cardMgr(cat);
 };
 
-/* ── ربط صفحة الإعدادات بنظام التنقل (showPage) ★ */
 const _origShowPage_for_settings = showPage;
 showPage = function(cat) {
   if (cat === 'settings') {
@@ -23428,6 +23428,8 @@ async function saveOgSettings() {
 
 
 
+
+
 /* ============================================================
    ★ صفحة إدارة البطاقات المدمجة (بدلاً من Modal) ★
 ============================================================ */
@@ -23546,15 +23548,14 @@ async function refreshCardMgrList() {
            alt="${card.title}"
            onerror="this.src='https://placehold.co/64x50/1a1a1a/c9a84c?text=W'"
            draggable="false"/>
-    <div class="hcm-card-title">
-  ${card.title}
-  ${card.subtitle
-    ? `<span style="color:#c9a84c;font-size:11px;">
-       ${card.subtitle}</span>`
-    : ''}
-</div>
-
-
+      <div class="hcm-card-info">
+        <div class="hcm-card-title">
+          ${card.title}
+          ${card.subtitle
+            ? `<span style="color:#c9a84c;font-size:11px;">
+               ${card.subtitle}</span>`
+            : ''}
+        </div>
         <div class="hcm-card-sub">${card.section_key}</div>
         ${card.description
           ? `<div class="hcm-card-desc">${card.description}</div>`
@@ -23727,6 +23728,10 @@ async function openHcmEditInPage(cardId) {
 }
 
 
+
+
+
+  
   
 
 </script>
