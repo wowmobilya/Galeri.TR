@@ -17432,6 +17432,49 @@ function buildSettingsPage() {
                style="color:rgba(201,168,76,0.35);font-size:11px;flex-shrink:0;"></i>
           </div>
 
+
+
+
+
+<!-- بطاقة OG Image -->
+<div onclick="openOgImageModal()" style="
+  background:rgba(255,255,255,0.025);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px;padding:13px 14px;
+  cursor:pointer;transition:all 0.25s ease;
+  display:flex;align-items:center;gap:11px;"
+  onmouseover="this.style.background='rgba(201,168,76,0.06)';
+    this.style.borderColor='rgba(201,168,76,0.25)';
+    this.style.transform='translateY(-2px)'"
+  onmouseout="this.style.background='rgba(255,255,255,0.025)';
+    this.style.borderColor='rgba(255,255,255,0.07)';
+    this.style.transform=''">
+  <div style="
+    width:36px;height:36px;flex-shrink:0;border-radius:10px;
+    background:linear-gradient(135deg,
+      rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+    border:1px solid rgba(201,168,76,0.3);
+    display:flex;align-items:center;justify-content:center;
+    color:#c9a84c;font-size:15px;">
+    <i class="fas fa-share-alt"></i>
+  </div>
+  <div style="flex:1;min-width:0;">
+    <div style="font-size:12px;font-weight:900;color:#fff;
+         margin-bottom:2px;">Paylaşım Görseli</div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.28);
+         letter-spacing:0.5px;line-height:1.4;">
+      WhatsApp · Telegram · PWA OG Image
+    </div>
+  </div>
+  <i class="fas fa-chevron-right"
+     style="color:rgba(201,168,76,0.35);
+            font-size:11px;flex-shrink:0;"></i>
+</div>
+
+
+
+
+
           <!-- بطاقة اللوجو -->
           <div onclick="openLogoModal()" style="
             background:rgba(255,255,255,0.025);
@@ -18356,6 +18399,7 @@ finishLogin = function() {
     await loadHomeCards();        /* ← لن تستدعي showHomeScreen بعد الآن */
     subscribeHomeCards();
     await loadLogoFromDB();        /* ← أضف هذا السطر هنا */
+    await loadOgSettings();
 
 
     if (currentUser === ADMIN_USER) updateMsgBadge();
@@ -22346,6 +22390,1010 @@ async function siLoadData() {
   }
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  /* ============================================================
+   ★ نظام OG Image الكامل — صورة المشاركة + PWA ★
+============================================================ */
+
+/* ── تحميل إعدادات OG من Supabase ── */
+async function loadOgSettings() {
+  /* أولاً: تطبيق من localStorage فوراً */
+  try {
+    const cachedImg   = localStorage.getItem('wow_og_image');
+    const cachedTitle = localStorage.getItem('wow_og_title');
+    const cachedDesc  = localStorage.getItem('wow_og_description');
+    if (cachedImg)   applyOgImage(cachedImg,  false);
+    if (cachedTitle) applyOgText('og:title',       cachedTitle);
+    if (cachedDesc)  applyOgText('og:description', cachedDesc);
+  } catch(e) {}
+
+  /* ثانياً: جلب من Supabase */
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  try {
+    const { data } = await sb
+      .from('app_settings')
+      .select('key, value')
+      .in('key', ['og_image', 'og_title', 'og_description']);
+
+    if (!data) return;
+
+    const settings = {};
+    data.forEach(row => { settings[row.key] = row.value; });
+
+    if (settings.og_image)       applyOgImage(settings.og_image, false);
+    if (settings.og_title)       applyOgText('og:title',       settings.og_title);
+    if (settings.og_description) applyOgText('og:description', settings.og_description);
+
+    /* حفظ في localStorage */
+    try {
+      if (settings.og_image)       localStorage.setItem('wow_og_image',       settings.og_image);
+      if (settings.og_title)       localStorage.setItem('wow_og_title',       settings.og_title);
+      if (settings.og_description) localStorage.setItem('wow_og_description', settings.og_description);
+    } catch(e) {}
+
+  } catch(e) {
+    console.warn('[OG Settings]', e);
+  }
+}
+
+/* ── تطبيق صورة OG مع كسر الكاش ── */
+function applyOgImage(url, bustCache = true) {
+  if (!url) return;
+
+  /* ★ كسر الكاش بإضافة timestamp عند الحفظ فقط ★ */
+  const finalUrl = bustCache
+    ? (url.includes('?')
+        ? url + '&ogv=' + Date.now()
+        : url + '?ogv=' + Date.now())
+    : url;
+
+  /* ── 1. og:image ── */
+  let el = document.querySelector('meta[property="og:image"]');
+  if (el) el.setAttribute('content', finalUrl);
+
+  /* ── 2. og:image:width و height ── */
+  el = document.querySelector('meta[property="og:image:width"]');
+  if (el) el.setAttribute('content', '1200');
+  el = document.querySelector('meta[property="og:image:height"]');
+  if (el) el.setAttribute('content', '630');
+
+  /* ── 3. twitter:image ── */
+  el = document.querySelector('meta[name="twitter:image"]');
+  if (el) el.setAttribute('content', finalUrl);
+
+  /* ── 4. apple-touch-icon ── */
+  el = document.querySelector('link[rel="apple-touch-icon"]');
+  if (el) el.href = url + '?t=' + Date.now();
+
+  /* ── 5. favicon ── */
+  el = document.querySelector('link[rel="icon"]');
+  if (!el) {
+    el = document.createElement('link');
+    el.rel = 'icon';
+    document.head.appendChild(el);
+  }
+  el.href = url + '?t=' + Date.now();
+
+  /* ── 6. ★ تحديث manifest.json ديناميكياً ★ ── */
+  updateManifestIcons(url);
+
+  try { localStorage.setItem('wow_og_image', url); } catch(e) {}
+  console.log('[OG Image] ✅ طُبِّق:', finalUrl);
+}
+
+/* ── تطبيق نص OG ── */
+function applyOgText(property, value) {
+  if (!value) return;
+  const el = document.querySelector(`meta[property="${property}"]`);
+  if (el) el.setAttribute('content', value);
+}
+
+/* ============================================================
+   ★ تحديث manifest.json ديناميكياً عبر Blob URL ★
+============================================================ */
+function updateManifestIcons(iconUrl) {
+  if (!iconUrl) return;
+
+  const newManifest = {
+    name             : 'WOW MOBİLYA',
+    short_name       : 'WOW MOBİLYA',
+    description      : 'TV Ünitesi · Orta Sehpa · Dresuar — Lüks ve kaliteli mobilya modelleri',
+    start_url        : './',
+    display          : 'standalone',
+    background_color : '#0a0a0a',
+    theme_color      : '#c9a84c',
+    orientation      : 'portrait-primary',
+    lang             : 'tr',
+    categories       : ['shopping', 'lifestyle'],
+    scope            : './',
+    icons: [
+      {
+        src     : iconUrl,
+        sizes   : '192x192',
+        type    : 'image/png',
+        purpose : 'any maskable'
+      },
+      {
+        src     : iconUrl,
+        sizes   : '512x512',
+        type    : 'image/png',
+        purpose : 'any maskable'
+      }
+    ],
+    screenshots: [
+      {
+        src         : iconUrl,
+        sizes       : '1200x630',
+        type        : 'image/png',
+        form_factor : 'wide'
+      }
+    ]
+  };
+
+  try {
+    const blob    = new Blob(
+      [JSON.stringify(newManifest)],
+      { type: 'application/json' }
+    );
+    const blobUrl = URL.createObjectURL(blob);
+
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+      manifestLink     = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.head.appendChild(manifestLink);
+    }
+
+    /* تحرير الرابط القديم */
+    if (manifestLink.href && manifestLink.href.startsWith('blob:')) {
+      URL.revokeObjectURL(manifestLink.href);
+    }
+
+    manifestLink.href = blobUrl;
+    console.log('[Manifest] ✅ أيقونة PWA محدّثة ديناميكياً');
+
+  } catch(e) {
+    console.warn('[Manifest] تعذّر التحديث:', e);
+  }
+}
+
+/* ============================================================
+   ★ نافذة إدارة OG Image الكاملة ★
+============================================================ */
+function openOgImageModal() {
+  document.getElementById('ogImageModal')?.remove();
+
+  const currentOg    = localStorage.getItem('wow_og_image')
+                    || 'https://up6.cc/2026/04/177712738518231.png';
+  const currentTitle = localStorage.getItem('wow_og_title')
+                    || 'WOW MOBİLYA — FOTOĞRAF GALERİSİ';
+  const currentDesc  = localStorage.getItem('wow_og_description')
+                    || 'TV Ünitesi · Orta Sehpa · Dresuar — Lüks ve kaliteli mobilya modellerini keşfedin. 🇹🇷';
+
+  const modal = document.createElement('div');
+  modal.id = 'ogImageModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:8500;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    padding:16px;`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:520px;
+      background:linear-gradient(145deg,#0f0f0f,#161616);
+      border:1px solid rgba(201,168,76,0.25);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.8),
+                 0 0 60px rgba(201,168,76,0.06);
+      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      max-height:92vh;overflow-y:auto;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(201,168,76,0.3) transparent;">
+
+      <!-- خط ذهبي علوي -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+        flex-shrink:0;"></div>
+
+      <!-- ══ الهيدر ══ -->
+      <div style="
+        padding:18px 20px 14px;
+        display:flex;align-items:center;justify-content:space-between;
+        border-bottom:1px solid rgba(255,255,255,0.05);
+        position:sticky;top:0;
+        background:linear-gradient(145deg,#0f0f0f,#161616);
+        z-index:2;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="
+            width:44px;height:44px;flex-shrink:0;
+            background:linear-gradient(135deg,
+              rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+            border:1px solid rgba(201,168,76,0.3);
+            border-radius:12px;
+            display:flex;align-items:center;justify-content:center;
+            color:#c9a84c;font-size:18px;">
+            <i class="fas fa-share-alt"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(201,168,76,0.55);
+                 text-transform:uppercase;margin-bottom:3px;">
+              PAYLAŞIM YÖNETİMİ
+            </div>
+            <div style="font-size:16px;font-weight:900;color:#fff;">
+              OG Image Ayarları
+            </div>
+          </div>
+        </div>
+        <div onclick="closeOgImageModal()" style="
+          width:32px;height:32px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);
+          border-radius:8px;color:rgba(255,255,255,0.3);
+          font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';
+                       this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                      this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <!-- ══ الجسم ══ -->
+      <div style="padding:18px 20px 22px;
+           display:flex;flex-direction:column;gap:16px;">
+
+        <!-- ── معاينة بطاقة المشاركة ── -->
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.2);font-weight:700;
+               text-transform:uppercase;margin-bottom:8px;
+               display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-eye"
+               style="color:rgba(201,168,76,0.4);"></i>
+            PAYLAŞIM ÖNİZLEMESİ
+            <span style="font-size:8px;color:rgba(255,255,255,0.15);
+                  letter-spacing:1px;font-weight:400;">
+              — WhatsApp · Telegram · Twitter
+            </span>
+          </div>
+
+          <!-- بطاقة المشاركة المحاكاة -->
+          <div style="
+            background:#1a1a2e;
+            border-radius:12px;overflow:hidden;
+            border:1px solid rgba(255,255,255,0.08);
+            box-shadow:0 8px 24px rgba(0,0,0,0.4);">
+
+            <!-- الصورة -->
+            <div style="
+              position:relative;height:150px;
+              overflow:hidden;background:#0d0d1a;">
+              <img id="ogPreviewImg"
+                   src="${currentOg}"
+                   alt="OG Preview"
+                   style="width:100%;height:100%;object-fit:cover;
+                          display:block;transition:opacity 0.3s;"
+                   onerror="this.style.opacity='0.15'"/>
+              <!-- شارة الحجم -->
+              <div style="
+                position:absolute;bottom:7px;right:7px;
+                background:rgba(0,0,0,0.75);
+                border:1px solid rgba(255,255,255,0.1);
+                border-radius:5px;padding:3px 9px;
+                font-size:9px;color:rgba(255,255,255,0.45);
+                backdrop-filter:blur(8px);">
+                1200 × 630 px
+              </div>
+              <!-- شارات المنصات -->
+              <div style="
+                position:absolute;top:7px;left:7px;
+                display:flex;gap:5px;">
+                <div style="
+                  background:rgba(37,211,102,0.85);
+                  border-radius:5px;padding:3px 8px;
+                  font-size:8px;font-weight:700;color:#fff;
+                  display:flex;align-items:center;gap:4px;">
+                  <i class="fab fa-whatsapp"
+                     style="font-size:10px;"></i> WA
+                </div>
+                <div style="
+                  background:rgba(38,120,206,0.85);
+                  border-radius:5px;padding:3px 8px;
+                  font-size:8px;font-weight:700;color:#fff;
+                  display:flex;align-items:center;gap:4px;">
+                  <i class="fab fa-telegram"
+                     style="font-size:10px;"></i> TG
+                </div>
+                <div style="
+                  background:rgba(201,168,76,0.85);
+                  border-radius:5px;padding:3px 8px;
+                  font-size:8px;font-weight:700;color:#0a0a0a;
+                  display:flex;align-items:center;gap:4px;">
+                  <i class="fas fa-mobile-alt"
+                     style="font-size:10px;"></i> PWA
+                </div>
+              </div>
+            </div>
+
+            <!-- النصوص -->
+            <div style="padding:11px 13px;background:#1e1e30;">
+              <div id="ogPreviewTitle" style="
+                font-size:12px;font-weight:700;color:#fff;
+                margin-bottom:4px;line-height:1.3;
+                white-space:nowrap;overflow:hidden;
+                text-overflow:ellipsis;">
+                ${currentTitle}
+              </div>
+              <div id="ogPreviewDesc" style="
+                font-size:10px;color:rgba(255,255,255,0.4);
+                line-height:1.5;
+                display:-webkit-box;
+                -webkit-line-clamp:2;
+                -webkit-box-orient:vertical;
+                overflow:hidden;">
+                ${currentDesc}
+              </div>
+              <div style="
+                font-size:9px;color:rgba(255,255,255,0.18);
+                margin-top:6px;
+                display:flex;align-items:center;gap:4px;">
+                <i class="fas fa-link"
+                   style="font-size:8px;"></i>
+                wowmobilya.github.io
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── صورة OG ── -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;
+               margin-bottom:8px;display:block;">
+            <i class="fas fa-image"
+               style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+            PAYLAŞIM GÖRSELİ
+            <span style="font-size:8px;color:rgba(255,255,255,0.15);
+                  font-weight:400;letter-spacing:1px;">
+              — WhatsApp · Telegram · PWA icon
+            </span>
+          </label>
+
+          <!-- أزرار الرفع -->
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+
+            <!-- من المعرض -->
+            <label style="flex:1;cursor:pointer;">
+              <input type="file" id="ogFileGallery"
+                accept="image/*"
+                onchange="handleOgFileUpload(this)"
+                style="display:none;"/>
+              <div style="
+                padding:11px 8px;border-radius:9px;
+                border:1px solid rgba(201,168,76,0.2);
+                background:rgba(201,168,76,0.06);
+                color:rgba(201,168,76,0.7);
+                font-family:'Montserrat',sans-serif;
+                font-size:9px;font-weight:700;letter-spacing:1px;
+                text-align:center;transition:all 0.25s;
+                display:flex;flex-direction:column;
+                align-items:center;gap:5px;"
+                onmouseover="this.style.background='rgba(201,168,76,0.14)'"
+                onmouseout="this.style.background='rgba(201,168,76,0.06)'">
+                <i class="fas fa-images"
+                   style="font-size:20px;"></i>
+                GALERİ
+              </div>
+            </label>
+
+            <!-- من الكاميرا -->
+            <label style="flex:1;cursor:pointer;">
+              <input type="file" id="ogFileCamera"
+                accept="image/*" capture="environment"
+                onchange="handleOgFileUpload(this)"
+                style="display:none;"/>
+              <div style="
+                padding:11px 8px;border-radius:9px;
+                border:1px solid rgba(96,165,250,0.2);
+                background:rgba(96,165,250,0.06);
+                color:rgba(96,165,250,0.7);
+                font-family:'Montserrat',sans-serif;
+                font-size:9px;font-weight:700;letter-spacing:1px;
+                text-align:center;transition:all 0.25s;
+                display:flex;flex-direction:column;
+                align-items:center;gap:5px;"
+                onmouseover="this.style.background='rgba(96,165,250,0.14)'"
+                onmouseout="this.style.background='rgba(96,165,250,0.06)'">
+                <i class="fas fa-camera"
+                   style="font-size:20px;"></i>
+                KAMERA
+              </div>
+            </label>
+
+          </div>
+
+          <!-- حقل URL -->
+          <div style="position:relative;">
+            <i class="fas fa-link" style="
+              position:absolute;left:12px;top:50%;
+              transform:translateY(-50%);
+              color:rgba(201,168,76,0.5);font-size:13px;
+              pointer-events:none;"></i>
+            <input type="url" id="ogImageUrlInput"
+              placeholder="https://... (Görsel URL)"
+              value="${currentOg}"
+              oninput="onOgUrlInput(this.value)"
+              style="
+                width:100%;padding:11px 13px 11px 36px;
+                background:rgba(255,255,255,0.04);
+                border:1px solid rgba(201,168,76,0.2);
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:11px;outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor=
+                          'rgba(201,168,76,0.2)'"/>
+          </div>
+
+          <!-- شريط تقدم الرفع -->
+          <div id="ogUploadProgress"
+               style="display:none;margin-top:8px;">
+            <div style="
+              display:flex;align-items:center;
+              justify-content:space-between;margin-bottom:5px;">
+              <span style="font-size:9px;
+                    color:rgba(255,255,255,0.3);letter-spacing:1px;">
+                <i class="fas fa-cloud-upload-alt"
+                   style="color:rgba(201,168,76,0.5);
+                          margin-right:4px;"></i>
+                Supabase'e yükleniyor...
+              </span>
+              <span id="ogUploadPct"
+                    style="font-size:10px;font-weight:700;
+                           color:#c9a84c;">0%</span>
+            </div>
+            <div style="height:4px;
+                 background:rgba(255,255,255,0.06);
+                 border-radius:4px;overflow:hidden;">
+              <div id="ogUploadBar" style="
+                height:100%;width:0%;
+                background:linear-gradient(90deg,#c9a84c,#f0d080);
+                border-radius:4px;transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── عنوان OG ── -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;
+               margin-bottom:6px;display:block;">
+            <i class="fas fa-heading"
+               style="color:rgba(201,168,76,0.5);
+                      margin-right:5px;"></i>
+            BAŞLIK (og:title)
+          </label>
+          <input type="text" id="ogTitleInput"
+            placeholder="WOW MOBİLYA — FOTOĞRAF GALERİSİ"
+            value="${currentTitle}"
+            maxlength="100"
+            oninput="document.getElementById('ogPreviewTitle')
+                       .textContent=this.value||''"
+            style="
+              width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:12px;outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;
+              box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor=
+                        'rgba(201,168,76,0.2)'"/>
+        </div>
+
+        <!-- ── وصف OG ── -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;
+               margin-bottom:6px;display:block;">
+            <i class="fas fa-align-left"
+               style="color:rgba(201,168,76,0.5);
+                      margin-right:5px;"></i>
+            AÇIKLAMA (og:description)
+          </label>
+          <textarea id="ogDescInput"
+            placeholder="TV Ünitesi · Orta Sehpa · Dresuar..."
+            maxlength="200"
+            rows="2"
+            oninput="document.getElementById('ogPreviewDesc')
+                       .textContent=this.value||''"
+            style="
+              width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:12px;outline:none;transition:all 0.3s;
+              resize:none;
+              -webkit-user-select:text;user-select:text;
+              box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor=
+                        'rgba(201,168,76,0.2)'"
+          >${currentDesc}</textarea>
+        </div>
+
+        <!-- ── قسم مسح الكاش ── -->
+        <div style="
+          background:rgba(37,211,102,0.04);
+          border:1px solid rgba(37,211,102,0.15);
+          border-radius:12px;padding:14px 15px;">
+
+          <div style="font-size:9px;letter-spacing:2px;
+               color:rgba(37,211,102,0.6);font-weight:700;
+               text-transform:uppercase;margin-bottom:10px;
+               display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-broom"
+               style="font-size:11px;"></i>
+            ÖNBELLEK TEMİZLEME
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+
+            <!-- Facebook/WhatsApp Debugger -->
+            <a href="https://developers.facebook.com/tools/debug/"
+               target="_blank" rel="noopener"
+               style="
+                 flex:1;min-width:130px;
+                 padding:9px 12px;border-radius:9px;
+                 background:rgba(24,119,242,0.1);
+                 border:1px solid rgba(24,119,242,0.25);
+                 color:#60a5fa;
+                 font-family:'Montserrat',sans-serif;
+                 font-size:9px;font-weight:700;
+                 letter-spacing:0.5px;
+                 text-decoration:none;transition:all 0.25s;
+                 display:flex;align-items:center;gap:7px;"
+               onmouseover="this.style.background=
+                             'rgba(24,119,242,0.18)'"
+               onmouseout="this.style.background=
+                            'rgba(24,119,242,0.1)'">
+              <i class="fab fa-facebook"
+                 style="font-size:14px;"></i>
+              <div>
+                <div>WhatsApp Cache</div>
+                <div style="font-size:8px;
+                     color:rgba(255,255,255,0.25);
+                     margin-top:1px;">FB Debugger</div>
+              </div>
+            </a>
+
+            <!-- Telegram WebpageBot -->
+            <a href="https://t.me/WebpageBot"
+               target="_blank" rel="noopener"
+               style="
+                 flex:1;min-width:130px;
+                 padding:9px 12px;border-radius:9px;
+                 background:rgba(38,120,206,0.1);
+                 border:1px solid rgba(38,120,206,0.25);
+                 color:#60a5fa;
+                 font-family:'Montserrat',sans-serif;
+                 font-size:9px;font-weight:700;
+                 letter-spacing:0.5px;
+                 text-decoration:none;transition:all 0.25s;
+                 display:flex;align-items:center;gap:7px;"
+               onmouseover="this.style.background=
+                             'rgba(38,120,206,0.18)'"
+               onmouseout="this.style.background=
+                            'rgba(38,120,206,0.1)'">
+              <i class="fab fa-telegram"
+                 style="font-size:14px;"></i>
+              <div>
+                <div>Telegram Cache</div>
+                <div style="font-size:8px;
+                     color:rgba(255,255,255,0.25);
+                     margin-top:1px;">@WebpageBot</div>
+              </div>
+            </a>
+
+            <!-- OG Debugger -->
+            <a href="https://opengraphexamples.com/open-graph-debugger/"
+               target="_blank" rel="noopener"
+               style="
+                 flex:1;min-width:130px;
+                 padding:9px 12px;border-radius:9px;
+                 background:rgba(201,168,76,0.08);
+                 border:1px solid rgba(201,168,76,0.2);
+                 color:#c9a84c;
+                 font-family:'Montserrat',sans-serif;
+                 font-size:9px;font-weight:700;
+                 letter-spacing:0.5px;
+                 text-decoration:none;transition:all 0.25s;
+                 display:flex;align-items:center;gap:7px;"
+               onmouseover="this.style.background=
+                             'rgba(201,168,76,0.16)'"
+               onmouseout="this.style.background=
+                            'rgba(201,168,76,0.08)'">
+              <i class="fas fa-search"
+                 style="font-size:13px;"></i>
+              <div>
+                <div>OG Debugger</div>
+                <div style="font-size:8px;
+                     color:rgba(255,255,255,0.25);
+                     margin-top:1px;">Önizleme Test</div>
+              </div>
+            </a>
+
+          </div>
+
+          <div style="
+            margin-top:10px;font-size:9px;
+            color:rgba(255,255,255,0.2);line-height:1.7;
+            display:flex;gap:7px;align-items:flex-start;">
+            <i class="fas fa-info-circle"
+               style="color:rgba(37,211,102,0.4);
+                      margin-top:1px;flex-shrink:0;"></i>
+            <span>
+              Kaydetmek otomatik olarak
+              <strong style="color:rgba(255,255,255,0.35);">
+              ?ogv= timestamp</strong> ekler.
+              WhatsApp için FB Debugger'da
+              <strong style="color:rgba(255,255,255,0.35);">
+              "Scrape Again"</strong> butonuna 2 kez basın.
+              Telegram için
+              <strong style="color:rgba(255,255,255,0.35);">
+              @WebpageBot</strong>'a linki gönderin.
+            </span>
+          </div>
+        </div>
+
+        <!-- ── تحذير ── -->
+        <div style="
+          background:rgba(251,191,36,0.05);
+          border:1px solid rgba(251,191,36,0.15);
+          border-radius:10px;padding:11px 13px;
+          display:flex;gap:9px;align-items:flex-start;">
+          <i class="fas fa-exclamation-triangle"
+             style="color:#fbbf24;font-size:12px;
+                    margin-top:1px;flex-shrink:0;"></i>
+          <div style="font-size:10px;
+               color:rgba(255,255,255,0.3);line-height:1.7;">
+            Görsel boyutu
+            <strong style="color:rgba(255,255,255,0.5);">
+            1200×630 px</strong>
+            olması önerilir. Değişiklikler
+            <strong style="color:rgba(255,255,255,0.5);">
+            anında</strong>
+            uygulanır. PWA ikonu yeni kurulumda güncellenir.
+            WhatsApp/Telegram önbelleği
+            <strong style="color:#fbbf24;">5-30 dakika</strong>
+            içinde güncellenir.
+          </div>
+        </div>
+
+        <!-- ── رسالة الحالة ── -->
+        <div id="ogStatusMsg" style="
+          display:none;padding:10px 14px;
+          border-radius:9px;font-size:11px;font-weight:700;
+          text-align:center;
+          font-family:'Montserrat',sans-serif;"></div>
+
+        <!-- ── أزرار ── -->
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeOgImageModal()" style="
+            flex:1;padding:13px;border-radius:10px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background=
+                         'rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background=
+                        'rgba(255,255,255,0.04)'">
+            İPTAL
+          </button>
+          <button onclick="saveOgSettings()"
+                  id="ogSaveBtn" style="
+            flex:2;padding:13px;border-radius:10px;border:none;
+            background:linear-gradient(135deg,#c9a84c,#f0d080);
+            color:#0a0a0a;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:2px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;
+            justify-content:center;gap:7px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+              this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+            onmouseout="this.style.transform='';
+                        this.style.boxShadow=''">
+            <i class="fas fa-save"></i> KAYDET & UYGULA
+          </button>
+        </div>
+
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeOgImageModal();
+  });
+}
+
+/* ── إغلاق النافذة ── */
+function closeOgImageModal() {
+  document.getElementById('ogImageModal')?.remove();
+}
+
+/* ── عند إدخال URL يدوياً ── */
+function onOgUrlInput(val) {
+  const preview = document.getElementById('ogPreviewImg');
+  if (!preview) return;
+  if (val.trim()) {
+    preview.src           = val.trim();
+    preview.style.opacity = '1';
+  }
+}
+
+/* ── رفع صورة OG لـ Supabase Storage ── */
+async function handleOgFileUpload(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showInvToast('Lütfen bir görsel dosyası seçin!', 'error');
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    showInvToast('Dosya 10MB\'dan küçük olmalıdır!', 'error');
+    return;
+  }
+
+  const progressWrap = document.getElementById('ogUploadProgress');
+  const progressBar  = document.getElementById('ogUploadBar');
+  const progressPct  = document.getElementById('ogUploadPct');
+  if (progressWrap) progressWrap.style.display = 'block';
+
+  const updateProg = (pct) => {
+    if (progressBar) progressBar.style.width = pct + '%';
+    if (progressPct) progressPct.textContent  = pct + '%';
+  };
+
+  updateProg(15);
+
+  try {
+    const sb = await initSupabase();
+    if (!sb) throw new Error('Supabase bağlantısı yok');
+
+    updateProg(40);
+
+    const ext      = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const fileName = `og_${Date.now()}.${ext}`;
+    const filePath = `og-images/${fileName}`;
+
+    const { error: uploadErr } = await sb.storage
+      .from('home-images')
+      .upload(filePath, file, {
+        cacheControl : '3600',
+        upsert       : false,
+        contentType  : file.type,
+      });
+
+    if (uploadErr) throw uploadErr;
+
+    updateProg(80);
+
+    const { data: urlData } = sb.storage
+      .from('home-images')
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData?.publicUrl;
+    if (!publicUrl) throw new Error('URL alınamadı');
+
+    updateProg(100);
+
+    const urlInput = document.getElementById('ogImageUrlInput');
+    if (urlInput) urlInput.value = publicUrl;
+
+    const preview = document.getElementById('ogPreviewImg');
+    if (preview) {
+      preview.src           = publicUrl;
+      preview.style.opacity = '1';
+    }
+
+    showInvToast('Görsel yüklendi ✓', 'success');
+
+    setTimeout(() => {
+      if (progressWrap) progressWrap.style.display = 'none';
+      updateProg(0);
+    }, 1500);
+
+  } catch(e) {
+    console.error('[OG Upload]', e);
+    if (progressWrap) progressWrap.style.display = 'none';
+    updateProg(0);
+
+    /* احتياط: معاينة محلية */
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const preview = document.getElementById('ogPreviewImg');
+      if (preview) preview.src = ev.target.result;
+      const urlInput = document.getElementById('ogImageUrlInput');
+      if (urlInput) urlInput.value = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+
+    showInvToast(
+      'Storage hatası — URL kullanın: ' + (e.message || ''),
+      'error'
+    );
+  }
+
+  input.value = '';
+}
+
+/* ── حفظ إعدادات OG في Supabase ── */
+async function saveOgSettings() {
+  const imageUrl = document.getElementById('ogImageUrlInput')
+                     ?.value.trim();
+  const title    = document.getElementById('ogTitleInput')
+                     ?.value.trim();
+  const desc     = document.getElementById('ogDescInput')
+                     ?.value.trim();
+  const btn      = document.getElementById('ogSaveBtn');
+  const statusEl = document.getElementById('ogStatusMsg');
+
+  const showOgMsg = (msg, type) => {
+    if (!statusEl) return;
+    const s = {
+      success : {
+        bg     : 'rgba(74,222,128,0.08)',
+        border : 'rgba(74,222,128,0.3)',
+        color  : '#4ade80'
+      },
+      error : {
+        bg     : 'rgba(239,68,68,0.08)',
+        border : 'rgba(239,68,68,0.3)',
+        color  : '#ef4444'
+      },
+    }[type] || {};
+    statusEl.style.display    = 'block';
+    statusEl.style.background = s.bg;
+    statusEl.style.border     = `1px solid ${s.border}`;
+    statusEl.style.color      = s.color;
+    statusEl.innerHTML        = msg;
+  };
+
+  if (!imageUrl && !title && !desc) {
+    showOgMsg(
+      '<i class="fas fa-exclamation-circle"></i> En az bir alan doldurun!',
+      'error'
+    );
+    return;
+  }
+
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    showOgMsg(
+      '<i class="fas fa-exclamation-circle"></i> Bağlantı hatası!',
+      'error'
+    );
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML =
+        '<i class="fas fa-save"></i> KAYDET & UYGULA';
+    }
+    return;
+  }
+
+  try {
+    /* ★ timestamp لكسر الكاش تلقائياً ★ */
+    const version = new Date()
+      .toISOString().slice(0,10).replace(/-/g,'');
+
+    const rows = [];
+
+    if (imageUrl) {
+      const imageWithVersion = imageUrl.includes('?')
+        ? imageUrl + '&ogv=' + version
+        : imageUrl + '?ogv=' + version;
+      rows.push({
+        key        : 'og_image',
+        value      : imageWithVersion,
+        updated_at : new Date().toISOString()
+      });
+    }
+    if (title) rows.push({
+      key        : 'og_title',
+      value      : title,
+      updated_at : new Date().toISOString()
+    });
+    if (desc) rows.push({
+      key        : 'og_description',
+      value      : desc,
+      updated_at : new Date().toISOString()
+    });
+
+    const { error } = await sb
+      .from('app_settings')
+      .upsert(rows, { onConflict:'key' });
+
+    if (error) throw error;
+
+    /* تطبيق فوري على كل العناصر */
+    if (imageUrl) applyOgImage(imageUrl, true);
+    if (title)    applyOgText('og:title',       title);
+    if (desc)     applyOgText('og:description', desc);
+
+    /* حفظ في localStorage */
+    try {
+      if (imageUrl) localStorage.setItem('wow_og_image',       imageUrl);
+      if (title)    localStorage.setItem('wow_og_title',       title);
+      if (desc)     localStorage.setItem('wow_og_description', desc);
+    } catch(e) {}
+
+    showOgMsg(
+      '<i class="fas fa-check-circle"></i> OG ayarları güncellendi ✓',
+      'success'
+    );
+    showInvToast('Paylaşım görseli güncellendi ✓', 'success');
+    setTimeout(() => closeOgImageModal(), 1500);
+
+  } catch(e) {
+    console.error('[OG Save]', e);
+    showOgMsg(
+      '<i class="fas fa-exclamation-circle"></i> Hata: '
+        + (e.message || String(e)),
+      'error'
+    );
+  } finally {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML =
+        '<i class="fas fa-save"></i> KAYDET & UYGULA';
+    }
+  }
+}
 
 
   
