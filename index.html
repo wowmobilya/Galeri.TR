@@ -9675,6 +9675,9 @@ function openProductEditor(id = null) {
   const dimsContainer = document.getElementById('peDimsContainer');
   dimsContainer.innerHTML = '';
 
+  /* ★ أولاً: حدّث القائمة ★ */
+  syncHcmCardsToProductCat();
+
   if (id) {
     const img = images.find(i => i.id === id);
     document.getElementById('prodEditorTitle').textContent = 'Modeli Düzenle';
@@ -9684,8 +9687,7 @@ function openProductEditor(id = null) {
     document.getElementById('pePrice').value = img.price;
     document.getElementById('peImage').value = img.src;
 
-    // ★ أولاً حدّث القائمة ثم اضبط القيمة ★
-    syncHcmCardsToProductCat();
+    /* ★ بعد بناء القائمة، اضبط القيمة ★ */
     document.getElementById('peCat').value = img.cat;
 
     if (img.dims && img.dims.length > 0) {
@@ -9697,19 +9699,15 @@ function openProductEditor(id = null) {
     document.getElementById('prodEditorTitle').textContent = 'Yeni Model Ekle';
     document.getElementById('peId').value    = '';
     document.getElementById('peTitle').value = '';
-    document.getElementById('peCat').value   = 'orta';
     document.getElementById('peLabel').value = '';
     document.getElementById('pePrice').value = '';
     document.getElementById('peImage').value = '';
-
-    // ★ تحديث القائمة ★
-    syncHcmCardsToProductCat();
-
     addDimCard();
   }
 
   modal.style.display = 'flex';
 }
+
 
 
   
@@ -18130,7 +18128,9 @@ const sectionKey = document.getElementById('hcmeSectionKey')?.value || 'orta';
 
 // ★ تحديث قائمة Kategori بعد تحديث _homeCards ★
 await loadHomeCards();
-syncHcmCardsToProductCat();
+// انتظر قليلاً حتى تكتمل loadHomeCards وتُحدّث _homeCards
+setTimeout(() => syncHcmCardsToProductCat(), 300);
+
 
 
   } catch(e) {
@@ -18467,6 +18467,7 @@ finishLogin = function() {
 
     /* ★ تحميل البطاقات بعد اكتمال الـ animation (500ms) + هامش أمان ★ */
     await loadHomeCards();        /* ← لن تستدعي showHomeScreen بعد الآن */
+    setTimeout(() => syncHcmCardsToProductCat(), 500); // ← أضف هذا
     subscribeHomeCards();
     await loadLogoFromDB();        /* ← أضف هذا السطر هنا */
     await loadOgSettings();
