@@ -2026,7 +2026,40 @@ body.wow-mode .mobile-menu {
 
 
 
-    
+
+
+
+
+
+    /* ── بطاقة إدارة الكروت — موبايل فقط ── */
+@media (max-width: 600px) {
+  #cmcard-wrap {
+    flex-wrap: wrap;
+  }
+
+  .cmcard-top-row {
+    width: 100%;
+  }
+
+  .cmcard-actions-row {
+    width: 100%;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex !important;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+}
+
+@media (min-width: 601px) {
+  .cmcard-actions-row {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+}
+
     
     
 
@@ -17704,75 +17737,63 @@ async function refreshHcmList() {
   }
 
 listEl.innerHTML = data.map((card, idx) => `
-    <div class="hcm-card" id="cmcard-${card.id}"
-         style="margin-bottom:10px; flex-wrap:wrap;">
-      
-      <!-- الصف العلوي: الترتيب + الصورة + المعلومات -->
-      <div style="display:flex; align-items:center; gap:12px; flex:1; min-width:0; width:100%;">
-        <div class="hcm-card-order">${card.order_num}</div>
-        <img class="hcm-card-thumb"
-             src="${card.image_url || 'https://placehold.co/64x50/1a1a1a/c9a84c?text=W'}"
-             alt="${card.title}"
-             onerror="this.src='https://placehold.co/64x50/1a1a1a/c9a84c?text=W'"
-             draggable="false"/>
-        <div class="hcm-card-info" style="flex:1; min-width:0;">
-          <div class="hcm-card-title">
-            ${card.title}
-            ${card.subtitle
-              ? `<span style="color:#c9a84c;font-size:11px;">
-                 ${card.subtitle}</span>`
-              : ''}
-          </div>
-          <div class="hcm-card-sub">${card.section_key}</div>
-          ${card.description
-            ? `<div class="hcm-card-desc">${card.description}</div>`
+  <div class="hcm-card" id="cmcard-${card.id}"
+       style="margin-bottom:10px; flex-wrap:wrap; align-items:center;">
+
+    <!-- ── الصف الرئيسي: ترتيب + صورة + نص ── -->
+    <div class="cmcard-top-row"
+         style="display:flex; align-items:center; gap:12px; flex:1; min-width:0;">
+      <div class="hcm-card-order">${card.order_num}</div>
+      <img class="hcm-card-thumb"
+           src="${card.image_url || 'https://placehold.co/64x50/1a1a1a/c9a84c?text=W'}"
+           alt="${card.title}"
+           onerror="this.src='https://placehold.co/64x50/1a1a1a/c9a84c?text=W'"
+           draggable="false"/>
+      <div class="hcm-card-info" style="flex:1; min-width:0;">
+        <div class="hcm-card-title">
+          ${card.title}
+          ${card.subtitle
+            ? `<span style="color:#c9a84c;font-size:11px;">${card.subtitle}</span>`
             : ''}
         </div>
+        <div class="hcm-card-sub">${card.section_key}</div>
+        ${card.description
+          ? `<div class="hcm-card-desc">${card.description}</div>`
+          : ''}
       </div>
+    </div>
 
-      <!-- الصف السفلي: الأزرار — تظهر على سطر منفصل في الموبايل -->
-      <div class="hcm-card-actions" style="
-        width:100%;
-        margin-top:10px;
-        padding-top:10px;
-        border-top:1px solid rgba(255,255,255,0.05);
-        display:flex;
-        gap:6px;
-        justify-content:flex-end;
-      ">
-        <button class="hcm-action-btn up"
-                onclick="moveCardMgr(${card.id},-1)"
-                title="Yukarı"
-                ${idx === 0
-                  ? 'disabled style="opacity:0.3;cursor:not-allowed;"'
-                  : ''}>
-          <i class="fas fa-chevron-up"></i>
-        </button>
-        <button class="hcm-action-btn dn"
-                onclick="moveCardMgr(${card.id},+1)"
-                title="Aşağı"
-                ${idx === data.length - 1
-                  ? 'disabled style="opacity:0.3;cursor:not-allowed;"'
-                  : ''}>
-          <i class="fas fa-chevron-down"></i>
-        </button>
-        <button class="hcm-action-btn edit"
-                onclick="openHcmEditInPage(${card.id})"
-                title="Düzenle"
-                style="flex:1; max-width:90px; gap:5px;">
-          <i class="fas fa-edit"></i>
-          <span style="font-size:9px; font-weight:700; letter-spacing:0.5px;">Düzenle</span>
-        </button>
-        <button class="hcm-action-btn del"
-                onclick="deleteCardMgr(${card.id})"
-                title="Sil"
-                style="flex:1; max-width:90px; gap:5px;">
-          <i class="fas fa-trash-alt"></i>
-          <span style="font-size:9px; font-weight:700; letter-spacing:0.5px;">Sil</span>
-        </button>
-      </div>
+    <!-- ── الأزرار: بجانب النص في الديسكتوب، تحته في الموبايل ── -->
+    <div class="cmcard-actions-row hcm-card-actions">
+      <button class="hcm-action-btn up"
+              onclick="moveCardMgr(${card.id},-1)"
+              title="Yukarı"
+              ${idx === 0
+                ? 'disabled style="opacity:0.3;cursor:not-allowed;"'
+                : ''}>
+        <i class="fas fa-chevron-up"></i>
+      </button>
+      <button class="hcm-action-btn dn"
+              onclick="moveCardMgr(${card.id},+1)"
+              title="Aşağı"
+              ${idx === data.length - 1
+                ? 'disabled style="opacity:0.3;cursor:not-allowed;"'
+                : ''}>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <button class="hcm-action-btn edit"
+              onclick="openHcmEditInPage(${card.id})"
+              title="Düzenle">
+        <i class="fas fa-edit"></i>
+      </button>
+      <button class="hcm-action-btn del"
+              onclick="deleteCardMgr(${card.id})"
+              title="Sil">
+        <i class="fas fa-trash-alt"></i>
+      </button>
+    </div>
 
-    </div>`).join('');
+  </div>`).join('');
 
 
   /* تحديث الصفحة الرئيسية */
