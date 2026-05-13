@@ -18246,17 +18246,31 @@ async function subscribeHomeCards() {
       event  : '*',
       schema : 'public',
       table  : HC_TABLE,
-    }, async () => {
-      /* إعادة تحميل البطاقات عند أي تغيير */
+    }, async (payload) => {
+      /* ★ إذا كان الحدث DELETE، أزل من المصفوفة المحلية مباشرة ★ */
+      if (payload.eventType === 'DELETE') {
+        const deletedId = payload.old?.id;
+        if (deletedId) {
+          _homeCards = _homeCards.filter(c => c.id !== deletedId);
+          renderHomeCards();
+          /* تحديث قائمة الإدارة إذا كانت مفتوحة */
+          if (currentPage === 'card_manager') {
+            const el = document.getElementById('cmcard-' + deletedId);
+            if (el) el.remove();
+          }
+        }
+        return; /* لا تُعيد التحميل الكامل */
+      }
+
+      /* بقية الأحداث (INSERT / UPDATE) → تحميل كامل */
       await loadHomeCards();
-      /* تحديث نافذة الإدارة إذا كانت مفتوحة */
-      if (document.getElementById('homeCardsModal')
-          ?.classList.contains('active')) {
-        await refreshHcmList();
+      if (currentPage === 'card_manager') {
+        await refreshCardMgrList();
       }
     })
     .subscribe();
 }
+
 
 /* ============================================================
    ★ تعديل showPage لدعم صفحة الإعدادات ★
@@ -23734,48 +23748,84 @@ async function moveCardMgr(cardId, direction) {
 
 /* ── حذف بطاقة (في الصفحة) ── */
 async function deleteCardMgr(cardId) {
-  const confirmed = await showDeleteConfirm();
-  if (!confirmed) return;
+  /* ── 1. فحص الموديلات المرتبطة بهذا القسم ── */
+  const card = _homeCards.find(c => c.id === cardId)
+            || (await (async () => {
+                 const sb = await initSupabase();
+                 if (!sb) return null;
+                 const { data } = await sb
+                   .from(HC_TABLE).select('*')
+                   .eq('id', cardId).single();
+                 return data;
+               })());
 
-  const card = document.getElementById('cmcard-' + cardId);
-  if (card) {
-    card.style.transition = 'all 0.3s ease';
-    card.style.opacity    = '0.4';
-    card.style.transform  = 'scale(0.97)';
+  if (!card) return;
+
+  const relatedModels = images.filter(
+    img => img.cat === card.section_key ||
+           img.section_key === card.section_key
+  );
+
+  /* ── 2. إذا فيه موديلات → نافذة تأكيد خاصة ── */
+  if (relatedModels.length > 0) {
+    const confirmed = await showCardDeleteConfirm(card, relatedModels.length);
+    if (!confirmed) return;
+  } else {
+    /* لا موديلات → تأكيد بسيط */
+    const simple = await showDeleteConfirm();
+    if (!simple) return;
   }
 
+  /* ── 3. تنفيذ الحذف الفعلي ── */
   const sb = await initSupabase();
   if (!sb) return;
 
+  const cardEl = document.getElementById('cmcard-' + cardId);
+  if (cardEl) {
+    cardEl.style.transition = 'all 0.3s ease';
+    cardEl.style.opacity    = '0.4';
+    cardEl.style.transform  = 'scale(0.97)';
+  }
+
+  /* حذف نهائي من DB (وليس is_active = false) */
   const { error } = await sb
     .from(HC_TABLE)
-    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .delete()
     .eq('id', cardId);
 
   if (error) {
-    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
+    if (cardEl) {
+      cardEl.style.opacity   = '1';
+      cardEl.style.transform = 'scale(1)';
+    }
     showInvToast('Silme hatası: ' + error.message, 'error');
     return;
   }
 
-  if (card) {
-    card.style.maxHeight    = card.offsetHeight + 'px';
-    card.style.overflow     = 'hidden';
+  /* ── 4. تحديث المصفوفة المحلية فوراً ── */
+  _homeCards = _homeCards.filter(c => c.id !== cardId);
+
+  /* ── 5. إزالة البطاقة بأنيميشن ── */
+  if (cardEl) {
+    cardEl.style.maxHeight    = cardEl.offsetHeight + 'px';
+    cardEl.style.overflow     = 'hidden';
     requestAnimationFrame(() => {
-      card.style.transition   = 'all 0.4s ease';
-      card.style.maxHeight    = '0';
-      card.style.opacity      = '0';
-      card.style.marginBottom = '0';
-      card.style.padding      = '0';
-      card.style.border       = 'none';
-      setTimeout(() => card.remove(), 420);
+      cardEl.style.transition   = 'all 0.4s ease';
+      cardEl.style.maxHeight    = '0';
+      cardEl.style.opacity      = '0';
+      cardEl.style.marginBottom = '0';
+      cardEl.style.padding      = '0';
+      cardEl.style.border       = 'none';
+      setTimeout(() => {
+        cardEl.remove();
+        renderHomeCards(); /* تحديث الهوم */
+      }, 420);
     });
   }
 
-  _homeCards = _homeCards.filter(c => c.id !== cardId);
-  renderHomeCards();
   showInvToast('Kart silindi ✓', 'success');
 }
+
 
 /* ── فتح نافذة التعديل من الصفحة ── */
 async function openHcmEditInPage(cardId) {
@@ -23838,6 +23888,301 @@ async function openHcmEditInPage(cardId) {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+  function showCardDeleteConfirm(card, modelCount) {
+  return new Promise(resolve => {
+    document.getElementById('cardDeleteConfirmModal')?.remove();
+
+    const cardName = (card.title + (card.subtitle
+      ? ' ' + card.subtitle : '')).trim();
+
+    const modal = document.createElement('div');
+    modal.id = 'cardDeleteConfirmModal';
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:9000;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.92);
+      backdrop-filter:blur(20px);
+      padding:16px;
+      animation:updBgIn 0.3s ease forwards;`;
+
+    modal.innerHTML = `
+      <div style="
+        width:100%;max-width:420px;
+        background:linear-gradient(145deg,#0f0f0f,#1a0808);
+        border:1px solid rgba(239,68,68,0.35);
+        border-radius:22px;overflow:hidden;
+        box-shadow:0 40px 80px rgba(0,0,0,0.95);
+        animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+        <div style="height:3px;background:linear-gradient(90deg,
+          transparent,#ef4444 30%,#ff6b6b 50%,#ef4444 70%,transparent);"></div>
+
+        <div style="padding:26px 22px 20px;text-align:center;">
+
+          <!-- أيقونة التحذير -->
+          <div style="
+            width:68px;height:68px;border-radius:50%;
+            background:rgba(239,68,68,0.1);
+            border:2px solid rgba(239,68,68,0.3);
+            display:flex;align-items:center;justify-content:center;
+            margin:0 auto 16px;font-size:26px;color:#ef4444;
+            position:relative;">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div style="
+              position:absolute;inset:-6px;border-radius:50%;
+              border:2px solid rgba(239,68,68,0.15);
+              animation:avatarRing 2s ease infinite;"></div>
+          </div>
+
+          <div style="font-size:8px;letter-spacing:4px;
+               color:rgba(239,68,68,0.7);text-transform:uppercase;
+               font-weight:700;margin-bottom:8px;">
+            DİKKAT — BAĞLI MODELLERİ VAR
+          </div>
+
+          <div style="font-size:17px;font-weight:900;
+               color:#fff;margin-bottom:12px;">
+            Kartı Sil
+          </div>
+
+          <!-- uyarı kutusu -->
+          <div style="
+            background:rgba(239,68,68,0.07);
+            border:1px solid rgba(239,68,68,0.2);
+            border-radius:12px;padding:13px 15px;
+            margin-bottom:18px;text-align:left;">
+            <div style="display:flex;align-items:center;
+                 gap:8px;margin-bottom:8px;">
+              <i class="fas fa-boxes"
+                 style="color:#ef4444;font-size:14px;flex-shrink:0;"></i>
+              <span style="font-size:13px;font-weight:900;color:#fff;">
+                ${cardName}
+              </span>
+            </div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.45);
+                 line-height:1.7;">
+              Bu kart silinirse
+              <strong style="color:#ff8a80;">
+                ${modelCount} model
+              </strong>
+              bu kategoride görünmez hale gelecek.
+              <br/>
+              <span style="color:rgba(239,68,68,0.6);font-weight:700;">
+                Bu işlem geri alınamaz.
+              </span>
+            </div>
+          </div>
+
+          <!-- حقل كتابة اسم القسم -->
+          <div style="text-align:left;margin-bottom:6px;">
+            <div style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);font-weight:700;
+                 text-transform:uppercase;margin-bottom:8px;
+                 display:flex;align-items:center;gap:6px;">
+              <i class="fas fa-keyboard"
+                 style="color:rgba(239,68,68,0.5);"></i>
+              Onaylamak için kart adını yazın:
+            </div>
+
+            <div style="
+              background:rgba(239,68,68,0.06);
+              border:1px solid rgba(239,68,68,0.15);
+              border-radius:10px;padding:10px 12px;
+              margin-bottom:10px;
+              font-size:11px;color:rgba(255,255,255,0.35);
+              display:flex;align-items:center;gap:7px;">
+              <i class="fas fa-tag"
+                 style="color:rgba(239,68,68,0.4);font-size:12px;"></i>
+              <span style="font-weight:700;color:#ff8a80;
+                    letter-spacing:0.5px;">
+                ${cardName}
+              </span>
+            </div>
+
+            <div style="position:relative;">
+              <input type="text"
+                id="cardDeleteInput"
+                placeholder="${cardName}"
+                autocomplete="off"
+                spellcheck="false"
+                oninput="checkCardDeleteInput('${cardName.replace(/'/g,"\\'")}',this)"
+                style="
+                  width:100%;
+                  padding:12px 44px 12px 14px;
+                  background:rgba(0,0,0,0.4);
+                  border:1.5px solid rgba(239,68,68,0.25);
+                  border-radius:10px;color:#fff;
+                  font-family:'Montserrat',sans-serif;
+                  font-size:13px;font-weight:700;
+                  letter-spacing:0.5px;outline:none;
+                  transition:all 0.3s;
+                  -webkit-user-select:text;user-select:text;
+                  box-sizing:border-box;"/>
+              <!-- أيقونة التحقق -->
+              <div id="cardDeleteIcon" style="
+                position:absolute;right:12px;top:50%;
+                transform:translateY(-50%);
+                font-size:16px;
+                color:rgba(255,255,255,0.15);
+                transition:all 0.3s;pointer-events:none;">
+                <i class="fas fa-times"></i>
+              </div>
+            </div>
+
+            <!-- رسالة التطابق -->
+            <div id="cardDeleteMsg" style="
+              font-size:10px;margin-top:7px;
+              letter-spacing:1px;font-weight:700;
+              color:rgba(255,255,255,0.2);
+              display:flex;align-items:center;gap:6px;
+              transition:all 0.3s;">
+              <i class="fas fa-info-circle"></i>
+              Kart adını tam olarak girin
+            </div>
+          </div>
+        </div>
+
+        <!-- أزرار -->
+        <div style="padding:0 20px 22px;display:flex;gap:10px;">
+          <button id="cardDelCancelBtn" style="
+            flex:1;padding:12px;border-radius:11px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            <i class="fas fa-arrow-left"></i> İPTAL
+          </button>
+          <button id="cardDelConfirmBtn" disabled style="
+            flex:2;padding:12px;border-radius:11px;border:none;
+            background:rgba(255,255,255,0.05);
+            color:rgba(255,255,255,0.2);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:1px;
+            cursor:not-allowed;transition:all 0.35s ease;
+            display:flex;align-items:center;
+            justify-content:center;gap:7px;">
+            <i class="fas fa-trash-alt"></i> KARTI SİL
+          </button>
+        </div>
+
+        <div style="height:3px;background:linear-gradient(90deg,
+          transparent,#ef4444 30%,#ff6b6b 50%,#ef4444 70%,transparent);"></div>
+      </div>`;
+
+    document.body.appendChild(modal);
+
+    /* ── دالة فحص التطابق ── */
+    window.checkCardDeleteInput = function(expected, inp) {
+      const icon    = document.getElementById('cardDeleteIcon');
+      const msg     = document.getElementById('cardDeleteMsg');
+      const btn     = document.getElementById('cardDelConfirmBtn');
+      const isMatch = inp.value.trim() === expected;
+
+      if (isMatch) {
+        inp.style.borderColor  = 'rgba(74,222,128,0.6)';
+        inp.style.background   = 'rgba(74,222,128,0.05)';
+        if (icon) {
+          icon.innerHTML   = '<i class="fas fa-check"></i>';
+          icon.style.color = '#4ade80';
+        }
+        if (msg) {
+          msg.innerHTML   = '<i class="fas fa-check-circle"></i> Eşleşti';
+          msg.style.color = '#4ade80';
+        }
+        btn.disabled          = false;
+        btn.style.background  =
+          'linear-gradient(135deg,#ef4444,#dc2626)';
+        btn.style.color       = '#fff';
+        btn.style.cursor      = 'pointer';
+        btn.style.boxShadow   =
+          '0 8px 24px rgba(239,68,68,0.35)';
+      } else if (inp.value.length > 0) {
+        inp.style.borderColor  = 'rgba(239,68,68,0.5)';
+        inp.style.background   = 'rgba(239,68,68,0.04)';
+        if (icon) {
+          icon.innerHTML   = '<i class="fas fa-times"></i>';
+          icon.style.color = 'rgba(239,68,68,0.6)';
+        }
+        if (msg) {
+          msg.innerHTML   =
+            '<i class="fas fa-times-circle"></i> Eşleşmiyor';
+          msg.style.color = 'rgba(239,68,68,0.7)';
+        }
+        btn.disabled         = true;
+        btn.style.background = 'rgba(255,255,255,0.05)';
+        btn.style.color      = 'rgba(255,255,255,0.2)';
+        btn.style.cursor     = 'not-allowed';
+        btn.style.boxShadow  = 'none';
+      } else {
+        inp.style.borderColor  = 'rgba(239,68,68,0.25)';
+        inp.style.background   = 'rgba(0,0,0,0.4)';
+        if (icon) {
+          icon.innerHTML   = '<i class="fas fa-times"></i>';
+          icon.style.color = 'rgba(255,255,255,0.15)';
+        }
+        if (msg) {
+          msg.innerHTML   =
+            '<i class="fas fa-info-circle"></i> Kart adını tam olarak girin';
+          msg.style.color = 'rgba(255,255,255,0.2)';
+        }
+        btn.disabled         = true;
+        btn.style.background = 'rgba(255,255,255,0.05)';
+        btn.style.color      = 'rgba(255,255,255,0.2)';
+        btn.style.cursor     = 'not-allowed';
+        btn.style.boxShadow  = 'none';
+      }
+    };
+
+    /* ── Enter للتأكيد ── */
+    setTimeout(() => {
+      const inp = document.getElementById('cardDeleteInput');
+      if (inp) {
+        inp.focus();
+        inp.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            const btn = document.getElementById('cardDelConfirmBtn');
+            if (!btn.disabled) btn.click();
+          }
+        });
+      }
+    }, 300);
+
+    /* ── أزرار ── */
+    document.getElementById('cardDelConfirmBtn').onclick = () => {
+      modal.remove();
+      delete window.checkCardDeleteInput;
+      resolve(true);
+    };
+    document.getElementById('cardDelCancelBtn').onclick = () => {
+      modal.remove();
+      delete window.checkCardDeleteInput;
+      resolve(false);
+    };
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        modal.remove();
+        delete window.checkCardDeleteInput;
+        resolve(false);
+      }
+    });
+  });
+}
 
   
   
