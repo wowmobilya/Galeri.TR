@@ -1727,6 +1727,7 @@ html { scroll-behavior: auto; }
   display: flex; align-items: center; gap: 12px;
   transition: all 0.25s ease;
   position: relative;
+  flex-wrap: wrap; /* ✅ أضفنا هذا */
 }
 .hcm-card:hover {
   background: rgba(201,168,76,0.04);
@@ -1760,7 +1761,21 @@ html { scroll-behavior: auto; }
   font-size: 10px; color: rgba(255,255,255,0.25);
   margin-top: 3px; letter-spacing: 0.5px;
 }
-.hcm-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* ✅ الأزرار — بجانب النص في الديسكتوب، تحته في الموبايل */
+.hcm-card-actions {
+  display: flex; gap: 6px; flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .hcm-card-actions {
+    width: 100%;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+}
+
 .hcm-action-btn {
   width: 30px; height: 30px; border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.08);
@@ -1785,6 +1800,7 @@ html { scroll-behavior: auto; }
   border-color: rgba(201,168,76,0.35);
   color: var(--gold);
 }
+
 
 /* نافذة تعديل/إضافة بطاقة */
 #hcmEditModal {
