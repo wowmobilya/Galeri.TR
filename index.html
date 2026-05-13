@@ -4351,13 +4351,17 @@ if (footerTextEl) {
   }
 }
 
-
-
 function enterSection(cat){
   const hs=document.getElementById('homeScreen');
   hs.style.transition='opacity 0.4s ease';hs.style.opacity='0';
-  setTimeout(()=>{hs.style.display='none';document.getElementById('mainSite').style.display='block';showPage(cat);},400);
+  setTimeout(()=>{
+    hs.style.display='none';
+    document.getElementById('mainSite').style.display='block';
+    showPage(cat);
+  },400);
 }
+
+
 
   
 /* ============================================================
@@ -4520,20 +4524,35 @@ function showPage(cat){
   if (cat === 'orders') {
     filteredImages = [];
     buildOrderPage();
-// وفي showPage() استخدم:
-window.scrollTo({ top: 0, behavior: 'smooth' }); // ← هذا يكفي
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     appState = 'section';
     pushState('section', { cat });
     return;
   }
-  filteredImages = images.filter(i => i.cat === cat);
+// فلترة تدعم القيم الثابتة القديمة والأقسام الديناميكية الجديدة
+filteredImages = images.filter(i => i.cat === cat || i.section_key === cat);
   buildPage(cat);window.scrollTo({top:0,behavior:'smooth'});
   appState='section';pushState('section',{cat});
 }
 
 
+
 function buildPage(cat){
-  const L=labels[cat];const cnt=filteredImages.length;
+  /* إذا لم يكن القسم في labels الثابتة، ابنِ label ديناميكياً من الكروت */
+  let L = labels[cat];
+  if (!L) {
+    const card = _homeCards.find(c => c.section_key === cat);
+    const cardTitle = card
+      ? (card.title + (card.subtitle ? ' ' + card.subtitle : ''))
+      : cat.toUpperCase();
+    L = {
+      tag   : cardTitle.toUpperCase() + ' KOLEKSİYONU',
+      title : card?.title?.toUpperCase() || cat.toUpperCase(),
+      accent: card?.subtitle?.toUpperCase() || 'KOLEKSİYONU',
+    };
+  }
+  const cnt = filteredImages.length;
+
   document.getElementById('pageContent').innerHTML=`
     <div class="page-transition">
       <div class="section-banner">
@@ -6494,15 +6513,16 @@ async function loadInventory() {
 
     data.forEach(row => {
       inventoryData[Number(row.id)] = row.stock ?? 0;
-      images.push({
-        id: Number(row.id),
-        src: row.image_url || '',
-        title: row.title || '',
-        cat: row.cat || 'orta',
-        catLabel: row.cat_label || '',
-        price: row.price || 0,
-        dims: row.dims || []
-      });
+     images.push({
+  id         : Number(row.id),
+  src        : row.image_url || '',
+  title      : row.title || '',
+  cat        : row.cat || 'orta',
+  section_key: row.cat || 'orta',   // ← أضف هذا السطر
+  catLabel   : row.cat_label || '',
+  price      : row.price || 0,
+  dims       : row.dims || []
+});
     });
 
     console.log('[Supabase] ✅ تم تحميل المنتجات:', images.length);
@@ -9802,24 +9822,23 @@ async function saveProductToDB() {
     }
   });
 
-  const productData = {
-    title: document.getElementById('peTitle').value.trim() || 'İsimsiz Model',
-    cat: document.getElementById('peCat').value,
-cat_label: (() => {
-  const labelInput = document.getElementById('peLabel').value.trim();
-  if (labelInput) return labelInput;
-  /* إذا كان الحقل فارغاً، نأخذ اسم الكرت المختار */
-  const catSelect = document.getElementById('peCat');
-  const selectedOpt = catSelect?.options[catSelect.selectedIndex];
-  return selectedOpt?.text || catSelect?.value || '';
-})(),
+ const productData = {
+  title     : document.getElementById('peTitle').value.trim() || 'İsimsiz Model',
+  cat       : document.getElementById('peCat').value,   // section_key من الكرت
+  cat_label : (() => {
+    const labelInput = document.getElementById('peLabel').value.trim();
+    if (labelInput) return labelInput;
+    const catSelect  = document.getElementById('peCat');
+    const selectedOpt = catSelect?.options[catSelect.selectedIndex];
+    return selectedOpt?.text || catSelect?.value || '';
+  })(),
+  price     : Number(document.getElementById('pePrice').value) || 0,
+  image_url : document.getElementById('peImage').value.trim(),
+  dims      : dimsArray,
+  updated_at: new Date().toISOString()
+};
 
-    price: Number(document.getElementById('pePrice').value) || 0,
-    image_url: document.getElementById('peImage').value.trim(),
-    dims: dimsArray, // المصفوفة الجاهزة
-    updated_at: new Date().toISOString()
-  };
-
+  
   if(id) productData.id = Number(id);
   else productData.id = Date.now() % 1000000;
 
