@@ -2076,6 +2076,51 @@ body.wow-mode .mobile-menu {
   }
 }
 
+
+
+
+
+
+
+
+/* ── زر الموسيقى في هوم الأدمن ── */
+#adminMusicBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  border: 1px solid rgba(201,168,76,0.3);
+  background: rgba(201,168,76,0.08);
+  color: rgba(201,168,76,0.7);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  margin-top: 16px;
+}
+#adminMusicBtn:hover {
+  background: rgba(201,168,76,0.16);
+  border-color: rgba(201,168,76,0.55);
+  color: #c9a84c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(201,168,76,0.2);
+}
+#adminMusicBtn.playing {
+  background: rgba(201,168,76,0.14);
+  border-color: rgba(201,168,76,0.5);
+  color: #c9a84c;
+  animation: iconPulse 2.2s infinite;
+}
+#adminMusicBtn i {
+  font-size: 14px;
+}
+
+
+
     
     
 
@@ -10763,6 +10808,19 @@ function showAdminAccountHome(admin) {
         <!-- تُملأ بـ renderAdminAccountCards -->
       </div>
 
+
+
+<!-- ══ زر الموسيقى ══ -->
+<div style="animation:cardSlideIn 0.6s ease 0.75s both;">
+  <button id="adminMusicBtn" onclick="toggleAdminMusic()">
+    <i id="adminMusicIcon" class="fas fa-volume-mute"></i>
+    <span id="adminMusicLabel">MÜZİK AÇ</span>
+  </button>
+</div>
+
+
+
+
       <!-- ══ زر تسجيل الخروج ══ -->
       <div style="
         margin-top:32px;
@@ -10807,6 +10865,12 @@ function showAdminAccountHome(admin) {
       hs.style.opacity = '1';
     });
   });
+  // استعادة حالة الموسيقى بعد ظهور الهوم
+setTimeout(() => {
+  restoreAdminMusicState();
+  applyAdminMusicState();
+}, 800);
+
 }
 
 
@@ -24648,6 +24712,88 @@ async function openHcmEditInPage(cardId) {
 }
 
   
+
+
+
+
+
+
+
+  
+
+/* ============================================================
+   ★ تحكم الموسيقى في هوم الأدمن مع حفظ الحالة ★
+============================================================ */
+const ADMIN_MUSIC_KEY = 'wow_admin_music_state'; // مفتاح localStorage
+
+/* ── تطبيق الحالة المحفوظة على الزر ── */
+function applyAdminMusicState() {
+  const btn   = document.getElementById('adminMusicBtn');
+  const icon  = document.getElementById('adminMusicIcon');
+  const label = document.getElementById('adminMusicLabel');
+  if (!btn) return;
+
+  if (audioPlaying) {
+    btn.classList.add('playing');
+    if (icon)  icon.className  = 'fas fa-music';
+    if (label) label.textContent = 'MÜZİĞİ DURDUR';
+  } else {
+    btn.classList.remove('playing');
+    if (icon)  icon.className  = 'fas fa-volume-mute';
+    if (label) label.textContent = 'MÜZİK AÇ';
+  }
+}
+
+/* ── تبديل الموسيقى وحفظ الحالة ── */
+function toggleAdminMusic() {
+  toggleAudio(); // الدالة الأصلية الموجودة
+
+  // حفظ الحالة الجديدة
+  try {
+    localStorage.setItem(ADMIN_MUSIC_KEY, audioPlaying ? '1' : '0');
+  } catch(e) {}
+
+  // تحديث مظهر الزر
+  applyAdminMusicState();
+}
+
+/* ── استعادة الحالة المحفوظة عند فتح هوم الأدمن ── */
+function restoreAdminMusicState() {
+  try {
+    const saved = localStorage.getItem(ADMIN_MUSIC_KEY);
+
+    // إذا لم تكن هناك حالة محفوظة → لا تشغيل تلقائي
+    if (saved === null) return;
+
+    const shouldPlay = saved === '1';
+
+    if (shouldPlay && !audioPlaying) {
+      // كانت الموسيقى شغّالة → أعد تشغيلها
+      const music = document.getElementById('bgMusic');
+      music.play()
+        .then(() => {
+          audioPlaying = true;
+          syncAudioIcons();
+          applyAdminMusicState();
+        })
+        .catch(() => {
+          // المتصفح منع التشغيل التلقائي → نبقى موقوفاً
+          audioPlaying = false;
+          syncAudioIcons();
+          applyAdminMusicState();
+        });
+    } else if (!shouldPlay && audioPlaying) {
+      // كانت الموسيقى موقوفة → أوقفها
+      document.getElementById('bgMusic').pause();
+      audioPlaying = false;
+      syncAudioIcons();
+      applyAdminMusicState();
+    }
+  } catch(e) {}
+}
+
+
+
   
 
 </script>
