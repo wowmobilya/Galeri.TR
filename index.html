@@ -25107,11 +25107,8 @@ function renderDimFieldsPage() {
         <i class="fas fa-ruler-combined"
            style="font-size:40px;display:block;margin-bottom:14px;
                   color:rgba(201,168,76,0.15);"></i>
-        <p style="font-size:12px;letter-spacing:2px;">
-          Henüz alan yok
-        </p>
-        <p style="font-size:10px;margin-top:6px;
-             color:rgba(255,255,255,0.15);">
+        <p style="font-size:12px;letter-spacing:2px;">Henüz alan yok</p>
+        <p style="font-size:10px;margin-top:6px;color:rgba(255,255,255,0.15);">
           "YENİ ALAN EKLE" butonuna tıklayın
         </p>
       </div>`;
@@ -25119,95 +25116,103 @@ function renderDimFieldsPage() {
   }
 
   wrap.innerHTML = `
-    <!-- ── معاينة نافذة المقاسات ── -->
-    <div style="margin-bottom:20px;">
-      <div style="font-size:9px;letter-spacing:2.5px;
-           color:rgba(201,168,76,0.55);font-weight:700;
-           text-transform:uppercase;margin-bottom:10px;
-           display:flex;align-items:center;gap:7px;">
+
+    <!-- ══ معاينة نافذة المقاسات ══ -->
+    <div style="margin-bottom:24px;">
+      <div style="
+        font-size:9px;letter-spacing:2.5px;
+        color:rgba(201,168,76,0.55);font-weight:700;
+        text-transform:uppercase;margin-bottom:10px;
+        display:flex;align-items:center;gap:7px;">
         <i class="fas fa-eye" style="font-size:10px;"></i>
         ÖLÇÜ PENCERESİ ÖNİZLEMESİ
       </div>
+
       <div style="
-        background:rgba(13,13,13,0.95);
-        border:1px solid rgba(201,168,76,0.2);
-        border-radius:14px;padding:14px;
+        background:linear-gradient(145deg,#0d0d0d,#141414);
+        border:1px solid rgba(201,168,76,0.18);
+        border-radius:16px;padding:16px;
         display:grid;
-        grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+        grid-template-columns:repeat(auto-fill,minmax(80px,1fr));
         gap:8px;">
-        ${_dimFields
-          .filter(f => f.is_visible)
-          .map(f => `
-            <div style="
-              background:rgba(0,0,0,0.3);
-              border:1px solid rgba(255,255,255,0.05);
-              border-radius:10px;padding:10px 6px;
-              text-align:center;opacity:0.85;">
-              <i class="fas ${f.icon}"
-                 style="font-size:14px;color:#c9a84c;
-                        display:block;margin-bottom:5px;"></i>
-              <span style="font-size:7px;letter-spacing:1.5px;
-                    color:rgba(255,255,255,0.28);
-                    text-transform:uppercase;display:block;
-                    margin-bottom:4px;">${f.field_label}</span>
-              <span style="font-size:13px;font-weight:900;
-                    color:#fff;">—</span>
-              <span style="font-size:8px;color:rgba(201,168,76,0.6);
-                    font-weight:600;"> ${f.field_unit}</span>
-            </div>`).join('')}
-        ${_dimFields.filter(f => f.is_visible).length === 0
-          ? `<div style="grid-column:1/-1;text-align:center;
-               padding:20px;color:rgba(255,255,255,0.15);
-               font-size:11px;">
-               Görünür alan yok
-             </div>`
-          : ''}
-      </div>
-    </div>
-
-    <!-- ── الجدول الرئيسي ── -->
-    <div style="font-size:9px;letter-spacing:2.5px;
-         color:rgba(201,168,76,0.55);font-weight:700;
-         text-transform:uppercase;margin-bottom:10px;
-         display:flex;align-items:center;gap:7px;">
-      <i class="fas fa-table" style="font-size:10px;"></i>
-      ALAN LİSTESİ
-    </div>
-
-    <div style="
-      background:rgba(255,255,255,0.025);
-      border:1px solid rgba(255,255,255,0.06);
-      border-radius:16px;overflow:hidden;">
-
-      <!-- رأس الجدول -->
-      <div style="
-        display:grid;
-        grid-template-columns:40px 1fr 90px 80px 80px 120px;
-        gap:0;
-        padding:10px 14px;
-        background:rgba(255,255,255,0.03);
-        border-bottom:1px solid rgba(255,255,255,0.06);">
-        ${['SIRA','ALAN ADI / BİRİM','İKON',
-           'GÖRÜNÜR','DURUM','İŞLEMLER'].map(h => `
-          <div style="font-size:8px;letter-spacing:2px;
-               color:rgba(255,255,255,0.25);font-weight:700;
-               text-transform:uppercase;
-               display:flex;align-items:center;">
-            ${h}
+        ${_dimFields.filter(f => f.is_visible).map(f => `
+          <div style="
+            background:rgba(0,0,0,0.35);
+            border:1px solid rgba(255,255,255,0.05);
+            border-radius:10px;padding:10px 6px;
+            text-align:center;
+            transition:all 0.2s;">
+            <i class="fas ${f.icon}"
+               style="font-size:clamp(13px,3vw,15px);
+                      color:#c9a84c;display:block;
+                      margin-bottom:5px;"></i>
+            <span style="
+              font-size:clamp(7px,1.8vw,8px);
+              letter-spacing:1px;
+              color:rgba(255,255,255,0.28);
+              text-transform:uppercase;
+              display:block;margin-bottom:3px;">
+              ${f.field_label}
+            </span>
+            <span style="
+              font-size:clamp(12px,3vw,14px);
+              font-weight:900;color:#fff;">
+              —
+            </span>
+            <span style="
+              font-size:clamp(8px,2vw,9px);
+              color:rgba(201,168,76,0.6);
+              font-weight:600;">
+              ${f.field_unit}
+            </span>
           </div>`).join('')}
-      </div>
 
-      <!-- صفوف البيانات -->
-      <div id="dfRows">
-        ${_dimFields.map((f, idx) =>
-          buildDfRow(f, idx, _dimFields.length)
-        ).join('')}
+        ${_dimFields.filter(f => f.is_visible).length === 0 ? `
+          <div style="
+            grid-column:1/-1;text-align:center;
+            padding:20px;color:rgba(255,255,255,0.15);
+            font-size:11px;">
+            Görünür alan yok
+          </div>` : ''}
       </div>
     </div>
 
-    <!-- ملاحظة -->
+    <!-- ══ عنوان القائمة ══ -->
     <div style="
-      margin-top:14px;
+      font-size:9px;letter-spacing:2.5px;
+      color:rgba(201,168,76,0.55);font-weight:700;
+      text-transform:uppercase;margin-bottom:12px;
+      display:flex;align-items:center;
+      justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:7px;">
+        <i class="fas fa-list" style="font-size:10px;"></i>
+        ALAN LİSTESİ
+        <span style="
+          padding:2px 10px;border-radius:50px;
+          background:rgba(201,168,76,0.1);
+          border:1px solid rgba(201,168,76,0.2);
+          color:#c9a84c;font-size:9px;font-weight:700;">
+          ${_dimFields.length}
+        </span>
+      </div>
+      <div style="
+        font-size:9px;color:rgba(255,255,255,0.2);
+        letter-spacing:1px;font-weight:400;">
+        Sürükle veya ok ile sırala
+      </div>
+    </div>
+
+    <!-- ══ البطاقات ══ -->
+    <div id="dfCards" style="
+      display:flex;flex-direction:column;gap:8px;">
+      ${_dimFields.map((f, idx) =>
+        buildDfCard(f, idx, _dimFields.length)
+      ).join('')}
+    </div>
+
+    <!-- ══ ملاحظة ══ -->
+    <div style="
+      margin-top:16px;
       background:rgba(255,255,255,0.02);
       border:1px solid rgba(255,255,255,0.05);
       border-radius:10px;padding:11px 13px;
@@ -25215,178 +25220,291 @@ function renderDimFieldsPage() {
       <i class="fas fa-lightbulb"
          style="color:rgba(201,168,76,0.4);font-size:12px;
                 margin-top:1px;flex-shrink:0;"></i>
-      <div style="font-size:10px;color:rgba(255,255,255,0.2);
-           line-height:1.7;letter-spacing:0.2px;">
+      <div style="
+        font-size:10px;color:rgba(255,255,255,0.2);
+        line-height:1.7;letter-spacing:0.2px;">
         <strong style="color:rgba(255,255,255,0.35);">İpucu:</strong>
         Gizlenen alanlar ürün düzenleme ekranında görünmez.
-        Silinen alanlar tüm ürünlerin mevcut verilerini
-        <strong style="color:rgba(255,255,255,0.35);">etkilemez</strong>
-        — sadece yeni girişlerde gösterilmez.
+        Toggle ile anında gizle/göster.
       </div>
     </div>`;
 }
 
+
 /* ── بناء صف واحد في الجدول ── */
-function buildDfRow(f, idx, total) {
+function buildDfCard(f, idx, total) {
   const isFirst = idx === 0;
   const isLast  = idx === total - 1;
 
   return `
     <div id="dfrow-${f.id}" style="
-      display:grid;
-      grid-template-columns:40px 1fr 90px 80px 80px 120px;
-      gap:0;
-      padding:12px 14px;
-      border-bottom:1px solid rgba(255,255,255,0.04);
-      transition:background 0.2s;
-      align-items:center;"
-      onmouseover="this.style.background='rgba(201,168,76,0.03)'"
-      onmouseout="this.style.background='transparent'">
+      background:${f.is_visible
+        ? 'rgba(255,255,255,0.03)'
+        : 'rgba(255,255,255,0.015)'};
+      border:1px solid ${f.is_visible
+        ? 'rgba(201,168,76,0.15)'
+        : 'rgba(255,255,255,0.05)'};
+      border-radius:14px;
+      overflow:hidden;
+      transition:all 0.3s ease;
+      animation:cardIn 0.4s ease forwards;
+      opacity:0;"
+      onmouseover="this.style.borderColor='rgba(201,168,76,0.3)';
+                   this.style.background='rgba(201,168,76,0.04)'"
+      onmouseout="this.style.borderColor='${f.is_visible
+        ? 'rgba(201,168,76,0.15)'
+        : 'rgba(255,255,255,0.05)'}';
+                  this.style.background='${f.is_visible
+        ? 'rgba(255,255,255,0.03)'
+        : 'rgba(255,255,255,0.015)'}'">
 
-      <!-- الترتيب -->
+      <!-- ── الخط العلوي الملون (فقط للمرئي) ── -->
+      ${f.is_visible ? `
+        <div style="
+          height:2px;
+          background:linear-gradient(90deg,
+            transparent,rgba(201,168,76,0.5),transparent);">
+        </div>` : ''}
+
+      <!-- ── المحتوى الرئيسي ── -->
       <div style="
-        width:28px;height:28px;border-radius:8px;
-        background:linear-gradient(135deg,
-          rgba(201,168,76,0.15),rgba(201,168,76,0.04));
-        border:1px solid rgba(201,168,76,0.25);
-        display:flex;align-items:center;justify-content:center;
-        font-size:11px;font-weight:900;color:#c9a84c;">
-        ${f.order_num}
-      </div>
+        padding:12px 14px;
+        display:flex;align-items:center;gap:12px;">
 
-      <!-- الاسم والوحدة -->
-      <div style="padding:0 8px;min-width:0;">
+        <!-- رقم الترتيب -->
         <div style="
-          font-size:13px;font-weight:700;
-          color:${f.is_visible ? '#fff' : 'rgba(255,255,255,0.3)'};
-          margin-bottom:3px;letter-spacing:0.3px;
-          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${f.field_label}
-          <span style="
-            font-size:9px;font-weight:600;
-            color:rgba(201,168,76,0.5);
-            letter-spacing:1.5px;margin-left:6px;">
-            ${f.field_key}
-          </span>
-        </div>
-        <div style="
-          font-size:10px;color:rgba(255,255,255,0.25);
-          display:flex;align-items:center;gap:5px;">
-          <i class="fas fa-tag"
-             style="font-size:8px;color:rgba(201,168,76,0.3);"></i>
-          Birim:
-          <strong style="color:rgba(255,255,255,0.4);">
-            ${f.field_unit || '—'}
-          </strong>
-        </div>
-      </div>
-
-      <!-- الأيقونة -->
-      <div style="display:flex;align-items:center;gap:7px;">
-        <div style="
-          width:32px;height:32px;border-radius:9px;
-          background:rgba(201,168,76,0.1);
-          border:1px solid rgba(201,168,76,0.2);
+          width:32px;height:32px;flex-shrink:0;
+          border-radius:9px;
+          background:linear-gradient(135deg,
+            rgba(201,168,76,0.15),rgba(201,168,76,0.04));
+          border:1px solid rgba(201,168,76,0.25);
           display:flex;align-items:center;justify-content:center;
-          color:#c9a84c;font-size:14px;flex-shrink:0;">
+          font-size:12px;font-weight:900;color:#c9a84c;">
+          ${f.order_num}
+        </div>
+
+        <!-- الأيقونة -->
+        <div style="
+          width:40px;height:40px;flex-shrink:0;
+          border-radius:11px;
+          background:${f.is_visible
+            ? 'rgba(201,168,76,0.1)'
+            : 'rgba(255,255,255,0.04)'};
+          border:1px solid ${f.is_visible
+            ? 'rgba(201,168,76,0.22)'
+            : 'rgba(255,255,255,0.07)'};
+          display:flex;align-items:center;justify-content:center;
+          font-size:17px;
+          color:${f.is_visible ? '#c9a84c' : 'rgba(255,255,255,0.2)'};
+          transition:all 0.3s;">
           <i class="fas ${f.icon}"></i>
         </div>
-      </div>
 
-      <!-- مرئي/مخفي toggle -->
-      <div>
+        <!-- النصوص -->
+        <div style="flex:1;min-width:0;">
+
+          <!-- الاسم + المفتاح -->
+          <div style="
+            display:flex;align-items:center;
+            gap:7px;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="
+              font-size:14px;font-weight:900;
+              color:${f.is_visible ? '#fff' : 'rgba(255,255,255,0.3)'};
+              letter-spacing:0.3px;
+              transition:color 0.3s;">
+              ${f.field_label}
+            </span>
+            <span style="
+              padding:2px 8px;border-radius:50px;
+              font-size:8px;font-weight:700;
+              letter-spacing:1.5px;
+              background:rgba(201,168,76,0.08);
+              border:1px solid rgba(201,168,76,0.18);
+              color:rgba(201,168,76,0.6);">
+              ${f.field_key}
+            </span>
+          </div>
+
+          <!-- الوحدة + الحالة -->
+          <div style="
+            display:flex;align-items:center;
+            gap:8px;flex-wrap:wrap;">
+
+            <!-- الوحدة -->
+            <div style="
+              display:flex;align-items:center;gap:4px;
+              font-size:10px;color:rgba(255,255,255,0.25);">
+              <i class="fas fa-ruler"
+                 style="font-size:8px;
+                        color:rgba(201,168,76,0.35);"></i>
+              <span>Birim:</span>
+              <strong style="color:rgba(255,255,255,0.45);">
+                ${f.field_unit || '—'}
+              </strong>
+            </div>
+
+            <!-- شارة الحالة -->
+            <span style="
+              padding:2px 9px;border-radius:50px;
+              font-size:8px;font-weight:700;letter-spacing:1px;
+              background:${f.is_visible
+                ? 'rgba(74,222,128,0.1)'
+                : 'rgba(255,255,255,0.04)'};
+              border:1px solid ${f.is_visible
+                ? 'rgba(74,222,128,0.25)'
+                : 'rgba(255,255,255,0.07)'};
+              color:${f.is_visible
+                ? '#4ade80'
+                : 'rgba(255,255,255,0.2)'};">
+              <i class="fas ${f.is_visible
+                ? 'fa-eye'
+                : 'fa-eye-slash'}"
+                 style="font-size:7px;margin-right:3px;"></i>
+              ${f.is_visible ? 'Görünür' : 'Gizli'}
+            </span>
+          </div>
+        </div>
+
+        <!-- Toggle الظهور -->
         <div onclick="toggleDfVisibility(${f.id},${f.is_visible})"
+             title="${f.is_visible ? 'Gizle' : 'Göster'}"
              style="
-               width:44px;height:24px;border-radius:12px;
+               flex-shrink:0;
+               width:46px;height:26px;border-radius:13px;
                background:${f.is_visible
                  ? 'linear-gradient(135deg,#c9a84c,#f0d080)'
-                 : 'rgba(255,255,255,0.1)'};
+                 : 'rgba(255,255,255,0.08)'};
                cursor:pointer;position:relative;
-               transition:all 0.3s ease;
+               transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
                box-shadow:${f.is_visible
-                 ? '0 2px 8px rgba(201,168,76,0.35)'
-                 : 'none'};">
+                 ? '0 3px 10px rgba(201,168,76,0.4)'
+                 : 'none'};
+               -webkit-tap-highlight-color:transparent;">
           <div style="
             position:absolute;top:3px;
             left:${f.is_visible ? '23px' : '3px'};
-            width:18px;height:18px;border-radius:50%;
-            background:#fff;transition:all 0.3s ease;
-            box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>
+            width:20px;height:20px;border-radius:50%;
+            background:#fff;
+            transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+            box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>
         </div>
       </div>
 
-      <!-- الحالة -->
-      <div>
-        <span style="
-          padding:3px 10px;border-radius:50px;
-          font-size:9px;font-weight:700;letter-spacing:1px;
-          background:${f.is_visible
-            ? 'rgba(74,222,128,0.1)'
-            : 'rgba(255,255,255,0.04)'};
-          border:1px solid ${f.is_visible
-            ? 'rgba(74,222,128,0.3)'
-            : 'rgba(255,255,255,0.08)'};
-          color:${f.is_visible ? '#4ade80' : 'rgba(255,255,255,0.2)'};">
-          ${f.is_visible ? 'Görünür' : 'Gizli'}
-        </span>
-      </div>
+      <!-- ── شريط الإجراءات السفلي ── -->
+      <div style="
+        padding:8px 14px 10px;
+        background:rgba(0,0,0,0.2);
+        border-top:1px solid rgba(255,255,255,0.04);
+        display:flex;align-items:center;
+        justify-content:space-between;gap:8px;">
 
-      <!-- أزرار الإجراءات -->
-      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
-        <button onclick="moveDfField(${f.id},-1)"
-                title="Yukarı"
-                ${isFirst ? 'disabled' : ''}
-                style="
-                  width:28px;height:28px;border-radius:7px;
-                  border:1px solid rgba(255,255,255,0.08);
-                  background:rgba(255,255,255,0.04);
-                  color:rgba(255,255,255,0.35);
-                  font-size:11px;cursor:pointer;
-                  display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;
-                  ${isFirst ? 'opacity:0.25;cursor:not-allowed;' : ''}">
-          <i class="fas fa-chevron-up"></i>
-        </button>
+        <!-- أزرار الترتيب -->
+        <div style="display:flex;gap:6px;">
+          <button onclick="moveDfField(${f.id},-1)"
+                  title="Yukarı taşı"
+                  ${isFirst ? 'disabled' : ''}
+                  style="
+                    height:32px;padding:0 12px;
+                    border-radius:8px;
+                    border:1px solid rgba(255,255,255,0.08);
+                    background:rgba(255,255,255,0.04);
+                    color:${isFirst
+                      ? 'rgba(255,255,255,0.12)'
+                      : 'rgba(255,255,255,0.45)'};
+                    font-size:11px;cursor:${isFirst ? 'not-allowed' : 'pointer'};
+                    display:flex;align-items:center;gap:5px;
+                    transition:all 0.2s;
+                    font-family:'Montserrat',sans-serif;
+                    font-size:9px;font-weight:700;letter-spacing:0.5px;"
+                  onmouseover="if(!this.disabled){
+                    this.style.background='rgba(201,168,76,0.12)';
+                    this.style.borderColor='rgba(201,168,76,0.3)';
+                    this.style.color='#c9a84c';}"
+                  onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                    this.style.borderColor='rgba(255,255,255,0.08)';
+                    this.style.color='${isFirst
+                      ? 'rgba(255,255,255,0.12)'
+                      : 'rgba(255,255,255,0.45)'}';">
+            <i class="fas fa-chevron-up"></i>
+            <span class="df-btn-label">Yukarı</span>
+          </button>
 
-        <button onclick="moveDfField(${f.id},+1)"
-                title="Aşağı"
-                ${isLast ? 'disabled' : ''}
-                style="
-                  width:28px;height:28px;border-radius:7px;
-                  border:1px solid rgba(255,255,255,0.08);
-                  background:rgba(255,255,255,0.04);
-                  color:rgba(255,255,255,0.35);
-                  font-size:11px;cursor:pointer;
-                  display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;
-                  ${isLast ? 'opacity:0.25;cursor:not-allowed;' : ''}">
-          <i class="fas fa-chevron-down"></i>
-        </button>
+          <button onclick="moveDfField(${f.id},+1)"
+                  title="Aşağı taşı"
+                  ${isLast ? 'disabled' : ''}
+                  style="
+                    height:32px;padding:0 12px;
+                    border-radius:8px;
+                    border:1px solid rgba(255,255,255,0.08);
+                    background:rgba(255,255,255,0.04);
+                    color:${isLast
+                      ? 'rgba(255,255,255,0.12)'
+                      : 'rgba(255,255,255,0.45)'};
+                    font-size:11px;cursor:${isLast ? 'not-allowed' : 'pointer'};
+                    display:flex;align-items:center;gap:5px;
+                    transition:all 0.2s;
+                    font-family:'Montserrat',sans-serif;
+                    font-size:9px;font-weight:700;letter-spacing:0.5px;"
+                  onmouseover="if(!this.disabled){
+                    this.style.background='rgba(201,168,76,0.12)';
+                    this.style.borderColor='rgba(201,168,76,0.3)';
+                    this.style.color='#c9a84c';}"
+                  onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                    this.style.borderColor='rgba(255,255,255,0.08)';
+                    this.style.color='${isLast
+                      ? 'rgba(255,255,255,0.12)'
+                      : 'rgba(255,255,255,0.45)'}';">
+            <i class="fas fa-chevron-down"></i>
+            <span class="df-btn-label">Aşağı</span>
+          </button>
+        </div>
 
-        <button onclick="openDfEditModal(${f.id})"
-                title="Düzenle"
-                style="
-                  width:28px;height:28px;border-radius:7px;
-                  border:1px solid rgba(96,165,250,0.25);
-                  background:rgba(96,165,250,0.08);
-                  color:#60a5fa;font-size:11px;cursor:pointer;
-                  display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;">
-          <i class="fas fa-edit"></i>
-        </button>
+        <!-- أزرار التعديل والحذف -->
+        <div style="display:flex;gap:6px;">
+          <button onclick="openDfEditModal(${f.id})"
+                  title="Düzenle"
+                  style="
+                    height:32px;padding:0 14px;
+                    border-radius:8px;
+                    border:1px solid rgba(96,165,250,0.25);
+                    background:rgba(96,165,250,0.08);
+                    color:#60a5fa;cursor:pointer;
+                    display:flex;align-items:center;gap:6px;
+                    transition:all 0.2s;
+                    font-family:'Montserrat',sans-serif;
+                    font-size:9px;font-weight:700;letter-spacing:0.5px;"
+                  onmouseover="this.style.background='rgba(96,165,250,0.18)';
+                    this.style.transform='translateY(-1px)'"
+                  onmouseout="this.style.background='rgba(96,165,250,0.08)';
+                    this.style.transform=''">
+            <i class="fas fa-edit" style="font-size:11px;"></i>
+            <span class="df-btn-label">Düzenle</span>
+          </button>
 
-        <button onclick="deleteDfField(${f.id},'${f.field_label}')"
-                title="Sil"
-                style="
-                  width:28px;height:28px;border-radius:7px;
-                  border:1px solid rgba(239,68,68,0.2);
-                  background:rgba(239,68,68,0.07);
-                  color:rgba(239,68,68,0.6);font-size:11px;
-                  cursor:pointer;
-                  display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;">
-          <i class="fas fa-trash-alt"></i>
-        </button>
+          <button onclick="deleteDfField(${f.id},'${f.field_label}')"
+                  title="Sil"
+                  style="
+                    height:32px;padding:0 14px;
+                    border-radius:8px;
+                    border:1px solid rgba(239,68,68,0.2);
+                    background:rgba(239,68,68,0.07);
+                    color:rgba(239,68,68,0.65);cursor:pointer;
+                    display:flex;align-items:center;gap:6px;
+                    transition:all 0.2s;
+                    font-family:'Montserrat',sans-serif;
+                    font-size:9px;font-weight:700;letter-spacing:0.5px;"
+                  onmouseover="this.style.background='rgba(239,68,68,0.18)';
+                    this.style.color='#ef4444';
+                    this.style.borderColor='rgba(239,68,68,0.4)';
+                    this.style.transform='translateY(-1px)'"
+                  onmouseout="this.style.background='rgba(239,68,68,0.07)';
+                    this.style.color='rgba(239,68,68,0.65)';
+                    this.style.borderColor='rgba(239,68,68,0.2)';
+                    this.style.transform=''">
+            <i class="fas fa-trash-alt" style="font-size:11px;"></i>
+            <span class="df-btn-label">Sil</span>
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -26513,50 +26631,47 @@ finishAdminAccountLogin = function(admin) {
   const st = document.createElement('style');
   st.id = 'dfPageStyles';
   st.textContent = `
-    /* ── تجاوب الجدول على الموبايل ── */
+
+    /* ── الكود القديم الموجود ── */
     @media (max-width: 600px) {
-      #dfRows > div {
-        grid-template-columns: 1fr 1fr !important;
-        gap: 8px !important;
-        padding: 10px !important;
-      }
-      #dfRows > div > div:nth-child(1) { grid-column: 1; }
-      #dfRows > div > div:nth-child(2) { grid-column: 2; }
-      #dfRows > div > div:nth-child(3) { display:none; }
-      #dfRows > div > div:nth-child(4) { grid-column: 1; }
-      #dfRows > div > div:nth-child(5) { display:none; }
-      #dfRows > div > div:nth-child(6) {
-        grid-column: 1 / -1;
-        justify-content: flex-start;
+      /* ... */
+    }
+
+    /* ══ أضف هنا ══ */
+
+    /* ── إخفاء نص الأزرار على الشاشات الصغيرة جداً ── */
+    @media (max-width: 380px) {
+      .df-btn-label {
+        display: none !important;
       }
     }
 
+    /* ── تعديل padding الصفحة على الموبايل ── */
     @media (max-width: 480px) {
-      #dfRows > div {
-        grid-template-columns: 1fr !important;
-      }
-      #dfRows > div > div:nth-child(6) {
-        grid-column: 1;
+      #dfTableWrap {
+        padding: 12px 14px 32px !important;
       }
     }
 
-    /* ── تأثير hover على صفوف الجدول ── */
-    #dfRows > div:last-child {
-      border-bottom: none !important;
+    /* ── أنيميشن ظهور البطاقات ── */
+    @keyframes dfCardIn {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0);    }
     }
+    #dfCards > div {
+      animation: dfCardIn 0.35s ease forwards;
+    }
+    #dfCards > div:nth-child(1) { animation-delay: 0.05s; }
+    #dfCards > div:nth-child(2) { animation-delay: 0.10s; }
+    #dfCards > div:nth-child(3) { animation-delay: 0.15s; }
+    #dfCards > div:nth-child(4) { animation-delay: 0.20s; }
+    #dfCards > div:nth-child(5) { animation-delay: 0.25s; }
+    #dfCards > div:nth-child(6) { animation-delay: 0.30s; }
 
-    /* ── حقول المقاسات الديناميكية ── */
-    .dim-field::-webkit-inner-spin-button,
-    .dim-field::-webkit-outer-spin-button {
-      opacity: 0.3;
-    }
-    .dim-field:focus::-webkit-inner-spin-button,
-    .dim-field:focus::-webkit-outer-spin-button {
-      opacity: 1;
-    }
-  `;
+  `;  /* ← قبل هذا السطر مباشرة */
   document.head.appendChild(st);
 })();
+
 
 /* ============================================================
    15. إضافة حقل section_key المخفي في نافذة hcmEditModal
