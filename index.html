@@ -29595,15 +29595,17 @@ console.log('[Chat System v3.0] ✅ Loaded');
 /* ── HTML الزر ── */
 function _buildChatBtnHTML(forWow) {
   return `
-    <div class="chat-home-btn" onclick="openChatListPage()" style="
-      grid-column:1/-1;
-      display:flex;align-items:center;justify-content:space-between;
-      gap:12px;padding:13px 15px;border-radius:14px;
-      border:1px solid rgba(201,168,76,.2);
-      background:rgba(255,255,255,.025);
-      cursor:pointer;transition:all .22s ease;
-      font-family:'Montserrat',sans-serif;
-      -webkit-tap-highlight-color:transparent;"
+    <div class="chat-home-btn"
+      onclick="event.stopPropagation(); openChatListPage()"
+      style="
+        grid-column:1/-1;
+        display:flex;align-items:center;justify-content:space-between;
+        gap:12px;padding:13px 15px;border-radius:14px;
+        border:1px solid rgba(201,168,76,.2);
+        background:rgba(255,255,255,.025);
+        cursor:pointer;transition:all .22s ease;
+        font-family:'Montserrat',sans-serif;
+        -webkit-tap-highlight-color:transparent;"
       onmouseover="this.style.background='rgba(201,168,76,.07)';this.style.borderColor='rgba(201,168,76,.38)';this.style.transform='translateY(-2px)'"
       onmouseout="this.style.background='rgba(255,255,255,.025)';this.style.borderColor='rgba(201,168,76,.2)';this.style.transform=''">
       <div style="display:flex;align-items:center;gap:11px;">
@@ -29635,6 +29637,7 @@ function _buildChatBtnHTML(forWow) {
       </div>
     </div>`;
 }
+
 
 /* ── الحقن الفعلي ── */
 function injectChatBtn() {
