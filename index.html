@@ -2083,119 +2083,66 @@ body.wow-mode .mobile-menu {
 
 
 
-/* ── زر الموسيقى في لوحة الأدمن ── */
-.admin-music-btn {
+/* زر موسيقى الأدمن */
+.admin-audio-toggle {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 13px 18px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
   border-radius: 14px;
-  border: 1px solid rgba(201,168,76,0.25);
-  background: linear-gradient(135deg,
-    rgba(201,168,76,0.08),
-    rgba(201,168,76,0.03));
-  color: rgba(255,255,255,0.7);
-  font-family: 'Montserrat', sans-serif;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1px;
+  border: 1px solid rgba(201,168,76,0.2);
+  background: rgba(255,255,255,0.03);
   cursor: pointer;
-  transition: all 0.3s ease;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.25s ease;
+  font-family: 'Montserrat', sans-serif;
+  animation: cardSlideIn 0.6s ease 0.9s both;
 }
-.admin-music-btn:hover {
-  background: linear-gradient(135deg,
-    rgba(201,168,76,0.15),
-    rgba(201,168,76,0.06));
-  border-color: rgba(201,168,76,0.5);
-  color: #fff;
+.admin-audio-toggle:hover {
+  background: rgba(201,168,76,0.08);
+  border-color: rgba(201,168,76,0.4);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(201,168,76,0.15);
 }
-.admin-music-btn.playing {
-  background: linear-gradient(135deg,
-    rgba(201,168,76,0.18),
-    rgba(201,168,76,0.08));
-  border-color: rgba(201,168,76,0.5);
-  color: #c9a84c;
-  box-shadow: 0 0 20px rgba(201,168,76,0.12);
+.admin-audio-toggle.on {
+  border-color: rgba(201,168,76,0.45);
+  background: rgba(201,168,76,0.07);
 }
-.admin-music-btn.playing .music-icon-wrap {
-  animation: musicPulse 1.8s ease infinite;
-}
-@keyframes musicPulse {
-  0%,100% { transform: scale(1);    opacity: 1;   }
-  50%      { transform: scale(1.12); opacity: 0.8; }
-}
-.admin-music-btn .music-icon-wrap {
-  width: 38px;
-  height: 38px;
+.admin-audio-toggle .aat-icon {
+  width: 38px; height: 38px;
   border-radius: 10px;
-  background: rgba(201,168,76,0.12);
+  background: rgba(201,168,76,0.1);
   border: 1px solid rgba(201,168,76,0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  flex-shrink: 0;
-  transition: all 0.3s;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; color: #c9a84c; flex-shrink: 0;
 }
-.admin-music-btn.playing .music-icon-wrap {
-  background: rgba(201,168,76,0.2);
-  border-color: rgba(201,168,76,0.5);
-  color: #c9a84c;
+.admin-audio-toggle.on .aat-icon {
+  animation: iconPulse 2.2s infinite;
 }
-.admin-music-btn .music-info { flex: 1; text-align: left; }
-.admin-music-btn .music-label {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 1.5px;
+.admin-audio-toggle .aat-label {
+  font-size: 11px; font-weight: 900;
+  letter-spacing: 1.5px; color: #fff;
   text-transform: uppercase;
-  margin-bottom: 3px;
 }
-.admin-music-btn .music-status {
-  font-size: 9px;
-  letter-spacing: 1px;
-  color: rgba(255,255,255,0.3);
-  font-weight: 600;
+.admin-audio-toggle .aat-sub {
+  font-size: 9px; color: rgba(255,255,255,0.3);
+  letter-spacing: 1px; margin-top: 2px;
 }
-.admin-music-btn.playing .music-status {
-  color: rgba(201,168,76,0.7);
-}
-.admin-music-btn .music-badge {
-  padding: 3px 10px;
-  border-radius: 50px;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
+.admin-audio-toggle.on .aat-sub { color: rgba(201,168,76,0.6); }
+.admin-audio-toggle .aat-badge {
+  padding: 4px 12px; border-radius: 50px;
+  font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
   flex-shrink: 0;
 }
-.admin-music-btn.playing .music-badge {
+.admin-audio-toggle.on .aat-badge {
   background: rgba(201,168,76,0.15);
   border: 1px solid rgba(201,168,76,0.35);
   color: #c9a84c;
 }
-.admin-music-btn:not(.playing) .music-badge {
+.admin-audio-toggle:not(.on) .aat-badge {
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
-  color: rgba(255,255,255,0.3);
-}
-
-/* شريط التقدم الصغير */
-.music-progress-bar {
-  position: absolute;
-  bottom: 0; left: 0; right: 0;
-  height: 2px;
-  background: rgba(255,255,255,0.05);
-  overflow: hidden;
-}
-.music-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #c9a84c, #f0d080);
-  border-radius: 2px;
-  transition: width 1s linear;
+  color: rgba(255,255,255,0.25);
 }
 
 
@@ -24783,268 +24730,106 @@ async function openHcmEditInPage(cardId) {
 
 
 /* ============================================================
-   ★ نظام موسيقى لوحة الأدمن — مع حفظ آخر نقطة توقف ★
+   ★ زر موسيقى الأدمن — مع حفظ الحالة ★
 ============================================================ */
 
-const MUSIC_STORAGE_KEY = 'wow_music_state';
+const AUDIO_STATE_KEY = 'wow_audio_paused';
 
-/* ── حفظ حالة الموسيقى ── */
-function saveMusicState() {
-  const audio = document.getElementById('bgMusic');
-  if (!audio) return;
-  try {
-    localStorage.setItem(MUSIC_STORAGE_KEY, JSON.stringify({
-      currentTime : audio.currentTime,
-      playing     : audioPlaying,
-      savedAt     : Date.now(),
-    }));
-  } catch(e) {}
+/* هل كانت الموسيقى متوقفة في آخر جلسة؟ */
+function wasAudioPaused() {
+  return localStorage.getItem(AUDIO_STATE_KEY) === '1';
 }
 
-/* ── تحميل حالة الموسيقى ── */
-function loadMusicState() {
-  try {
-    const raw = localStorage.getItem(MUSIC_STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch(e) { return null; }
+/* حفظ حالة الإيقاف */
+function saveAudioPaused(paused) {
+  localStorage.setItem(AUDIO_STATE_KEY, paused ? '1' : '0');
 }
 
-/* ── تطبيق الحالة المحفوظة على الـ audio ── */
-function applyMusicState() {
-  const state = loadMusicState();
-  const audio = document.getElementById('bgMusic');
-  if (!audio || !state) return;
-
-  /* استعادة نقطة التوقف */
-  if (state.currentTime && state.currentTime > 0) {
-    audio.currentTime = state.currentTime;
-  }
-}
-
-/* ── حفظ الحالة كل 5 ثواني أثناء التشغيل ── */
-let _musicSaveInterval = null;
-
-function startMusicSaveInterval() {
-  clearInterval(_musicSaveInterval);
-  _musicSaveInterval = setInterval(() => {
-    if (audioPlaying) saveMusicState();
-  }, 5000);
-}
-
-function stopMusicSaveInterval() {
-  clearInterval(_musicSaveInterval);
-  _musicSaveInterval = null;
-}
-
-/* ── تبديل الموسيقى مع الحفظ ── */
-function toggleAdminMusic() {
-  const audio = document.getElementById('bgMusic');
-  if (!audio) return;
-
-  if (audioPlaying) {
-    /* إيقاف + حفظ الموضع */
-    saveMusicState();
-    audio.pause();
-    audioPlaying = false;
-    stopMusicSaveInterval();
-  } else {
-    /* تشغيل من آخر نقطة توقف */
-    applyMusicState();
-    audio.volume = 0.08;
-    audio.play()
-      .then(() => {
-        audioPlaying = true;
-        startMusicSaveInterval();
-      })
-      .catch(e => {
-        console.warn('[Music]', e);
-        audioPlaying = false;
-      });
-  }
-
-  /* تحديث كل الأيقونات */
-  syncAudioIcons();
-  updateAdminMusicBtn();
-}
-
-/* ── بناء HTML زر الموسيقى ── */
-function buildAdminMusicBtnHtml() {
-  const state  = loadMusicState();
-  const isPlay = audioPlaying;
-
-  /* حساب نسبة التقدم */
-  const audio    = document.getElementById('bgMusic');
-  const duration = audio?.duration || 0;
-  const current  = audio?.currentTime || state?.currentTime || 0;
-  const pct      = duration > 0
-    ? Math.min((current / duration) * 100, 100).toFixed(1)
-    : 0;
-
-  /* وقت منسق */
-  const fmt = (s) => {
-    const m = Math.floor(s / 60);
-    const sec = Math.floor(s % 60);
-    return `${m}:${String(sec).padStart(2,'0')}`;
-  };
-  const timeLabel = current > 0
-    ? fmt(current) + (duration > 0 ? ' / ' + fmt(duration) : '')
-    : '';
-
+/* بناء HTML الزر */
+function buildAdminAudioBtnHtml() {
+  const on = audioPlaying;
   return `
-    <button
-      class="admin-music-btn ${isPlay ? 'playing' : ''}"
-      onclick="toggleAdminMusic()"
-      id="adminMusicBtn">
-
-      <!-- أيقونة -->
-      <div class="music-icon-wrap">
-        <i class="fas ${isPlay ? 'fa-pause' : 'fa-play'}"></i>
+    <div class="admin-audio-toggle ${on ? 'on' : ''}"
+         onclick="clickAdminAudioBtn()">
+      <div class="aat-icon">
+        <i class="fas ${on ? 'fa-music' : 'fa-volume-mute'}"></i>
       </div>
-
-      <!-- معلومات -->
-      <div class="music-info">
-        <div class="music-label">
-          ${isPlay ? 'MÜZİĞİ DURDUR' : 'MÜZİĞİ BAŞLAT'}
+      <div style="flex:1;">
+        <div class="aat-label">
+          ${on ? 'MÜZİĞİ DURDUR' : 'MÜZİĞİ BAŞLAT'}
         </div>
-        <div class="music-status">
-          ${isPlay
-            ? `▶ Çalıyor${timeLabel ? ' — ' + timeLabel : ''}`
-            : (state?.currentTime > 0
-                ? `⏸ Duraklatıldı — ${fmt(state.currentTime)} konumunda`
-                : '⏹ Durduruldu')}
+        <div class="aat-sub">
+          ${on ? 'Şu an çalıyor' : 'Durduruldu'}
         </div>
       </div>
-
-      <!-- شارة الحالة -->
-      <div class="music-badge">
-        ${isPlay ? 'AÇIK' : 'KAPALI'}
-      </div>
-
-      <!-- شريط التقدم -->
-      <div class="music-progress-bar">
-        <div class="music-progress-fill"
-             style="width:${pct}%"></div>
-      </div>
-    </button>`;
-}
-
-/* ── تحديث زر الموسيقى في لوحة الأدمن ── */
-function updateAdminMusicBtn() {
-  const container = document.getElementById('adminMusicBtnWrap');
-  if (!container) return;
-  container.innerHTML = buildAdminMusicBtnHtml();
-}
-
-/* ── تحديث شريط التقدم كل ثانية ── */
-let _musicProgressTimer = null;
-
-function startMusicProgressUpdate() {
-  clearInterval(_musicProgressTimer);
-  _musicProgressTimer = setInterval(() => {
-    const audio = document.getElementById('bgMusic');
-    const fill  = document.querySelector(
-      '#adminMusicBtn .music-progress-fill'
-    );
-    const statusEl = document.querySelector(
-      '#adminMusicBtn .music-status'
-    );
-
-    if (!audio || !fill) return;
-
-    const duration = audio.duration || 0;
-    const current  = audio.currentTime || 0;
-    const pct      = duration > 0
-      ? Math.min((current / duration) * 100, 100).toFixed(1)
-      : 0;
-
-    fill.style.width = pct + '%';
-
-    if (statusEl && audioPlaying) {
-      const fmt = (s) => {
-        const m   = Math.floor(s / 60);
-        const sec = Math.floor(s % 60);
-        return `${m}:${String(sec).padStart(2,'0')}`;
-      };
-      statusEl.textContent = duration > 0
-        ? `▶ Çalıyor — ${fmt(current)} / ${fmt(duration)}`
-        : `▶ Çalıyor — ${fmt(current)}`;
-    }
-  }, 1000);
-}
-
-/* ── Override renderAdminHomeCards لإضافة الزر ── */
-const _origRenderAdminHomeCards_music = renderAdminHomeCards;
-renderAdminHomeCards = function(container) {
-  _origRenderAdminHomeCards_music(container);
-
-  /* إضافة زر الموسيقى في نهاية الشبكة */
-  const musicWrap = document.createElement('div');
-  musicWrap.style.cssText = `
-    grid-column: 1 / -1;
-    animation: cardSlideIn 0.6s ease 0.9s both;`;
-  musicWrap.innerHTML = `
-    <div id="adminMusicBtnWrap">
-      ${buildAdminMusicBtnHtml()}
+      <div class="aat-badge">${on ? 'AÇIK' : 'KAPALI'}</div>
     </div>`;
-  container.appendChild(musicWrap);
+}
 
-  /* بدء تحديث شريط التقدم */
-  setTimeout(() => startMusicProgressUpdate(), 500);
+/* النقر على الزر */
+function clickAdminAudioBtn() {
+  toggleAudio();
+  saveAudioPaused(!audioPlaying);
+  refreshAdminAudioBtn();
+}
+
+/* تحديث الزر في المكان */
+function refreshAdminAudioBtn() {
+  const wrap = document.getElementById('adminAudioBtnWrap');
+  if (wrap) wrap.innerHTML = buildAdminAudioBtnHtml();
+}
+
+/* إضافة الزر لشبكة الأدمن */
+function injectAdminAudioBtn(gridEl) {
+  if (!gridEl || document.getElementById('adminAudioBtnWrap')) return;
+  const div = document.createElement('div');
+  div.id = 'adminAudioBtnWrap';
+  div.style.cssText = 'grid-column:1/-1;';
+  div.innerHTML = buildAdminAudioBtnHtml();
+  gridEl.appendChild(div);
+}
+
+/* ── Hook: renderAdminHomeCards ── */
+const _orig_rahc_audio = renderAdminHomeCards;
+renderAdminHomeCards = function(container) {
+  _orig_rahc_audio(container);
+  injectAdminAudioBtn(container);
 };
 
-/* ── Override showAdminAccountHome لإضافة الزر أيضاً ── */
-const _origShowAdminAccountHome_music = showAdminAccountHome;
+/* ── Hook: showAdminAccountHome ── */
+const _orig_saah_audio = showAdminAccountHome;
 showAdminAccountHome = function(admin) {
-  _origShowAdminAccountHome_music(admin);
-
-  /* بعد رسم الهوم نضيف زر الموسيقى */
+  _orig_saah_audio(admin);
   setTimeout(() => {
     const grid = document.getElementById('adminAccHomeGrid');
-    if (!grid) return;
-
-    /* نتحقق أنه لم يُضف مسبقاً */
-    if (document.getElementById('adminMusicBtnWrap')) return;
-
-    const musicWrap = document.createElement('div');
-    musicWrap.style.cssText = `
-      grid-column: 1 / -1;
-      animation: cardSlideIn 0.6s ease 0.9s both;`;
-    musicWrap.innerHTML = `
-      <div id="adminMusicBtnWrap">
-        ${buildAdminMusicBtnHtml()}
-      </div>`;
-    grid.appendChild(musicWrap);
-
-    startMusicProgressUpdate();
-  }, 300);
+    injectAdminAudioBtn(grid);
+  }, 350);
 };
 
-/* ── حفظ الحالة عند إغلاق الصفحة ── */
-window.addEventListener('beforeunload', () => {
-  if (audioPlaying) saveMusicState();
-});
-
-/* ── استعادة الحالة عند التشغيل الأول ── */
-const _origTryPlayAudio_music = tryPlayAudio;
-tryPlayAudio = function() {
-  applyMusicState();
-  _origTryPlayAudio_music();
-  if (audioPlaying) startMusicSaveInterval();
-};
-
-/* ── Override toggleAudio لحفظ الحالة ── */
-const _origToggleAudio_music = toggleAudio;
+/* ── Hook: toggleAudio — لحفظ الحالة دائماً ── */
+const _orig_toggleAudio_save = toggleAudio;
 toggleAudio = function() {
-  _origToggleAudio_music();
-  saveMusicState();
-  if (audioPlaying) {
-    startMusicSaveInterval();
-  } else {
-    stopMusicSaveInterval();
-  }
-  updateAdminMusicBtn();
+  _orig_toggleAudio_save();
+  saveAudioPaused(!audioPlaying);
+  refreshAdminAudioBtn();
 };
+
+/* ── عند التحميل: إذا كانت متوقفة في آخر جلسة لا تشغّل ── */
+const _orig_tryPlay_save = tryPlayAudio;
+tryPlayAudio = function() {
+  if (wasAudioPaused()) {
+    /* كانت متوقفة — لا تشغّل تلقائياً */
+    audioPlaying = false;
+    syncAudioIcons();
+    return;
+  }
+  _orig_tryPlay_save();
+};
+
+/* حفظ عند إغلاق الصفحة */
+window.addEventListener('beforeunload', () => {
+  saveAudioPaused(!audioPlaying);
+});
 
 
   
