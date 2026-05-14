@@ -22281,9 +22281,29 @@ async function openServerInfoPage() {
         from{ transform:rotate(0deg); }
         to  { transform:rotate(360deg); }
       }
-    `;
-    document.head.appendChild(st);
-  }
+      /* ── إصلاح المودال — يجب أن يكون فوق كل شيء ── */
+    #dfEditModal {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 999999 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    #dfEditModal > div {
+      position: relative !important;
+      z-index: 1000000 !important;
+      max-height: 90vh !important;
+      overflow-y: auto !important;
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
 
   const page = document.createElement('div');
   page.id = 'siPage';
@@ -25351,22 +25371,22 @@ function openDfEditModal(fieldId) {
 
   const modal = document.createElement('div');
   modal.id = 'dfEditModal';
+ modal.style.cssText = `
+    position:fixed;
+    top:0;left:0;right:0;bottom:0;
+    z-index:999999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter:blur(18px);
+    -webkit-backdrop-filter:blur(18px);
+    padding:16px;
+    overflow-y:auto;
+    animation:updBgIn 0.3s ease forwards;`;
 
-  /* ✅ الإصلاح الرئيسي */
-  modal.style.cssText = `
-    position: fixed !important;
-    inset: 0 !important;
-    z-index: 999999 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    background: rgba(0,0,0,0.92) !important;
-    backdrop-filter: blur(18px) !important;
-    -webkit-backdrop-filter: blur(18px) !important;
-    padding: 16px !important;
-    pointer-events: all !important;
-    animation: updBgIn 0.3s ease forwards;`;
 
+  /* بناء أزرار الأيقونات */
   const iconBtns = DF_ICONS.map(ic => `
     <div onclick="selectDfIcon('${ic.key}',this)"
          id="dficon-${ic.key}"
@@ -25402,31 +25422,26 @@ function openDfEditModal(fieldId) {
       width:100%;max-width:500px;
       background:linear-gradient(145deg,#0f0f0f,#161616);
       border:1px solid rgba(201,168,76,0.25);
-      border-radius:22px;
-      overflow:hidden;
-      box-shadow:0 40px 100px rgba(0,0,0,0.9),
-                 0 0 0 1px rgba(201,168,76,0.06);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.8);
       animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      max-height:90vh;
-      overflow-y:auto;
+      max-height:92vh;overflow-y:auto;
       scrollbar-width:thin;
-      scrollbar-color:rgba(201,168,76,0.3) transparent;
-      position:relative;
-      z-index:1;">
+      scrollbar-color:rgba(201,168,76,0.3) transparent;">
 
       <!-- خط ذهبي -->
       <div style="height:3px;background:linear-gradient(90deg,
         transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
         flex-shrink:0;"></div>
 
-      <!-- هيدر ثابت -->
+      <!-- هيدر -->
       <div style="
         padding:18px 20px 14px;
         display:flex;align-items:center;justify-content:space-between;
         border-bottom:1px solid rgba(255,255,255,0.05);
         position:sticky;top:0;
         background:linear-gradient(145deg,#0f0f0f,#161616);
-        z-index:10;">
+        z-index:2;">
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="
             width:44px;height:44px;flex-shrink:0;
@@ -25474,7 +25489,7 @@ function openDfEditModal(fieldId) {
         <input type="hidden" id="dfSelectedIcon"
                value="${existing?.icon || 'fa-ruler'}"/>
 
-        <!-- اسم الحقل -->
+        <!-- ── اسم الحقل ── -->
         <div>
           <label style="font-size:9px;letter-spacing:2px;
                color:rgba(255,255,255,0.3);text-transform:uppercase;
@@ -25502,7 +25517,7 @@ function openDfEditModal(fieldId) {
             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
         </div>
 
-        <!-- المفتاح + الوحدة -->
+        <!-- ── المفتاح + الوحدة ── -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="font-size:9px;letter-spacing:2px;
@@ -25564,7 +25579,7 @@ function openDfEditModal(fieldId) {
           </div>
         </div>
 
-        <!-- الأيقونة -->
+        <!-- ── الأيقونة ── -->
         <div>
           <label style="font-size:9px;letter-spacing:2px;
                color:rgba(255,255,255,0.3);text-transform:uppercase;
@@ -25580,6 +25595,7 @@ function openDfEditModal(fieldId) {
             border-radius:12px;padding:12px;">
             ${iconBtns}
           </div>
+          <!-- معاينة الأيقونة المختارة -->
           <div style="
             margin-top:8px;
             display:flex;align-items:center;gap:8px;
@@ -25602,7 +25618,7 @@ function openDfEditModal(fieldId) {
           </div>
         </div>
 
-        <!-- الترتيب + الظهور -->
+        <!-- ── الترتيب + الظهور ── -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="font-size:9px;letter-spacing:2px;
@@ -25677,18 +25693,8 @@ function openDfEditModal(fieldId) {
           text-align:center;
           font-family:'Montserrat',sans-serif;"></div>
 
-        <!-- ✅ أزرار ثابتة في الأسفل -->
-        <div style="
-          display:flex;gap:10px;
-          position:sticky;
-          bottom:0;
-          padding:14px 0 2px;
-          background:linear-gradient(
-            to top,
-            rgba(15,15,15,1) 70%,
-            rgba(15,15,15,0) 100%
-          );
-          margin-top:4px;">
+        <!-- أزرار -->
+        <div style="display:flex;gap:10px;">
           <button onclick="closeDfEditModal()" style="
             flex:1;padding:13px;border-radius:10px;
             border:1px solid rgba(255,255,255,0.1);
@@ -25697,13 +25703,8 @@ function openDfEditModal(fieldId) {
             font-family:'Montserrat',sans-serif;
             font-size:11px;font-weight:700;letter-spacing:1px;
             cursor:pointer;transition:all 0.25s;"
-            onmouseover="
-              this.style.background='rgba(255,255,255,0.09)';
-              this.style.color='rgba(255,255,255,0.7)';"
-            onmouseout="
-              this.style.background='rgba(255,255,255,0.04)';
-              this.style.color='rgba(255,255,255,0.4)';">
-            <i class="fas fa-times" style="margin-right:5px;"></i>
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
             İPTAL
           </button>
           <button onclick="saveDfField()" id="dfSaveBtn" style="
@@ -25713,26 +25714,23 @@ function openDfEditModal(fieldId) {
             font-size:11px;font-weight:900;letter-spacing:2px;
             cursor:pointer;transition:all 0.25s;
             display:flex;align-items:center;
-            justify-content:center;gap:7px;
-            box-shadow:0 4px 20px rgba(201,168,76,0.25);"
-            onmouseover="
-              this.style.transform='translateY(-2px)';
-              this.style.boxShadow='0 8px 28px rgba(201,168,76,0.45)';"
-            onmouseout="
-              this.style.transform='';
-              this.style.boxShadow='0 4px 20px rgba(201,168,76,0.25)';">
+            justify-content:center;gap:7px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+              this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+            onmouseout="this.style.transform='';
+                        this.style.boxShadow=''">
             <i class="fas fa-save"></i>
             ${isEdit ? 'GÜNCELLE' : 'EKLE'}
           </button>
         </div>
-
       </div>
     </div>`;
 
-  /* ✅ إضافة مباشرة إلى body */
-  document.body.appendChild(modal);
+/* ── تأكد أن المودال يُضاف مباشرة لـ body وليس لأي div داخلي ── */
+document.body.appendChild(modal);
+document.body.style.overflow = 'hidden';
 
-  /* تحديد الأيقونة الافتراضية */
+  /* تحديد الأيقونة الافتراضية بصرياً */
   const defaultIcon = existing?.icon || 'fa-ruler';
   const defaultBtn  = document.getElementById('dficon-' + defaultIcon);
   if (defaultBtn) {
@@ -25741,32 +25739,28 @@ function openDfEditModal(fieldId) {
     defaultBtn.style.color       = '#c9a84c';
   }
 
-  /* تحديث checkbox */
+  /* تحديث checkbox بصرياً */
   const cb = document.getElementById('dfIsVisible');
   if (cb) updateDfVisToggle(cb);
 
-  /* إغلاق بالضغط خارج النافذة */
   modal.addEventListener('click', e => {
     if (e.target === modal) closeDfEditModal();
   });
 
-  /* ✅ منع تمرير الصفحة خلف النافذة */
-  document.body.style.overflow = 'hidden';
-
-  setTimeout(() =>
-    document.getElementById('dfFieldLabel')?.focus(), 300
-  );
+  setTimeout(() => document.getElementById('dfFieldLabel')?.focus(), 300);
 }
 
-/* ✅ إعادة التمرير عند الإغلاق */
+/* ── إغلاق النافذة ── */
 function closeDfEditModal() {
   document.getElementById('dfEditModal')?.remove();
   document.body.style.overflow = '';
   _dfEditing = null;
 }
 
+
 /* ── اختيار أيقونة ── */
 function selectDfIcon(iconKey, el) {
+  /* إلغاء تحديد الكل */
   DF_ICONS.forEach(ic => {
     const btn = document.getElementById('dficon-' + ic.key);
     if (btn) {
@@ -25776,6 +25770,7 @@ function selectDfIcon(iconKey, el) {
     }
   });
 
+  /* تحديد الجديد */
   if (el) {
     el.style.borderColor = 'rgba(201,168,76,0.6)';
     el.style.background  = 'rgba(201,168,76,0.15)';
@@ -25786,15 +25781,20 @@ function selectDfIcon(iconKey, el) {
 
   const preview     = document.getElementById('dfIconPreview');
   const previewName = document.getElementById('dfIconPreviewName');
-  if (preview)     preview.className       = 'fas ' + iconKey;
-  if (previewName) previewName.textContent = iconKey.replace('fa-', '');
+  if (preview) {
+    preview.className = 'fas ' + iconKey;
+  }
+  if (previewName) {
+    previewName.textContent = iconKey.replace('fa-', '');
+  }
 }
 
 /* ── تحديث checkbox بصرياً ── */
 function updateDfVisToggle(cb) {
   const label = document.getElementById('dfVisLabel');
   if (cb.checked) {
-    cb.style.background  = 'linear-gradient(135deg,#c9a84c,#f0d080)';
+    cb.style.background  =
+      'linear-gradient(135deg,#c9a84c,#f0d080)';
     cb.style.borderColor = '#c9a84c';
     if (label) {
       label.textContent = 'Görünür';
