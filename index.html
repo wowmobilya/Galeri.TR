@@ -26931,21 +26931,22 @@ let _chatPageReady    = false;
   s.id = 'wowChatCSS';
   s.textContent = `
 
-  /* ── صفحات الدخول/الخروج ── */
+   /* ── صفحات الدخول/الخروج ── */
   .chat-page {
-    position:fixed;inset:0;z-index:7500;
+    position:fixed;inset:0;z-index:8500; /* ← تم التعديل هنا (من 7500 إلى 8500) */
     background:#0a0a0a;
     display:flex;flex-direction:column;
     overflow:hidden;
     animation:cpIn .3s cubic-bezier(.4,0,.2,1) forwards;
   }
   .chat-window {
-    position:fixed;inset:0;z-index:7600;
+    position:fixed;inset:0;z-index:8600; /* ← تم التعديل هنا (من 7600 إلى 8600) */
     background:#0a0a0a;
     display:flex;flex-direction:column;
     overflow:hidden;
     animation:cpIn .28s ease forwards;
   }
+
   @keyframes cpIn  { from{opacity:0;transform:translateX(32px)} to{opacity:1;transform:translateX(0)} }
   @keyframes cpOut { from{opacity:1;transform:translateX(0)} to{opacity:0;transform:translateX(32px)} }
 
