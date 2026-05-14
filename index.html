@@ -2147,6 +2147,104 @@ body.wow-mode .mobile-menu {
 
 
 
+
+
+
+
+
+
+
+    /* =====================================================
+   ÖLÇÜLER YÖNETİMİ — تجاوب الموبايل الكامل
+===================================================== */
+
+/* ── رأس الجدول: إخفاء في الموبايل ── */
+@media (max-width: 768px) {
+  /* إخفاء رأس الجدول */
+  #dfTableWrap > div > div:first-child {
+    display: none !important;
+  }
+
+  /* كل صف يصبح بطاقة مستقلة */
+  #dfRows > div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    padding: 14px !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.03) !important;
+    margin-bottom: 10px !important;
+    border: 1px solid rgba(255,255,255,0.07) !important;
+  }
+
+  /* صف علوي: رقم + اسم الحقل */
+  #dfRows > div > div:nth-child(1),
+  #dfRows > div > div:nth-child(2) {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+
+  /* دمج رقم الترتيب مع اسم الحقل في صف واحد */
+  #dfRows > div > div:nth-child(2) {
+    flex: 1 !important;
+  }
+
+  /* صف الأيقونة + الظهور في نفس السطر */
+  #dfRows > div > div:nth-child(3),
+  #dfRows > div > div:nth-child(4) {
+    display: inline-flex !important;
+  }
+
+  /* صف الحالة */
+  #dfRows > div > div:nth-child(5) {
+    display: flex !important;
+  }
+
+  /* أزرار الإجراءات: عرض كامل */
+  #dfRows > div > div:nth-child(6) {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 8px !important;
+    padding-top: 10px !important;
+    border-top: 1px solid rgba(255,255,255,0.05) !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* تكبير أزرار الإجراءات للموبايل */
+  #dfRows > div > div:nth-child(6) button {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* ── شاشات صغيرة جداً ── */
+@media (max-width: 480px) {
+  #dfTableWrap {
+    padding: 12px !important;
+  }
+
+  #dfRows > div {
+    padding: 12px !important;
+  }
+
+  /* أزرار الإجراءات: عرض كامل بالعرض */
+  #dfRows > div > div:nth-child(6) {
+    justify-content: space-between !important;
+  }
+
+  #dfRows > div > div:nth-child(6) button {
+    flex: 1 !important;
+    max-width: 44px !important;
+  }
+}
+
+
+
+
+
+    
     
 
   </style>
@@ -25140,7 +25238,8 @@ function buildDfRow(f, idx, total) {
       gap:0;
       padding:12px 14px;
       border-bottom:1px solid rgba(255,255,255,0.04);
-      transition:background 0.2s;align-items:center;"
+      transition:background 0.2s;
+      align-items:center;"
       onmouseover="this.style.background='rgba(201,168,76,0.03)'"
       onmouseout="this.style.background='transparent'">
 
@@ -25156,22 +25255,27 @@ function buildDfRow(f, idx, total) {
       </div>
 
       <!-- الاسم والوحدة -->
-      <div style="padding:0 8px;">
-        <div style="font-size:13px;font-weight:700;
-             color:${f.is_visible ? '#fff' : 'rgba(255,255,255,0.3)'};
-             margin-bottom:3px;letter-spacing:0.3px;">
+      <div style="padding:0 8px;min-width:0;">
+        <div style="
+          font-size:13px;font-weight:700;
+          color:${f.is_visible ? '#fff' : 'rgba(255,255,255,0.3)'};
+          margin-bottom:3px;letter-spacing:0.3px;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           ${f.field_label}
-          <span style="font-size:9px;font-weight:600;
-                color:rgba(201,168,76,0.5);
-                letter-spacing:1.5px;margin-left:6px;">
+          <span style="
+            font-size:9px;font-weight:600;
+            color:rgba(201,168,76,0.5);
+            letter-spacing:1.5px;margin-left:6px;">
             ${f.field_key}
           </span>
         </div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.25);
-             display:flex;align-items:center;gap:5px;">
+        <div style="
+          font-size:10px;color:rgba(255,255,255,0.25);
+          display:flex;align-items:center;gap:5px;">
           <i class="fas fa-tag"
              style="font-size:8px;color:rgba(201,168,76,0.3);"></i>
-          Birim: <strong style="color:rgba(255,255,255,0.4);">
+          Birim:
+          <strong style="color:rgba(255,255,255,0.4);">
             ${f.field_unit || '—'}
           </strong>
         </div>
@@ -25184,15 +25288,9 @@ function buildDfRow(f, idx, total) {
           background:rgba(201,168,76,0.1);
           border:1px solid rgba(201,168,76,0.2);
           display:flex;align-items:center;justify-content:center;
-          color:#c9a84c;font-size:14px;">
+          color:#c9a84c;font-size:14px;flex-shrink:0;">
           <i class="fas ${f.icon}"></i>
         </div>
-        <span style="font-size:8px;color:rgba(255,255,255,0.2);
-              letter-spacing:0.5px;max-width:50px;
-              overflow:hidden;text-overflow:ellipsis;
-              white-space:nowrap;">
-          ${f.icon.replace('fa-','')}
-        </span>
       </div>
 
       <!-- مرئي/مخفي toggle -->
@@ -25234,13 +25332,10 @@ function buildDfRow(f, idx, total) {
       </div>
 
       <!-- أزرار الإجراءات -->
-      <div style="display:flex;gap:5px;align-items:center;">
-        <!-- أعلى -->
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
         <button onclick="moveDfField(${f.id},-1)"
                 title="Yukarı"
-                ${isFirst
-                  ? 'disabled style="opacity:0.25;cursor:not-allowed;"'
-                  : ''}
+                ${isFirst ? 'disabled' : ''}
                 style="
                   width:28px;height:28px;border-radius:7px;
                   border:1px solid rgba(255,255,255,0.08);
@@ -25248,21 +25343,14 @@ function buildDfRow(f, idx, total) {
                   color:rgba(255,255,255,0.35);
                   font-size:11px;cursor:pointer;
                   display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;"
-                onmouseover="if(!this.disabled)
-                  this.style.background='rgba(201,168,76,0.15)';
-                  this.style.color='#c9a84c';"
-                onmouseout="this.style.background='rgba(255,255,255,0.04)';
-                  this.style.color='rgba(255,255,255,0.35)';">
+                  justify-content:center;transition:all 0.2s;
+                  ${isFirst ? 'opacity:0.25;cursor:not-allowed;' : ''}">
           <i class="fas fa-chevron-up"></i>
         </button>
 
-        <!-- أسفل -->
         <button onclick="moveDfField(${f.id},+1)"
                 title="Aşağı"
-                ${isLast
-                  ? 'disabled style="opacity:0.25;cursor:not-allowed;"'
-                  : ''}
+                ${isLast ? 'disabled' : ''}
                 style="
                   width:28px;height:28px;border-radius:7px;
                   border:1px solid rgba(255,255,255,0.08);
@@ -25270,16 +25358,11 @@ function buildDfRow(f, idx, total) {
                   color:rgba(255,255,255,0.35);
                   font-size:11px;cursor:pointer;
                   display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;"
-                onmouseover="if(!this.disabled)
-                  this.style.background='rgba(201,168,76,0.15)';
-                  this.style.color='#c9a84c';"
-                onmouseout="this.style.background='rgba(255,255,255,0.04)';
-                  this.style.color='rgba(255,255,255,0.35)';">
+                  justify-content:center;transition:all 0.2s;
+                  ${isLast ? 'opacity:0.25;cursor:not-allowed;' : ''}">
           <i class="fas fa-chevron-down"></i>
         </button>
 
-        <!-- تعديل -->
         <button onclick="openDfEditModal(${f.id})"
                 title="Düzenle"
                 style="
@@ -25288,13 +25371,10 @@ function buildDfRow(f, idx, total) {
                   background:rgba(96,165,250,0.08);
                   color:#60a5fa;font-size:11px;cursor:pointer;
                   display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;"
-                onmouseover="this.style.background='rgba(96,165,250,0.2)'"
-                onmouseout="this.style.background='rgba(96,165,250,0.08)'">
+                  justify-content:center;transition:all 0.2s;">
           <i class="fas fa-edit"></i>
         </button>
 
-        <!-- حذف -->
         <button onclick="deleteDfField(${f.id},'${f.field_label}')"
                 title="Sil"
                 style="
@@ -25304,11 +25384,7 @@ function buildDfRow(f, idx, total) {
                   color:rgba(239,68,68,0.6);font-size:11px;
                   cursor:pointer;
                   display:flex;align-items:center;
-                  justify-content:center;transition:all 0.2s;"
-                onmouseover="this.style.background='rgba(239,68,68,0.18)';
-                  this.style.color='#ef4444';"
-                onmouseout="this.style.background='rgba(239,68,68,0.07)';
-                  this.style.color='rgba(239,68,68,0.6)';">
+                  justify-content:center;transition:all 0.2s;">
           <i class="fas fa-trash-alt"></i>
         </button>
       </div>
