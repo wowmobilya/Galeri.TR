@@ -25341,23 +25341,42 @@ function buildDfRow(f, idx, total) {
 ============================================================ */
 function openDfEditModal(fieldId) {
   _dfEditing = fieldId;
-  document.getElementById('dfEditModal')?.remove();
+
+  /* ── إزالة أي نافذة سابقة ── */
+  const old = document.getElementById('dfEditModal');
+  if (old) old.remove();
 
   const existing = fieldId
     ? _dimFields.find(f => f.id === fieldId)
     : null;
-
   const isEdit = !!existing;
 
+  /* ══════════════════════════════════════════════
+     الـ overlay — يجب أن يكون أعلى كل شيء
+  ══════════════════════════════════════════════ */
   const modal = document.createElement('div');
   modal.id = 'dfEditModal';
-  modal.style.cssText = `
-    position:fixed;inset:0;z-index:8500;
-    display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.88);
-    backdrop-filter:blur(18px);
-    padding:16px;
-    animation:updBgIn 0.3s ease forwards;`;
+
+  /* ★ هذا هو الإصلاح الرئيسي ★ */
+  modal.setAttribute('style', [
+    'position:fixed',
+    'top:0',
+    'left:0',
+    'right:0',
+    'bottom:0',
+    'width:100%',
+    'height:100%',
+    'z-index:999999',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'background:rgba(0,0,0,0.92)',
+    'backdrop-filter:blur(20px)',
+    '-webkit-backdrop-filter:blur(20px)',
+    'padding:16px',
+    'box-sizing:border-box',
+    'overflow-y:auto',
+  ].join(';'));
 
   /* بناء أزرار الأيقونات */
   const iconBtns = DF_ICONS.map(ic => `
@@ -25374,47 +25393,33 @@ function openDfEditModal(fieldId) {
              : 'rgba(255,255,255,0.04)'};
            display:flex;align-items:center;justify-content:center;
            color:${existing?.icon === ic.key
-             ? '#c9a84c'
-             : 'rgba(255,255,255,0.35)'};
-           font-size:14px;cursor:pointer;
-           transition:all 0.2s;"
-         onmouseover="
-           this.style.borderColor='rgba(201,168,76,0.4)';
-           this.style.color='#c9a84c';"
-         onmouseout="
-           if(document.getElementById('dfSelectedIcon').value
-              !== '${ic.key}'){
-             this.style.borderColor='rgba(255,255,255,0.08)';
-             this.style.color='rgba(255,255,255,0.35)';
-           }">
+             ? '#c9a84c' : 'rgba(255,255,255,0.35)'};
+           font-size:14px;cursor:pointer;transition:all 0.2s;">
       <i class="fas ${ic.key}"></i>
     </div>`).join('');
 
   modal.innerHTML = `
-    <div style="
-      width:100%;max-width:500px;
+    <div id="dfEditInner" style="
+      position:relative;
+      width:100%;
+      max-width:500px;
+      margin:auto;
       background:linear-gradient(145deg,#0f0f0f,#161616);
       border:1px solid rgba(201,168,76,0.25);
-      border-radius:22px;overflow:hidden;
-      box-shadow:0 40px 100px rgba(0,0,0,0.8);
-      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      max-height:92vh;overflow-y:auto;
-      scrollbar-width:thin;
-      scrollbar-color:rgba(201,168,76,0.3) transparent;">
+      border-radius:22px;
+      overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.9);
+      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
 
-      <!-- خط ذهبي -->
+      <!-- خط ذهبي علوي -->
       <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
-        flex-shrink:0;"></div>
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
 
       <!-- هيدر -->
       <div style="
         padding:18px 20px 14px;
         display:flex;align-items:center;justify-content:space-between;
-        border-bottom:1px solid rgba(255,255,255,0.05);
-        position:sticky;top:0;
-        background:linear-gradient(145deg,#0f0f0f,#161616);
-        z-index:2;">
+        border-bottom:1px solid rgba(255,255,255,0.05);">
         <div style="display:flex;align-items:center;gap:12px;">
           <div style="
             width:44px;height:44px;flex-shrink:0;
@@ -25437,32 +25442,32 @@ function openDfEditModal(fieldId) {
             </div>
           </div>
         </div>
+        <!-- زر الإغلاق -->
         <div onclick="closeDfEditModal()" style="
-          width:32px;height:32px;
+          width:34px;height:34px;
           background:rgba(255,255,255,0.04);
           border:1px solid rgba(255,255,255,0.07);
-          border-radius:8px;color:rgba(255,255,255,0.3);
-          font-size:14px;cursor:pointer;
+          border-radius:9px;color:rgba(255,255,255,0.35);
+          font-size:15px;cursor:pointer;
           display:flex;align-items:center;justify-content:center;
-          transition:all 0.25s;"
-          onmouseover="this.style.background='rgba(255,70,70,0.1)';
+          transition:all 0.25s;flex-shrink:0;"
+          onmouseover="this.style.background='rgba(255,70,70,0.15)';
                        this.style.color='#ff6b6b';"
           onmouseout="this.style.background='rgba(255,255,255,0.04)';
-                      this.style.color='rgba(255,255,255,0.3)';">
+                      this.style.color='rgba(255,255,255,0.35)';">
           <i class="fas fa-times"></i>
         </div>
       </div>
 
       <!-- جسم النافذة -->
-      <div style="padding:20px;
-           display:flex;flex-direction:column;gap:16px;">
+      <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
 
         <input type="hidden" id="dfEditId"
                value="${existing?.id || ''}"/>
         <input type="hidden" id="dfSelectedIcon"
                value="${existing?.icon || 'fa-ruler'}"/>
 
-        <!-- ── اسم الحقل ── -->
+        <!-- اسم الحقل -->
         <div>
           <label style="font-size:9px;letter-spacing:2px;
                color:rgba(255,255,255,0.3);text-transform:uppercase;
@@ -25470,27 +25475,26 @@ function openDfEditModal(fieldId) {
             <i class="fas fa-tag"
                style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
             ALAN ADI
-            <span style="color:rgba(239,68,68,0.6);margin-left:3px;">*</span>
+            <span style="color:rgba(239,68,68,0.7);margin-left:3px;">*</span>
           </label>
           <input type="text" id="dfFieldLabel"
             value="${existing?.field_label || ''}"
             placeholder="Örn: CBM, Paket Adedi, Uzunluk..."
             maxlength="30"
             style="
-              width:100%;padding:12px 14px;
+              width:100%;padding:12px 14px;box-sizing:border-box;
               background:rgba(255,255,255,0.04);
               border:1.5px solid rgba(201,168,76,0.2);
               border-radius:10px;color:#fff;
               font-family:'Montserrat',sans-serif;
-              font-size:13px;font-weight:700;
-              outline:none;transition:all 0.3s;
-              -webkit-user-select:text;user-select:text;
-              box-sizing:border-box;"
+              font-size:13px;font-weight:700;outline:none;
+              transition:border-color 0.3s;
+              -webkit-user-select:text;user-select:text;"
             onfocus="this.style.borderColor='#c9a84c'"
             onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
         </div>
 
-        <!-- ── المفتاح + الوحدة ── -->
+        <!-- المفتاح + الوحدة -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="font-size:9px;letter-spacing:2px;
@@ -25499,30 +25503,31 @@ function openDfEditModal(fieldId) {
               <i class="fas fa-key"
                  style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
               ALAN ANAHTARI
-              <span style="color:rgba(239,68,68,0.6);margin-left:3px;">*</span>
+              <span style="color:rgba(239,68,68,0.7);margin-left:3px;">*</span>
             </label>
             <input type="text" id="dfFieldKey"
               value="${existing?.field_key || ''}"
-              placeholder="Örn: cbm, packet, l, w..."
+              placeholder="cbm, packet, l..."
               maxlength="20"
-              ${isEdit ? 'readonly style="opacity:0.6;"' : ''}
+              ${isEdit
+                ? 'readonly style="opacity:0.55;cursor:not-allowed;"'
+                : ''}
               oninput="this.value=this.value.toLowerCase()
                 .replace(/[^a-z0-9_]/g,'')"
               style="
-                width:100%;padding:12px 14px;
+                width:100%;padding:12px 14px;box-sizing:border-box;
                 background:rgba(255,255,255,0.04);
                 border:1.5px solid rgba(201,168,76,0.2);
                 border-radius:10px;color:#fff;
                 font-family:'Montserrat',sans-serif;
-                font-size:13px;font-weight:700;
-                outline:none;transition:all 0.3s;
-                -webkit-user-select:text;user-select:text;
-                box-sizing:border-box;"
+                font-size:13px;font-weight:700;outline:none;
+                transition:border-color 0.3s;
+                -webkit-user-select:text;user-select:text;"
               onfocus="this.style.borderColor='#c9a84c'"
               onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
             <div style="font-size:8px;color:rgba(255,255,255,0.15);
-                 margin-top:4px;letter-spacing:0.5px;">
-              Küçük harf, rakam, alt çizgi
+                 margin-top:4px;letter-spacing:0.3px;">
+              Küçük harf · rakam · alt çizgi
             </div>
           </div>
           <div>
@@ -25535,24 +25540,23 @@ function openDfEditModal(fieldId) {
             </label>
             <input type="text" id="dfFieldUnit"
               value="${existing?.field_unit || ''}"
-              placeholder="Örn: cm, kg, m³, adet..."
+              placeholder="cm, kg, m³, adet..."
               maxlength="10"
               style="
-                width:100%;padding:12px 14px;
+                width:100%;padding:12px 14px;box-sizing:border-box;
                 background:rgba(255,255,255,0.04);
                 border:1.5px solid rgba(201,168,76,0.2);
                 border-radius:10px;color:#fff;
                 font-family:'Montserrat',sans-serif;
-                font-size:13px;
-                outline:none;transition:all 0.3s;
-                -webkit-user-select:text;user-select:text;
-                box-sizing:border-box;"
+                font-size:13px;outline:none;
+                transition:border-color 0.3s;
+                -webkit-user-select:text;user-select:text;"
               onfocus="this.style.borderColor='#c9a84c'"
               onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
           </div>
         </div>
 
-        <!-- ── الأيقونة ── -->
+        <!-- اختيار الأيقونة -->
         <div>
           <label style="font-size:9px;letter-spacing:2px;
                color:rgba(255,255,255,0.3);text-transform:uppercase;
@@ -25568,7 +25572,7 @@ function openDfEditModal(fieldId) {
             border-radius:12px;padding:12px;">
             ${iconBtns}
           </div>
-          <!-- معاينة الأيقونة المختارة -->
+          <!-- معاينة -->
           <div style="
             margin-top:8px;
             display:flex;align-items:center;gap:8px;
@@ -25580,9 +25584,7 @@ function openDfEditModal(fieldId) {
                class="fas ${existing?.icon || 'fa-ruler'}"
                style="font-size:18px;color:#c9a84c;"></i>
             <span style="font-size:10px;color:rgba(255,255,255,0.3);
-                  letter-spacing:1px;">
-              Seçili ikon
-            </span>
+                  letter-spacing:1px;">Seçili:</span>
             <span id="dfIconPreviewName"
                   style="font-size:10px;font-weight:700;
                          color:rgba(201,168,76,0.7);">
@@ -25591,7 +25593,7 @@ function openDfEditModal(fieldId) {
           </div>
         </div>
 
-        <!-- ── الترتيب + الظهور ── -->
+        <!-- الترتيب + الظهور -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
             <label style="font-size:9px;letter-spacing:2px;
@@ -25604,19 +25606,18 @@ function openDfEditModal(fieldId) {
             <input type="number" id="dfOrderNum"
               value="${existing?.order_num ??
                 (_dimFields.length > 0
-                  ? Math.max(..._dimFields.map(f=>f.order_num))+1
+                  ? Math.max(..._dimFields.map(f => f.order_num)) + 1
                   : 1)}"
-              min="1" max="99"
+              min="1" max="999"
               style="
-                width:100%;padding:12px 14px;
+                width:100%;padding:12px 14px;box-sizing:border-box;
                 background:rgba(255,255,255,0.04);
                 border:1.5px solid rgba(201,168,76,0.2);
                 border-radius:10px;color:#fff;
                 font-family:'Montserrat',sans-serif;
-                font-size:13px;font-weight:700;
-                outline:none;transition:all 0.3s;
-                -webkit-user-select:text;user-select:text;
-                box-sizing:border-box;"
+                font-size:13px;font-weight:700;outline:none;
+                transition:border-color 0.3s;
+                -webkit-user-select:text;user-select:text;"
               onfocus="this.style.borderColor='#c9a84c'"
               onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
           </div>
@@ -25634,7 +25635,7 @@ function openDfEditModal(fieldId) {
               background:rgba(255,255,255,0.04);
               border:1.5px solid rgba(201,168,76,0.2);
               border-radius:10px;cursor:pointer;
-              transition:all 0.25s;"
+              transition:background 0.25s;"
               onmouseover="this.style.background='rgba(201,168,76,0.06)'"
               onmouseout="this.style.background='rgba(255,255,255,0.04)'">
               <input type="checkbox" id="dfIsVisible"
@@ -25646,14 +25647,13 @@ function openDfEditModal(fieldId) {
                   background:rgba(255,255,255,0.05);
                   border:2px solid rgba(201,168,76,0.3);
                   border-radius:5px;cursor:pointer;
-                  position:relative;transition:all 0.25s;
-                  display:block;"/>
+                  transition:all 0.25s;display:block;"/>
               <span id="dfVisLabel"
                     style="font-size:11px;font-weight:700;
                            color:${(existing?.is_visible ?? true)
-                             ? '#4ade80' : 'rgba(255,255,255,0.3)'};">
-                ${(existing?.is_visible ?? true)
-                  ? 'Görünür' : 'Gizli'}
+                             ? '#4ade80'
+                             : 'rgba(255,255,255,0.3)'};">
+                ${(existing?.is_visible ?? true) ? 'Görünür' : 'Gizli'}
               </span>
             </label>
           </div>
@@ -25661,69 +25661,88 @@ function openDfEditModal(fieldId) {
 
         <!-- رسالة الحالة -->
         <div id="dfEditMsg" style="
-          display:none;padding:10px 14px;
-          border-radius:9px;font-size:11px;font-weight:700;
-          text-align:center;
+          display:none;padding:10px 14px;border-radius:9px;
+          font-size:11px;font-weight:700;text-align:center;
           font-family:'Montserrat',sans-serif;"></div>
 
-        <!-- أزرار -->
-        <div style="display:flex;gap:10px;">
+        <!-- أزرار الحفظ والإلغاء -->
+        <div style="display:flex;gap:10px;padding-top:4px;">
           <button onclick="closeDfEditModal()" style="
-            flex:1;padding:13px;border-radius:10px;
+            flex:1;padding:14px;border-radius:10px;
             border:1px solid rgba(255,255,255,0.1);
             background:rgba(255,255,255,0.04);
             color:rgba(255,255,255,0.4);
             font-family:'Montserrat',sans-serif;
-            font-size:11px;font-weight:700;letter-spacing:1px;
+            font-size:11px;font-weight:700;letter-spacing:1.5px;
             cursor:pointer;transition:all 0.25s;"
-            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
-            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            onmouseover="this.style.background='rgba(255,255,255,0.09)';
+                         this.style.color='rgba(255,255,255,0.7)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                        this.style.color='rgba(255,255,255,0.4)'">
             İPTAL
           </button>
           <button onclick="saveDfField()" id="dfSaveBtn" style="
-            flex:2;padding:13px;border-radius:10px;border:none;
+            flex:2;padding:14px;border-radius:10px;border:none;
             background:linear-gradient(135deg,#c9a84c,#f0d080);
             color:#0a0a0a;font-family:'Montserrat',sans-serif;
             font-size:11px;font-weight:900;letter-spacing:2px;
             cursor:pointer;transition:all 0.25s;
             display:flex;align-items:center;
-            justify-content:center;gap:7px;"
+            justify-content:center;gap:8px;"
             onmouseover="this.style.transform='translateY(-2px)';
-              this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+              this.style.boxShadow='0 8px 24px rgba(201,168,76,0.4)'"
             onmouseout="this.style.transform='';
                         this.style.boxShadow=''">
             <i class="fas fa-save"></i>
-            ${isEdit ? 'GÜNCELLE' : 'EKLE'}
+            ${isEdit ? 'GÜNCELLE' : 'KAYDET'}
           </button>
         </div>
-      </div>
-    </div>`;
 
+      </div><!-- /body -->
+    </div><!-- /inner -->`;
+
+  /* ★ إضافة للـ body مباشرة — أهم خطوة ★ */
   document.body.appendChild(modal);
 
-  /* تحديد الأيقونة الافتراضية بصرياً */
-  const defaultIcon = existing?.icon || 'fa-ruler';
-  const defaultBtn  = document.getElementById('dficon-' + defaultIcon);
-  if (defaultBtn) {
-    defaultBtn.style.borderColor = 'rgba(201,168,76,0.6)';
-    defaultBtn.style.background  = 'rgba(201,168,76,0.15)';
-    defaultBtn.style.color       = '#c9a84c';
-  }
+  /* منع التمرير خلف النافذة */
+  document.body.style.overflow = 'hidden';
 
-  /* تحديث checkbox بصرياً */
-  const cb = document.getElementById('dfIsVisible');
-  if (cb) updateDfVisToggle(cb);
-
+  /* إغلاق عند الضغط على الخلفية */
   modal.addEventListener('click', e => {
     if (e.target === modal) closeDfEditModal();
   });
 
-  setTimeout(() => document.getElementById('dfFieldLabel')?.focus(), 300);
+  /* تحديد الأيقونة الافتراضية بصرياً */
+  const defaultIcon = existing?.icon || 'fa-ruler';
+  setTimeout(() => {
+    const btn = document.getElementById('dficon-' + defaultIcon);
+    if (btn) {
+      btn.style.borderColor = 'rgba(201,168,76,0.6)';
+      btn.style.background  = 'rgba(201,168,76,0.15)';
+      btn.style.color       = '#c9a84c';
+    }
+    /* تحديث checkbox بصرياً */
+    const cb = document.getElementById('dfIsVisible');
+    if (cb) updateDfVisToggle(cb);
+    /* فوكس على الاسم */
+    document.getElementById('dfFieldLabel')?.focus();
+  }, 50);
 }
 
-/* ── إغلاق النافذة ── */
+/* ── إغلاق النافذة — مُحسَّن ── */
 function closeDfEditModal() {
-  document.getElementById('dfEditModal')?.remove();
+  const modal = document.getElementById('dfEditModal');
+  if (!modal) return;
+
+  modal.style.transition = 'opacity 0.2s ease';
+  modal.style.opacity    = '0';
+
+  setTimeout(() => {
+    modal.remove();
+    /* إعادة التمرير */
+    document.body.style.overflow = '';
+  }, 200);
+
   _dfEditing = null;
 }
 
