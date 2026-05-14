@@ -29584,7 +29584,11 @@ finishAdminAccountLogin=function(...args) {
 ══════════════════════════════════════════════════════════════ */
 console.log('[Chat System v3.0] ✅ Loaded');
 
-/* ══════════════════════════════════════════════════════════════
+
+
+
+
+  /* ══════════════════════════════════════════════════════════════
    ★ إصلاح زر المحادثة — نسخة مضمونة 100%
 ══════════════════════════════════════════════════════════════ */
 
@@ -29634,19 +29638,18 @@ function _buildChatBtnHTML(forWow) {
 
 /* ── الحقن الفعلي ── */
 function injectChatBtn() {
-  /* WOW هوم */
-  const wowGrid = document.getElementById('adminHomeGrid');
+  /* ✅ WOW هوم — يستخدم .home-cards.admin-mode */
+  const wowGrid = document.querySelector('.home-cards.admin-mode');
   if (wowGrid && !wowGrid.querySelector('.chat-home-btn')) {
     wowGrid.insertAdjacentHTML('beforeend', _buildChatBtnHTML(true));
   }
 
-  /* Admin هوم */
+  /* ✅ Admin هوم (admin_accounts) */
   const admGrid = document.getElementById('adminAccHomeGrid');
   if (admGrid && !admGrid.querySelector('.chat-home-btn')) {
     admGrid.insertAdjacentHTML('beforeend', _buildChatBtnHTML(false));
   }
 
-  /* تحديث الشارة */
   refreshChatUnread();
 }
 
@@ -29658,7 +29661,8 @@ if (window._chatBtnObserver) {
 }
 
 window._chatBtnObserver = new MutationObserver(() => {
-  const wowGrid = document.getElementById('adminHomeGrid');
+  /* ✅ تصحيح: .home-cards.admin-mode بدلاً من #adminHomeGrid */
+  const wowGrid = document.querySelector('.home-cards.admin-mode');
   const admGrid = document.getElementById('adminAccHomeGrid');
 
   if (wowGrid && !wowGrid.querySelector('.chat-home-btn')) {
@@ -29680,26 +29684,38 @@ window._chatBtnObserver.observe(document.body, {
    ربط مع دوال الهوم الأصلية — Override مباشر
 ══════════════════════════════════════════════════════════════ */
 
-/* ── WOW هوم ── */
+/* ✅ WOW هوم — Override renderAdminHomeCards */
 if (typeof renderAdminHomeCards === 'function') {
   const _origRender = renderAdminHomeCards;
   renderAdminHomeCards = function(...args) {
     _origRender(...args);
-    setTimeout(injectChatBtn, 50);
+    setTimeout(() => {
+      const wowGrid = document.querySelector('.home-cards.admin-mode');
+      if (wowGrid && !wowGrid.querySelector('.chat-home-btn')) {
+        wowGrid.insertAdjacentHTML('beforeend', _buildChatBtnHTML(true));
+        refreshChatUnread();
+      }
+    }, 80);
   };
 }
 
-/* ── Admin هوم ── */
+/* ✅ Admin هوم — Override showAdminAccountHome */
 if (typeof showAdminAccountHome === 'function') {
   const _origAdminHome = showAdminAccountHome;
   showAdminAccountHome = function(...args) {
     _origAdminHome(...args);
-    setTimeout(injectChatBtn, 50);
+    setTimeout(() => {
+      const admGrid = document.getElementById('adminAccHomeGrid');
+      if (admGrid && !admGrid.querySelector('.chat-home-btn')) {
+        admGrid.insertAdjacentHTML('beforeend', _buildChatBtnHTML(false));
+        refreshChatUnread();
+      }
+    }, 80);
   };
 }
 
 /* ══════════════════════════════════════════════════════════════
-   تشغيل فوري — في حال كانت الصفحة مفتوحة مسبقاً
+   تشغيل فوري
 ══════════════════════════════════════════════════════════════ */
 injectChatBtn();
 setTimeout(injectChatBtn, 300);
@@ -29707,7 +29723,6 @@ setTimeout(injectChatBtn, 800);
 setTimeout(injectChatBtn, 1500);
 
 console.log('[Chat Btn] ✅ مراقب الزر مفعّل');
-
 
 
 
