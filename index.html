@@ -25515,125 +25515,182 @@ function buildDfCard(f, idx, total) {
 function openDfEditModal(fieldId) {
   _dfEditing = fieldId;
 
-  /* ── إزالة أي نافذة سابقة ── */
-  const old = document.getElementById('dfEditModal');
-  if (old) old.remove();
+  document.getElementById('dfEditModal')?.remove();
 
   const existing = fieldId
     ? _dimFields.find(f => f.id === fieldId)
     : null;
   const isEdit = !!existing;
 
-  /* ══════════════════════════════════════════════
-     الـ overlay — يجب أن يكون أعلى كل شيء
-  ══════════════════════════════════════════════ */
   const modal = document.createElement('div');
   modal.id = 'dfEditModal';
+  modal.setAttribute('style', `
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    padding: 0;
+  `);
 
-  /* ★ هذا هو الإصلاح الرئيسي ★ */
-  modal.setAttribute('style', [
-    'position:fixed',
-    'top:0',
-    'left:0',
-    'right:0',
-    'bottom:0',
-    'width:100%',
-    'height:100%',
-    'z-index:999999',
-    'display:flex',
-    'align-items:center',
-    'justify-content:center',
-    'background:rgba(0,0,0,0.92)',
-    'backdrop-filter:blur(20px)',
-    '-webkit-backdrop-filter:blur(20px)',
-    'padding:16px',
-    'box-sizing:border-box',
-    'overflow-y:auto',
-  ].join(';'));
-
-  /* بناء أزرار الأيقونات */
+  /* أزرار الأيقونات */
   const iconBtns = DF_ICONS.map(ic => `
     <div onclick="selectDfIcon('${ic.key}',this)"
          id="dficon-${ic.key}"
          title="${ic.label}"
          style="
-           width:38px;height:38px;border-radius:9px;
+           width:40px;height:40px;border-radius:10px;
            border:1px solid ${existing?.icon === ic.key
-             ? 'rgba(201,168,76,0.6)'
+             ? 'rgba(201,168,76,0.7)'
              : 'rgba(255,255,255,0.08)'};
            background:${existing?.icon === ic.key
-             ? 'rgba(201,168,76,0.15)'
+             ? 'rgba(201,168,76,0.18)'
              : 'rgba(255,255,255,0.04)'};
            display:flex;align-items:center;justify-content:center;
            color:${existing?.icon === ic.key
-             ? '#c9a84c' : 'rgba(255,255,255,0.35)'};
-           font-size:14px;cursor:pointer;transition:all 0.2s;">
+             ? '#c9a84c'
+             : 'rgba(255,255,255,0.3)'};
+           font-size:15px;cursor:pointer;
+           transition:all 0.2s;
+           -webkit-tap-highlight-color:transparent;">
       <i class="fas ${ic.key}"></i>
     </div>`).join('');
 
   modal.innerHTML = `
-    <div id="dfEditInner" style="
-      position:relative;
-      width:100%;
-      max-width:500px;
-      margin:auto;
-      background:linear-gradient(145deg,#0f0f0f,#161616);
-      border:1px solid rgba(201,168,76,0.25);
-      border-radius:22px;
-      overflow:hidden;
-      box-shadow:0 40px 100px rgba(0,0,0,0.9);
-      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+    <div style="
+      width: 100%;
+      max-width: 560px;
+      height: 92dvh;
+      height: 92vh;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(145deg,#0f0f0f,#161616);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-bottom: none;
+      border-radius: 22px 22px 0 0;
+      overflow: hidden;
+      box-shadow:
+        0 -10px 60px rgba(0,0,0,0.7),
+        0 0 0 1px rgba(201,168,76,0.08);
+      animation: dfSheetIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    ">
 
-      <!-- خط ذهبي علوي -->
-      <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+      <style>
+        @keyframes dfSheetIn {
+          from { opacity:0; transform:translateY(60px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        @media (min-width:600px) {
+          #dfEditModal {
+            align-items: center !important;
+            padding: 16px !important;
+          }
+          #dfEditModal > div {
+            border-radius: 22px !important;
+            border-bottom: 1px solid rgba(201,168,76,0.25) !important;
+            height: auto !important;
+            max-height: 90vh !important;
+          }
+        }
+      </style>
 
-      <!-- هيدر -->
+      <!-- ══════════════════════════════
+           ★ الهيدر الثابت
+      ══════════════════════════════ -->
       <div style="
-        padding:18px 20px 14px;
-        display:flex;align-items:center;justify-content:space-between;
-        border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;align-items:center;gap:12px;">
+        flex-shrink: 0;
+        background: linear-gradient(145deg,#0f0f0f,#161616);
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        z-index: 2;
+      ">
+        <!-- خط ذهبي علوي -->
+        <div style="
+          height: 3px;
+          background: linear-gradient(90deg,
+            transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+        "></div>
+
+        <!-- مقبض السحب (موبايل فقط) -->
+        <div style="
+          display:flex;align-items:center;justify-content:center;
+          padding:10px 0 4px;">
           <div style="
-            width:44px;height:44px;flex-shrink:0;
-            background:linear-gradient(135deg,
-              rgba(201,168,76,0.18),rgba(201,168,76,0.04));
-            border:1px solid rgba(201,168,76,0.3);
-            border-radius:12px;
-            display:flex;align-items:center;justify-content:center;
-            color:#c9a84c;font-size:18px;">
-            <i class="fas fa-ruler-combined"></i>
-          </div>
-          <div>
-            <div style="font-size:8px;letter-spacing:3px;
-                 color:rgba(201,168,76,0.55);
-                 text-transform:uppercase;margin-bottom:3px;">
-              ÖLÇÜ ALANI
-            </div>
-            <div style="font-size:16px;font-weight:900;color:#fff;">
-              ${isEdit ? 'Alanı Düzenle' : 'Yeni Alan Ekle'}
-            </div>
+            width:40px;height:4px;border-radius:4px;
+            background:rgba(255,255,255,0.15);">
           </div>
         </div>
-        <!-- زر الإغلاق -->
-        <div onclick="closeDfEditModal()" style="
-          width:34px;height:34px;
-          background:rgba(255,255,255,0.04);
-          border:1px solid rgba(255,255,255,0.07);
-          border-radius:9px;color:rgba(255,255,255,0.35);
-          font-size:15px;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
-          transition:all 0.25s;flex-shrink:0;"
-          onmouseover="this.style.background='rgba(255,70,70,0.15)';
-                       this.style.color='#ff6b6b';"
-          onmouseout="this.style.background='rgba(255,255,255,0.04)';
-                      this.style.color='rgba(255,255,255,0.35)';">
-          <i class="fas fa-times"></i>
+
+        <!-- محتوى الهيدر -->
+        <div style="
+          padding: 10px 18px 14px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 12px;
+        ">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="
+              width:44px;height:44px;flex-shrink:0;
+              background:linear-gradient(135deg,
+                rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+              border:1px solid rgba(201,168,76,0.3);
+              border-radius:12px;
+              display:flex;align-items:center;justify-content:center;
+              color:#c9a84c;font-size:18px;">
+              <i class="fas fa-ruler-combined"></i>
+            </div>
+            <div>
+              <div style="
+                font-size:8px;letter-spacing:3px;
+                color:rgba(201,168,76,0.55);
+                text-transform:uppercase;margin-bottom:3px;">
+                ÖLÇÜ ALANI
+              </div>
+              <div style="
+                font-size:16px;font-weight:900;color:#fff;">
+                ${isEdit ? 'Alanı Düzenle' : 'Yeni Alan Ekle'}
+              </div>
+            </div>
+          </div>
+
+          <!-- زر الإغلاق -->
+          <div onclick="closeDfEditModal()" style="
+            width:36px;height:36px;flex-shrink:0;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.08);
+            border-radius:10px;
+            color:rgba(255,255,255,0.35);
+            font-size:15px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:all 0.25s;
+            -webkit-tap-highlight-color:transparent;"
+            onmouseover="this.style.background='rgba(255,70,70,0.15)';
+                         this.style.color='#ff6b6b';"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                        this.style.color='rgba(255,255,255,0.35)';">
+            <i class="fas fa-times"></i>
+          </div>
         </div>
       </div>
 
-      <!-- جسم النافذة -->
-      <div style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+      <!-- ══════════════════════════════
+           ★ الجسم القابل للتمرير
+      ══════════════════════════════ -->
+      <div style="
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(201,168,76,0.3) transparent;
+        padding: 20px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      ">
 
         <input type="hidden" id="dfEditId"
                value="${existing?.id || ''}"/>
@@ -25642,138 +25699,178 @@ function openDfEditModal(fieldId) {
 
         <!-- اسم الحقل -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;
-               color:rgba(255,255,255,0.3);text-transform:uppercase;
-               font-weight:700;margin-bottom:6px;display:block;">
+          <label style="
+            font-size:9px;letter-spacing:2px;
+            color:rgba(255,255,255,0.3);
+            text-transform:uppercase;font-weight:700;
+            margin-bottom:7px;display:flex;
+            align-items:center;gap:6px;">
             <i class="fas fa-tag"
-               style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+               style="color:rgba(201,168,76,0.5);"></i>
             ALAN ADI
-            <span style="color:rgba(239,68,68,0.7);margin-left:3px;">*</span>
+            <span style="color:rgba(239,68,68,0.7);">*</span>
           </label>
           <input type="text" id="dfFieldLabel"
             value="${existing?.field_label || ''}"
             placeholder="Örn: CBM, Paket Adedi, Uzunluk..."
             maxlength="30"
             style="
-              width:100%;padding:12px 14px;box-sizing:border-box;
-              background:rgba(255,255,255,0.04);
+              width:100%;padding:13px 15px;box-sizing:border-box;
+              background:rgba(255,255,255,0.05);
               border:1.5px solid rgba(201,168,76,0.2);
-              border-radius:10px;color:#fff;
+              border-radius:11px;color:#fff;
               font-family:'Montserrat',sans-serif;
-              font-size:13px;font-weight:700;outline:none;
-              transition:border-color 0.3s;
+              font-size:14px;font-weight:700;
+              outline:none;transition:all 0.3s;
               -webkit-user-select:text;user-select:text;"
-            onfocus="this.style.borderColor='#c9a84c'"
-            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+            onfocus="this.style.borderColor='#c9a84c';
+                     this.style.background='rgba(201,168,76,0.06)';
+                     this.style.boxShadow='0 0 20px rgba(201,168,76,0.1)'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
+                        this.style.background='rgba(255,255,255,0.05)';
+                        this.style.boxShadow='none'"/>
         </div>
 
         <!-- المفتاح + الوحدة -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
-            <label style="font-size:9px;letter-spacing:2px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;
-                 font-weight:700;margin-bottom:6px;display:block;">
+            <label style="
+              font-size:9px;letter-spacing:2px;
+              color:rgba(255,255,255,0.3);
+              text-transform:uppercase;font-weight:700;
+              margin-bottom:7px;display:flex;
+              align-items:center;gap:6px;">
               <i class="fas fa-key"
-                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
-              ALAN ANAHTARI
-              <span style="color:rgba(239,68,68,0.7);margin-left:3px;">*</span>
+                 style="color:rgba(201,168,76,0.5);"></i>
+              ANAHTAR
+              <span style="color:rgba(239,68,68,0.7);">*</span>
             </label>
             <input type="text" id="dfFieldKey"
               value="${existing?.field_key || ''}"
-              placeholder="cbm, packet, l..."
+              placeholder="cbm, l, kg..."
               maxlength="20"
               ${isEdit
-                ? 'readonly style="opacity:0.55;cursor:not-allowed;"'
+                ? 'readonly style="opacity:0.5;cursor:not-allowed;"'
                 : ''}
               oninput="this.value=this.value.toLowerCase()
                 .replace(/[^a-z0-9_]/g,'')"
               style="
-                width:100%;padding:12px 14px;box-sizing:border-box;
-                background:rgba(255,255,255,0.04);
+                width:100%;padding:13px 15px;box-sizing:border-box;
+                background:rgba(255,255,255,0.05);
                 border:1.5px solid rgba(201,168,76,0.2);
-                border-radius:10px;color:#fff;
+                border-radius:11px;color:#fff;
                 font-family:'Montserrat',sans-serif;
-                font-size:13px;font-weight:700;outline:none;
-                transition:border-color 0.3s;
+                font-size:13px;font-weight:700;
+                outline:none;transition:all 0.3s;
                 -webkit-user-select:text;user-select:text;"
-              onfocus="this.style.borderColor='#c9a84c'"
-              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
-            <div style="font-size:8px;color:rgba(255,255,255,0.15);
-                 margin-top:4px;letter-spacing:0.3px;">
-              Küçük harf · rakam · alt çizgi
+              onfocus="this.style.borderColor='#c9a84c';
+                       this.style.boxShadow='0 0 16px rgba(201,168,76,0.1)'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
+                          this.style.boxShadow='none'"/>
+            <div style="
+              font-size:8px;color:rgba(255,255,255,0.15);
+              margin-top:5px;letter-spacing:0.5px;">
+              Küçük harf · rakam · _
             </div>
           </div>
+
           <div>
-            <label style="font-size:9px;letter-spacing:2px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;
-                 font-weight:700;margin-bottom:6px;display:block;">
+            <label style="
+              font-size:9px;letter-spacing:2px;
+              color:rgba(255,255,255,0.3);
+              text-transform:uppercase;font-weight:700;
+              margin-bottom:7px;display:flex;
+              align-items:center;gap:6px;">
               <i class="fas fa-ruler"
-                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+                 style="color:rgba(201,168,76,0.5);"></i>
               BİRİM
             </label>
             <input type="text" id="dfFieldUnit"
               value="${existing?.field_unit || ''}"
-              placeholder="cm, kg, m³, adet..."
+              placeholder="cm, kg, m³..."
               maxlength="10"
               style="
-                width:100%;padding:12px 14px;box-sizing:border-box;
-                background:rgba(255,255,255,0.04);
+                width:100%;padding:13px 15px;box-sizing:border-box;
+                background:rgba(255,255,255,0.05);
                 border:1.5px solid rgba(201,168,76,0.2);
-                border-radius:10px;color:#fff;
+                border-radius:11px;color:#fff;
                 font-family:'Montserrat',sans-serif;
-                font-size:13px;outline:none;
-                transition:border-color 0.3s;
+                font-size:13px;outline:none;transition:all 0.3s;
                 -webkit-user-select:text;user-select:text;"
-              onfocus="this.style.borderColor='#c9a84c'"
-              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+              onfocus="this.style.borderColor='#c9a84c';
+                       this.style.boxShadow='0 0 16px rgba(201,168,76,0.1)'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
+                          this.style.boxShadow='none'"/>
           </div>
         </div>
 
         <!-- اختيار الأيقونة -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;
-               color:rgba(255,255,255,0.3);text-transform:uppercase;
-               font-weight:700;margin-bottom:8px;display:block;">
+          <label style="
+            font-size:9px;letter-spacing:2px;
+            color:rgba(255,255,255,0.3);
+            text-transform:uppercase;font-weight:700;
+            margin-bottom:7px;display:flex;
+            align-items:center;gap:6px;">
             <i class="fas fa-icons"
-               style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+               style="color:rgba(201,168,76,0.5);"></i>
             İKON SEÇ
           </label>
+
+          <!-- معاينة الأيقونة المختارة -->
+          <div style="
+            display:flex;align-items:center;gap:10px;
+            padding:10px 14px;margin-bottom:10px;
+            background:rgba(201,168,76,0.06);
+            border:1px solid rgba(201,168,76,0.15);
+            border-radius:10px;">
+            <div style="
+              width:38px;height:38px;border-radius:10px;
+              background:rgba(201,168,76,0.12);
+              border:1px solid rgba(201,168,76,0.25);
+              display:flex;align-items:center;justify-content:center;
+              color:#c9a84c;font-size:18px;flex-shrink:0;">
+              <i id="dfIconPreview"
+                 class="fas ${existing?.icon || 'fa-ruler'}"></i>
+            </div>
+            <div>
+              <div style="
+                font-size:10px;color:rgba(255,255,255,0.3);
+                letter-spacing:1px;margin-bottom:2px;">
+                Seçili İkon
+              </div>
+              <div id="dfIconPreviewName" style="
+                font-size:12px;font-weight:700;
+                color:rgba(201,168,76,0.8);">
+                ${(existing?.icon || 'fa-ruler').replace('fa-','')}
+              </div>
+            </div>
+          </div>
+
+          <!-- شبكة الأيقونات -->
           <div style="
             display:flex;flex-wrap:wrap;gap:7px;
             background:rgba(255,255,255,0.02);
             border:1px solid rgba(255,255,255,0.06);
-            border-radius:12px;padding:12px;">
+            border-radius:12px;padding:12px;
+            max-height:200px;overflow-y:auto;
+            scrollbar-width:thin;
+            scrollbar-color:rgba(201,168,76,0.3) transparent;">
             ${iconBtns}
-          </div>
-          <!-- معاينة -->
-          <div style="
-            margin-top:8px;
-            display:flex;align-items:center;gap:8px;
-            padding:8px 12px;
-            background:rgba(201,168,76,0.05);
-            border:1px solid rgba(201,168,76,0.12);
-            border-radius:9px;">
-            <i id="dfIconPreview"
-               class="fas ${existing?.icon || 'fa-ruler'}"
-               style="font-size:18px;color:#c9a84c;"></i>
-            <span style="font-size:10px;color:rgba(255,255,255,0.3);
-                  letter-spacing:1px;">Seçili:</span>
-            <span id="dfIconPreviewName"
-                  style="font-size:10px;font-weight:700;
-                         color:rgba(201,168,76,0.7);">
-              ${(existing?.icon || 'fa-ruler').replace('fa-','')}
-            </span>
           </div>
         </div>
 
         <!-- الترتيب + الظهور -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
           <div>
-            <label style="font-size:9px;letter-spacing:2px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;
-                 font-weight:700;margin-bottom:6px;display:block;">
+            <label style="
+              font-size:9px;letter-spacing:2px;
+              color:rgba(255,255,255,0.3);
+              text-transform:uppercase;font-weight:700;
+              margin-bottom:7px;display:flex;
+              align-items:center;gap:6px;">
               <i class="fas fa-sort-numeric-up"
-                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+                 style="color:rgba(201,168,76,0.5);"></i>
               SIRA NO
             </label>
             <input type="number" id="dfOrderNum"
@@ -25783,49 +25880,55 @@ function openDfEditModal(fieldId) {
                   : 1)}"
               min="1" max="999"
               style="
-                width:100%;padding:12px 14px;box-sizing:border-box;
-                background:rgba(255,255,255,0.04);
+                width:100%;padding:13px 15px;box-sizing:border-box;
+                background:rgba(255,255,255,0.05);
                 border:1.5px solid rgba(201,168,76,0.2);
-                border-radius:10px;color:#fff;
+                border-radius:11px;color:#fff;
                 font-family:'Montserrat',sans-serif;
-                font-size:13px;font-weight:700;outline:none;
-                transition:border-color 0.3s;
+                font-size:14px;font-weight:700;
+                outline:none;transition:all 0.3s;
                 -webkit-user-select:text;user-select:text;"
-              onfocus="this.style.borderColor='#c9a84c'"
-              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+              onfocus="this.style.borderColor='#c9a84c';
+                       this.style.boxShadow='0 0 16px rgba(201,168,76,0.1)'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
+                          this.style.boxShadow='none'"/>
           </div>
+
           <div>
-            <label style="font-size:9px;letter-spacing:2px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;
-                 font-weight:700;margin-bottom:6px;display:block;">
+            <label style="
+              font-size:9px;letter-spacing:2px;
+              color:rgba(255,255,255,0.3);
+              text-transform:uppercase;font-weight:700;
+              margin-bottom:7px;display:flex;
+              align-items:center;gap:6px;">
               <i class="fas fa-eye"
-                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+                 style="color:rgba(201,168,76,0.5);"></i>
               GÖRÜNÜRLÜK
             </label>
             <label style="
               display:flex;align-items:center;gap:10px;
-              padding:12px 14px;
-              background:rgba(255,255,255,0.04);
+              padding:13px 15px;
+              background:rgba(255,255,255,0.05);
               border:1.5px solid rgba(201,168,76,0.2);
-              border-radius:10px;cursor:pointer;
-              transition:background 0.25s;"
-              onmouseover="this.style.background='rgba(201,168,76,0.06)'"
-              onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+              border-radius:11px;cursor:pointer;
+              transition:all 0.25s;height:48px;box-sizing:border-box;"
+              onmouseover="this.style.background='rgba(201,168,76,0.08)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.05)'">
               <input type="checkbox" id="dfIsVisible"
                 ${(existing?.is_visible ?? true) ? 'checked' : ''}
                 onchange="updateDfVisToggle(this)"
                 style="
                   appearance:none;-webkit-appearance:none;
-                  width:20px;height:20px;flex-shrink:0;
+                  width:22px;height:22px;flex-shrink:0;
                   background:rgba(255,255,255,0.05);
                   border:2px solid rgba(201,168,76,0.3);
-                  border-radius:5px;cursor:pointer;
+                  border-radius:6px;cursor:pointer;
                   transition:all 0.25s;display:block;"/>
-              <span id="dfVisLabel"
-                    style="font-size:11px;font-weight:700;
-                           color:${(existing?.is_visible ?? true)
-                             ? '#4ade80'
-                             : 'rgba(255,255,255,0.3)'};">
+              <span id="dfVisLabel" style="
+                font-size:12px;font-weight:700;
+                color:${(existing?.is_visible ?? true)
+                  ? '#4ade80'
+                  : 'rgba(255,255,255,0.3)'};">
                 ${(existing?.is_visible ?? true) ? 'Görünür' : 'Gizli'}
               </span>
             </label>
@@ -25834,50 +25937,71 @@ function openDfEditModal(fieldId) {
 
         <!-- رسالة الحالة -->
         <div id="dfEditMsg" style="
-          display:none;padding:10px 14px;border-radius:9px;
+          display:none;padding:11px 14px;border-radius:10px;
           font-size:11px;font-weight:700;text-align:center;
           font-family:'Montserrat',sans-serif;"></div>
 
-        <!-- أزرار الحفظ والإلغاء -->
-        <div style="display:flex;gap:10px;padding-top:4px;">
-          <button onclick="closeDfEditModal()" style="
-            flex:1;padding:14px;border-radius:10px;
-            border:1px solid rgba(255,255,255,0.1);
-            background:rgba(255,255,255,0.04);
-            color:rgba(255,255,255,0.4);
-            font-family:'Montserrat',sans-serif;
-            font-size:11px;font-weight:700;letter-spacing:1.5px;
-            cursor:pointer;transition:all 0.25s;"
-            onmouseover="this.style.background='rgba(255,255,255,0.09)';
-                         this.style.color='rgba(255,255,255,0.7)'"
-            onmouseout="this.style.background='rgba(255,255,255,0.04)';
-                        this.style.color='rgba(255,255,255,0.4)'">
-            İPTAL
-          </button>
-          <button onclick="saveDfField()" id="dfSaveBtn" style="
-            flex:2;padding:14px;border-radius:10px;border:none;
-            background:linear-gradient(135deg,#c9a84c,#f0d080);
-            color:#0a0a0a;font-family:'Montserrat',sans-serif;
-            font-size:11px;font-weight:900;letter-spacing:2px;
-            cursor:pointer;transition:all 0.25s;
-            display:flex;align-items:center;
-            justify-content:center;gap:8px;"
-            onmouseover="this.style.transform='translateY(-2px)';
-              this.style.boxShadow='0 8px 24px rgba(201,168,76,0.4)'"
-            onmouseout="this.style.transform='';
-                        this.style.boxShadow=''">
-            <i class="fas fa-save"></i>
-            ${isEdit ? 'GÜNCELLE' : 'KAYDET'}
-          </button>
-        </div>
+        <!-- مسافة سفلية للـ safe area -->
+        <div style="height:8px;flex-shrink:0;"></div>
 
-      </div><!-- /body -->
-    </div><!-- /inner -->`;
+      </div>
+      <!-- ★ نهاية الجسم ★ -->
 
-  /* ★ إضافة للـ body مباشرة — أهم خطوة ★ */
+      <!-- ══════════════════════════════
+           ★ الفوتر الثابت
+      ══════════════════════════════ -->
+      <div style="
+        flex-shrink: 0;
+        padding: 12px 18px;
+        background: linear-gradient(145deg,#0f0f0f,#161616);
+        border-top: 1px solid rgba(255,255,255,0.06);
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        z-index: 2;
+      ">
+        <!-- زر الإلغاء -->
+        <button onclick="closeDfEditModal()" style="
+          flex:1;padding:14px;border-radius:12px;
+          border:1px solid rgba(255,255,255,0.1);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.45);
+          font-family:'Montserrat',sans-serif;
+          font-size:12px;font-weight:700;letter-spacing:1.5px;
+          cursor:pointer;transition:all 0.25s;
+          -webkit-tap-highlight-color:transparent;"
+          onmouseover="this.style.background='rgba(255,255,255,0.09)';
+                       this.style.color='rgba(255,255,255,0.7)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                      this.style.color='rgba(255,255,255,0.45)'">
+          <i class="fas fa-times" style="margin-right:6px;"></i>
+          İPTAL
+        </button>
+
+        <!-- زر الحفظ -->
+        <button onclick="saveDfField()" id="dfSaveBtn" style="
+          flex:2;padding:14px;border-radius:12px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:12px;font-weight:900;letter-spacing:2px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;
+          justify-content:center;gap:8px;
+          box-shadow:0 4px 16px rgba(201,168,76,0.25);
+          -webkit-tap-highlight-color:transparent;"
+          onmouseover="this.style.transform='translateY(-2px)';
+            this.style.boxShadow='0 8px 24px rgba(201,168,76,0.4)'"
+          onmouseout="this.style.transform='';
+            this.style.boxShadow='0 4px 16px rgba(201,168,76,0.25)'">
+          <i class="fas fa-save" style="font-size:14px;"></i>
+          ${isEdit ? 'GÜNCELLE' : 'KAYDET'}
+        </button>
+      </div>
+
+    </div>`;
+
   document.body.appendChild(modal);
-
-  /* منع التمرير خلف النافذة */
   document.body.style.overflow = 'hidden';
 
   /* إغلاق عند الضغط على الخلفية */
@@ -25890,17 +26014,18 @@ function openDfEditModal(fieldId) {
   setTimeout(() => {
     const btn = document.getElementById('dficon-' + defaultIcon);
     if (btn) {
-      btn.style.borderColor = 'rgba(201,168,76,0.6)';
-      btn.style.background  = 'rgba(201,168,76,0.15)';
+      btn.style.borderColor = 'rgba(201,168,76,0.7)';
+      btn.style.background  = 'rgba(201,168,76,0.18)';
       btn.style.color       = '#c9a84c';
     }
-    /* تحديث checkbox بصرياً */
     const cb = document.getElementById('dfIsVisible');
     if (cb) updateDfVisToggle(cb);
-    /* فوكس على الاسم */
     document.getElementById('dfFieldLabel')?.focus();
-  }, 50);
+  }, 100);
 }
+
+
+  
 
 /* ── إغلاق النافذة — مُحسَّن ── */
 function closeDfEditModal() {
