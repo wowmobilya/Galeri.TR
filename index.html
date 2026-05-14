@@ -24857,19 +24857,52 @@ let _dfEditing = null;        /* الحقل الذي يُعدَّل حالياً
 
 /* ── الأيقونات المتاحة للاختيار ── */
 const DF_ICONS = [
-  { key:'fa-arrows-alt-h',   label:'Uzunluk'    },
-  { key:'fa-arrows-alt-v',   label:'Genişlik'   },
-  { key:'fa-sort-amount-up', label:'Yükseklik'  },
-  { key:'fa-weight-hanging', label:'Ağırlık'    },
-  { key:'fa-cube',           label:'Hacim/CBM'  },
-  { key:'fa-box',            label:'Paket'      },
-  { key:'fa-ruler',          label:'Ölçü'       },
-  { key:'fa-ruler-combined', label:'Kombine'    },
-  { key:'fa-balance-scale',  label:'Terazi'     },
-  { key:'fa-truck',          label:'Nakliye'    },
-  { key:'fa-layer-group',    label:'Katman'     },
-  { key:'fa-expand-arrows-alt', label:'Boyut'   },
+  /* أبعاد أساسية */
+  { key:'fa-arrows-alt-h',      label:'Uzunluk'         },
+  { key:'fa-arrows-alt-v',      label:'Genişlik'        },
+  { key:'fa-sort-amount-up',    label:'Yükseklik'       },
+  { key:'fa-expand-alt',        label:'Derinlik'        },
+  { key:'fa-weight-hanging',    label:'Ağırlık'         },
+  { key:'fa-ruler',             label:'Ölçü'            },
+  { key:'fa-ruler-horizontal',  label:'Yatay Ölçü'      },
+  { key:'fa-ruler-vertical',    label:'Dikey Ölçü'      },
+  { key:'fa-ruler-combined',    label:'Kombine Ölçü'    },
+  { key:'fa-expand-arrows-alt', label:'Boyut'           },
+  /* شحن */
+  { key:'fa-cube',              label:'Hacim/CBM'       },
+  { key:'fa-box',               label:'Paket'           },
+  { key:'fa-boxes',             label:'Paketler'        },
+  { key:'fa-box-open',          label:'Koli'            },
+  { key:'fa-truck',             label:'Nakliye'         },
+  { key:'fa-truck-moving',      label:'40 Konteyner'    },
+  { key:'fa-truck-loading',     label:'40HC Konteyner'  },
+  /* كنب */
+  { key:'fa-chair',             label:'Sandalye/Koltuk' },
+  { key:'fa-couch',             label:'Kanepe'          },
+  { key:'fa-hand-paper',        label:'Kol Dayama'      },
+  { key:'fa-users',             label:'Kapasite'        },
+  { key:'fa-layer-group',       label:'Katman/Raf'      },
+  /* غرف نوم */
+  { key:'fa-bed',               label:'Yatak'           },
+  { key:'fa-door-closed',       label:'Dolap Kapı'      },
+  { key:'fa-door-open',         label:'Açık Kapı'       },
+  { key:'fa-th-large',          label:'Çekmece'         },
+  /* طعام */
+  { key:'fa-circle',            label:'Yuvarlak/Çap'    },
+  { key:'fa-compress-alt',      label:'Katlanır'        },
+  /* اكسسوار */
+  { key:'fa-lightbulb',         label:'Ampul'           },
+  { key:'fa-bolt',              label:'Watt/Elektrik'   },
+  { key:'fa-plug',              label:'Kablo/Volt'      },
+  { key:'fa-border-all',        label:'Cam/Panel'       },
+  /* مواد */
+  { key:'fa-tree',              label:'Ahşap'           },
+  { key:'fa-tshirt',            label:'Kumaş'           },
+  { key:'fa-weight',            label:'Maks. Yük'       },
+  { key:'fa-shoe-prints',       label:'Ayak'            },
+  { key:'fa-balance-scale',     label:'Terazi'          },
 ];
+
 
 /* ============================================================
    1. تحميل الحقول من Supabase
