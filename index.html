@@ -24832,6 +24832,1643 @@ window.addEventListener('beforeunload', () => {
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================
+   ★ نظام إدارة حقول المقاسات — ÖLÇÜLER YÖNETİMİ ★
+   جدول: dimension_fields
+============================================================ */
+
+const DF_TABLE = 'dimension_fields';
+let _dimFields = [];          /* المصفوفة المحلية */
+let _dfEditing = null;        /* الحقل الذي يُعدَّل حالياً */
+
+/* ── الأيقونات المتاحة للاختيار ── */
+const DF_ICONS = [
+  { key:'fa-arrows-alt-h',   label:'Uzunluk'    },
+  { key:'fa-arrows-alt-v',   label:'Genişlik'   },
+  { key:'fa-sort-amount-up', label:'Yükseklik'  },
+  { key:'fa-weight-hanging', label:'Ağırlık'    },
+  { key:'fa-cube',           label:'Hacim/CBM'  },
+  { key:'fa-box',            label:'Paket'      },
+  { key:'fa-ruler',          label:'Ölçü'       },
+  { key:'fa-ruler-combined', label:'Kombine'    },
+  { key:'fa-balance-scale',  label:'Terazi'     },
+  { key:'fa-truck',          label:'Nakliye'    },
+  { key:'fa-layer-group',    label:'Katman'     },
+  { key:'fa-expand-arrows-alt', label:'Boyut'   },
+];
+
+/* ============================================================
+   1. تحميل الحقول من Supabase
+============================================================ */
+async function loadDimFields() {
+  const sb = await initSupabase();
+  if (!sb) return;
+  try {
+    const { data, error } = await sb
+      .from(DF_TABLE)
+      .select('*')
+      .order('order_num', { ascending: true });
+    if (error) throw error;
+    _dimFields = data || [];
+    console.log('[DimFields] ✅ yüklendi:', _dimFields.length);
+  } catch(e) {
+    console.error('[DimFields] yükleme hatası:', e);
+  }
+}
+
+/* ── Realtime اشتراك ── */
+async function subscribeDimFields() {
+  const sb = await initSupabase();
+  if (!sb) return;
+  sb.channel('dim-fields-live')
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: DF_TABLE
+    }, async () => {
+      await loadDimFields();
+      /* تحديث الصفحة إذا كانت مفتوحة */
+      if (currentPage === 'dim_fields') renderDimFieldsPage();
+    })
+    .subscribe();
+}
+
+/* ============================================================
+   2. بناء صفحة ÖLÇÜLER
+============================================================ */
+async function buildDimFieldsPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <button class="section-back-btn"
+                  onclick="showPage('settings')"
+                  title="Ayarlara Dön">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <div class="section-banner-tag">✦ ÖLÇÜ YÖNETİMİ</div>
+            <div class="section-banner-title">
+              ÖLÇÜLER & <span class="accent">AĞIRLIK</span>
+            </div>
+            <div class="section-banner-count" id="dfCount">
+              Yükleniyor...
+            </div>
+            <div class="section-banner-line"></div>
+          </div>
+        </div>
+        <button onclick="openDfEditModal(null)" style="
+          padding:9px 18px;border-radius:9px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:1.5px;
+          cursor:pointer;display:flex;align-items:center;gap:7px;
+          transition:all 0.25s;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform=''">
+          <i class="fas fa-plus"></i> YENİ ALAN EKLE
+        </button>
+      </div>
+
+      <!-- شرح مختصر -->
+      <div style="
+        margin:16px 22px 0;
+        background:rgba(201,168,76,0.04);
+        border:1px solid rgba(201,168,76,0.12);
+        border-radius:12px;padding:12px 15px;
+        display:flex;gap:10px;align-items:flex-start;">
+        <i class="fas fa-info-circle"
+           style="color:rgba(201,168,76,0.5);font-size:14px;
+                  margin-top:1px;flex-shrink:0;"></i>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);
+             line-height:1.8;letter-spacing:0.3px;">
+          Bu sayfa, ürün kartlarındaki
+          <strong style="color:rgba(255,255,255,0.5);">
+          ÖLÇÜLER & AĞIRLIK</strong>
+          penceresinde görünen alanları yönetir.<br/>
+          Yeni alan ekleyin (CBM, Paket Adedi vb.),
+          mevcut alanları düzenleyin, gizleyin veya silin.
+          <strong style="color:rgba(201,168,76,0.6);">
+          Değişiklikler anında uygulanır.</strong>
+        </div>
+      </div>
+
+      <!-- الجدول -->
+      <div style="padding:16px 22px 40px;" id="dfTableWrap">
+        <div style="text-align:center;padding:40px;">
+          <i class="fas fa-spinner fa-spin"
+             style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
+        </div>
+      </div>
+    </div>`;
+
+  await loadDimFields();
+  renderDimFieldsPage();
+}
+
+/* ── رسم الجدول ── */
+function renderDimFieldsPage() {
+  const wrap    = document.getElementById('dfTableWrap');
+  const countEl = document.getElementById('dfCount');
+  if (!wrap) return;
+
+  if (countEl) {
+    const visible = _dimFields.filter(f => f.is_visible).length;
+    countEl.textContent =
+      `${_dimFields.length} alan — ${visible} görünür`;
+  }
+
+  if (!_dimFields.length) {
+    wrap.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;
+           color:rgba(255,255,255,0.2);">
+        <i class="fas fa-ruler-combined"
+           style="font-size:40px;display:block;margin-bottom:14px;
+                  color:rgba(201,168,76,0.15);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">
+          Henüz alan yok
+        </p>
+        <p style="font-size:10px;margin-top:6px;
+             color:rgba(255,255,255,0.15);">
+          "YENİ ALAN EKLE" butonuna tıklayın
+        </p>
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <!-- ── معاينة نافذة المقاسات ── -->
+    <div style="margin-bottom:20px;">
+      <div style="font-size:9px;letter-spacing:2.5px;
+           color:rgba(201,168,76,0.55);font-weight:700;
+           text-transform:uppercase;margin-bottom:10px;
+           display:flex;align-items:center;gap:7px;">
+        <i class="fas fa-eye" style="font-size:10px;"></i>
+        ÖLÇÜ PENCERESİ ÖNİZLEMESİ
+      </div>
+      <div style="
+        background:rgba(13,13,13,0.95);
+        border:1px solid rgba(201,168,76,0.2);
+        border-radius:14px;padding:14px;
+        display:grid;
+        grid-template-columns:repeat(auto-fill,minmax(90px,1fr));
+        gap:8px;">
+        ${_dimFields
+          .filter(f => f.is_visible)
+          .map(f => `
+            <div style="
+              background:rgba(0,0,0,0.3);
+              border:1px solid rgba(255,255,255,0.05);
+              border-radius:10px;padding:10px 6px;
+              text-align:center;opacity:0.85;">
+              <i class="fas ${f.icon}"
+                 style="font-size:14px;color:#c9a84c;
+                        display:block;margin-bottom:5px;"></i>
+              <span style="font-size:7px;letter-spacing:1.5px;
+                    color:rgba(255,255,255,0.28);
+                    text-transform:uppercase;display:block;
+                    margin-bottom:4px;">${f.field_label}</span>
+              <span style="font-size:13px;font-weight:900;
+                    color:#fff;">—</span>
+              <span style="font-size:8px;color:rgba(201,168,76,0.6);
+                    font-weight:600;"> ${f.field_unit}</span>
+            </div>`).join('')}
+        ${_dimFields.filter(f => f.is_visible).length === 0
+          ? `<div style="grid-column:1/-1;text-align:center;
+               padding:20px;color:rgba(255,255,255,0.15);
+               font-size:11px;">
+               Görünür alan yok
+             </div>`
+          : ''}
+      </div>
+    </div>
+
+    <!-- ── الجدول الرئيسي ── -->
+    <div style="font-size:9px;letter-spacing:2.5px;
+         color:rgba(201,168,76,0.55);font-weight:700;
+         text-transform:uppercase;margin-bottom:10px;
+         display:flex;align-items:center;gap:7px;">
+      <i class="fas fa-table" style="font-size:10px;"></i>
+      ALAN LİSTESİ
+    </div>
+
+    <div style="
+      background:rgba(255,255,255,0.025);
+      border:1px solid rgba(255,255,255,0.06);
+      border-radius:16px;overflow:hidden;">
+
+      <!-- رأس الجدول -->
+      <div style="
+        display:grid;
+        grid-template-columns:40px 1fr 90px 80px 80px 120px;
+        gap:0;
+        padding:10px 14px;
+        background:rgba(255,255,255,0.03);
+        border-bottom:1px solid rgba(255,255,255,0.06);">
+        ${['SIRA','ALAN ADI / BİRİM','İKON',
+           'GÖRÜNÜR','DURUM','İŞLEMLER'].map(h => `
+          <div style="font-size:8px;letter-spacing:2px;
+               color:rgba(255,255,255,0.25);font-weight:700;
+               text-transform:uppercase;
+               display:flex;align-items:center;">
+            ${h}
+          </div>`).join('')}
+      </div>
+
+      <!-- صفوف البيانات -->
+      <div id="dfRows">
+        ${_dimFields.map((f, idx) =>
+          buildDfRow(f, idx, _dimFields.length)
+        ).join('')}
+      </div>
+    </div>
+
+    <!-- ملاحظة -->
+    <div style="
+      margin-top:14px;
+      background:rgba(255,255,255,0.02);
+      border:1px solid rgba(255,255,255,0.05);
+      border-radius:10px;padding:11px 13px;
+      display:flex;gap:9px;align-items:flex-start;">
+      <i class="fas fa-lightbulb"
+         style="color:rgba(201,168,76,0.4);font-size:12px;
+                margin-top:1px;flex-shrink:0;"></i>
+      <div style="font-size:10px;color:rgba(255,255,255,0.2);
+           line-height:1.7;letter-spacing:0.2px;">
+        <strong style="color:rgba(255,255,255,0.35);">İpucu:</strong>
+        Gizlenen alanlar ürün düzenleme ekranında görünmez.
+        Silinen alanlar tüm ürünlerin mevcut verilerini
+        <strong style="color:rgba(255,255,255,0.35);">etkilemez</strong>
+        — sadece yeni girişlerde gösterilmez.
+      </div>
+    </div>`;
+}
+
+/* ── بناء صف واحد في الجدول ── */
+function buildDfRow(f, idx, total) {
+  const isFirst = idx === 0;
+  const isLast  = idx === total - 1;
+
+  return `
+    <div id="dfrow-${f.id}" style="
+      display:grid;
+      grid-template-columns:40px 1fr 90px 80px 80px 120px;
+      gap:0;
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.04);
+      transition:background 0.2s;align-items:center;"
+      onmouseover="this.style.background='rgba(201,168,76,0.03)'"
+      onmouseout="this.style.background='transparent'">
+
+      <!-- الترتيب -->
+      <div style="
+        width:28px;height:28px;border-radius:8px;
+        background:linear-gradient(135deg,
+          rgba(201,168,76,0.15),rgba(201,168,76,0.04));
+        border:1px solid rgba(201,168,76,0.25);
+        display:flex;align-items:center;justify-content:center;
+        font-size:11px;font-weight:900;color:#c9a84c;">
+        ${f.order_num}
+      </div>
+
+      <!-- الاسم والوحدة -->
+      <div style="padding:0 8px;">
+        <div style="font-size:13px;font-weight:700;
+             color:${f.is_visible ? '#fff' : 'rgba(255,255,255,0.3)'};
+             margin-bottom:3px;letter-spacing:0.3px;">
+          ${f.field_label}
+          <span style="font-size:9px;font-weight:600;
+                color:rgba(201,168,76,0.5);
+                letter-spacing:1.5px;margin-left:6px;">
+            ${f.field_key}
+          </span>
+        </div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.25);
+             display:flex;align-items:center;gap:5px;">
+          <i class="fas fa-tag"
+             style="font-size:8px;color:rgba(201,168,76,0.3);"></i>
+          Birim: <strong style="color:rgba(255,255,255,0.4);">
+            ${f.field_unit || '—'}
+          </strong>
+        </div>
+      </div>
+
+      <!-- الأيقونة -->
+      <div style="display:flex;align-items:center;gap:7px;">
+        <div style="
+          width:32px;height:32px;border-radius:9px;
+          background:rgba(201,168,76,0.1);
+          border:1px solid rgba(201,168,76,0.2);
+          display:flex;align-items:center;justify-content:center;
+          color:#c9a84c;font-size:14px;">
+          <i class="fas ${f.icon}"></i>
+        </div>
+        <span style="font-size:8px;color:rgba(255,255,255,0.2);
+              letter-spacing:0.5px;max-width:50px;
+              overflow:hidden;text-overflow:ellipsis;
+              white-space:nowrap;">
+          ${f.icon.replace('fa-','')}
+        </span>
+      </div>
+
+      <!-- مرئي/مخفي toggle -->
+      <div>
+        <div onclick="toggleDfVisibility(${f.id},${f.is_visible})"
+             style="
+               width:44px;height:24px;border-radius:12px;
+               background:${f.is_visible
+                 ? 'linear-gradient(135deg,#c9a84c,#f0d080)'
+                 : 'rgba(255,255,255,0.1)'};
+               cursor:pointer;position:relative;
+               transition:all 0.3s ease;
+               box-shadow:${f.is_visible
+                 ? '0 2px 8px rgba(201,168,76,0.35)'
+                 : 'none'};">
+          <div style="
+            position:absolute;top:3px;
+            left:${f.is_visible ? '23px' : '3px'};
+            width:18px;height:18px;border-radius:50%;
+            background:#fff;transition:all 0.3s ease;
+            box-shadow:0 2px 4px rgba(0,0,0,0.3);"></div>
+        </div>
+      </div>
+
+      <!-- الحالة -->
+      <div>
+        <span style="
+          padding:3px 10px;border-radius:50px;
+          font-size:9px;font-weight:700;letter-spacing:1px;
+          background:${f.is_visible
+            ? 'rgba(74,222,128,0.1)'
+            : 'rgba(255,255,255,0.04)'};
+          border:1px solid ${f.is_visible
+            ? 'rgba(74,222,128,0.3)'
+            : 'rgba(255,255,255,0.08)'};
+          color:${f.is_visible ? '#4ade80' : 'rgba(255,255,255,0.2)'};">
+          ${f.is_visible ? 'Görünür' : 'Gizli'}
+        </span>
+      </div>
+
+      <!-- أزرار الإجراءات -->
+      <div style="display:flex;gap:5px;align-items:center;">
+        <!-- أعلى -->
+        <button onclick="moveDfField(${f.id},-1)"
+                title="Yukarı"
+                ${isFirst
+                  ? 'disabled style="opacity:0.25;cursor:not-allowed;"'
+                  : ''}
+                style="
+                  width:28px;height:28px;border-radius:7px;
+                  border:1px solid rgba(255,255,255,0.08);
+                  background:rgba(255,255,255,0.04);
+                  color:rgba(255,255,255,0.35);
+                  font-size:11px;cursor:pointer;
+                  display:flex;align-items:center;
+                  justify-content:center;transition:all 0.2s;"
+                onmouseover="if(!this.disabled)
+                  this.style.background='rgba(201,168,76,0.15)';
+                  this.style.color='#c9a84c';"
+                onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                  this.style.color='rgba(255,255,255,0.35)';">
+          <i class="fas fa-chevron-up"></i>
+        </button>
+
+        <!-- أسفل -->
+        <button onclick="moveDfField(${f.id},+1)"
+                title="Aşağı"
+                ${isLast
+                  ? 'disabled style="opacity:0.25;cursor:not-allowed;"'
+                  : ''}
+                style="
+                  width:28px;height:28px;border-radius:7px;
+                  border:1px solid rgba(255,255,255,0.08);
+                  background:rgba(255,255,255,0.04);
+                  color:rgba(255,255,255,0.35);
+                  font-size:11px;cursor:pointer;
+                  display:flex;align-items:center;
+                  justify-content:center;transition:all 0.2s;"
+                onmouseover="if(!this.disabled)
+                  this.style.background='rgba(201,168,76,0.15)';
+                  this.style.color='#c9a84c';"
+                onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                  this.style.color='rgba(255,255,255,0.35)';">
+          <i class="fas fa-chevron-down"></i>
+        </button>
+
+        <!-- تعديل -->
+        <button onclick="openDfEditModal(${f.id})"
+                title="Düzenle"
+                style="
+                  width:28px;height:28px;border-radius:7px;
+                  border:1px solid rgba(96,165,250,0.25);
+                  background:rgba(96,165,250,0.08);
+                  color:#60a5fa;font-size:11px;cursor:pointer;
+                  display:flex;align-items:center;
+                  justify-content:center;transition:all 0.2s;"
+                onmouseover="this.style.background='rgba(96,165,250,0.2)'"
+                onmouseout="this.style.background='rgba(96,165,250,0.08)'">
+          <i class="fas fa-edit"></i>
+        </button>
+
+        <!-- حذف -->
+        <button onclick="deleteDfField(${f.id},'${f.field_label}')"
+                title="Sil"
+                style="
+                  width:28px;height:28px;border-radius:7px;
+                  border:1px solid rgba(239,68,68,0.2);
+                  background:rgba(239,68,68,0.07);
+                  color:rgba(239,68,68,0.6);font-size:11px;
+                  cursor:pointer;
+                  display:flex;align-items:center;
+                  justify-content:center;transition:all 0.2s;"
+                onmouseover="this.style.background='rgba(239,68,68,0.18)';
+                  this.style.color='#ef4444';"
+                onmouseout="this.style.background='rgba(239,68,68,0.07)';
+                  this.style.color='rgba(239,68,68,0.6)';">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+/* ============================================================
+   3. نافذة إضافة / تعديل حقل
+============================================================ */
+function openDfEditModal(fieldId) {
+  _dfEditing = fieldId;
+  document.getElementById('dfEditModal')?.remove();
+
+  const existing = fieldId
+    ? _dimFields.find(f => f.id === fieldId)
+    : null;
+
+  const isEdit = !!existing;
+
+  const modal = document.createElement('div');
+  modal.id = 'dfEditModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:8500;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);
+    backdrop-filter:blur(18px);
+    padding:16px;
+    animation:updBgIn 0.3s ease forwards;`;
+
+  /* بناء أزرار الأيقونات */
+  const iconBtns = DF_ICONS.map(ic => `
+    <div onclick="selectDfIcon('${ic.key}',this)"
+         id="dficon-${ic.key}"
+         title="${ic.label}"
+         style="
+           width:38px;height:38px;border-radius:9px;
+           border:1px solid ${existing?.icon === ic.key
+             ? 'rgba(201,168,76,0.6)'
+             : 'rgba(255,255,255,0.08)'};
+           background:${existing?.icon === ic.key
+             ? 'rgba(201,168,76,0.15)'
+             : 'rgba(255,255,255,0.04)'};
+           display:flex;align-items:center;justify-content:center;
+           color:${existing?.icon === ic.key
+             ? '#c9a84c'
+             : 'rgba(255,255,255,0.35)'};
+           font-size:14px;cursor:pointer;
+           transition:all 0.2s;"
+         onmouseover="
+           this.style.borderColor='rgba(201,168,76,0.4)';
+           this.style.color='#c9a84c';"
+         onmouseout="
+           if(document.getElementById('dfSelectedIcon').value
+              !== '${ic.key}'){
+             this.style.borderColor='rgba(255,255,255,0.08)';
+             this.style.color='rgba(255,255,255,0.35)';
+           }">
+      <i class="fas ${ic.key}"></i>
+    </div>`).join('');
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:500px;
+      background:linear-gradient(145deg,#0f0f0f,#161616);
+      border:1px solid rgba(201,168,76,0.25);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.8);
+      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      max-height:92vh;overflow-y:auto;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(201,168,76,0.3) transparent;">
+
+      <!-- خط ذهبي -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+        flex-shrink:0;"></div>
+
+      <!-- هيدر -->
+      <div style="
+        padding:18px 20px 14px;
+        display:flex;align-items:center;justify-content:space-between;
+        border-bottom:1px solid rgba(255,255,255,0.05);
+        position:sticky;top:0;
+        background:linear-gradient(145deg,#0f0f0f,#161616);
+        z-index:2;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="
+            width:44px;height:44px;flex-shrink:0;
+            background:linear-gradient(135deg,
+              rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+            border:1px solid rgba(201,168,76,0.3);
+            border-radius:12px;
+            display:flex;align-items:center;justify-content:center;
+            color:#c9a84c;font-size:18px;">
+            <i class="fas fa-ruler-combined"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(201,168,76,0.55);
+                 text-transform:uppercase;margin-bottom:3px;">
+              ÖLÇÜ ALANI
+            </div>
+            <div style="font-size:16px;font-weight:900;color:#fff;">
+              ${isEdit ? 'Alanı Düzenle' : 'Yeni Alan Ekle'}
+            </div>
+          </div>
+        </div>
+        <div onclick="closeDfEditModal()" style="
+          width:32px;height:32px;
+          background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);
+          border-radius:8px;color:rgba(255,255,255,0.3);
+          font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';
+                       this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';
+                      this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <!-- جسم النافذة -->
+      <div style="padding:20px;
+           display:flex;flex-direction:column;gap:16px;">
+
+        <input type="hidden" id="dfEditId"
+               value="${existing?.id || ''}"/>
+        <input type="hidden" id="dfSelectedIcon"
+               value="${existing?.icon || 'fa-ruler'}"/>
+
+        <!-- ── اسم الحقل ── -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-tag"
+               style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+            ALAN ADI
+            <span style="color:rgba(239,68,68,0.6);margin-left:3px;">*</span>
+          </label>
+          <input type="text" id="dfFieldLabel"
+            value="${existing?.field_label || ''}"
+            placeholder="Örn: CBM, Paket Adedi, Uzunluk..."
+            maxlength="30"
+            style="
+              width:100%;padding:12px 14px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(201,168,76,0.2);
+              border-radius:10px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:13px;font-weight:700;
+              outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;
+              box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        </div>
+
+        <!-- ── المفتاح + الوحدة ── -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);text-transform:uppercase;
+                 font-weight:700;margin-bottom:6px;display:block;">
+              <i class="fas fa-key"
+                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+              ALAN ANAHTARI
+              <span style="color:rgba(239,68,68,0.6);margin-left:3px;">*</span>
+            </label>
+            <input type="text" id="dfFieldKey"
+              value="${existing?.field_key || ''}"
+              placeholder="Örn: cbm, packet, l, w..."
+              maxlength="20"
+              ${isEdit ? 'readonly style="opacity:0.6;"' : ''}
+              oninput="this.value=this.value.toLowerCase()
+                .replace(/[^a-z0-9_]/g,'')"
+              style="
+                width:100%;padding:12px 14px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(201,168,76,0.2);
+                border-radius:10px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:13px;font-weight:700;
+                outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+            <div style="font-size:8px;color:rgba(255,255,255,0.15);
+                 margin-top:4px;letter-spacing:0.5px;">
+              Küçük harf, rakam, alt çizgi
+            </div>
+          </div>
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);text-transform:uppercase;
+                 font-weight:700;margin-bottom:6px;display:block;">
+              <i class="fas fa-ruler"
+                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+              BİRİM
+            </label>
+            <input type="text" id="dfFieldUnit"
+              value="${existing?.field_unit || ''}"
+              placeholder="Örn: cm, kg, m³, adet..."
+              maxlength="10"
+              style="
+                width:100%;padding:12px 14px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(201,168,76,0.2);
+                border-radius:10px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:13px;
+                outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          </div>
+        </div>
+
+        <!-- ── الأيقونة ── -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:8px;display:block;">
+            <i class="fas fa-icons"
+               style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+            İKON SEÇ
+          </label>
+          <div style="
+            display:flex;flex-wrap:wrap;gap:7px;
+            background:rgba(255,255,255,0.02);
+            border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px;padding:12px;">
+            ${iconBtns}
+          </div>
+          <!-- معاينة الأيقونة المختارة -->
+          <div style="
+            margin-top:8px;
+            display:flex;align-items:center;gap:8px;
+            padding:8px 12px;
+            background:rgba(201,168,76,0.05);
+            border:1px solid rgba(201,168,76,0.12);
+            border-radius:9px;">
+            <i id="dfIconPreview"
+               class="fas ${existing?.icon || 'fa-ruler'}"
+               style="font-size:18px;color:#c9a84c;"></i>
+            <span style="font-size:10px;color:rgba(255,255,255,0.3);
+                  letter-spacing:1px;">
+              Seçili ikon
+            </span>
+            <span id="dfIconPreviewName"
+                  style="font-size:10px;font-weight:700;
+                         color:rgba(201,168,76,0.7);">
+              ${(existing?.icon || 'fa-ruler').replace('fa-','')}
+            </span>
+          </div>
+        </div>
+
+        <!-- ── الترتيب + الظهور ── -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);text-transform:uppercase;
+                 font-weight:700;margin-bottom:6px;display:block;">
+              <i class="fas fa-sort-numeric-up"
+                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+              SIRA NO
+            </label>
+            <input type="number" id="dfOrderNum"
+              value="${existing?.order_num ??
+                (_dimFields.length > 0
+                  ? Math.max(..._dimFields.map(f=>f.order_num))+1
+                  : 1)}"
+              min="1" max="99"
+              style="
+                width:100%;padding:12px 14px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(201,168,76,0.2);
+                border-radius:10px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:13px;font-weight:700;
+                outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          </div>
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;
+                 color:rgba(255,255,255,0.3);text-transform:uppercase;
+                 font-weight:700;margin-bottom:6px;display:block;">
+              <i class="fas fa-eye"
+                 style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+              GÖRÜNÜRLÜK
+            </label>
+            <label style="
+              display:flex;align-items:center;gap:10px;
+              padding:12px 14px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(201,168,76,0.2);
+              border-radius:10px;cursor:pointer;
+              transition:all 0.25s;"
+              onmouseover="this.style.background='rgba(201,168,76,0.06)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+              <input type="checkbox" id="dfIsVisible"
+                ${(existing?.is_visible ?? true) ? 'checked' : ''}
+                onchange="updateDfVisToggle(this)"
+                style="
+                  appearance:none;-webkit-appearance:none;
+                  width:20px;height:20px;flex-shrink:0;
+                  background:rgba(255,255,255,0.05);
+                  border:2px solid rgba(201,168,76,0.3);
+                  border-radius:5px;cursor:pointer;
+                  position:relative;transition:all 0.25s;
+                  display:block;"/>
+              <span id="dfVisLabel"
+                    style="font-size:11px;font-weight:700;
+                           color:${(existing?.is_visible ?? true)
+                             ? '#4ade80' : 'rgba(255,255,255,0.3)'};">
+                ${(existing?.is_visible ?? true)
+                  ? 'Görünür' : 'Gizli'}
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <!-- رسالة الحالة -->
+        <div id="dfEditMsg" style="
+          display:none;padding:10px 14px;
+          border-radius:9px;font-size:11px;font-weight:700;
+          text-align:center;
+          font-family:'Montserrat',sans-serif;"></div>
+
+        <!-- أزرار -->
+        <div style="display:flex;gap:10px;">
+          <button onclick="closeDfEditModal()" style="
+            flex:1;padding:13px;border-radius:10px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            İPTAL
+          </button>
+          <button onclick="saveDfField()" id="dfSaveBtn" style="
+            flex:2;padding:13px;border-radius:10px;border:none;
+            background:linear-gradient(135deg,#c9a84c,#f0d080);
+            color:#0a0a0a;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:2px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;
+            justify-content:center;gap:7px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+              this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+            onmouseout="this.style.transform='';
+                        this.style.boxShadow=''">
+            <i class="fas fa-save"></i>
+            ${isEdit ? 'GÜNCELLE' : 'EKLE'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+
+  /* تحديد الأيقونة الافتراضية بصرياً */
+  const defaultIcon = existing?.icon || 'fa-ruler';
+  const defaultBtn  = document.getElementById('dficon-' + defaultIcon);
+  if (defaultBtn) {
+    defaultBtn.style.borderColor = 'rgba(201,168,76,0.6)';
+    defaultBtn.style.background  = 'rgba(201,168,76,0.15)';
+    defaultBtn.style.color       = '#c9a84c';
+  }
+
+  /* تحديث checkbox بصرياً */
+  const cb = document.getElementById('dfIsVisible');
+  if (cb) updateDfVisToggle(cb);
+
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeDfEditModal();
+  });
+
+  setTimeout(() => document.getElementById('dfFieldLabel')?.focus(), 300);
+}
+
+/* ── إغلاق النافذة ── */
+function closeDfEditModal() {
+  document.getElementById('dfEditModal')?.remove();
+  _dfEditing = null;
+}
+
+/* ── اختيار أيقونة ── */
+function selectDfIcon(iconKey, el) {
+  /* إلغاء تحديد الكل */
+  DF_ICONS.forEach(ic => {
+    const btn = document.getElementById('dficon-' + ic.key);
+    if (btn) {
+      btn.style.borderColor = 'rgba(255,255,255,0.08)';
+      btn.style.background  = 'rgba(255,255,255,0.04)';
+      btn.style.color       = 'rgba(255,255,255,0.35)';
+    }
+  });
+
+  /* تحديد الجديد */
+  if (el) {
+    el.style.borderColor = 'rgba(201,168,76,0.6)';
+    el.style.background  = 'rgba(201,168,76,0.15)';
+    el.style.color       = '#c9a84c';
+  }
+
+  document.getElementById('dfSelectedIcon').value = iconKey;
+
+  const preview     = document.getElementById('dfIconPreview');
+  const previewName = document.getElementById('dfIconPreviewName');
+  if (preview) {
+    preview.className = 'fas ' + iconKey;
+  }
+  if (previewName) {
+    previewName.textContent = iconKey.replace('fa-', '');
+  }
+}
+
+/* ── تحديث checkbox بصرياً ── */
+function updateDfVisToggle(cb) {
+  const label = document.getElementById('dfVisLabel');
+  if (cb.checked) {
+    cb.style.background  =
+      'linear-gradient(135deg,#c9a84c,#f0d080)';
+    cb.style.borderColor = '#c9a84c';
+    if (label) {
+      label.textContent = 'Görünür';
+      label.style.color = '#4ade80';
+    }
+  } else {
+    cb.style.background  = 'rgba(255,255,255,0.05)';
+    cb.style.borderColor = 'rgba(201,168,76,0.3)';
+    if (label) {
+      label.textContent = 'Gizli';
+      label.style.color = 'rgba(255,255,255,0.3)';
+    }
+  }
+}
+
+/* ============================================================
+   4. حفظ الحقل في Supabase
+============================================================ */
+async function saveDfField() {
+  const id        = document.getElementById('dfEditId')?.value;
+  const label     = document.getElementById('dfFieldLabel')?.value.trim();
+  const key       = document.getElementById('dfFieldKey')?.value.trim();
+  const unit      = document.getElementById('dfFieldUnit')?.value.trim();
+  const icon      = document.getElementById('dfSelectedIcon')?.value
+                    || 'fa-ruler';
+  const orderNum  = parseInt(
+    document.getElementById('dfOrderNum')?.value
+  ) || 1;
+  const isVisible = document.getElementById('dfIsVisible')?.checked ?? true;
+  const btn       = document.getElementById('dfSaveBtn');
+  const msgEl     = document.getElementById('dfEditMsg');
+
+  const showMsg = (msg, type) => {
+    if (!msgEl) return;
+    const s = {
+      error  : { bg:'rgba(239,68,68,0.08)',
+                 border:'rgba(239,68,68,0.3)',
+                 color:'#ef4444' },
+      success: { bg:'rgba(74,222,128,0.08)',
+                 border:'rgba(74,222,128,0.3)',
+                 color:'#4ade80' },
+    }[type] || {};
+    msgEl.style.display    = 'block';
+    msgEl.style.background = s.bg;
+    msgEl.style.border     = `1px solid ${s.border}`;
+    msgEl.style.color      = s.color;
+    msgEl.innerHTML        = msg;
+  };
+
+  /* التحقق */
+  if (!label) {
+    showMsg(
+      '<i class="fas fa-exclamation-circle"></i> Alan adı gereklidir!',
+      'error'
+    );
+    document.getElementById('dfFieldLabel')?.focus();
+    return;
+  }
+  if (!key) {
+    showMsg(
+      '<i class="fas fa-exclamation-circle"></i> Alan anahtarı gereklidir!',
+      'error'
+    );
+    document.getElementById('dfFieldKey')?.focus();
+    return;
+  }
+  if (!/^[a-z0-9_]+$/.test(key)) {
+    showMsg(
+      '<i class="fas fa-exclamation-circle"></i> Anahtar: sadece küçük harf, rakam ve _ kullanın!',
+      'error'
+    );
+    return;
+  }
+
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    showMsg('Bağlantı hatası!', 'error');
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> KAYDET';
+    }
+    return;
+  }
+
+  try {
+    const rowData = {
+      field_label : label,
+      field_unit  : unit,
+      icon        : icon,
+      order_num   : orderNum,
+      is_visible  : isVisible,
+      updated_at  : new Date().toISOString(),
+    };
+
+    if (id) {
+      /* تعديل */
+      const { error } = await sb
+        .from(DF_TABLE)
+        .update(rowData)
+        .eq('id', Number(id));
+      if (error) throw error;
+    } else {
+      /* إضافة جديدة */
+      rowData.field_key = key;
+
+      /* التحقق من تكرار المفتاح */
+      const { data: exists } = await sb
+        .from(DF_TABLE)
+        .select('id')
+        .eq('field_key', key)
+        .maybeSingle();
+
+      if (exists) {
+        showMsg(
+          `<i class="fas fa-exclamation-circle"></i>
+           "${key}" anahtarı zaten kullanılıyor!`,
+          'error'
+        );
+        if (btn) {
+          btn.disabled  = false;
+          btn.innerHTML = '<i class="fas fa-save"></i> EKLE';
+        }
+        return;
+      }
+
+      const { error } = await sb
+        .from(DF_TABLE)
+        .insert([rowData]);
+      if (error) throw error;
+    }
+
+    showMsg(
+      `<i class="fas fa-check-circle"></i>
+       ${id ? 'Alan güncellendi' : 'Yeni alan eklendi'} ✓`,
+      'success'
+    );
+    showInvToast(
+      id ? 'Alan güncellendi ✓' : 'Yeni alan eklendi ✓',
+      'success'
+    );
+
+    await loadDimFields();
+    renderDimFieldsPage();
+
+    setTimeout(() => closeDfEditModal(), 700);
+
+  } catch(e) {
+    console.error('[DimFields] kayıt hatası:', e);
+    showMsg(
+      `<i class="fas fa-exclamation-circle"></i>
+       Hata: ${e.message || String(e)}`,
+      'error'
+    );
+  } finally {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = id
+        ? '<i class="fas fa-save"></i> GÜNCELLE'
+        : '<i class="fas fa-save"></i> EKLE';
+    }
+  }
+}
+
+/* ============================================================
+   5. إخفاء / إظهار مباشرة من الجدول
+============================================================ */
+async function toggleDfVisibility(fieldId, currentVisible) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const newVal = !currentVisible;
+  const { error } = await sb
+    .from(DF_TABLE)
+    .update({
+      is_visible : newVal,
+      updated_at : new Date().toISOString()
+    })
+    .eq('id', fieldId);
+
+  if (error) {
+    showInvToast('Güncelleme hatası!', 'error');
+    return;
+  }
+
+  /* تحديث محلي */
+  const idx = _dimFields.findIndex(f => f.id === fieldId);
+  if (idx !== -1) _dimFields[idx].is_visible = newVal;
+
+  renderDimFieldsPage();
+  showInvToast(
+    newVal ? 'Alan görünür yapıldı ✓' : 'Alan gizlendi ✓',
+    newVal ? 'success' : 'info'
+  );
+}
+
+/* ============================================================
+   6. تحريك الحقل لأعلى / أسفل
+============================================================ */
+async function moveDfField(fieldId, direction) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const idx     = _dimFields.findIndex(f => f.id === fieldId);
+  const swapIdx = idx + direction;
+
+  if (idx === -1 || swapIdx < 0 || swapIdx >= _dimFields.length)
+    return;
+
+  const fieldA = _dimFields[idx];
+  const fieldB = _dimFields[swapIdx];
+
+  await Promise.all([
+    sb.from(DF_TABLE)
+      .update({ order_num: fieldB.order_num })
+      .eq('id', fieldA.id),
+    sb.from(DF_TABLE)
+      .update({ order_num: fieldA.order_num })
+      .eq('id', fieldB.id),
+  ]);
+
+  /* تبادل محلي فوري */
+  const tmpOrder       = fieldA.order_num;
+  fieldA.order_num     = fieldB.order_num;
+  fieldB.order_num     = tmpOrder;
+  _dimFields[idx]      = fieldB;
+  _dimFields[swapIdx]  = fieldA;
+
+  renderDimFieldsPage();
+  showInvToast('Sıralama güncellendi ✓', 'success');
+}
+
+/* ============================================================
+   7. حذف حقل
+============================================================ */
+async function deleteDfField(fieldId, fieldLabel) {
+  const confirmed = await showDeleteConfirm();
+  if (!confirmed) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const rowEl = document.getElementById('dfrow-' + fieldId);
+  if (rowEl) {
+    rowEl.style.transition = 'all 0.3s ease';
+    rowEl.style.opacity    = '0.4';
+    rowEl.style.transform  = 'scale(0.98)';
+  }
+
+  const { error } = await sb
+    .from(DF_TABLE)
+    .delete()
+    .eq('id', fieldId);
+
+  if (error) {
+    if (rowEl) {
+      rowEl.style.opacity   = '1';
+      rowEl.style.transform = 'scale(1)';
+    }
+    showInvToast('Silme hatası: ' + error.message, 'error');
+    return;
+  }
+
+  _dimFields = _dimFields.filter(f => f.id !== fieldId);
+  renderDimFieldsPage();
+  showInvToast(`"${fieldLabel}" alanı silindi ✓`, 'success');
+}
+
+/* ============================================================
+   8. ربط بنظام التنقل (showPage)
+============================================================ */
+const _origShowPage_dimFields = showPage;
+showPage = function(cat) {
+  if (cat === 'dim_fields') {
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin)
+      return;
+    currentPage = 'dim_fields';
+    document.querySelectorAll('.nav-link')
+      .forEach(a => a.classList.remove('active'));
+    filteredImages = [];
+    buildDimFieldsPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    appState = 'section';
+    pushState('section', { cat: 'dim_fields' });
+    return;
+  }
+  _origShowPage_dimFields(cat);
+};
+
+/* ============================================================
+   9. إضافة الزر في صفحة الإعدادات
+============================================================ */
+const _origBuildSettingsPage_df = buildSettingsPage;
+buildSettingsPage = function() {
+  _origBuildSettingsPage_df();
+
+  /* نجد قسم "ANA SAYFA YÖNETİMİ" ونضيف الزر بعده */
+  const grid = document.querySelector(
+    '#pageContent .settings-page-wrap > div[style*="grid"],' +
+    '#pageContent [style*="grid-template-columns:1fr 1fr"]'
+  );
+
+  /* نبحث عن الـ wrap مباشرة */
+  const pageContent = document.getElementById('pageContent');
+  if (!pageContent) return;
+
+  /* ابحث عن الشبكة الأولى (grid) */
+  const firstGrid = pageContent.querySelector(
+    '[style*="grid-template-columns"]'
+  );
+  if (!firstGrid) return;
+
+  /* إنشاء بطاقة الزر */
+  const card = document.createElement('div');
+  card.onclick = () => showPage('dim_fields');
+  card.style.cssText = `
+    background:rgba(255,255,255,0.025);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:12px;padding:13px 14px;
+    cursor:pointer;transition:all 0.25s ease;
+    display:flex;align-items:center;gap:11px;`;
+  card.onmouseover = function() {
+    this.style.background    = 'rgba(201,168,76,0.06)';
+    this.style.borderColor   = 'rgba(201,168,76,0.25)';
+    this.style.transform     = 'translateY(-2px)';
+  };
+  card.onmouseout = function() {
+    this.style.background    = 'rgba(255,255,255,0.025)';
+    this.style.borderColor   = 'rgba(255,255,255,0.07)';
+    this.style.transform     = '';
+  };
+  card.innerHTML = `
+    <div style="
+      width:36px;height:36px;flex-shrink:0;border-radius:10px;
+      background:linear-gradient(135deg,
+        rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+      border:1px solid rgba(201,168,76,0.3);
+      display:flex;align-items:center;justify-content:center;
+    color:#c9a84c;font-size:15px;">
+      <i class="fas fa-ruler-combined"></i>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:12px;font-weight:900;color:#fff;
+           margin-bottom:2px;">ÖLÇÜLER Yönetimi</div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.28);
+           letter-spacing:0.5px;line-height:1.4;">
+        CBM · Paket Adedi · Özel alanlar ekle/düzenle
+      </div>
+    </div>
+    <i class="fas fa-chevron-right"
+       style="color:rgba(201,168,76,0.35);
+              font-size:11px;flex-shrink:0;"></i>`;
+
+  firstGrid.appendChild(card);
+};
+
+/* ============================================================
+   10. تحديث نافذة المقاسات لتستخدم الحقول الديناميكية
+============================================================ */
+
+/* ── بناء HTML نافذة المقاسات ديناميكياً ── */
+function buildDimsSpecsHtml(piece) {
+  /* إذا لم تُحمَّل الحقول بعد → استخدم الحقول الثابتة */
+  const fields = _dimFields.length > 0
+    ? _dimFields.filter(f => f.is_visible)
+    : [
+        { field_key:'l',  field_label:'Uzunluk',  field_unit:'cm', icon:'fa-arrows-alt-h'   },
+        { field_key:'w',  field_label:'Genişlik',  field_unit:'cm', icon:'fa-arrows-alt-v'   },
+        { field_key:'h',  field_label:'Yükseklik', field_unit:'cm', icon:'fa-sort-amount-up' },
+        { field_key:'kg', field_label:'Ağırlık',   field_unit:'kg', icon:'fa-weight-hanging' },
+      ];
+
+  /* فلترة الحقول التي لها قيمة في هذه القطعة */
+  const activeFields = fields.filter(f => {
+    const val = piece[f.field_key];
+    return val !== undefined && val !== null && val !== '' && val !== 0;
+  });
+
+  /* إذا لا توجد قيم → أظهر كل الحقول المرئية */
+  const toShow = activeFields.length > 0 ? activeFields : fields;
+
+  return `
+    <div class="dims-specs-row"
+         style="grid-template-columns:repeat(${Math.min(toShow.length,4)},1fr);">
+      ${toShow.map(f => {
+        const val = piece[f.field_key];
+        return `
+          <div class="dims-spec">
+            <i class="fas ${f.icon} dims-spec-icon"></i>
+            <span class="dims-spec-label">${f.field_label}</span>
+            <span class="dims-spec-value">
+              ${val !== undefined && val !== null && val !== ''
+                ? val
+                : '—'}
+              <span class="dims-spec-unit">
+                ${val ? ' ' + f.field_unit : ''}
+              </span>
+            </span>
+          </div>`;
+      }).join('')}
+    </div>`;
+}
+
+/* ── تعديل openDimsModal لاستخدام الحقول الديناميكية ── */
+const _origOpenDimsModal_df = openDimsModal;
+openDimsModal = function(e, imgId) {
+  e.stopPropagation();
+  e.preventDefault();
+
+  const img = images.find(i => i.id === imgId);
+  if (!img || !img.dims || !img.dims.length) return;
+
+  document.getElementById('dimsProdTitle').textContent = img.title;
+  document.getElementById('dimsProdCat').textContent   = img.catLabel;
+
+  /* بناء المحتوى باستخدام الحقول الديناميكية */
+  document.getElementById('dimsModalBody').innerHTML =
+    img.dims.map(p => `
+      <div class="dims-piece-card">
+        <div class="dims-piece-name">
+          <i class="fas ${p.icon || 'fa-box-open'}"></i>
+          ${p.name}
+        </div>
+        ${buildDimsSpecsHtml(p)}
+      </div>`).join('');
+
+  document.getElementById('dimsModalBody').scrollTop = 0;
+  document.getElementById('dimsModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  appState = 'dims';
+  pushState('dims', { imgId });
+};
+
+/* ============================================================
+   11. تحديث نافذة إضافة المنتج لتستخدم الحقول الديناميكية
+============================================================ */
+
+/* ── بناء بطاقة مقاس واحدة بالحقول الديناميكية ── */
+const _origAddDimCard_df = addDimCard;
+addDimCard = function(dim = {}) {
+  /* إذا لم تُحمَّل الحقول → استخدم الدالة الأصلية */
+  if (!_dimFields.length) {
+    _origAddDimCard_df(dim);
+    return;
+  }
+
+  const container = document.getElementById('peDimsContainer');
+  if (!container) return;
+
+  const card = document.createElement('div');
+  card.className = 'dim-input-card';
+  card.style.cssText = `
+    position:relative;
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:10px;
+    padding:12px 12px 15px;
+    animation:cardIn 0.3s ease;`;
+
+  /* بناء حقول الإدخال من _dimFields */
+  const visibleFields = _dimFields.filter(f => f.is_visible);
+
+  /* حساب عدد الأعمدة */
+  const cols = Math.min(visibleFields.length, 4);
+
+  const fieldsHtml = visibleFields.map(f => `
+    <div>
+      <label style="
+        font-size:9px;color:rgba(255,255,255,0.4);
+        text-transform:uppercase;letter-spacing:1px;
+        margin-bottom:4px;display:block;
+        display:flex;align-items:center;gap:4px;">
+        <i class="fas ${f.icon}"
+           style="color:rgba(201,168,76,0.5);font-size:9px;"></i>
+        ${f.field_label}
+        ${f.field_unit
+          ? `<span style="color:rgba(201,168,76,0.4);">
+             (${f.field_unit})</span>`
+          : ''}
+      </label>
+      <input type="number"
+             class="dim-field"
+             data-key="${f.field_key}"
+             placeholder="${f.field_unit || '0'}"
+             value="${dim[f.field_key] || ''}"
+             style="
+               width:100%;padding:8px;
+               background:rgba(255,255,255,0.03);
+               border:1px solid rgba(255,255,255,0.1);
+               color:#fff;border-radius:6px;
+               font-size:12px;text-align:center;
+               outline:none;
+               transition:border-color 0.25s;
+               -webkit-user-select:text;user-select:text;"
+             onfocus="this.style.borderColor='rgba(201,168,76,0.5)'"
+             onfocusout="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+    </div>`).join('');
+
+  card.innerHTML = `
+    <!-- زر الحذف -->
+    <button type="button"
+            onclick="this.parentElement.remove()"
+            style="
+              position:absolute;top:8px;right:8px;
+              background:rgba(239,68,68,0.15);
+              border:1px solid rgba(239,68,68,0.3);
+              color:#ef4444;border-radius:6px;
+              cursor:pointer;width:26px;height:26px;
+              display:flex;align-items:center;
+              justify-content:center;transition:0.2s;"
+            onmouseover="this.style.background='rgba(239,68,68,0.3)'"
+            onmouseout="this.style.background='rgba(239,68,68,0.15)'">
+      <i class="fas fa-times"></i>
+    </button>
+
+    <!-- اسم القطعة -->
+    <div style="
+      display:flex;align-items:center;gap:10px;
+      margin-bottom:12px;padding-right:35px;">
+      <div style="
+        width:32px;height:32px;
+        background:rgba(201,168,76,0.1);
+        border:1px solid rgba(201,168,76,0.3);
+        border-radius:8px;
+        display:flex;align-items:center;
+        justify-content:center;
+        color:#c9a84c;font-size:14px;flex-shrink:0;">
+        <i class="fas fa-box-open"></i>
+      </div>
+      <input type="text"
+             class="dim-name"
+             placeholder="Parça Adı (Örn: Büyük Sehpa)"
+             value="${dim.name || ''}"
+             style="
+               flex:1;padding:8px 12px;
+               background:rgba(255,255,255,0.03);
+               border:1px solid rgba(255,255,255,0.1);
+               color:#fff;border-radius:8px;
+               font-size:12px;outline:none;
+               font-weight:bold;
+               -webkit-user-select:text;user-select:text;
+               transition:border-color 0.25s;"
+             onfocus="this.style.borderColor='rgba(201,168,76,0.5)'"
+             onfocusout="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+    </div>
+
+    <!-- حقول المقاسات الديناميكية -->
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(${cols},1fr);
+      gap:8px;">
+      ${fieldsHtml}
+    </div>`;
+
+  container.appendChild(card);
+};
+
+/* ============================================================
+   12. تحديث saveProductToDB لحفظ الحقول الديناميكية
+============================================================ */
+const _origSaveProductToDB_df = saveProductToDB;
+saveProductToDB = async function() {
+  /* إذا لم تُحمَّل الحقول → استخدم الدالة الأصلية */
+  if (!_dimFields.length) {
+    await _origSaveProductToDB_df();
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const id = document.getElementById('peId').value;
+
+  /* تجميع المقاسات من البطاقات الديناميكية */
+  let dimsArray = [];
+  const cards = document.querySelectorAll('.dim-input-card');
+
+  cards.forEach(card => {
+    const name = card.querySelector('.dim-name')?.value.trim();
+    if (!name) return;
+
+    const dimObj = { name, icon: 'fa-box-open' };
+    let hasValue = false;
+
+    /* جمع قيم الحقول الديناميكية */
+    card.querySelectorAll('.dim-field').forEach(inp => {
+      const key = inp.dataset.key;
+      const val = Number(inp.value) || 0;
+      dimObj[key] = val;
+      if (val > 0) hasValue = true;
+    });
+
+    /* دعم الحقول الثابتة القديمة أيضاً */
+    const legacyL  = card.querySelector('.dim-l');
+    const legacyW  = card.querySelector('.dim-w');
+    const legacyH  = card.querySelector('.dim-h');
+    const legacyKg = card.querySelector('.dim-kg');
+
+    if (legacyL)  { dimObj.l  = Number(legacyL.value)  || 0; }
+    if (legacyW)  { dimObj.w  = Number(legacyW.value)  || 0; }
+    if (legacyH)  { dimObj.h  = Number(legacyH.value)  || 0; }
+    if (legacyKg) { dimObj.kg = Number(legacyKg.value) || 0; }
+
+    if (name) dimsArray.push(dimObj);
+  });
+
+  const productData = {
+    title     : document.getElementById('peTitle')?.value.trim()
+                || 'İsimsiz Model',
+    cat       : document.getElementById('peCat')?.value,
+    cat_label : (() => {
+      const labelInput = document.getElementById('peLabel')?.value.trim();
+      if (labelInput) return labelInput;
+      const catSelect  = document.getElementById('peCat');
+      const selectedOpt = catSelect?.options[catSelect.selectedIndex];
+      return selectedOpt?.text || catSelect?.value || '';
+    })(),
+    price     : Number(document.getElementById('pePrice')?.value) || 0,
+    image_url : document.getElementById('peImage')?.value.trim(),
+    dims      : dimsArray,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (id) productData.id = Number(id);
+  else    productData.id = Date.now() % 1000000;
+
+  const { error } = await sb
+    .from(INV_TABLE)
+    .upsert([productData], { onConflict: 'id' });
+
+  if (error) {
+    showInvToast('Hata: ' + error.message, 'error');
+  } else {
+    showInvToast('Model başarıyla kaydedildi ✓', 'success');
+    closeProductEditor();
+    await loadInventory();
+    buildInvList('');
+  }
+};
+
+/* ============================================================
+   13. تحميل الحقول عند تسجيل الدخول
+============================================================ */
+const _masterFinishLogin_df = finishLogin;
+finishLogin = function() {
+  _masterFinishLogin_df();
+  setTimeout(async () => {
+    await loadDimFields();
+    subscribeDimFields();
+  }, 1200);
+};
+
+/* ── تحميل عند دخول admin_accounts أيضاً ── */
+const _origFinishAdminLogin_df = finishAdminAccountLogin;
+finishAdminAccountLogin = function(admin) {
+  _origFinishAdminLogin_df(admin);
+  setTimeout(async () => {
+    await loadDimFields();
+    subscribeDimFields();
+  }, 1200);
+};
+
+/* ============================================================
+   14. CSS إضافي للصفحة
+============================================================ */
+(function injectDfStyles() {
+  if (document.getElementById('dfPageStyles')) return;
+  const st = document.createElement('style');
+  st.id = 'dfPageStyles';
+  st.textContent = `
+    /* ── تجاوب الجدول على الموبايل ── */
+    @media (max-width: 600px) {
+      #dfRows > div {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        padding: 10px !important;
+      }
+      #dfRows > div > div:nth-child(1) { grid-column: 1; }
+      #dfRows > div > div:nth-child(2) { grid-column: 2; }
+      #dfRows > div > div:nth-child(3) { display:none; }
+      #dfRows > div > div:nth-child(4) { grid-column: 1; }
+      #dfRows > div > div:nth-child(5) { display:none; }
+      #dfRows > div > div:nth-child(6) {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      #dfRows > div {
+        grid-template-columns: 1fr !important;
+      }
+      #dfRows > div > div:nth-child(6) {
+        grid-column: 1;
+      }
+    }
+
+    /* ── تأثير hover على صفوف الجدول ── */
+    #dfRows > div:last-child {
+      border-bottom: none !important;
+    }
+
+    /* ── حقول المقاسات الديناميكية ── */
+    .dim-field::-webkit-inner-spin-button,
+    .dim-field::-webkit-outer-spin-button {
+      opacity: 0.3;
+    }
+    .dim-field:focus::-webkit-inner-spin-button,
+    .dim-field:focus::-webkit-outer-spin-button {
+      opacity: 1;
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
+/* ============================================================
+   15. إضافة حقل section_key المخفي في نافذة hcmEditModal
+       (كان ناقصاً في الكود الأصلي)
+============================================================ */
+(function addHcmeSectionKeyField() {
+  setTimeout(() => {
+    const modal = document.getElementById('hcmEditModal');
+    if (!modal) return;
+    if (document.getElementById('hcmeSectionKey')) return;
+
+    const inp = document.createElement('input');
+    inp.type  = 'hidden';
+    inp.id    = 'hcmeSectionKey';
+    inp.value = 'orta';
+    modal.appendChild(inp);
+  }, 500);
+})();
+
   
 
 </script>
