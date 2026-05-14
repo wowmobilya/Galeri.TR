@@ -26883,927 +26883,843 @@ finishAdminAccountLogin = function(admin) {
 
 
 
-  /* ============================================================
-   ★ نظام المحادثة — Admin Chat System (WhatsApp Style) ★
-   النسخة: 1.0 — كامل الميزات
+/* ============================================================
+   ★ نظام المحادثة المتكامل v2.0
+   - غرفة جماعية + غرفة خاصة مع WOW
+   - تسجيل صوت محسّن مع مؤقت وموجة
+   - إصلاح تأخير الأزرار
+   - إدارة الكروب (WOW فقط)
 ============================================================ */
 
-const CHAT_TABLE    = 'admin_chats';
-const PROFILE_TABLE = 'admin_profiles';
-const CHAT_BUCKET   = 'chat-media';
-
-/* ── المتغيرات العامة ── */
-let _chatChannel        = null;   // Realtime channel
-let _activeChatUser     = null;   // المستخدم المفتوح حالياً
-let _chatMessages       = [];     // رسائل المحادثة الحالية
-let _chatProfiles       = {};     // الملفات الشخصية
-let _chatUnread         = {};     // عداد غير المقروء لكل مستخدم
-let _editingMsgId       = null;   // id الرسالة التي تُعدَّل
-let _mediaRecorder      = null;   // تسجيل الصوت
-let _audioChunks        = [];
-let _isRecording        = false;
-let _chatScrollLocked   = false;  // منع التمرير التلقائي عند قراءة القديم
+/* ══════════════════════════════════════════════════════
+   إصلاح تأخير الأزرار — Instant Navigation
+══════════════════════════════════════════════════════ */
+(function fixInstantNav() {
+  document.addEventListener('click', function(e) {
+    const card = e.target.closest('.home-card, [onclick]');
+    if (!card) return;
+    /* إزالة أي تأخير مرئي */
+    card.style.transform = 'scale(0.98)';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        card.style.transform = '';
+      });
+    });
+  }, { passive: true });
+})();
 
 /* ══════════════════════════════════════════════════════
-   CSS — حقن الأنماط
+   ثوابت وجداول
 ══════════════════════════════════════════════════════ */
-(function injectChatStyles() {
-  if (document.getElementById('chatStyles')) return;
-  const st = document.createElement('style');
-  st.id = 'chatStyles';
-  st.textContent = `
+const ROOMS_TABLE    = 'chat_rooms';
+const MEMBERS_TABLE  = 'chat_room_members';
+const MSGS_TABLE     = 'chat_room_messages';
+const READS_TABLE    = 'chat_room_reads';
+const PROF_TABLE     = 'admin_profiles';
+const CHAT_BUCKET_V2 = 'chat-media';
 
-    /* ── الصفحة الرئيسية للمحادثات ── */
-    #chatPage {
-      position: fixed;
-      inset: 0;
-      z-index: 7500;
-      background: #0a0a0a;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: chatPageIn 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
-    }
-    @keyframes chatPageIn {
-      from { opacity:0; transform:translateX(40px); }
-      to   { opacity:1; transform:translateX(0);    }
-    }
-    @keyframes chatPageOut {
-      from { opacity:1; transform:translateX(0);    }
-      to   { opacity:0; transform:translateX(40px); }
-    }
+/* ── حالة النظام ── */
+let _rooms          = [];
+let _activeRoomId   = null;
+let _roomMessages   = [];
+let _roomMembers    = {};
+let _profiles       = {};
+let _roomChannel    = null;
+let _unreadCounts   = {};
+let _editMsgId      = null;
+let _replyMsgId     = null;
 
-    /* ── نافذة المحادثة ── */
-    #chatWindow {
-      position: fixed;
-      inset: 0;
-      z-index: 7600;
-      background: #0a0a0a;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      animation: chatPageIn 0.3s ease forwards;
-    }
+/* ── تسجيل الصوت ── */
+let _recorder       = null;
+let _recChunks      = [];
+let _recTimer       = null;
+let _recSeconds     = 0;
+let _recAnalyser    = null;
+let _recAnimFrame   = null;
+let _isRec          = false;
 
-    /* ── فقاعات الرسائل ── */
-    .chat-bubble-wrap {
-      display: flex;
-      margin-bottom: 4px;
-      padding: 0 14px;
-      align-items: flex-end;
-      gap: 8px;
-      animation: bubbleIn 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      opacity: 0;
-    }
-    @keyframes bubbleIn {
-      from { opacity:0; transform:translateY(10px) scale(0.95); }
-      to   { opacity:1; transform:translateY(0)    scale(1);    }
-    }
-    .chat-bubble-wrap.mine  { flex-direction: row-reverse; }
-    .chat-bubble-wrap.theirs { flex-direction: row; }
+/* ══════════════════════════════════════════════════════
+   CSS المحادثة
+══════════════════════════════════════════════════════ */
+(function injectChatV2CSS() {
+  if (document.getElementById('chatV2CSS')) return;
+  const s = document.createElement('style');
+  s.id = 'chatV2CSS';
+  s.textContent = `
 
-    .chat-bubble {
-      max-width: min(72%, 340px);
-      padding: 9px 13px 7px;
-      border-radius: 18px;
-      position: relative;
-      word-break: break-word;
-      line-height: 1.55;
-      font-size: 13px;
-      font-family: 'Montserrat', sans-serif;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    .chat-bubble:active { opacity: 0.8; }
+  /* ── صفحة المحادثات ── */
+  #chatV2Page {
+    position:fixed;inset:0;z-index:7500;
+    background:#0a0a0a;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    animation:chatV2In 0.28s cubic-bezier(0.4,0,0.2,1) forwards;
+  }
+  @keyframes chatV2In {
+    from{opacity:0;transform:translateX(32px)}
+    to{opacity:1;transform:translateX(0)}
+  }
+  @keyframes chatV2Out {
+    from{opacity:1;transform:translateX(0)}
+    to{opacity:0;transform:translateX(32px)}
+  }
 
-    /* رسائلي */
-    .chat-bubble.mine {
-      background: linear-gradient(135deg, #c9a84c, #d4a843);
-      color: #0a0a0a;
-      border-bottom-right-radius: 5px;
-    }
-    /* رسائل الطرف الآخر */
-    .chat-bubble.theirs {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.07);
-      color: #fff;
-      border-bottom-left-radius: 5px;
-    }
+  /* ── نافذة الغرفة ── */
+  #chatV2Room {
+    position:fixed;inset:0;z-index:7600;
+    background:#0a0a0a;
+    display:flex;flex-direction:column;
+    overflow:hidden;
+    animation:chatV2In 0.25s ease forwards;
+  }
 
-    /* وقت الرسالة */
-    .chat-time {
-      font-size: 9px;
-      opacity: 0.55;
-      margin-top: 3px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      justify-content: flex-end;
-    }
-    .chat-bubble.theirs .chat-time { justify-content: flex-start; }
+  /* ── فقاعات ── */
+  .cv2-wrap {
+    display:flex;align-items:flex-end;gap:8px;
+    padding:2px 12px;
+    animation:cv2BubIn 0.22s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    opacity:0;
+  }
+  @keyframes cv2BubIn {
+    from{opacity:0;transform:translateY(8px) scale(0.96)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+  .cv2-wrap.mine{flex-direction:row-reverse}
 
-    /* علامة "معدَّل" */
-    .chat-edited-badge {
-      font-size: 8px;
-      opacity: 0.5;
-      font-style: italic;
-    }
+  .cv2-bubble {
+    max-width:min(70%,320px);
+    padding:8px 12px 6px;
+    border-radius:18px;
+    font-size:13px;
+    font-family:'Montserrat',sans-serif;
+    line-height:1.55;
+    word-break:break-word;
+    position:relative;
+    cursor:pointer;
+    transition:filter 0.15s;
+  }
+  .cv2-bubble:active{filter:brightness(0.85)}
+  .cv2-bubble.mine{
+    background:linear-gradient(135deg,#c9a84c,#d4a843);
+    color:#0a0a0a;
+    border-bottom-right-radius:5px;
+  }
+  .cv2-bubble.theirs{
+    background:rgba(255,255,255,0.09);
+    border:1px solid rgba(255,255,255,0.07);
+    color:#fff;
+    border-bottom-left-radius:5px;
+  }
 
-    /* ── صورة في الرسالة ── */
-    .chat-img {
-      max-width: 220px;
-      max-height: 180px;
-      border-radius: 12px;
-      object-fit: cover;
-      display: block;
-      cursor: zoom-in;
-      transition: transform 0.2s;
-    }
-    .chat-img:hover { transform: scale(1.02); }
+  /* اسم المرسل في الكروب */
+  .cv2-sender-name {
+    font-size:10px;font-weight:900;
+    margin-bottom:4px;letter-spacing:0.5px;
+  }
 
-    /* ── ملف في الرسالة ── */
-    .chat-file-card {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 10px;
-      background: rgba(0,0,0,0.2);
-      border-radius: 10px;
-      min-width: 160px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    .chat-file-card:hover { background: rgba(0,0,0,0.35); }
-    .chat-file-icon {
-      width: 36px; height: 36px;
-      border-radius: 9px;
-      background: rgba(201,168,76,0.15);
-      border: 1px solid rgba(201,168,76,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; color: #c9a84c; flex-shrink: 0;
-    }
+  /* وقت + قراءة */
+  .cv2-meta {
+    display:flex;align-items:center;gap:4px;
+    justify-content:flex-end;
+    font-size:9px;opacity:0.55;margin-top:3px;
+  }
+  .cv2-bubble.theirs .cv2-meta{justify-content:flex-start}
 
-    /* ── رسالة صوتية ── */
-    .chat-audio-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 180px;
-    }
-    .chat-audio-wrap audio {
-      height: 32px;
-      border-radius: 20px;
-      outline: none;
-      flex: 1;
-    }
+  /* فاصل التاريخ */
+  .cv2-date-sep {
+    text-align:center;margin:10px 0 6px;
+  }
+  .cv2-date-sep span {
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:50px;padding:3px 14px;
+    font-size:10px;color:rgba(255,255,255,0.3);
+    font-family:'Montserrat',sans-serif;font-weight:600;
+  }
 
-    /* ── أفاتار ── */
-    .chat-avatar {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      object-fit: cover;
-      flex-shrink: 0;
-      border: 1.5px solid rgba(201,168,76,0.3);
-    }
-    .chat-avatar-placeholder {
-      width: 32px; height: 32px;
-      border-radius: 50%;
-      background: linear-gradient(135deg,
-        rgba(201,168,76,0.2), rgba(201,168,76,0.05));
-      border: 1.5px solid rgba(201,168,76,0.3);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 13px; color: #c9a84c; flex-shrink: 0;
-      font-weight: 900;
-    }
+  /* ── أفاتار ── */
+  .cv2-avatar {
+    width:30px;height:30px;border-radius:50%;
+    object-fit:cover;flex-shrink:0;
+    border:1.5px solid rgba(201,168,76,0.3);
+  }
+  .cv2-avatar-ph {
+    width:30px;height:30px;border-radius:50%;
+    background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.04));
+    border:1.5px solid rgba(201,168,76,0.3);
+    display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:900;color:#c9a84c;flex-shrink:0;
+  }
 
-    /* ── فاصل التاريخ ── */
-    .chat-date-divider {
-      text-align: center;
-      margin: 12px 0 8px;
-      position: relative;
-    }
-    .chat-date-divider span {
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 50px;
-      padding: 3px 14px;
-      font-size: 10px;
-      color: rgba(255,255,255,0.3);
-      letter-spacing: 1px;
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 600;
-    }
+  /* ── صورة في الرسالة ── */
+  .cv2-img {
+    max-width:200px;max-height:160px;
+    border-radius:10px;object-fit:cover;
+    display:block;cursor:zoom-in;
+    transition:transform 0.2s;
+  }
+  .cv2-img:hover{transform:scale(1.03)}
 
-    /* ── قائمة المحادثات ── */
-    .chat-list-item {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      padding: 13px 16px;
-      cursor: pointer;
-      transition: background 0.2s;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      -webkit-tap-highlight-color: transparent;
-    }
-    .chat-list-item:hover,
-    .chat-list-item:active {
-      background: rgba(201,168,76,0.05);
-    }
-    .chat-list-item.active {
-      background: rgba(201,168,76,0.08);
-      border-right: 3px solid #c9a84c;
-    }
+  /* ── ملف ── */
+  .cv2-file {
+    display:flex;align-items:center;gap:9px;
+    padding:8px 10px;background:rgba(0,0,0,0.2);
+    border-radius:10px;min-width:150px;cursor:pointer;
+    transition:background 0.2s;
+  }
+  .cv2-file:hover{background:rgba(0,0,0,0.35)}
+  .cv2-file-ico {
+    width:34px;height:34px;border-radius:9px;
+    background:rgba(201,168,76,0.12);
+    border:1px solid rgba(201,168,76,0.25);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;color:#c9a84c;flex-shrink:0;
+  }
 
-    /* ── شارة غير المقروء ── */
-    .chat-unread-badge {
-      min-width: 20px; height: 20px;
-      border-radius: 50%;
-      background: #c9a84c;
-      color: #0a0a0a;
-      font-size: 10px;
-      font-weight: 900;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 4px;
-      flex-shrink: 0;
-      font-family: 'Montserrat', sans-serif;
-    }
+  /* ── رسالة صوتية محسّنة ── */
+  .cv2-audio-wrap {
+    display:flex;align-items:center;gap:10px;
+    min-width:200px;padding:4px 0;
+  }
+  .cv2-play-btn {
+    width:36px;height:36px;border-radius:50%;
+    border:none;cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    font-size:14px;transition:all 0.2s;
+  }
+  .cv2-bubble.mine .cv2-play-btn{
+    background:rgba(0,0,0,0.2);color:#0a0a0a;
+  }
+  .cv2-bubble.theirs .cv2-play-btn{
+    background:rgba(201,168,76,0.15);color:#c9a84c;
+  }
+  .cv2-play-btn:hover{transform:scale(1.1)}
+  .cv2-audio-progress {
+    flex:1;height:3px;border-radius:3px;
+    background:rgba(255,255,255,0.15);
+    position:relative;cursor:pointer;overflow:hidden;
+  }
+  .cv2-audio-fill {
+    height:100%;border-radius:3px;
+    background:currentColor;
+    transition:width 0.1s linear;
+    width:0%;
+  }
+  .cv2-audio-dur {
+    font-size:10px;opacity:0.6;white-space:nowrap;
+  }
 
-    /* ── قائمة السياق (حذف/تعديل) ── */
-    #chatContextMenu {
-      position: fixed;
-      z-index: 9999;
-      background: rgba(15,15,15,0.97);
-      border: 1px solid rgba(201,168,76,0.25);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.7);
-      backdrop-filter: blur(20px);
-      min-width: 180px;
-      animation: devModalIn 0.2s ease forwards;
-    }
-    .ctx-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      font-size: 12px;
-      font-weight: 700;
-      font-family: 'Montserrat', sans-serif;
-      cursor: pointer;
-      transition: background 0.15s;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
-      letter-spacing: 0.5px;
-      color: rgba(255,255,255,0.7);
-    }
-    .ctx-item:last-child { border-bottom: none; }
-    .ctx-item:hover { background: rgba(201,168,76,0.08); color: #fff; }
-    .ctx-item.danger { color: rgba(239,68,68,0.8); }
-    .ctx-item.danger:hover { background: rgba(239,68,68,0.1); color: #ef4444; }
-    .ctx-item i { width: 16px; text-align: center; font-size: 13px; }
+  /* ── شريط الإدخال ── */
+  #cv2InputBar {
+    flex-shrink:0;
+    background:rgba(10,10,10,0.97);
+    border-top:1px solid rgba(255,255,255,0.06);
+    padding:8px 10px;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+    display:flex;align-items:flex-end;gap:7px;
+  }
+  #cv2TextInput {
+    flex:1;
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:22px;
+    padding:10px 15px;
+    color:#fff;
+    font-family:'Montserrat',sans-serif;
+    font-size:13px;
+    outline:none;resize:none;
+    max-height:110px;min-height:40px;
+    overflow-y:auto;line-height:1.5;
+    transition:border-color 0.25s;
+    -webkit-user-select:text;user-select:text;
+  }
+  #cv2TextInput:focus{border-color:rgba(201,168,76,0.5)}
+  #cv2TextInput::placeholder{color:rgba(255,255,255,0.22)}
 
-    /* ── شريط الكتابة ── */
-    #chatInputBar {
-      flex-shrink: 0;
-      background: rgba(10,10,10,0.97);
-      border-top: 1px solid rgba(255,255,255,0.06);
-      padding: 10px 12px;
-      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-    }
-    #chatTextInput {
-      flex: 1;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 22px;
-      padding: 10px 16px;
-      color: #fff;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 13px;
-      outline: none;
-      resize: none;
-      max-height: 120px;
-      min-height: 42px;
-      overflow-y: auto;
-      line-height: 1.5;
-      transition: border-color 0.25s;
-      -webkit-user-select: text;
-      user-select: text;
-    }
-    #chatTextInput:focus {
-      border-color: rgba(201,168,76,0.5);
-    }
-    #chatTextInput::placeholder { color: rgba(255,255,255,0.25); }
+  .cv2-btn {
+    width:40px;height:40px;border-radius:50%;border:none;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:16px;flex-shrink:0;
+    transition:all 0.2s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cv2-btn.send{background:linear-gradient(135deg,#c9a84c,#f0d080);color:#0a0a0a}
+  .cv2-btn.send:hover{transform:scale(1.08);box-shadow:0 4px 14px rgba(201,168,76,0.4)}
+  .cv2-btn.attach{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5)}
+  .cv2-btn.attach:hover{background:rgba(201,168,76,0.12);color:#c9a84c}
+  .cv2-btn.rec{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.5)}
+  .cv2-btn.rec.active{background:rgba(239,68,68,0.2);color:#ef4444}
 
-    .chat-action-btn {
-      width: 42px; height: 42px;
-      border-radius: 50%;
-      border: none;
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      font-size: 16px;
-      transition: all 0.25s;
-      flex-shrink: 0;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .chat-action-btn.send {
-      background: linear-gradient(135deg, #c9a84c, #f0d080);
-      color: #0a0a0a;
-    }
-    .chat-action-btn.send:hover {
-      transform: scale(1.08);
-      box-shadow: 0 4px 16px rgba(201,168,76,0.4);
-    }
-    .chat-action-btn.attach {
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.5);
-    }
-    .chat-action-btn.attach:hover {
-      background: rgba(201,168,76,0.12);
-      color: #c9a84c;
-    }
-    .chat-action-btn.record {
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.5);
-    }
-    .chat-action-btn.record.recording {
-      background: rgba(239,68,68,0.2);
-      color: #ef4444;
-      animation: iconPulse 1s infinite;
-    }
+  /* ── شريط الرد / التعديل ── */
+  .cv2-context-bar {
+    display:none;
+    background:rgba(201,168,76,0.06);
+    border-top:1px solid rgba(201,168,76,0.18);
+    padding:7px 12px;flex-shrink:0;
+    align-items:center;gap:9px;
+  }
+  .cv2-context-bar.show{display:flex}
 
-    /* ── شريط التعديل ── */
-    #chatEditBar {
-      display: none;
-      background: rgba(201,168,76,0.07);
-      border-top: 1px solid rgba(201,168,76,0.2);
-      padding: 8px 14px;
-      flex-shrink: 0;
-      align-items: center;
-      gap: 10px;
-    }
-    #chatEditBar.visible { display: flex; }
+  /* ── قائمة السياق ── */
+  #cv2CtxMenu {
+    position:fixed;z-index:9999;
+    background:rgba(14,14,14,0.97);
+    border:1px solid rgba(201,168,76,0.22);
+    border-radius:14px;overflow:hidden;
+    box-shadow:0 16px 48px rgba(0,0,0,0.7);
+    backdrop-filter:blur(20px);
+    min-width:175px;
+    animation:devModalIn 0.18s ease forwards;
+  }
+  .cv2-ctx-item {
+    display:flex;align-items:center;gap:10px;
+    padding:11px 15px;font-size:12px;font-weight:700;
+    font-family:'Montserrat',sans-serif;cursor:pointer;
+    transition:background 0.15s;
+    border-bottom:1px solid rgba(255,255,255,0.04);
+    color:rgba(255,255,255,0.7);letter-spacing:0.5px;
+  }
+  .cv2-ctx-item:last-child{border-bottom:none}
+  .cv2-ctx-item:hover{background:rgba(201,168,76,0.08);color:#fff}
+  .cv2-ctx-item.danger{color:rgba(239,68,68,0.8)}
+  .cv2-ctx-item.danger:hover{background:rgba(239,68,68,0.1);color:#ef4444}
+  .cv2-ctx-item i{width:15px;text-align:center;font-size:13px}
 
-    /* ── مؤشر الكتابة ── */
-    .typing-indicator {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 14px;
-    }
-    .typing-dot {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: rgba(201,168,76,0.6);
-      animation: typingBounce 1.2s infinite;
-    }
-    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes typingBounce {
-      0%,60%,100% { transform: translateY(0); }
-      30%         { transform: translateY(-6px); }
-    }
+  /* ── تسجيل الصوت ── */
+  #cv2RecOverlay {
+    display:none;
+    position:fixed;inset:0;z-index:8000;
+    background:rgba(0,0,0,0.92);
+    backdrop-filter:blur(20px);
+    flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:20px;
+  }
+  #cv2RecOverlay.show{display:flex}
+  #cv2RecCanvas {
+    width:280px;height:60px;
+    border-radius:10px;
+    background:rgba(255,255,255,0.04);
+  }
+  .cv2-rec-timer {
+    font-size:36px;font-weight:900;
+    font-family:'Montserrat',sans-serif;
+    color:#ef4444;letter-spacing:3px;
+    animation:recPulse 1s infinite;
+  }
+  @keyframes recPulse{0%,100%{opacity:1}50%{opacity:0.5}}
+  .cv2-rec-hint {
+    font-size:11px;color:rgba(255,255,255,0.3);
+    letter-spacing:2px;text-transform:uppercase;
+    font-family:'Montserrat',sans-serif;
+  }
 
-    /* ── نافذة الملف الشخصي ── */
-    #chatProfileModal {
-      position: fixed; inset: 0; z-index: 9800;
-      display: none; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.88);
-      backdrop-filter: blur(18px);
-      padding: 16px;
-    }
-    #chatProfileModal.active { display: flex; }
+  /* ── قائمة الغرف ── */
+  .cv2-room-item {
+    display:flex;align-items:center;gap:12px;
+    padding:13px 16px;cursor:pointer;
+    transition:background 0.15s;
+    border-bottom:1px solid rgba(255,255,255,0.04);
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cv2-room-item:hover,.cv2-room-item:active{
+    background:rgba(201,168,76,0.05);
+  }
+  .cv2-room-icon {
+    width:48px;height:48px;border-radius:50%;
+    background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+    border:1.5px solid rgba(201,168,76,0.25);
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;flex-shrink:0;overflow:hidden;
+  }
+  .cv2-room-icon img{width:100%;height:100%;object-fit:cover}
+  .cv2-unread {
+    min-width:20px;height:20px;border-radius:50%;
+    background:#c9a84c;color:#0a0a0a;
+    font-size:10px;font-weight:900;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 4px;flex-shrink:0;
+    font-family:'Montserrat',sans-serif;
+  }
 
-    /* ── Scrollbar ── */
-    #chatMessagesArea::-webkit-scrollbar { width: 3px; }
-    #chatMessagesArea::-webkit-scrollbar-thumb {
-      background: rgba(201,168,76,0.2);
-      border-radius: 3px;
-    }
+  /* ── نافذة إعدادات الغرفة ── */
+  #cv2RoomSettings {
+    position:fixed;inset:0;z-index:8500;
+    display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);
+    backdrop-filter:blur(18px);
+    padding:16px;
+  }
+  #cv2RoomSettings.show{display:flex}
 
-    /* ── تأثير الإرسال ── */
-    @keyframes sendPop {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(0.9) rotate(-5deg); }
-      100% { transform: scale(1); }
-    }
-    .send-pop { animation: sendPop 0.3s ease; }
+  /* ── شريط الأعضاء ── */
+  .cv2-member-chip {
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 12px;border-radius:50px;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    font-size:11px;font-weight:700;
+    color:rgba(255,255,255,0.6);
+    font-family:'Montserrat',sans-serif;
+    margin:3px;cursor:pointer;
+    transition:all 0.2s;
+  }
+  .cv2-member-chip:hover{
+    background:rgba(201,168,76,0.1);
+    border-color:rgba(201,168,76,0.3);
+    color:#c9a84c;
+  }
+  .cv2-member-chip.owner{
+    background:rgba(201,168,76,0.1);
+    border-color:rgba(201,168,76,0.3);
+    color:#c9a84c;
+  }
+  .cv2-member-chip.banned{
+    background:rgba(239,68,68,0.08);
+    border-color:rgba(239,68,68,0.2);
+    color:rgba(239,68,68,0.6);
+  }
 
-    /* ── شريط التقدم للرفع ── */
-    .chat-upload-progress {
-      height: 3px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 5px;
-    }
-    .chat-upload-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #c9a84c, #f0d080);
-      border-radius: 3px;
-      transition: width 0.3s ease;
-    }
+  /* ── زر المحادثة في الهوم ── */
+  .cv2-home-btn {
+    grid-column:1/-1;
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:14px 16px;border-radius:14px;
+    border:1px solid rgba(201,168,76,0.2);
+    background:rgba(255,255,255,0.025);
+    cursor:pointer;transition:all 0.2s ease;
+    font-family:'Montserrat',sans-serif;
+    animation:cardSlideIn 0.6s ease 1s both;
+    -webkit-tap-highlight-color:transparent;
+    position:relative;
+  }
+  .cv2-home-btn:hover{
+    background:rgba(201,168,76,0.08);
+    border-color:rgba(201,168,76,0.4);
+    transform:translateY(-2px);
+  }
+  .cv2-home-btn:active{transform:translateY(0)}
 
-    /* ── زر المحادثة في الهوم ── */
-    .admin-chat-home-btn {
-      grid-column: 1 / -1;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 13px 16px;
-      border-radius: 14px;
-      border: 1px solid rgba(201,168,76,0.2);
-      background: rgba(255,255,255,0.025);
-      cursor: pointer;
-      transition: all 0.25s ease;
-      font-family: 'Montserrat', sans-serif;
-      animation: cardSlideIn 0.6s ease 0.95s both;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .admin-chat-home-btn:hover {
-      background: rgba(201,168,76,0.08);
-      border-color: rgba(201,168,76,0.4);
-      transform: translateY(-2px);
-    }
+  /* ── Scrollbar ── */
+  #cv2MsgsArea::-webkit-scrollbar{width:3px}
+  #cv2MsgsArea::-webkit-scrollbar-thumb{
+    background:rgba(201,168,76,0.2);border-radius:3px;
+  }
 
-    /* ── تأثير الرسالة الجديدة ── */
-    @keyframes newMsgGlow {
-      0%   { box-shadow: 0 0 0 0 rgba(201,168,76,0.4); }
-      50%  { box-shadow: 0 0 0 8px rgba(201,168,76,0); }
-      100% { box-shadow: none; }
-    }
-    .new-msg-glow { animation: newMsgGlow 0.8s ease; }
+  /* ── رد على رسالة ── */
+  .cv2-reply-preview {
+    border-left:3px solid #c9a84c;
+    padding:4px 8px;margin-bottom:6px;
+    background:rgba(0,0,0,0.15);border-radius:4px;
+    font-size:11px;opacity:0.75;
+  }
+
+  /* ── تأثير إرسال ── */
+  @keyframes cv2SendPop{
+    0%{transform:scale(1)}
+    40%{transform:scale(0.88) rotate(-8deg)}
+    100%{transform:scale(1)}
+  }
+  .cv2-send-pop{animation:cv2SendPop 0.28s ease}
 
   `;
-  document.head.appendChild(st);
+  document.head.appendChild(s);
 })();
 
 
 /* ══════════════════════════════════════════════════════
    تحميل الملفات الشخصية
 ══════════════════════════════════════════════════════ */
-async function loadChatProfiles() {
+async function cv2LoadProfiles() {
   const sb = await initSupabase();
   if (!sb) return;
-  const { data } = await sb.from(PROFILE_TABLE).select('*');
-  if (data) {
-    _chatProfiles = {};
-    data.forEach(p => { _chatProfiles[p.username] = p; });
-  }
+  const { data } = await sb.from(PROF_TABLE).select('*');
+  if (data) { _profiles = {}; data.forEach(p => { _profiles[p.username] = p; }); }
 }
 
-/* ── الحصول على معلومات ملف شخصي ── */
-function getChatProfile(username) {
-  return _chatProfiles[username] || {
-    username,
-    display_name : username,
-    avatar_url   : null,
-    status_text  : '',
-  };
+function cv2GetProfile(username) {
+  return _profiles[username] || { username, display_name: username, avatar_url: null };
 }
 
-/* ── بناء أفاتار HTML ── */
-function buildChatAvatar(username, size = 32) {
-  const p = getChatProfile(username);
-  const initials = (p.display_name || username)
-    .substring(0, 2).toUpperCase();
+function cv2BuildAvatar(username, size = 30) {
+  const p = cv2GetProfile(username);
+  const initials = (p.display_name || username).substring(0, 2).toUpperCase();
+  const colors = ['#c9a84c','#60a5fa','#4ade80','#f97316','#a78bfa','#f472b6'];
+  const colorIdx = username.charCodeAt(0) % colors.length;
+  const color = colors[colorIdx];
 
   if (p.avatar_url) {
-    return `<img class="chat-avatar"
-                 src="${p.avatar_url}"
+    return `<img class="cv2-avatar" src="${p.avatar_url}"
                  style="width:${size}px;height:${size}px;"
-                 onerror="this.outerHTML=\`
-                   <div class='chat-avatar-placeholder'
-                        style='width:${size}px;height:${size}px;
-                               font-size:${Math.round(size*0.4)}px;'>
-                     ${initials}
-                   </div>\`"
-                 draggable="false"/>`;
+                 draggable="false"
+                 onerror="this.outerHTML='<div class=cv2-avatar-ph style=width:${size}px;height:${size}px;font-size:${Math.round(size*0.38)}px;border-color:${color};color:${color};>${initials}</div>'"/>`;
   }
-  return `<div class="chat-avatar-placeholder"
+  return `<div class="cv2-avatar-ph"
                style="width:${size}px;height:${size}px;
-                      font-size:${Math.round(size*0.4)}px;">
+                      font-size:${Math.round(size*0.38)}px;
+                      border-color:${color};color:${color};">
             ${initials}
           </div>`;
 }
 
 
 /* ══════════════════════════════════════════════════════
-   صفحة قائمة المحادثات
+   تحميل الغرف
 ══════════════════════════════════════════════════════ */
-async function openChatListPage() {
-  /* إغلاق أي صفحة محادثة مفتوحة */
-  closeChatWindow(false);
-
-  /* إنشاء الصفحة */
-  let page = document.getElementById('chatPage');
-  if (page) page.remove();
-
-  page = document.createElement('div');
-  page.id = 'chatPage';
-  page.innerHTML = `
-
-    <!-- ══ الهيدر ══ -->
-    <div style="
-      flex-shrink:0;
-      background:rgba(10,10,10,0.97);
-      border-bottom:1px solid rgba(255,255,255,0.07);
-      position:sticky;top:0;z-index:2;">
-
-      <!-- خط ذهبي -->
-      <div style="height:2px;background:linear-gradient(90deg,
-        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
-
-      <div style="
-        padding:12px 16px;
-        display:flex;align-items:center;gap:12px;">
-
-        <!-- زر الرجوع -->
-        <button onclick="closeChatListPage()" style="
-          width:38px;height:38px;flex-shrink:0;
-          background:rgba(255,255,255,0.06);
-          border:1px solid rgba(255,255,255,0.1);
-          border-radius:11px;color:rgba(255,255,255,0.7);
-          font-size:15px;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
-          transition:all 0.2s;font-family:'Montserrat',sans-serif;">
-          <i class="fas fa-arrow-left"></i>
-        </button>
-
-        <!-- العنوان -->
-        <div style="flex:1;">
-          <div style="font-size:7px;letter-spacing:3px;
-               color:rgba(201,168,76,0.55);
-               text-transform:uppercase;margin-bottom:2px;">
-            WOW MOBİLYA
-          </div>
-          <div style="font-size:17px;font-weight:900;color:#fff;">
-            Mesajlar
-          </div>
-        </div>
-
-        <!-- زر الملف الشخصي -->
-        <button onclick="openChatProfileModal('${currentUser}')" style="
-          width:38px;height:38px;flex-shrink:0;
-          background:rgba(201,168,76,0.08);
-          border:1px solid rgba(201,168,76,0.2);
-          border-radius:50%;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
-          overflow:hidden;transition:all 0.25s;
-          font-family:'Montserrat',sans-serif;">
-          ${buildChatAvatar(currentUser, 38)}
-        </button>
-      </div>
-    </div>
-
-    <!-- ══ قائمة المحادثات ══ -->
-    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;"
-         id="chatListBody">
-      <div style="text-align:center;padding:60px 20px;">
-        <i class="fas fa-spinner fa-spin"
-           style="font-size:28px;color:rgba(201,168,76,0.4);"></i>
-      </div>
-    </div>
-  `;
-
-  document.body.appendChild(page);
-  document.body.style.overflow = 'hidden';
-
-  /* تحميل البيانات */
-  await loadChatProfiles();
-  await renderChatList();
-  subscribeChatRealtime();
-
-  /* History */
-  history.pushState({ chatList: true }, '');
-}
-
-/* ── رسم قائمة المحادثات ── */
-async function renderChatList() {
-  const body = document.getElementById('chatListBody');
-  if (!body) return;
-
+async function cv2LoadRooms() {
   const sb = await initSupabase();
-  if (!sb) return;
+  if (!sb) return [];
 
-  /* جلب كل حسابات الأدمن */
-  const { data: admins } = await sb
-    .from('admin_accounts')
-    .select('id, name, username, is_active, last_seen')
+  /* جلب الغرف التي ينتمي إليها المستخدم الحالي */
+  const { data: memberOf } = await sb
+    .from(MEMBERS_TABLE)
+    .select('room_id')
+    .eq('username', currentUser)
+    .eq('is_banned', false);
+
+  if (!memberOf || !memberOf.length) return [];
+
+  const roomIds = memberOf.map(m => m.room_id);
+
+  const { data: rooms } = await sb
+    .from(ROOMS_TABLE)
+    .select('*')
+        .in('id', roomIds)
     .eq('is_active', true)
-    .neq('username', currentUser)
-    .order('name', { ascending: true });
+    .order('id', { ascending: true });
 
-  /* إضافة WOW إذا كان المستخدم الحالي ليس WOW */
-  const contacts = [];
-  if (currentUser !== ADMIN_USER) {
-    contacts.push({
-      username     : ADMIN_USER,
-      display_name : 'WOW MOBİLYA',
-      is_wow       : true,
-    });
-  }
-  if (admins) {
-    admins.forEach(a => {
-      if (a.username !== currentUser) {
-        contacts.push({
-          username     : a.username,
-          display_name : a.name,
-          last_seen    : a.last_seen,
-        });
-      }
-    });
-  }
-
-  if (!contacts.length) {
-    body.innerHTML = `
-      <div style="text-align:center;padding:80px 20px;
-           color:rgba(255,255,255,0.2);">
-        <i class="fas fa-comments"
-           style="font-size:48px;display:block;margin-bottom:16px;
-                  color:rgba(201,168,76,0.15);"></i>
-        <p style="font-size:13px;letter-spacing:2px;">
-          Henüz admin hesabı yok
-        </p>
-        <p style="font-size:10px;margin-top:6px;
-             color:rgba(255,255,255,0.12);">
-          Ayarlar → Admin Hesapları bölümünden ekleyin
-        </p>
-      </div>`;
-    return;
-  }
-
-  /* جلب آخر رسالة لكل محادثة */
-  const lastMsgs = {};
-  const unreadCounts = {};
-
-  await Promise.all(contacts.map(async c => {
-    const { data: msgs } = await sb
-      .from(CHAT_TABLE)
-      .select('*')
-      .or(
-        `and(from_user.eq.${currentUser},to_user.eq.${c.username}),` +
-        `and(from_user.eq.${c.username},to_user.eq.${currentUser})`
-      )
-      .eq('is_deleted_by_sender', false)
-      .order('created_at', { ascending: false })
-      .limit(1);
-
-    if (msgs && msgs.length) {
-      lastMsgs[c.username] = msgs[0];
-    }
-
-    /* عداد غير المقروء */
-    const { count } = await sb
-      .from(CHAT_TABLE)
-      .select('id', { count: 'exact', head: true })
-      .eq('from_user', c.username)
-      .eq('to_user', currentUser)
-      .eq('is_read', false)
-      .eq('is_deleted_by_receiver', false);
-
-    unreadCounts[c.username] = count || 0;
-    _chatUnread[c.username]  = count || 0;
-  }));
-
-  /* ترتيب حسب آخر رسالة */
-  contacts.sort((a, b) => {
-    const ta = lastMsgs[a.username]?.created_at || '0';
-    const tb = lastMsgs[b.username]?.created_at || '0';
-    return tb.localeCompare(ta);
-  });
-
-  body.innerHTML = contacts.map(c => {
-    const last    = lastMsgs[c.username];
-    const unread  = unreadCounts[c.username] || 0;
-    const profile = getChatProfile(c.username);
-    const name    = c.display_name || profile.display_name || c.username;
-
-    /* معاينة آخر رسالة */
-    let preview = 'Mesaj yok';
-    if (last) {
-      if (last.media_type === 'image')  preview = '📷 Fotoğraf';
-      else if (last.media_type === 'file') preview = `📎 ${last.file_name || 'Dosya'}`;
-      else if (last.media_type === 'audio') preview = '🎤 Ses mesajı';
-      else preview = (last.message || '').substring(0, 45);
-      if (last.from_user === currentUser) preview = 'Sen: ' + preview;
-    }
-
-    /* وقت آخر رسالة */
-    const timeStr = last ? formatChatTime(last.created_at) : '';
-
-    /* حالة الاتصال */
-    const isOnline = c.last_seen
-      ? (Date.now() - new Date(c.last_seen).getTime()) < 3 * 60 * 1000
-      : (c.is_wow && currentUser !== ADMIN_USER);
-
-    return `
-      <div class="chat-list-item"
-           onclick="openChatWindow('${c.username}','${name}')">
-
-        <!-- الأفاتار + نقطة الاتصال -->
-        <div style="position:relative;flex-shrink:0;">
-          ${buildChatAvatar(c.username, 48)}
-          ${isOnline ? `
-          <div style="
-            position:absolute;bottom:1px;right:1px;
-            width:12px;height:12px;border-radius:50%;
-            background:#4ade80;
-            border:2.5px solid #0a0a0a;
-            animation:iconPulse 2s infinite;"></div>` : ''}
-        </div>
-
-        <!-- المعلومات -->
-        <div style="flex:1;min-width:0;">
-          <div style="
-            display:flex;align-items:center;
-            justify-content:space-between;gap:8px;
-            margin-bottom:4px;">
-            <span style="
-              font-size:14px;font-weight:900;color:#fff;
-              white-space:nowrap;overflow:hidden;
-              text-overflow:ellipsis;flex:1;">
-              ${name}
-            </span>
-            <span style="
-              font-size:10px;color:rgba(255,255,255,0.25);
-              flex-shrink:0;letter-spacing:0.3px;">
-              ${timeStr}
-            </span>
-          </div>
-          <div style="
-            display:flex;align-items:center;
-            justify-content:space-between;gap:8px;">
-            <span style="
-              font-size:11px;
-              color:${unread > 0
-                ? 'rgba(255,255,255,0.6)'
-                : 'rgba(255,255,255,0.25)'};
-              font-weight:${unread > 0 ? '600' : '400'};
-              white-space:nowrap;overflow:hidden;
-              text-overflow:ellipsis;flex:1;">
-              ${preview}
-            </span>
-            ${unread > 0 ? `
-            <div class="chat-unread-badge">${unread > 99 ? '99+' : unread}</div>
-            ` : ''}
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-/* ── تنسيق الوقت ── */
-function formatChatTime(dateStr) {
-  if (!dateStr) return '';
-  const d    = new Date(dateStr);
-  const now  = new Date();
-  const diff = now - d;
-
-  if (diff < 60000)           return 'Şimdi';
-  if (diff < 3600000)         return Math.floor(diff/60000) + ' dk';
-  if (diff < 86400000)
-    return d.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
-
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) return 'Dün';
-
-  return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit' });
-}
-
-/* ── إغلاق صفحة القائمة ── */
-function closeChatListPage() {
-  const page = document.getElementById('chatPage');
-  if (!page) return;
-  page.style.animation = 'chatPageOut 0.3s ease forwards';
-  setTimeout(() => {
-    page.remove();
-    document.body.style.overflow = '';
-  }, 280);
-  unsubscribeChatRealtime();
+  _rooms = rooms || [];
+  return _rooms;
 }
 
 
 /* ══════════════════════════════════════════════════════
-   نافذة المحادثة الفردية
+   فتح صفحة قائمة الغرف
 ══════════════════════════════════════════════════════ */
-async function openChatWindow(targetUser, targetName) {
-  _activeChatUser = targetUser;
-  _editingMsgId   = null;
+async function openChatV2() {
+  document.getElementById('chatV2Page')?.remove();
 
-  /* إزالة أي نافذة سابقة */
-  document.getElementById('chatWindow')?.remove();
-
-  const win = document.createElement('div');
-  win.id = 'chatWindow';
-  win.innerHTML = `
-
-    <!-- ══ هيدر المحادثة ══ -->
-    <div id="chatWinHeader" style="
+  const page = document.createElement('div');
+  page.id = 'chatV2Page';
+  page.innerHTML = `
+    <div style="
       flex-shrink:0;
       background:rgba(10,10,10,0.97);
-      border-bottom:1px solid rgba(255,255,255,0.07);
-      position:sticky;top:0;z-index:2;">
-
+      border-bottom:1px solid rgba(255,255,255,0.07);">
       <div style="height:2px;background:linear-gradient(90deg,
         transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
-
-      <div style="
-        padding:10px 14px;
-        display:flex;align-items:center;gap:12px;">
-
-        <!-- رجوع -->
-        <button onclick="closeChatWindow(true)" style="
+      <div style="padding:11px 14px;display:flex;align-items:center;gap:11px;">
+        <button onclick="closeCV2Page()" style="
           width:36px;height:36px;flex-shrink:0;
           background:rgba(255,255,255,0.06);
           border:1px solid rgba(255,255,255,0.1);
           border-radius:10px;color:rgba(255,255,255,0.7);
           font-size:14px;cursor:pointer;
           display:flex;align-items:center;justify-content:center;
-          transition:all 0.2s;font-family:'Montserrat',sans-serif;">
+          font-family:'Montserrat',sans-serif;">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div style="flex:1;">
+          <div style="font-size:7px;letter-spacing:3px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:2px;">
+            WOW MOBİLYA
+          </div>
+          <div style="font-size:17px;font-weight:900;color:#fff;">Mesajlar</div>
+        </div>
+        <button onclick="openCV2Profile('${currentUser}')" style="
+          width:36px;height:36px;border-radius:50%;
+          background:rgba(201,168,76,0.08);
+          border:1px solid rgba(201,168,76,0.2);
+          cursor:pointer;overflow:hidden;
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Montserrat',sans-serif;">
+          ${cv2BuildAvatar(currentUser, 36)}
+        </button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;"
+         id="cv2RoomList">
+      <div style="text-align:center;padding:50px;">
+        <i class="fas fa-spinner fa-spin"
+           style="font-size:26px;color:rgba(201,168,76,0.4);"></i>
+      </div>
+    </div>`;
+
+  document.body.appendChild(page);
+  document.body.style.overflow = 'hidden';
+
+  await cv2LoadProfiles();
+  await cv2LoadRooms();
+  await cv2RenderRoomList();
+  cv2SubscribeRealtime();
+
+  history.pushState({ cv2List: true }, '');
+}
+
+/* ── رسم قائمة الغرف ── */
+async function cv2RenderRoomList() {
+  const listEl = document.getElementById('cv2RoomList');
+  if (!listEl) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* جلب آخر رسالة + عدد غير المقروء لكل غرفة */
+  const lastMsgs    = {};
+  const unreadCount = {};
+
+  await Promise.all(_rooms.map(async room => {
+    /* آخر رسالة */
+    const { data: msgs } = await sb
+      .from(MSGS_TABLE)
+      .select('*')
+      .eq('room_id', room.id)
+      .eq('deleted_for_all', false)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    if (msgs?.length) lastMsgs[room.id] = msgs[0];
+
+    /* غير المقروء */
+    const { data: readRow } = await sb
+      .from(READS_TABLE)
+      .select('last_read_at')
+      .eq('room_id', room.id)
+      .eq('username', currentUser)
+      .maybeSingle();
+
+    const lastRead = readRow?.last_read_at || '1970-01-01';
+    const { count } = await sb
+      .from(MSGS_TABLE)
+      .select('id', { count: 'exact', head: true })
+      .eq('room_id', room.id)
+      .eq('deleted_for_all', false)
+      .neq('from_user', currentUser)
+      .gt('created_at', lastRead);
+
+    unreadCount[room.id] = count || 0;
+    _unreadCounts[room.id] = count || 0;
+  }));
+
+  /* ترتيب: آخر رسالة أولاً */
+  const sorted = [..._rooms].sort((a, b) => {
+    const ta = lastMsgs[a.id]?.created_at || '0';
+    const tb = lastMsgs[b.id]?.created_at || '0';
+    return tb.localeCompare(ta);
+  });
+
+  if (!sorted.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:80px 20px;color:rgba(255,255,255,0.18);">
+        <i class="fas fa-comments"
+           style="font-size:46px;display:block;margin-bottom:14px;
+                  color:rgba(201,168,76,0.12);"></i>
+        <p style="font-size:13px;letter-spacing:2px;">Henüz oda yok</p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = sorted.map(room => {
+    const last    = lastMsgs[room.id];
+    const unread  = unreadCount[room.id] || 0;
+    const isGroup = room.room_type === 'group';
+
+    /* معاينة آخر رسالة */
+    let preview = 'Henüz mesaj yok';
+    if (last) {
+      if (last.media_type === 'image')  preview = '📷 Fotoğraf';
+      else if (last.media_type === 'file')  preview = `📎 ${last.file_name || 'Dosya'}`;
+      else if (last.media_type === 'audio') preview = '🎤 Ses mesajı';
+      else preview = (last.message || '').substring(0, 42);
+      if (last.from_user === currentUser) preview = 'Sen: ' + preview;
+      else if (isGroup) {
+        const p = cv2GetProfile(last.from_user);
+        preview = (p.display_name || last.from_user).split(' ')[0] + ': ' + preview;
+      }
+    }
+
+    const timeStr = last ? cv2FormatTime(last.created_at) : '';
+
+    return `
+      <div class="cv2-room-item"
+           onclick="cv2OpenRoom(${room.id})">
+        <div class="cv2-room-icon">
+          ${room.icon_url
+            ? `<img src="${room.icon_url}" style="width:100%;height:100%;object-fit:cover;" draggable="false"/>`
+            : `<span style="font-size:22px;">${room.icon_emoji || (isGroup ? '👥' : '🔒')}</span>`}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;
+               justify-content:space-between;gap:8px;margin-bottom:3px;">
+            <span style="font-size:14px;font-weight:900;color:#fff;
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">
+              ${room.name}
+            </span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.22);flex-shrink:0;">
+              ${timeStr}
+            </span>
+          </div>
+          <div style="display:flex;align-items:center;
+               justify-content:space-between;gap:8px;">
+            <span style="font-size:11px;
+                  color:${unread > 0 ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.22)'};
+                  font-weight:${unread > 0 ? '600' : '400'};
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;">
+              ${preview}
+            </span>
+            ${unread > 0
+              ? `<div class="cv2-unread">${unread > 99 ? '99+' : unread}</div>`
+              : ''}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  /* تحديث شارة الهيدر */
+  cv2UpdateHeaderBadge();
+}
+
+/* ── تنسيق الوقت ── */
+function cv2FormatTime(dateStr) {
+  if (!dateStr) return '';
+  const d   = new Date(dateStr);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000)  return 'Şimdi';
+  if (diff < 3600000) return Math.floor(diff / 60000) + ' dk';
+  if (diff < 86400000)
+    return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const yest = new Date(now); yest.setDate(yest.getDate() - 1);
+  if (d.toDateString() === yest.toDateString()) return 'Dün';
+  return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' });
+}
+
+/* ── إغلاق صفحة القائمة ── */
+function closeCV2Page() {
+  const page = document.getElementById('chatV2Page');
+  if (!page) return;
+  page.style.animation = 'chatV2Out 0.25s ease forwards';
+  setTimeout(() => { page.remove(); document.body.style.overflow = ''; }, 240);
+  cv2UnsubscribeRealtime();
+}
+
+
+/* ══════════════════════════════════════════════════════
+   فتح غرفة محادثة
+══════════════════════════════════════════════════════ */
+async function cv2OpenRoom(roomId) {
+  _activeRoomId = roomId;
+  _editMsgId    = null;
+  _replyMsgId   = null;
+
+  document.getElementById('chatV2Room')?.remove();
+
+  const room    = _rooms.find(r => r.id === roomId);
+  const isGroup = room?.room_type === 'group';
+  const isOwner = currentUser === 'WOW';
+
+  const win = document.createElement('div');
+  win.id = 'chatV2Room';
+  win.innerHTML = `
+
+    <!-- ══ هيدر الغرفة ══ -->
+    <div style="
+      flex-shrink:0;
+      background:rgba(10,10,10,0.97);
+      border-bottom:1px solid rgba(255,255,255,0.07);">
+      <div style="height:2px;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+      <div style="padding:9px 13px;display:flex;align-items:center;gap:11px;">
+
+        <!-- رجوع -->
+        <button onclick="cv2CloseRoom()" style="
+          width:34px;height:34px;flex-shrink:0;
+          background:rgba(255,255,255,0.06);
+          border:1px solid rgba(255,255,255,0.1);
+          border-radius:10px;color:rgba(255,255,255,0.7);
+          font-size:13px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Montserrat',sans-serif;">
           <i class="fas fa-arrow-left"></i>
         </button>
 
-        <!-- الأفاتار + الاسم -->
-        <div onclick="openChatProfileModal('${targetUser}')"
+        <!-- أيقونة الغرفة -->
+        <div onclick="${isGroup && isOwner ? 'openCV2RoomSettings(' + roomId + ')' : ''}"
              style="
-               display:flex;align-items:center;gap:10px;
-               flex:1;cursor:pointer;min-width:0;">
-          <div style="position:relative;flex-shrink:0;">
-            ${buildChatAvatar(targetUser, 40)}
-            <div id="chatOnlineDot" style="
-              position:absolute;bottom:1px;right:1px;
-              width:11px;height:11px;border-radius:50%;
-              background:#4ade80;
-              border:2px solid #0a0a0a;
-              display:none;"></div>
+               width:38px;height:38px;border-radius:50%;
+               background:rgba(201,168,76,0.1);
+               border:1.5px solid rgba(201,168,76,0.25);
+               display:flex;align-items:center;justify-content:center;
+               font-size:18px;flex-shrink:0;overflow:hidden;
+               cursor:${isGroup && isOwner ? 'pointer' : 'default'};">
+          ${room?.icon_url
+            ? `<img src="${room.icon_url}" style="width:100%;height:100%;object-fit:cover;" draggable="false"/>`
+            : `<span>${room?.icon_emoji || (isGroup ? '👥' : '🔒')}</span>`}
+        </div>
+
+        <!-- اسم الغرفة + أعضاء -->
+        <div style="flex:1;min-width:0;cursor:${isGroup && isOwner ? 'pointer' : 'default'};"
+             onclick="${isGroup && isOwner ? 'openCV2RoomSettings(' + roomId + ')' : ''}">
+          <div style="font-size:14px;font-weight:900;color:#fff;
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${room?.name || 'Oda'}
           </div>
-          <div style="min-width:0;">
-            <div style="
-              font-size:15px;font-weight:900;color:#fff;
-              white-space:nowrap;overflow:hidden;
-              text-overflow:ellipsis;">
-              ${targetName}
-            </div>
-            <div id="chatStatusText" style="
-              font-size:10px;color:rgba(255,255,255,0.3);
-              margin-top:1px;letter-spacing:0.5px;">
-              ...
-            </div>
+          <div id="cv2RoomSubtitle" style="
+            font-size:10px;color:rgba(255,255,255,0.28);
+            margin-top:1px;letter-spacing:0.3px;">
+            Yükleniyor...
           </div>
         </div>
 
-        <!-- زر المزيد -->
-        <button onclick="toggleChatMenu()" style="
-          width:36px;height:36px;flex-shrink:0;
-          background:rgba(255,255,255,0.06);
-          border:1px solid rgba(255,255,255,0.1);
-          border-radius:10px;color:rgba(255,255,255,0.5);
-          font-size:16px;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
-          transition:all 0.2s;font-family:'Montserrat',sans-serif;">
-          <i class="fas fa-ellipsis-v"></i>
-        </button>
+        <!-- أزرار الهيدر -->
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          ${isGroup && isOwner ? `
+          <button onclick="openCV2RoomSettings(${roomId})" style="
+            width:34px;height:34px;
+            background:rgba(255,255,255,0.06);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:10px;color:rgba(255,255,255,0.5);
+            font-size:14px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            font-family:'Montserrat',sans-serif;">
+            <i class="fas fa-cog"></i>
+          </button>` : ''}
+        </div>
       </div>
     </div>
 
     <!-- ══ منطقة الرسائل ══ -->
-    <div id="chatMessagesArea" style="
-      flex:1;
-      overflow-y:auto;
-      padding:14px 0 8px;
-      -webkit-overflow-scrolling:touch;
-      scroll-behavior:smooth;">
-
+    <div id="cv2MsgsArea" style="
+      flex:1;overflow-y:auto;
+      padding:12px 0 6px;
+      -webkit-overflow-scrolling:touch;">
       <div style="text-align:center;padding:40px;">
         <i class="fas fa-spinner fa-spin"
-           style="font-size:24px;color:rgba(201,168,76,0.4);"></i>
+           style="font-size:22px;color:rgba(201,168,76,0.4);"></i>
       </div>
     </div>
 
-    <!-- ══ شريط التعديل ══ -->
-    <div id="chatEditBar">
-      <i class="fas fa-pen" style="color:#c9a84c;font-size:13px;flex-shrink:0;"></i>
+    <!-- ══ شريط الرد/التعديل ══ -->
+    <div id="cv2ContextBar" class="cv2-context-bar">
+      <i id="cv2CtxIcon" class="fas fa-reply"
+         style="color:#c9a84c;font-size:13px;flex-shrink:0;"></i>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:9px;letter-spacing:1.5px;
-             color:rgba(201,168,76,0.7);font-weight:700;
-             text-transform:uppercase;margin-bottom:2px;">
-          Mesajı Düzenle
+        <div id="cv2CtxLabel" style="
+          font-size:9px;letter-spacing:1.5px;
+          color:rgba(201,168,76,0.7);font-weight:700;
+          text-transform:uppercase;margin-bottom:2px;">
+          Yanıtla
         </div>
-        <div id="chatEditPreview" style="
+        <div id="cv2CtxPreview" style="
           font-size:11px;color:rgba(255,255,255,0.4);
           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
         </div>
       </div>
-      <button onclick="cancelChatEdit()" style="
+      <button onclick="cv2ClearContext()" style="
         background:none;border:none;
-        color:rgba(255,255,255,0.3);
-        font-size:16px;cursor:pointer;
+        color:rgba(255,255,255,0.3);font-size:15px;
+        cursor:pointer;padding:4px;
         font-family:'Montserrat',sans-serif;
-        padding:4px;transition:color 0.2s;"
+        transition:color 0.2s;"
         onmouseover="this.style.color='#ef4444'"
         onmouseout="this.style.color='rgba(255,255,255,0.3)'">
         <i class="fas fa-times"></i>
@@ -27811,40 +27727,33 @@ async function openChatWindow(targetUser, targetName) {
     </div>
 
     <!-- ══ شريط الإدخال ══ -->
-    <div id="chatInputBar">
-
-      <!-- زر المرفقات -->
+    <div id="cv2InputBar">
       <label style="cursor:pointer;">
-        <input type="file" id="chatFileInput"
-               accept="image/*,audio/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
-               onchange="handleChatFileSelect(this)"
+        <input type="file" id="cv2FileInput"
+               accept="image/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar"
+               onchange="cv2HandleFile(this)"
                style="display:none;"/>
-        <div class="chat-action-btn attach">
+        <div class="cv2-btn attach">
           <i class="fas fa-paperclip"></i>
         </div>
       </label>
 
-      <!-- حقل الكتابة -->
-      <textarea id="chatTextInput"
+      <textarea id="cv2TextInput"
                 placeholder="Mesaj yaz..."
                 rows="1"
-                onkeydown="handleChatKeydown(event)"
-                oninput="autoResizeChatInput(this)"></textarea>
+                onkeydown="cv2HandleKey(event)"
+                oninput="cv2AutoResize(this);cv2UpdateSendBtn()"></textarea>
 
-      <!-- زر الصوت / الإرسال -->
-      <button id="chatSendBtn"
-              class="chat-action-btn send"
-              onclick="sendChatMessage()">
+      <button id="cv2SendBtn" class="cv2-btn send" onclick="cv2SendMsg()">
         <i class="fas fa-paper-plane"></i>
       </button>
 
-      <button id="chatRecordBtn"
-              class="chat-action-btn record"
-              onmousedown="startVoiceRecord()"
-              onmouseup="stopVoiceRecord()"
-              ontouchstart="startVoiceRecord()"
-              ontouchend="stopVoiceRecord()"
-              style="display:none;">
+      <button id="cv2RecBtn" class="cv2-btn rec"
+              style="display:none;"
+              ontouchstart="cv2StartRec(event)"
+              ontouchend="cv2StopRec(event)"
+              onmousedown="cv2StartRec(event)"
+              onmouseup="cv2StopRec(event)">
         <i class="fas fa-microphone"></i>
       </button>
     </div>
@@ -27852,865 +27761,979 @@ async function openChatWindow(targetUser, targetName) {
 
   document.body.appendChild(win);
 
-  /* تحديث حالة الاتصال */
-  updateChatOnlineStatus(targetUser);
+  /* تحميل الأعضاء والرسائل */
+  await cv2LoadMembers(roomId);
+  await cv2LoadMessages(roomId);
+  cv2UpdateRoomSubtitle(roomId);
+  cv2MarkRoomRead(roomId);
+  cv2UpdateSendBtn();
 
-  /* تحميل الرسائل */
-  await loadChatMessages(targetUser);
-
-  /* تمييز كمقروء */
-  markChatAsRead(targetUser);
-
-  /* History */
-  history.pushState({ chatWindow: true, targetUser }, '');
+  history.pushState({ cv2Room: true, roomId }, '');
 }
 
-/* ── تحديث حالة الاتصال في الهيدر ── */
-async function updateChatOnlineStatus(username) {
-  const dot  = document.getElementById('chatOnlineDot');
-  const text = document.getElementById('chatStatusText');
-  if (!dot || !text) return;
-
+/* ── تحميل الأعضاء ── */
+async function cv2LoadMembers(roomId) {
   const sb = await initSupabase();
   if (!sb) return;
-
-  /* WOW دائماً متصل */
-  if (username === ADMIN_USER) {
-    dot.style.display  = 'block';
-    text.textContent   = 'Çevrimiçi';
-    text.style.color   = '#4ade80';
-    return;
-  }
-
   const { data } = await sb
-    .from('admin_accounts')
-    .select('last_seen, active_device_id')
-    .eq('username', username)
-    .maybeSingle();
+    .from(MEMBERS_TABLE)
+    .select('*')
+    .eq('room_id', roomId);
+  _roomMembers[roomId] = data || [];
+}
 
-  if (!data) return;
+/* ── تحديث عنوان فرعي للغرفة ── */
+function cv2UpdateRoomSubtitle(roomId) {
+  const el      = document.getElementById('cv2RoomSubtitle');
+  if (!el) return;
+  const members = _roomMembers[roomId] || [];
+  const active  = members.filter(m => !m.is_banned);
+  const room    = _rooms.find(r => r.id === roomId);
 
-  const isOnline = data.active_device_id !== null &&
-    data.last_seen &&
-    (Date.now() - new Date(data.last_seen).getTime()) < 3 * 60 * 1000;
-
-  if (isOnline) {
-    dot.style.display = 'block';
-    text.textContent  = 'Çevrimiçi';
-    text.style.color  = '#4ade80';
-  } else if (data.last_seen) {
-    dot.style.display = 'none';
-    const diff = Date.now() - new Date(data.last_seen).getTime();
-    const mins = Math.floor(diff / 60000);
-    const hrs  = Math.floor(diff / 3600000);
-    if (mins < 60)
-      text.textContent = `Son görülme: ${mins} dk önce`;
-    else if (hrs < 24)
-      text.textContent = `Son görülme: ${hrs} saat önce`;
-    else
-      text.textContent = `Son görülme: ${new Date(data.last_seen).toLocaleDateString('tr-TR')}`;
-    text.style.color = 'rgba(255,255,255,0.3)';
+  if (room?.room_type === 'group') {
+    el.textContent = `${active.length} üye`;
+  } else {
+    /* غرفة خاصة — اسم الطرف الآخر */
+    const other = active.find(m => m.username !== currentUser);
+    if (other) {
+      const p = cv2GetProfile(other.username);
+      el.textContent = p.display_name || other.username;
+    }
   }
 }
 
-/* ── إغلاق نافذة المحادثة ── */
-function closeChatWindow(goBack = true) {
-  const win = document.getElementById('chatWindow');
+/* ── إغلاق الغرفة ── */
+function cv2CloseRoom() {
+  const win = document.getElementById('chatV2Room');
   if (!win) return;
-  win.style.animation = 'chatPageOut 0.3s ease forwards';
-  setTimeout(() => win.remove(), 280);
-  _activeChatUser = null;
-  _editingMsgId   = null;
-  if (goBack) {
-    /* إعادة تحميل القائمة */
-    renderChatList();
-  }
+  win.style.animation = 'chatV2Out 0.22s ease forwards';
+  setTimeout(() => win.remove(), 220);
+  _activeRoomId = null;
+  _editMsgId    = null;
+  _replyMsgId   = null;
+  cv2RenderRoomList();
 }
 
 
 /* ══════════════════════════════════════════════════════
-   تحميل الرسائل
+   تحميل ورسم الرسائل
 ══════════════════════════════════════════════════════ */
-async function loadChatMessages(targetUser) {
-  const area = document.getElementById('chatMessagesArea');
+async function cv2LoadMessages(roomId) {
+  const area = document.getElementById('cv2MsgsArea');
   if (!area) return;
 
   const sb = await initSupabase();
   if (!sb) return;
 
-  const { data, error } = await sb
-    .from(CHAT_TABLE)
+  const { data } = await sb
+    .from(MSGS_TABLE)
     .select('*')
-    .or(
-      `and(from_user.eq.${currentUser},to_user.eq.${targetUser}),` +
-      `and(from_user.eq.${targetUser},to_user.eq.${currentUser})`
-    )
+    .eq('room_id', roomId)
+    .eq('deleted_for_all', false)
     .order('created_at', { ascending: true })
-    .limit(200);
+    .limit(300);
 
-  if (error) {
-    area.innerHTML = `
-      <div style="text-align:center;padding:40px;color:#ef4444;">
-        <i class="fas fa-exclamation-circle" style="font-size:24px;"></i>
-        <p style="margin-top:10px;font-size:11px;">Yükleme hatası</p>
-      </div>`;
-    return;
-  }
-
-  _chatMessages = data || [];
-  renderChatMessages();
-  scrollChatToBottom(false);
+  _roomMessages = data || [];
+  cv2RenderMessages();
+  cv2ScrollBottom(false);
 }
 
-/* ── رسم الرسائل ── */
-function renderChatMessages() {
-  const area = document.getElementById('chatMessagesArea');
+/* ── رسم كل الرسائل ── */
+function cv2RenderMessages() {
+  const area = document.getElementById('cv2MsgsArea');
   if (!area) return;
 
-  if (!_chatMessages.length) {
+  if (!_roomMessages.length) {
     area.innerHTML = `
       <div style="
         display:flex;flex-direction:column;
         align-items:center;justify-content:center;
         height:100%;padding:40px 20px;
-        color:rgba(255,255,255,0.15);">
+        color:rgba(255,255,255,0.14);">
         <i class="fas fa-comments"
-           style="font-size:48px;display:block;
-                  margin-bottom:16px;
-                  color:rgba(201,168,76,0.1);"></i>
-        <p style="font-size:12px;letter-spacing:2px;
-             text-align:center;">
-          Henüz mesaj yok.<br/>
-          <span style="font-size:10px;margin-top:4px;display:block;
-                color:rgba(255,255,255,0.1);">
-            İlk mesajı gönderin!
-          </span>
+           style="font-size:44px;display:block;margin-bottom:14px;
+                  color:rgba(201,168,76,0.09);"></i>
+        <p style="font-size:12px;letter-spacing:2px;text-align:center;">
+          İlk mesajı gönderin!
         </p>
       </div>`;
     return;
   }
 
+  const room    = _rooms.find(r => r.id === _activeRoomId);
+  const isGroup = room?.room_type === 'group';
   let html      = '';
   let lastDate  = '';
 
-  _chatMessages.forEach((msg, idx) => {
-    /* تخطي المحذوفة */
-    const isMine = msg.from_user === currentUser;
-    if (isMine && msg.is_deleted_by_sender)   return;
-    if (!isMine && msg.is_deleted_by_receiver) return;
+  _roomMessages.forEach((msg, idx) => {
+    if (msg.is_deleted_by_sender && msg.from_user === currentUser) return;
 
     /* فاصل التاريخ */
     const msgDate = new Date(msg.created_at).toLocaleDateString('tr-TR');
     if (msgDate !== lastDate) {
       lastDate = msgDate;
-      const today     = new Date().toLocaleDateString('tr-TR');
-      const yesterday = new Date(Date.now()-86400000).toLocaleDateString('tr-TR');
-      const label = msgDate === today ? 'Bugün'
-                  : msgDate === yesterday ? 'Dün'
-                  : msgDate;
-      html += `
-        <div class="chat-date-divider">
-          <span>${label}</span>
-        </div>`;
+      const today = new Date().toLocaleDateString('tr-TR');
+      const yest  = new Date(Date.now() - 86400000).toLocaleDateString('tr-TR');
+      const label = msgDate === today ? 'Bugün' : msgDate === yest ? 'Dün' : msgDate;
+      html += `<div class="cv2-date-sep"><span>${label}</span></div>`;
     }
 
-    /* بناء فقاعة الرسالة */
-    html += buildChatBubble(msg, idx);
+    html += cv2BuildBubble(msg, isGroup, idx);
   });
 
   area.innerHTML = html;
 }
 
-/* ── بناء فقاعة رسالة واحدة ── */
-function buildChatBubble(msg, idx) {
+/* ── بناء فقاعة رسالة ── */
+function cv2BuildBubble(msg, isGroup, idx) {
   const isMine  = msg.from_user === currentUser;
   const side    = isMine ? 'mine' : 'theirs';
   const timeStr = new Date(msg.created_at)
-    .toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+    .toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  const p = cv2GetProfile(msg.from_user);
+
+  /* ألوان الأسماء في الكروب */
+  const nameColors = ['#c9a84c','#60a5fa','#4ade80','#f97316','#a78bfa','#f472b6','#34d399'];
+  const nameColor  = nameColors[msg.from_user.charCodeAt(0) % nameColors.length];
 
   /* محتوى الرسالة */
   let content = '';
 
+  /* رد على رسالة */
+  if (msg.reply_to_id) {
+    const replied = _roomMessages.find(m => m.id === msg.reply_to_id);
+    if (replied) {
+      const rp = cv2GetProfile(replied.from_user);
+      content += `
+        <div class="cv2-reply-preview">
+          <div style="font-size:10px;font-weight:900;
+               color:${nameColors[replied.from_user.charCodeAt(0) % nameColors.length]};
+               margin-bottom:2px;">
+            ${rp.display_name || replied.from_user}
+          </div>
+          <div style="font-size:10px;opacity:0.7;">
+            ${replied.media_type !== 'text' ? '📎 Medya' : (replied.message || '').substring(0, 40)}
+          </div>
+        </div>`;
+    }
+  }
+
   if (msg.media_type === 'image' && msg.media_url) {
-    content = `
-      <img class="chat-img"
+    content += `
+      <img class="cv2-img"
            src="${msg.media_url}"
-           onclick="openChatImageViewer('${msg.media_url}')"
+           onclick="cv2ViewImage('${msg.media_url}')"
            draggable="false"
            onerror="this.style.display='none'"/>
-      ${msg.message ? `<div style="margin-top:6px;">${escapeHtml(msg.message)}</div>` : ''}`;
+      ${msg.message ? `<div style="margin-top:5px;">${cv2EscHtml(msg.message)}</div>` : ''}`;
 
   } else if (msg.media_type === 'file' && msg.media_url) {
     const ext = (msg.file_name || '').split('.').pop().toUpperCase() || 'FILE';
-    const sizeStr = msg.file_size
-      ? (msg.file_size > 1024*1024
-          ? (msg.file_size/1024/1024).toFixed(1) + ' MB'
-          : (msg.file_size/1024).toFixed(0) + ' KB')
+    const sz  = msg.file_size
+      ? (msg.file_size > 1048576
+          ? (msg.file_size / 1048576).toFixed(1) + ' MB'
+          : Math.round(msg.file_size / 1024) + ' KB')
       : '';
-    content = `
-      <div class="chat-file-card"
-           onclick="downloadChatFile('${msg.media_url}','${msg.file_name || 'dosya'}')">
-        <div class="chat-file-icon">
-          <i class="fas ${getFileIcon(msg.file_name)}"></i>
+    content += `
+      <div class="cv2-file"
+           onclick="cv2DownloadFile('${msg.media_url}','${msg.file_name || 'dosya'}')">
+        <div class="cv2-file-ico">
+          <i class="fas ${cv2FileIcon(msg.file_name)}"></i>
         </div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:12px;font-weight:700;
-               white-space:nowrap;overflow:hidden;
-               text-overflow:ellipsis;">
-            ${escapeHtml(msg.file_name || 'Dosya')}
+               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${cv2EscHtml(msg.file_name || 'Dosya')}
           </div>
-          <div style="font-size:9px;opacity:0.5;margin-top:2px;">
-            ${ext}${sizeStr ? ' · ' + sizeStr : ''}
+          <div style="font-size:9px;opacity:0.5;margin-top:1px;">
+            ${ext}${sz ? ' · ' + sz : ''}
           </div>
         </div>
-        <i class="fas fa-download" style="font-size:13px;opacity:0.6;flex-shrink:0;"></i>
+        <i class="fas fa-download" style="font-size:12px;opacity:0.5;flex-shrink:0;"></i>
       </div>`;
 
   } else if (msg.media_type === 'audio' && msg.media_url) {
-    content = `
-      <div class="chat-audio-wrap">
-        <i class="fas fa-microphone"
-           style="color:${isMine ? '#0a0a0a' : '#c9a84c'};
-                  font-size:16px;flex-shrink:0;"></i>
-        <audio controls src="${msg.media_url}" preload="none"></audio>
+    const dur = msg.audio_duration || 0;
+    const durStr = dur > 0
+      ? Math.floor(dur / 60) + ':' + String(dur % 60).padStart(2, '0')
+      : '0:00';
+    content += `
+      <div class="cv2-audio-wrap" id="aw-${msg.id}">
+        <button class="cv2-play-btn"
+                onclick="cv2ToggleAudio(${msg.id},'${msg.media_url}',this)">
+          <i class="fas fa-play" id="aico-${msg.id}"></i>
+        </button>
+        <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+          <div class="cv2-audio-progress"
+               id="aprog-${msg.id}"
+               onclick="cv2SeekAudio(event,${msg.id})">
+            <div class="cv2-audio-fill" id="afill-${msg.id}"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span class="cv2-audio-dur" id="adur-${msg.id}">${durStr}</span>
+            <div style="display:flex;gap:5px;">
+              <button onclick="cv2SetPlaybackRate(${msg.id},1)"
+                      id="aspd-${msg.id}-1"
+                      style="
+                        padding:1px 6px;border-radius:4px;border:none;
+                        background:rgba(255,255,255,0.1);
+                        color:rgba(255,255,255,0.5);
+                        font-size:9px;font-weight:700;cursor:pointer;
+                        font-family:'Montserrat',sans-serif;">
+                1×
+              </button>
+              <button onclick="cv2SetPlaybackRate(${msg.id},1.5)"
+                      id="aspd-${msg.id}-1.5"
+                      style="
+                        padding:1px 6px;border-radius:4px;border:none;
+                        background:rgba(255,255,255,0.1);
+                        color:rgba(255,255,255,0.5);
+                        font-size:9px;font-weight:700;cursor:pointer;
+                        font-family:'Montserrat',sans-serif;">
+                1.5×
+              </button>
+              <button onclick="cv2SetPlaybackRate(${msg.id},2)"
+                      id="aspd-${msg.id}-2"
+                      style="
+                        padding:1px 6px;border-radius:4px;border:none;
+                        background:rgba(255,255,255,0.1);
+                        color:rgba(255,255,255,0.5);
+                        font-size:9px;font-weight:700;cursor:pointer;
+                        font-family:'Montserrat',sans-serif;">
+                2×
+              </button>
+            </div>
+          </div>
+        </div>
       </div>`;
 
   } else {
-    content = `<div>${escapeHtml(msg.message || '')}</div>`;
+    content += `<div>${cv2EscHtml(msg.message || '')}</div>`;
   }
 
-  /* الوقت + علامة القراءة + تعديل */
+  const editedBadge = msg.edited_at
+    ? `<span style="font-size:8px;opacity:0.45;font-style:italic;">düzenlendi</span>` : '';
   const readIcon = isMine
     ? `<i class="fas fa-check${msg.is_read ? '-double' : ''}"
-          style="font-size:9px;
-                 color:${msg.is_read ? '#4ade80' : 'inherit'};"></i>`
+          style="font-size:8px;${msg.is_read ? 'color:#4ade80;' : ''}"></i>`
     : '';
-  const editedBadge = msg.edited_at
-    ? `<span class="chat-edited-badge">düzenlendi</span>` : '';
 
   return `
-    <div class="chat-bubble-wrap ${side}"
-         id="msg-${msg.id}"
-         data-msg-id="${msg.id}"
-         data-is-mine="${isMine}"
-         oncontextmenu="showChatContextMenu(event,${msg.id},${isMine})"
-         ontouchstart="handleChatTouchStart(event,${msg.id},${isMine})">
+    <div class="cv2-wrap ${side}"
+         id="cv2msg-${msg.id}"
+         data-id="${msg.id}"
+         data-mine="${isMine}"
+         oncontextmenu="cv2ShowCtxMenu(event,${msg.id},${isMine})"
+         ontouchstart="cv2TouchStart(event,${msg.id},${isMine})">
 
-      ${!isMine ? buildChatAvatar(msg.from_user, 30) : ''}
+      ${!isMine ? cv2BuildAvatar(msg.from_user, 30) : ''}
 
-      <div class="chat-bubble ${side} new-msg-glow">
+      <div class="cv2-bubble ${side}">
+        ${isGroup && !isMine
+          ? `<div class="cv2-sender-name" style="color:${nameColor};">
+               ${p.display_name || msg.from_user}
+             </div>`
+          : ''}
         ${content}
-        <div class="chat-time">
+        <div class="cv2-meta">
           ${editedBadge}
-          ${timeStr}
+          <span>${timeStr}</span>
           ${readIcon}
         </div>
       </div>
 
-      ${isMine ? buildChatAvatar(msg.from_user, 30) : ''}
+      ${isMine ? cv2BuildAvatar(msg.from_user, 30) : ''}
     </div>`;
 }
 
-/* ── أيقونة الملف ── */
-function getFileIcon(fileName) {
-  if (!fileName) return 'fa-file';
-  const ext = fileName.split('.').pop().toLowerCase();
-  const map = {
-    pdf: 'fa-file-pdf', doc: 'fa-file-word', docx: 'fa-file-word',
-    xls: 'fa-file-excel', xlsx: 'fa-file-excel',
-    zip: 'fa-file-archive', rar: 'fa-file-archive',
-    mp3: 'fa-file-audio', wav: 'fa-file-audio',
-    mp4: 'fa-file-video', mov: 'fa-file-video',
-    jpg: 'fa-file-image', jpeg: 'fa-file-image',
-    png: 'fa-file-image', gif: 'fa-file-image',
-  };
-  return map[ext] || 'fa-file';
-}
-
-/* ── Escape HTML ── */
-function escapeHtml(str) {
+/* ── أدوات مساعدة ── */
+function cv2EscHtml(str) {
   if (!str) return '';
   return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\n/g, '<br/>');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/\n/g,'<br/>');
+}
+function cv2FileIcon(name) {
+  if (!name) return 'fa-file';
+  const ext = name.split('.').pop().toLowerCase();
+  const m = { pdf:'fa-file-pdf',doc:'fa-file-word',docx:'fa-file-word',
+    xls:'fa-file-excel',xlsx:'fa-file-excel',zip:'fa-file-archive',
+    rar:'fa-file-archive',mp3:'fa-file-audio',wav:'fa-file-audio',
+    mp4:'fa-file-video',jpg:'fa-file-image',jpeg:'fa-file-image',
+    png:'fa-file-image',gif:'fa-file-image' };
+  return m[ext] || 'fa-file';
+}
+function cv2ScrollBottom(smooth = true) {
+  const area = document.getElementById('cv2MsgsArea');
+  if (!area) return;
+  if (smooth) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+  else area.scrollTop = area.scrollHeight;
+}
+function cv2AppendBubble(msg) {
+  const area    = document.getElementById('cv2MsgsArea');
+  if (!area) return;
+  const empty   = area.querySelector('[style*="fa-comments"]');
+  if (empty) area.innerHTML = '';
+  const room    = _rooms.find(r => r.id === _activeRoomId);
+  const isGroup = room?.room_type === 'group';
+  const wrap    = document.createElement('div');
+  wrap.innerHTML = cv2BuildBubble(msg, isGroup, _roomMessages.length - 1);
+  const el = wrap.firstElementChild;
+  if (el) { area.appendChild(el); el.classList.add('new-msg-glow'); }
 }
 
-/* ── التمرير للأسفل ── */
-function scrollChatToBottom(smooth = true) {
-  const area = document.getElementById('chatMessagesArea');
-  if (!area || _chatScrollLocked) return;
-  if (smooth) {
-    area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+
+/* ══════════════════════════════════════════════════════
+   تشغيل الصوت مع تسريع
+══════════════════════════════════════════════════════ */
+const _audioPlayers = {};
+
+function cv2ToggleAudio(msgId, url, btn) {
+  let player = _audioPlayers[msgId];
+
+  if (!player) {
+    player = new Audio(url);
+    player.preload = 'auto';
+    _audioPlayers[msgId] = player;
+
+    player.ontimeupdate = () => {
+      const pct = player.duration
+        ? (player.currentTime / player.duration) * 100 : 0;
+      const fill = document.getElementById('afill-' + msgId);
+      const dur  = document.getElementById('adur-' + msgId);
+      if (fill) fill.style.width = pct + '%';
+      if (dur) {
+        const rem = player.duration - player.currentTime;
+        dur.textContent = Math.floor(rem / 60) + ':' + String(Math.floor(rem % 60)).padStart(2, '0');
+      }
+    };
+
+    player.onended = () => {
+      const ico = document.getElementById('aico-' + msgId);
+      if (ico) { ico.className = 'fas fa-play'; }
+      const fill = document.getElementById('afill-' + msgId);
+      if (fill) fill.style.width = '0%';
+    };
+  }
+
+  if (player.paused) {
+    /* إيقاف أي مشغّل آخر */
+    Object.entries(_audioPlayers).forEach(([id, p]) => {
+      if (id !== String(msgId) && !p.paused) {
+        p.pause();
+        const ico = document.getElementById('aico-' + id);
+        if (ico) ico.className = 'fas fa-play';
+      }
+    });
+    player.play();
+    const ico = document.getElementById('aico-' + msgId);
+    if (ico) ico.className = 'fas fa-pause';
   } else {
-    area.scrollTop = area.    scrollHeight;
+    player.pause();
+    const ico = document.getElementById('aico-' + msgId);
+    if (ico) ico.className = 'fas fa-play';
   }
 }
 
-/* ── تمييز الرسائل كمقروءة ── */
-async function markChatAsRead(fromUser) {
-  const sb = await initSupabase();
-  if (!sb) return;
-  await sb
-    .from(CHAT_TABLE)
-    .update({ is_read: true })
-    .eq('from_user', fromUser)
-    .eq('to_user', currentUser)
-    .eq('is_read', false);
+function cv2SetPlaybackRate(msgId, rate) {
+  const player = _audioPlayers[msgId];
+  if (player) player.playbackRate = rate;
 
-  _chatUnread[fromUser] = 0;
-  updateChatBadgeInList(fromUser);
+  /* تحديث أزرار التسريع */
+  [1, 1.5, 2].forEach(r => {
+    const btn = document.getElementById(`aspd-${msgId}-${r}`);
+    if (!btn) return;
+    if (r === rate) {
+      btn.style.background = 'rgba(201,168,76,0.25)';
+      btn.style.color      = '#c9a84c';
+    } else {
+      btn.style.background = 'rgba(255,255,255,0.1)';
+      btn.style.color      = 'rgba(255,255,255,0.5)';
+    }
+  });
 }
 
-/* ── تحديث شارة غير المقروء في القائمة ── */
-function updateChatBadgeInList(username) {
-  /* تحديث شارة الهيدر */
-  const headerBadge = document.getElementById('chatHeaderBadge');
-  const total = Object.values(_chatUnread).reduce((a,b) => a+b, 0);
-  if (headerBadge) {
-    headerBadge.textContent  = total > 0 ? (total > 99 ? '99+' : total) : '';
-    headerBadge.style.display = total > 0 ? 'flex' : 'none';
+function cv2SeekAudio(e, msgId) {
+  const player = _audioPlayers[msgId];
+  if (!player || !player.duration) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct  = (e.clientX - rect.left) / rect.width;
+  player.currentTime = pct * player.duration;
+}
+
+
+/* ══════════════════════════════════════════════════════
+   تسجيل الصوت المحسّن
+══════════════════════════════════════════════════════ */
+function cv2ShowRecOverlay() {
+  let ov = document.getElementById('cv2RecOverlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'cv2RecOverlay';
+    ov.innerHTML = `
+      <div style="
+        width:70px;height:70px;border-radius:50%;
+        background:rgba(239,68,68,0.15);
+        border:2px solid rgba(239,68,68,0.4);
+        display:flex;align-items:center;justify-content:center;
+        font-size:28px;color:#ef4444;
+        animation:iconPulse 1s infinite;">
+        <i class="fas fa-microphone"></i>
+      </div>
+      <div class="cv2-rec-timer" id="cv2RecTimer">0:00</div>
+      <canvas id="cv2RecCanvas"></canvas>
+      <div class="cv2-rec-hint">Bırakınca gönderilir</div>
+      <button onclick="cv2CancelRec()" style="
+        padding:10px 24px;border-radius:50px;
+        border:1px solid rgba(255,255,255,0.15);
+        background:rgba(255,255,255,0.06);
+        color:rgba(255,255,255,0.5);
+        font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:700;letter-spacing:1.5px;
+        cursor:pointer;transition:all 0.25s;">
+        <i class="fas fa-times"></i> İPTAL
+      </button>`;
+    document.body.appendChild(ov);
   }
+  ov.classList.add('show');
+}
+
+function cv2HideRecOverlay() {
+  document.getElementById('cv2RecOverlay')?.classList.remove('show');
+}
+
+async function cv2StartRec(e) {
+  e.preventDefault();
+  if (_isRec) return;
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _recChunks   = [];
+    _recSeconds  = 0;
+    _isRec       = true;
+
+    /* إعداد المحلل للموجة */
+    const ctx      = new (window.AudioContext || window.webkitAudioContext)();
+    const source   = ctx.createMediaStreamSource(stream);
+    _recAnalyser   = ctx.createAnalyser();
+    _recAnalyser.fftSize = 256;
+    source.connect(_recAnalyser);
+
+    /* MediaRecorder بأفضل جودة متاحة */
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/webm')
+        ? 'audio/webm'
+        : 'audio/ogg';
+
+    _recorder = new MediaRecorder(stream, { mimeType, audioBitsPerSecond: 64000 });
+    _recorder.ondataavailable = e => { if (e.data.size > 0) _recChunks.push(e.data); };
+    _recorder.start(100);
+
+    cv2ShowRecOverlay();
+
+    /* مؤقت */
+    _recTimer = setInterval(() => {
+      _recSeconds++;
+      const m = Math.floor(_recSeconds / 60);
+      const s = _recSeconds % 60;
+      const el = document.getElementById('cv2RecTimer');
+      if (el) el.textContent = m + ':' + String(s).padStart(2, '0');
+
+      /* حد أقصى 5 دقائق */
+      if (_recSeconds >= 300) cv2StopRec(null);
+    }, 1000);
+
+    /* رسم الموجة */
+    const canvas = document.getElementById('cv2RecCanvas');
+    if (canvas) {
+      const canvasCtx = canvas.getContext('2d');
+      const bufLen    = _recAnalyser.frequencyBinCount;
+      const dataArr   = new Uint8Array(bufLen);
+
+      function drawWave() {
+        if (!_isRec) return;
+        _recAnimFrame = requestAnimationFrame(drawWave);
+        _recAnalyser.getByteTimeDomainData(dataArr);
+
+        canvasCtx.fillStyle = 'rgba(255,255,255,0.04)';
+        canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+        canvasCtx.lineWidth   = 2;
+        canvasCtx.strokeStyle = '#ef4444';
+        canvasCtx.beginPath();
+
+        const sliceW = canvas.width / bufLen;
+        let x = 0;
+        for (let i = 0; i < bufLen; i++) {
+          const v = dataArr[i] / 128.0;
+          const y = (v * canvas.height) / 2;
+          i === 0 ? canvasCtx.moveTo(x, y) : canvasCtx.lineTo(x, y);
+          x += sliceW;
+        }
+        canvasCtx.lineTo(canvas.width, canvas.height / 2);
+        canvasCtx.stroke();
+      }
+      drawWave();
+    }
+
+    const btn = document.getElementById('cv2RecBtn');
+    if (btn) btn.classList.add('active');
+
+  } catch(err) {
+    _isRec = false;
+    showInvToast('Mikrofon erişimi reddedildi!', 'error');
+  }
+}
+
+async function cv2StopRec(e) {
+  if (e) e.preventDefault();
+  if (!_isRec || !_recorder) return;
+
+  _isRec = false;
+  clearInterval(_recTimer);
+  cancelAnimationFrame(_recAnimFrame);
+  cv2HideRecOverlay();
+
+  const btn = document.getElementById('cv2RecBtn');
+  if (btn) btn.classList.remove('active');
+
+  if (_recSeconds < 1) {
+    _recorder.stream?.getTracks().forEach(t => t.stop());
+    _recorder = null;
+    showInvToast('Ses çok kısa!', 'error');
+    return;
+  }
+
+  const duration = _recSeconds;
+
+  return new Promise(resolve => {
+    _recorder.onstop = async () => {
+      const mimeType = _recorder.mimeType || 'audio/webm';
+      const blob     = new Blob(_recChunks, { type: mimeType });
+      _recChunks     = [];
+      _recorder.stream?.getTracks().forEach(t => t.stop());
+      _recorder = null;
+
+      if (blob.size < 500) { resolve(); return; }
+
+      /* رفع */
+      const sb = await initSupabase();
+      if (!sb) { resolve(); return; }
+
+      const ext      = mimeType.includes('ogg') ? 'ogg' : 'webm';
+      const fileName = `voice_${currentUser}_${Date.now()}.${ext}`;
+      const filePath = `audios/${fileName}`;
+
+      showInvToast('🎤 Ses yükleniyor...', 'info');
+
+      const { error: upErr } = await sb.storage
+        .from(CHAT_BUCKET_V2)
+        .upload(filePath, blob, { cacheControl: '3600', contentType: mimeType });
+
+      if (upErr) {
+        showInvToast('Ses yüklenemedi!', 'error');
+        resolve(); return;
+      }
+
+      const { data: urlData } = sb.storage
+        .from(CHAT_BUCKET_V2)
+        .getPublicUrl(filePath);
+
+      /* حفظ الرسالة */
+      const { data, error } = await sb
+        .from(MSGS_TABLE)
+        .insert([{
+          room_id        : _activeRoomId,
+          from_user      : currentUser,
+          message        : '',
+          media_url      : urlData?.publicUrl,
+          media_type     : 'audio',
+          file_name      : fileName,
+          file_size      : blob.size,
+          audio_duration : duration,
+        }])
+        .select().single();
+
+      if (!error && data) {
+        _roomMessages.push(data);
+        cv2AppendBubble(data);
+        cv2ScrollBottom(true);
+      }
+      resolve();
+    };
+    _recorder.stop();
+  });
+}
+
+function cv2CancelRec() {
+  _isRec = false;
+  clearInterval(_recTimer);
+  cancelAnimationFrame(_recAnimFrame);
+  cv2HideRecOverlay();
+  if (_recorder) {
+    _recorder.stream?.getTracks().forEach(t => t.stop());
+    _recorder = null;
+  }
+  _recChunks = [];
+  const btn = document.getElementById('cv2RecBtn');
+  if (btn) btn.classList.remove('active');
 }
 
 
 /* ══════════════════════════════════════════════════════
    إرسال الرسائل
 ══════════════════════════════════════════════════════ */
-
-/* ── إرسال نص ── */
-async function sendChatMessage() {
-  const inp = document.getElementById('chatTextInput');
-  if (!inp || !_activeChatUser) return;
-
+async function cv2SendMsg() {
+  const inp  = document.getElementById('cv2TextInput');
+  if (!inp || !_activeRoomId) return;
   const text = inp.value.trim();
 
-  /* وضع التعديل */
-  if (_editingMsgId) {
-    await editChatMessage(_editingMsgId, text);
-    return;
-  }
-
+  if (_editMsgId) { await cv2SaveEdit(text); return; }
   if (!text) return;
 
   inp.value = '';
-  autoResizeChatInput(inp);
+  cv2AutoResize(inp);
+  cv2UpdateSendBtn();
 
-  /* أنيميشن زر الإرسال */
-  const btn = document.getElementById('chatSendBtn');
-  if (btn) {
-    btn.classList.add('send-pop');
-    setTimeout(() => btn.classList.remove('send-pop'), 300);
-  }
+  /* أنيميشن الزر */
+  const btn = document.getElementById('cv2SendBtn');
+  if (btn) { btn.classList.add('cv2-send-pop'); setTimeout(() => btn.classList.remove('cv2-send-pop'), 280); }
 
   const sb = await initSupabase();
   if (!sb) return;
 
+  const payload = {
+    room_id    : _activeRoomId,
+    from_user  : currentUser,
+    message    : text,
+    media_type : 'text',
+  };
+  if (_replyMsgId) payload.reply_to_id = _replyMsgId;
+
   const { data, error } = await sb
-    .from(CHAT_TABLE)
-    .insert([{
-      from_user  : currentUser,
-      to_user    : _activeChatUser,
-      message    : text,
-      media_type : 'text',
-      is_read    : false,
-    }])
-    .select()
-    .single();
+    .from(MSGS_TABLE).insert([payload]).select().single();
 
   if (!error && data) {
-    _chatMessages.push(data);
-    appendChatBubble(data);
-    scrollChatToBottom(true);
+    _roomMessages.push(data);
+    cv2AppendBubble(data);
+    cv2ScrollBottom(true);
+    cv2ClearContext();
   }
 }
 
-/* ── إلحاق فقاعة جديدة بدون إعادة رسم الكل ── */
-function appendChatBubble(msg) {
-  const area = document.getElementById('chatMessagesArea');
-  if (!area) return;
-
-  /* إزالة رسالة "لا توجد رسائل" إن وُجدت */
-  const empty = area.querySelector('[style*="fa-comments"]');
-  if (empty) area.innerHTML = '';
-
-  /* فاصل التاريخ إذا لزم */
-  const msgDate = new Date(msg.created_at).toLocaleDateString('tr-TR');
-  const lastDiv = area.querySelector('.chat-date-divider:last-of-type');
-  const lastDate = lastDiv?.querySelector('span')?.textContent;
-  const today     = new Date().toLocaleDateString('tr-TR');
-  const yesterday = new Date(Date.now()-86400000).toLocaleDateString('tr-TR');
-  const label = msgDate === today ? 'Bugün'
-              : msgDate === yesterday ? 'Dün'
-              : msgDate;
-
-  if (label !== lastDate) {
-    const divider = document.createElement('div');
-    divider.className = 'chat-date-divider';
-    divider.innerHTML = `<span>${label}</span>`;
-    area.appendChild(divider);
-  }
-
-  const wrap = document.createElement('div');
-  wrap.innerHTML = buildChatBubble(msg, _chatMessages.length - 1);
-  const bubble = wrap.firstElementChild;
-  if (bubble) area.appendChild(bubble);
+function cv2HandleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); cv2SendMsg(); }
+  cv2UpdateSendBtn();
 }
 
-/* ── معالجة Enter ── */
-function handleChatKeydown(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendChatMessage();
-  }
-  updateSendRecordBtn();
-}
-
-/* ── تغيير حجم حقل الكتابة تلقائياً ── */
-function autoResizeChatInput(el) {
+function cv2AutoResize(el) {
   el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-  updateSendRecordBtn();
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
 }
 
-/* ── تبديل زر الإرسال / الصوت ── */
-function updateSendRecordBtn() {
-  const inp     = document.getElementById('chatTextInput');
-  const sendBtn = document.getElementById('chatSendBtn');
-  const recBtn  = document.getElementById('chatRecordBtn');
+function cv2UpdateSendBtn() {
+  const inp     = document.getElementById('cv2TextInput');
+  const sendBtn = document.getElementById('cv2SendBtn');
+  const recBtn  = document.getElementById('cv2RecBtn');
   if (!inp || !sendBtn || !recBtn) return;
-
-  const hasText = inp.value.trim().length > 0 || _editingMsgId;
-  sendBtn.style.display = hasText ? 'flex' : 'none';
-  recBtn.style.display  = hasText ? 'none' : 'flex';
+  const has = inp.value.trim().length > 0 || !!_editMsgId;
+  sendBtn.style.display = has ? 'flex' : 'none';
+  recBtn.style.display  = has ? 'none' : 'flex';
 }
 
 
 /* ══════════════════════════════════════════════════════
-   رفع الملفات والصور
+   رفع الملفات
 ══════════════════════════════════════════════════════ */
-async function handleChatFileSelect(input) {
+async function cv2HandleFile(input) {
   const file = input.files?.[0];
-  if (!file || !_activeChatUser) return;
+  if (!file || !_activeRoomId) return;
   input.value = '';
 
-  const isImage = file.type.startsWith('image/');
-  const isAudio = file.type.startsWith('audio/');
-  const mediaType = isImage ? 'image' : isAudio ? 'audio' : 'file';
-
-  /* حد الحجم: 20MB */
-  if (file.size > 20 * 1024 * 1024) {
-    showInvToast('Dosya 20MB\'dan küçük olmalıdır!', 'error');
+  if (file.size > 25 * 1024 * 1024) {
+    showInvToast('Dosya 25MB\'dan küçük olmalıdır!', 'error');
     return;
   }
 
-  /* معاينة فورية (للصور) */
-  let previewMsg = null;
-  if (isImage) {
-    const reader = new FileReader();
-    reader.onload = ev => {
-      previewMsg = {
-        id         : 'preview-' + Date.now(),
-        from_user  : currentUser,
-        to_user    : _activeChatUser,
-        message    : '',
-        media_url  : ev.target.result,
-        media_type : 'image',
-        file_name  : file.name,
-        file_size  : file.size,
-        is_read    : false,
-        created_at : new Date().toISOString(),
-        _uploading : true,
-      };
-      appendChatBubble(previewMsg);
-      scrollChatToBottom(true);
-    };
-    reader.readAsDataURL(file);
-  }
+  const isImage = file.type.startsWith('image/');
+  const mediaType = isImage ? 'image' : 'file';
 
-  /* رفع لـ Supabase Storage */
+  showInvToast(isImage ? '📷 Fotoğraf yükleniyor...' : '📎 Dosya yükleniyor...', 'info');
+
   const sb = await initSupabase();
   if (!sb) return;
 
   const ext      = file.name.split('.').pop() || 'bin';
-  const fileName = `${currentUser}_${Date.now()}.${ext}`;
+  const fileName = `${mediaType}_${currentUser}_${Date.now()}.${ext}`;
   const filePath = `${mediaType}s/${fileName}`;
 
   const { error: upErr } = await sb.storage
-    .from(CHAT_BUCKET)
-    .upload(filePath, file, {
-      cacheControl : '3600',
-      upsert       : false,
-      contentType  : file.type,
-    });
+    .from(CHAT_BUCKET_V2)
+    .upload(filePath, file, { cacheControl: '3600', contentType: file.type });
 
-  if (upErr) {
-    showInvToast('Yükleme hatası: ' + upErr.message, 'error');
-    /* إزالة المعاينة */
-    if (previewMsg) {
-      document.getElementById('msg-' + previewMsg.id)?.remove();
-    }
-    return;
-  }
+  if (upErr) { showInvToast('Yükleme hatası!', 'error'); return; }
 
-  const { data: urlData } = sb.storage
-    .from(CHAT_BUCKET)
-    .getPublicUrl(filePath);
+  const { data: urlData } = sb.storage.from(CHAT_BUCKET_V2).getPublicUrl(filePath);
 
-  const publicUrl = urlData?.publicUrl;
-  if (!publicUrl) return;
-
-  /* حفظ في قاعدة البيانات */
   const { data, error } = await sb
-    .from(CHAT_TABLE)
+    .from(MSGS_TABLE)
     .insert([{
+      room_id    : _activeRoomId,
       from_user  : currentUser,
-      to_user    : _activeChatUser,
       message    : '',
-      media_url  : publicUrl,
+      media_url  : urlData?.publicUrl,
       media_type : mediaType,
       file_name  : file.name,
       file_size  : file.size,
-      is_read    : false,
     }])
-    .select()
-    .single();
+    .select().single();
 
   if (!error && data) {
-    /* استبدال المعاينة بالرسالة الحقيقية */
-    if (previewMsg) {
-      const previewEl = document.getElementById('msg-' + previewMsg.id);
-      if (previewEl) {
-        const wrap = document.createElement('div');
-        wrap.innerHTML = buildChatBubble(data, _chatMessages.length);
-        previewEl.replaceWith(wrap.firstElementChild);
-      }
-    } else {
-      appendChatBubble(data);
-      scrollChatToBottom(true);
-    }
-    _chatMessages.push(data);
+    _roomMessages.push(data);
+    cv2AppendBubble(data);
+    cv2ScrollBottom(true);
   }
 }
 
-/* ── تنزيل ملف ── */
-function downloadChatFile(url, name) {
+function cv2DownloadFile(url, name) {
   const a = document.createElement('a');
-  a.href     = url;
-  a.download = name;
-  a.target   = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  a.href = url; a.download = name; a.target = '_blank';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function cv2ViewImage(url) {
+  document.getElementById('cv2ImgViewer')?.remove();
+  const v = document.createElement('div');
+  v.id = 'cv2ImgViewer';
+  v.style.cssText = `position:fixed;inset:0;z-index:99999;
+    background:rgba(0,0,0,0.96);
+    display:flex;align-items:center;justify-content:center;
+    flex-direction:column;gap:14px;animation:updBgIn 0.2s ease;`;
+  v.innerHTML = `
+    <button onclick="this.parentElement.remove()" style="
+      position:absolute;top:14px;right:14px;
+      background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+      border-radius:50%;width:38px;height:38px;color:#fff;font-size:17px;
+      cursor:pointer;display:flex;align-items:center;justify-content:center;
+      font-family:'Montserrat',sans-serif;">
+      <i class="fas fa-times"></i>
+    </button>
+    <img src="${url}" style="max-width:92vw;max-height:82vh;
+         object-fit:contain;border-radius:10px;animation:lbFade 0.25s ease;"
+         draggable="false"/>
+    <a href="${url}" download target="_blank" style="
+      padding:9px 20px;border-radius:50px;
+      background:linear-gradient(135deg,#c9a84c,#f0d080);
+      color:#0a0a0a;font-family:'Montserrat',sans-serif;
+      font-size:11px;font-weight:900;letter-spacing:2px;
+      text-decoration:none;display:flex;align-items:center;gap:6px;">
+      <i class="fas fa-download"></i> İNDİR
+    </a>`;
+  document.body.appendChild(v);
+  v.addEventListener('click', e => { if (e.target === v) v.remove(); });
 }
 
 
 /* ══════════════════════════════════════════════════════
-   تسجيل الصوت
+   قائمة السياق — حذف / تعديل / رد
 ══════════════════════════════════════════════════════ */
-async function startVoiceRecord() {
-  if (_isRecording) return;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    _audioChunks  = [];
-    _mediaRecorder = new MediaRecorder(stream);
-    _isRecording   = true;
+let _ctxTimer = null;
 
-    _mediaRecorder.ondataavailable = e => {
-      if (e.data.size > 0) _audioChunks.push(e.data);
-    };
-
-    _mediaRecorder.start();
-
-    const btn = document.getElementById('chatRecordBtn');
-    if (btn) btn.classList.add('recording');
-
-    showInvToast('🎤 Kayıt başladı — bırakınca gönderilir', 'info');
-
-  } catch(e) {
-    showInvToast('Mikrofon erişimi reddedildi!', 'error');
-  }
+function cv2TouchStart(e, msgId, isMine) {
+  _ctxTimer = setTimeout(() => cv2ShowCtxMenu(e, msgId, isMine), 550);
 }
+document.addEventListener('touchend', () => clearTimeout(_ctxTimer), { passive: true });
 
-async function stopVoiceRecord() {
-  if (!_isRecording || !_mediaRecorder) return;
-  _isRecording = false;
+function cv2ShowCtxMenu(e, msgId, isMine) {
+  e.preventDefault(); e.stopPropagation();
+  document.getElementById('cv2CtxMenu')?.remove();
 
-  const btn = document.getElementById('chatRecordBtn');
-  if (btn) btn.classList.remove('recording');
-
-  return new Promise(resolve => {
-    _mediaRecorder.onstop = async () => {
-      const blob = new Blob(_audioChunks, { type: 'audio/webm' });
-      _audioChunks = [];
-
-      /* إيقاف المايك */
-      _mediaRecorder.stream?.getTracks().forEach(t => t.stop());
-
-      if (blob.size < 1000) {
-        showInvToast('Ses çok kısa!', 'error');
-        resolve();
-        return;
-      }
-
-      /* رفع */
-      const sb = await initSupabase();
-      if (!sb) { resolve(); return; }
-
-      const fileName = `voice_${currentUser}_${Date.now()}.webm`;
-      const filePath = `audios/${fileName}`;
-
-      const { error: upErr } = await sb.storage
-        .from(CHAT_BUCKET)
-        .upload(filePath, blob, {
-          cacheControl : '3600',
-          contentType  : 'audio/webm',
-        });
-
-      if (upErr) {
-        showInvToast('Ses yüklenemedi!', 'error');
-        resolve();
-        return;
-      }
-
-      const { data: urlData } = sb.storage
-        .from(CHAT_BUCKET)
-        .getPublicUrl(filePath);
-
-      const { data, error } = await sb
-        .from(CHAT_TABLE)
-        .insert([{
-          from_user  : currentUser,
-          to_user    : _activeChatUser,
-          message    : '',
-          media_url  : urlData?.publicUrl,
-          media_type : 'audio',
-          file_name  : fileName,
-          file_size  : blob.size,
-          is_read    : false,
-        }])
-        .select()
-        .single();
-
-      if (!error && data) {
-        _chatMessages.push(data);
-        appendChatBubble(data);
-        scrollChatToBottom(true);
-      }
-      resolve();
-    };
-    _mediaRecorder.stop();
-  });
-}
-
-
-/* ══════════════════════════════════════════════════════
-   قائمة السياق — حذف / تعديل
-══════════════════════════════════════════════════════ */
-let _ctxTouchTimer = null;
-
-function handleChatTouchStart(e, msgId, isMine) {
-  _ctxTouchTimer = setTimeout(() => {
-    showChatContextMenu(e, msgId, isMine);
-  }, 600);
-}
-
-document.addEventListener('touchend', () => {
-  clearTimeout(_ctxTouchTimer);
-}, { passive: true });
-
-function showChatContextMenu(e, msgId, isMine) {
-  e.preventDefault();
-  e.stopPropagation();
-
-  /* إزالة أي قائمة سابقة */
-  document.getElementById('chatContextMenu')?.remove();
-
-  const msg = _chatMessages.find(m => m.id === msgId);
+  const msg = _roomMessages.find(m => m.id === msgId);
   if (!msg) return;
 
   const menu = document.createElement('div');
-  menu.id = 'chatContextMenu';
+  menu.id = 'cv2CtxMenu';
 
   const items = [];
 
-  /* نسخ النص */
+  /* رد */
+  items.push(`
+    <div class="cv2-ctx-item" onclick="cv2SetReply(${msgId})">
+      <i class="fas fa-reply"></i> Yanıtla
+    </div>`);
+
+  /* نسخ */
   if (msg.message) {
     items.push(`
-      <div class="ctx-item" onclick="copyChatText('${escapeHtml(msg.message)}')">
+      <div class="cv2-ctx-item" onclick="cv2CopyText('${cv2EscHtml(msg.message)}')">
         <i class="fas fa-copy"></i> Kopyala
       </div>`);
   }
 
-  /* تعديل — للمرسل فقط + نص فقط */
+  /* تعديل — للمرسل + نص فقط */
   if (isMine && msg.media_type === 'text' && msg.message) {
     items.push(`
-      <div class="ctx-item" onclick="startChatEdit(${msgId})">
+      <div class="cv2-ctx-item" onclick="cv2StartEdit(${msgId})">
         <i class="fas fa-pen"></i> Düzenle
       </div>`);
   }
 
-  /* حذف للمرسل */
+  /* حذف */
   if (isMine) {
     items.push(`
-      <div class="ctx-item danger"
-           onclick="deleteChatMsg(${msgId},'sender')">
+      <div class="cv2-ctx-item danger" onclick="cv2DeleteMsg(${msgId},false)">
         <i class="fas fa-trash-alt"></i> Benden Sil
       </div>`);
-    items.push(`
-      <div class="ctx-item danger"
-           onclick="deleteChatMsg(${msgId},'both')">
-        <i class="fas fa-trash-alt"></i> Herkesten Sil
-      </div>`);
+    if (currentUser === 'WOW') {
+      items.push(`
+        <div class="cv2-ctx-item danger" onclick="cv2DeleteMsg(${msgId},true)">
+          <i class="fas fa-trash-alt"></i> Herkesten Sil
+        </div>`);
+    }
   } else {
-    /* حذف للمستقبل */
     items.push(`
-      <div class="ctx-item danger"
-           onclick="deleteChatMsg(${msgId},'receiver')">
+      <div class="cv2-ctx-item danger" onclick="cv2DeleteMsg(${msgId},false)">
         <i class="fas fa-trash-alt"></i> Benden Sil
       </div>`);
   }
 
   menu.innerHTML = items.join('');
 
-  /* الموضع */
-  const x = e.clientX || e.touches?.[0]?.clientX || window.innerWidth/2;
-  const y = e.clientY || e.touches?.[0]?.clientY || window.innerHeight/2;
-
+  const x = e.clientX || e.touches?.[0]?.clientX || window.innerWidth / 2;
+  const y = e.clientY || e.touches?.[0]?.clientY || window.innerHeight / 2;
   menu.style.left = Math.min(x, window.innerWidth  - 200) + 'px';
-  menu.style.top  = Math.min(y, window.innerHeight - 200) + 'px';
+  menu.style.top  = Math.min(y, window.innerHeight - 210) + 'px';
 
   document.body.appendChild(menu);
-
-  /* إغلاق عند النقر خارجها */
   setTimeout(() => {
-    document.addEventListener('click', () => {
-      document.getElementById('chatContextMenu')?.remove();
-    }, { once: true });
-  }, 100);
+    document.addEventListener('click', () => document.getElementById('cv2CtxMenu')?.remove(), { once: true });
+  }, 80);
 }
 
-/* ── نسخ النص ── */
-function copyChatText(text) {
+function cv2CopyText(text) {
   navigator.clipboard?.writeText(text)
     .then(() => showInvToast('Kopyalandı ✓', 'success'))
     .catch(() => showInvToast('Kopyalanamadı', 'error'));
-  document.getElementById('chatContextMenu')?.remove();
+  document.getElementById('cv2CtxMenu')?.remove();
 }
 
-/* ── بدء التعديل ── */
-function startChatEdit(msgId) {
-  document.getElementById('chatContextMenu')?.remove();
+/* ── رد ── */
+function cv2SetReply(msgId) {
+  document.getElementById('cv2CtxMenu')?.remove();
+  _replyMsgId = msgId;
+  _editMsgId  = null;
 
-  const msg = _chatMessages.find(m => m.id === msgId);
+  const msg = _roomMessages.find(m => m.id === msgId);
+  if (!msg) return;
+  const p = cv2GetProfile(msg.from_user);
+
+  const bar     = document.getElementById('cv2ContextBar');
+  const icon    = document.getElementById('cv2CtxIcon');
+  const label   = document.getElementById('cv2CtxLabel');
+  const preview = document.getElementById('cv2CtxPreview');
+
+  if (bar)     bar.classList.add('show');
+  if (icon)    { icon.className = 'fas fa-reply'; icon.style.color = '#c9a84c'; }
+  if (label)   label.textContent = p.display_name || msg.from_user;
+  if (preview) preview.textContent = msg.media_type !== 'text'
+    ? '📎 Medya' : (msg.message || '').substring(0, 50);
+
+  document.getElementById('cv2TextInput')?.focus();
+}
+
+/* ── تعديل ── */
+function cv2StartEdit(msgId) {
+  document.getElementById('cv2CtxMenu')?.remove();
+  _editMsgId  = msgId;
+  _replyMsgId = null;
+
+  const msg = _roomMessages.find(m => m.id === msgId);
   if (!msg) return;
 
-  _editingMsgId = msgId;
+  const inp = document.getElementById('cv2TextInput');
+  if (inp) { inp.value = msg.message; cv2AutoResize(inp); inp.focus(); }
 
-  const inp = document.getElementById('chatTextInput');
-  if (inp) {
-    inp.value = msg.message;
-    inp.focus();
-    autoResizeChatInput(inp);
-  }
+  const bar     = document.getElementById('cv2ContextBar');
+  const icon    = document.getElementById('cv2CtxIcon');
+  const label   = document.getElementById('cv2CtxLabel');
+  const preview = document.getElementById('cv2CtxPreview');
 
-  const bar     = document.getElementById('chatEditBar');
-  const preview = document.getElementById('chatEditPreview');
-  if (bar)     bar.classList.add('visible');
-  if (preview) preview.textContent = msg.message.substring(0, 60);
+  if (bar)     bar.classList.add('show');
+  if (icon)    { icon.className = 'fas fa-pen'; icon.style.color = '#fbbf24'; }
+  if (label)   label.textContent = 'Mesajı Düzenle';
+  if (preview) preview.textContent = (msg.message || '').substring(0, 50);
 
-  updateSendRecordBtn();
+  cv2UpdateSendBtn();
 }
 
-/* ── إلغاء التعديل ── */
-function cancelChatEdit() {
-  _editingMsgId = null;
-  const inp = document.getElementById('chatTextInput');
-  if (inp) { inp.value = ''; autoResizeChatInput(inp); }
-  document.getElementById('chatEditBar')?.classList.remove('visible');
-  updateSendRecordBtn();
-}
-
-/* ── حفظ التعديل ── */
-async function editChatMessage(msgId, newText) {
-  if (!newText.trim()) return;
-
+async function cv2SaveEdit(newText) {
+  if (!newText.trim() || !_editMsgId) return;
   const sb = await initSupabase();
   if (!sb) return;
 
   const { error } = await sb
-    .from(CHAT_TABLE)
-    .update({
-      message   : newText.trim(),
-      edited_at : new Date().toISOString(),
-    })
-    .eq('id', msgId)
+    .from(MSGS_TABLE)
+    .update({ message: newText.trim(), edited_at: new Date().toISOString() })
+    .eq('id', _editMsgId)
     .eq('from_user', currentUser);
 
-  if (error) {
-    showInvToast('Düzenleme hatası!', 'error');
-    return;
-  }
+  if (error) { showInvToast('Düzenleme hatası!', 'error'); return; }
 
-  /* تحديث محلي */
-  const idx = _chatMessages.findIndex(m => m.id === msgId);
+  const idx = _roomMessages.findIndex(m => m.id === _editMsgId);
   if (idx !== -1) {
-    _chatMessages[idx].message   = newText.trim();
-    _chatMessages[idx].edited_at = new Date().toISOString();
+    _roomMessages[idx].message   = newText.trim();
+    _roomMessages[idx].edited_at = new Date().toISOString();
   }
 
-  cancelChatEdit();
-  renderChatMessages();
-  scrollChatToBottom(false);
+  cv2ClearContext();
+  cv2RenderMessages();
+  cv2ScrollBottom(false);
   showInvToast('Mesaj düzenlendi ✓', 'success');
 }
 
-/* ── حذف رسالة ── */
-async function deleteChatMsg(msgId, mode) {
-  document.getElementById('chatContextMenu')?.remove();
+function cv2ClearContext() {
+    _editMsgId  = null;
+  _replyMsgId = null;
+  const bar = document.getElementById('cv2ContextBar');
+  if (bar) bar.classList.remove('show');
+  const inp = document.getElementById('cv2TextInput');
+  if (inp) { inp.value = ''; cv2AutoResize(inp); }
+  cv2UpdateSendBtn();
+}
 
+/* ── حذف رسالة ── */
+async function cv2DeleteMsg(msgId, forAll) {
+  document.getElementById('cv2CtxMenu')?.remove();
   const sb = await initSupabase();
   if (!sb) return;
 
-  let updateData = {};
-  if (mode === 'sender')   updateData = { is_deleted_by_sender: true };
-  if (mode === 'receiver') updateData = { is_deleted_by_receiver: true };
-  if (mode === 'both') {
-    updateData = {
-      is_deleted_by_sender   : true,
-      is_deleted_by_receiver : true,
-    };
-  }
+  const updateData = forAll
+    ? { deleted_for_all: true, is_deleted_by_sender: true }
+    : { is_deleted_by_sender: true };
 
   const { error } = await sb
-    .from(CHAT_TABLE)
+    .from(MSGS_TABLE)
     .update(updateData)
     .eq('id', msgId);
 
-  if (error) {
-    showInvToast('Silme hatası!', 'error');
-    return;
-  }
+  if (error) { showInvToast('Silme hatası!', 'error'); return; }
 
-  /* تأثير بصري ثم إزالة */
-  const el = document.getElementById('msg-' + msgId);
+  const el = document.getElementById('cv2msg-' + msgId);
   if (el) {
-    el.style.transition = 'all 0.3s ease';
+    el.style.transition = 'all 0.25s ease';
     el.style.opacity    = '0';
-    el.style.transform  = 'scale(0.9)';
-    setTimeout(() => el.remove(), 300);
+    el.style.transform  = 'scale(0.88)';
+    setTimeout(() => el.remove(), 240);
   }
 
-  /* تحديث محلي */
-  const idx = _chatMessages.findIndex(m => m.id === msgId);
+  const idx = _roomMessages.findIndex(m => m.id === msgId);
   if (idx !== -1) {
-    if (mode === 'sender')   _chatMessages[idx].is_deleted_by_sender   = true;
-    if (mode === 'receiver') _chatMessages[idx].is_deleted_by_receiver = true;
-    if (mode === 'both') {
-      _chatMessages[idx].is_deleted_by_sender   = true;
-      _chatMessages[idx].is_deleted_by_receiver = true;
+    if (forAll) {
+      _roomMessages[idx].deleted_for_all      = true;
+      _roomMessages[idx].is_deleted_by_sender = true;
+    } else {
+      _roomMessages[idx].is_deleted_by_sender = true;
     }
   }
 
@@ -28719,318 +28742,748 @@ async function deleteChatMsg(msgId, mode) {
 
 
 /* ══════════════════════════════════════════════════════
-   Realtime — استقبال الرسائل الفورية
+   تمييز المقروء
 ══════════════════════════════════════════════════════ */
-function subscribeChatRealtime() {
-  if (_chatChannel) return;
+async function cv2MarkRoomRead(roomId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+  await sb
+    .from(READS_TABLE)
+    .upsert([{
+      room_id      : roomId,
+      username     : currentUser,
+      last_read_at : new Date().toISOString(),
+    }], { onConflict: 'room_id,username' });
+
+  _unreadCounts[roomId] = 0;
+  cv2UpdateHeaderBadge();
+}
+
+
+/* ══════════════════════════════════════════════════════
+   Realtime
+══════════════════════════════════════════════════════ */
+function cv2SubscribeRealtime() {
+  if (_roomChannel) return;
 
   initSupabase().then(sb => {
     if (!sb) return;
 
-    _chatChannel = sb
-      .channel('admin-chat-live-' + currentUser)
-      .on(
-        'postgres_changes',
-        {
-          event  : 'INSERT',
-          schema : 'public',
-          table  : CHAT_TABLE,
-          filter : `to_user=eq.${currentUser}`,
-        },
-        payload => {
-          const msg = payload.new;
-          if (!msg) return;
+    _roomChannel = sb
+      .channel('cv2-live-' + currentUser)
 
-          /* إذا كانت نافذة المحادثة مفتوحة مع هذا المستخدم */
-          if (_activeChatUser === msg.from_user) {
-            _chatMessages.push(msg);
-            appendChatBubble(msg);
-            scrollChatToBottom(true);
-            markChatAsRead(msg.from_user);
+      /* رسالة جديدة */
+      .on('postgres_changes', {
+        event  : 'INSERT',
+        schema : 'public',
+        table  : MSGS_TABLE,
+      }, payload => {
+        const msg = payload.new;
+        if (!msg) return;
 
-          } else {
-            /* تحديث عداد غير المقروء */
-            _chatUnread[msg.from_user] =
-              (_chatUnread[msg.from_user] || 0) + 1;
-            updateChatBadgeInList(msg.from_user);
+        /* هل الرسالة في الغرفة المفتوحة؟ */
+        if (_activeRoomId && msg.room_id === _activeRoomId
+            && msg.from_user !== currentUser) {
+          _roomMessages.push(msg);
+          cv2AppendBubble(msg);
+          cv2ScrollBottom(true);
+          cv2MarkRoomRead(_activeRoomId);
 
-            /* إشعار صوتي خفيف */
-            playChatNotificationSound();
+        } else if (msg.from_user !== currentUser) {
+          /* غرفة أخرى — زيادة العداد */
+          _unreadCounts[msg.room_id] =
+            (_unreadCounts[msg.room_id] || 0) + 1;
+          cv2UpdateHeaderBadge();
+          cv2PlayNotifSound();
+          cv2RenderRoomList();
+        }
+      })
 
-            /* إعادة رسم القائمة */
-            renderChatList();
+      /* تحديث رسالة (تعديل / حذف) */
+      .on('postgres_changes', {
+        event  : 'UPDATE',
+        schema : 'public',
+        table  : MSGS_TABLE,
+      }, payload => {
+        const msg = payload.new;
+        if (!msg || msg.room_id !== _activeRoomId) return;
+
+        const idx = _roomMessages.findIndex(m => m.id === msg.id);
+        if (idx !== -1) {
+          _roomMessages[idx] = msg;
+          const el = document.getElementById('cv2msg-' + msg.id);
+          if (el) {
+            const room    = _rooms.find(r => r.id === _activeRoomId);
+            const isGroup = room?.room_type === 'group';
+            const wrap    = document.createElement('div');
+            wrap.innerHTML = cv2BuildBubble(msg, isGroup, idx);
+            el.replaceWith(wrap.firstElementChild);
           }
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event  : 'UPDATE',
-          schema : 'public',
-          table  : CHAT_TABLE,
-        },
-        payload => {
-          const msg = payload.new;
-          if (!msg) return;
+      })
 
-          /* تحديث الرسالة في المصفوفة المحلية */
-          const idx = _chatMessages.findIndex(m => m.id === msg.id);
-          if (idx !== -1) {
-            _chatMessages[idx] = msg;
+      /* تحديث الغرفة (اسم / أيقونة) */
+      .on('postgres_changes', {
+        event  : 'UPDATE',
+        schema : 'public',
+        table  : ROOMS_TABLE,
+      }, payload => {
+        const updated = payload.new;
+        if (!updated) return;
+        const idx = _rooms.findIndex(r => r.id === updated.id);
+        if (idx !== -1) _rooms[idx] = updated;
+        cv2RenderRoomList();
 
-            /* إعادة رسم الفقاعة */
-            const el = document.getElementById('msg-' + msg.id);
-            if (el) {
-              const wrap = document.createElement('div');
-              wrap.innerHTML = buildChatBubble(msg, idx);
-              el.replaceWith(wrap.firstElementChild);
-            }
-          }
+        /* تحديث هيدر الغرفة المفتوحة */
+        if (_activeRoomId === updated.id) {
+          const nameEl = document.querySelector('#chatV2Room [style*="font-size:14px;font-weight:900"]');
+          if (nameEl) nameEl.textContent = updated.name;
         }
-      )
+      })
+
+      /* عضو جديد أو تغيير */
+      .on('postgres_changes', {
+        event  : '*',
+        schema : 'public',
+        table  : MEMBERS_TABLE,
+      }, async payload => {
+        if (_activeRoomId) {
+          await cv2LoadMembers(_activeRoomId);
+          cv2UpdateRoomSubtitle(_activeRoomId);
+        }
+        await cv2LoadRooms();
+        cv2RenderRoomList();
+      })
+
       .subscribe(status => {
-        console.log('[Chat Realtime]', status);
+        console.log('[CV2 Realtime]', status);
       });
   });
 }
 
-function unsubscribeChatRealtime() {
-  if (_chatChannel) {
-    initSupabase().then(sb => {
-      sb?.removeChannel(_chatChannel);
-    });
-    _chatChannel = null;
+function cv2UnsubscribeRealtime() {
+  if (_roomChannel) {
+    initSupabase().then(sb => sb?.removeChannel(_roomChannel));
+    _roomChannel = null;
   }
 }
 
 /* ── صوت الإشعار ── */
-function playChatNotificationSound() {
+function cv2PlayNotifSound() {
   try {
     const ctx  = new (window.AudioContext || window.webkitAudioContext)();
     const osc  = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
     gain.connect(ctx.destination);
-    osc.frequency.value = 880;
+    osc.frequency.value = 920;
     osc.type            = 'sine';
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
+    osc.stop(ctx.currentTime + 0.25);
   } catch(e) {}
 }
 
 
 /* ══════════════════════════════════════════════════════
-   نافذة الملف الشخصي
+   ★ إعدادات الغرفة الجماعية (WOW فقط) ★
 ══════════════════════════════════════════════════════ */
-function openChatProfileModal(username) {
-  document.getElementById('chatProfileModal')?.remove();
+async function openCV2RoomSettings(roomId) {
+  if (currentUser !== 'WOW') return;
 
-  const isMe    = username === currentUser;
-  const profile = getChatProfile(username);
+  document.getElementById('cv2RoomSettings')?.remove();
+
+  const room    = _rooms.find(r => r.id === roomId);
+  const members = _roomMembers[roomId] || [];
+
+  /* جلب كل الأدمن المتاحين للإضافة */
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: allAdmins } = await sb
+    .from('admin_accounts')
+    .select('username, name, is_active')
+    .eq('is_active', true);
+
+  const memberUsernames = members.map(m => m.username);
+  const notInRoom = (allAdmins || []).filter(
+    a => !memberUsernames.includes(a.username) && a.username !== 'WOW'
+  );
 
   const modal = document.createElement('div');
-  modal.id = 'chatProfileModal';
-  modal.setAttribute('class', 'active');
+  modal.id = 'cv2RoomSettings';
+  modal.classList.add('show');
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:440px;
+      background:linear-gradient(145deg,#0f0f0f,#161616);
+      border:1px solid rgba(201,168,76,0.25);
+      border-radius:22px;overflow:hidden;
+      box-shadow:0 40px 100px rgba(0,0,0,0.8);
+      max-height:90vh;display:flex;flex-direction:column;
+      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+
+      <!-- خط ذهبي -->
+      <div style="height:3px;flex-shrink:0;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+      <!-- هيدر -->
+      <div style="
+        padding:16px 18px 12px;flex-shrink:0;
+        display:flex;align-items:center;gap:12px;
+        border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div style="
+          width:42px;height:42px;border-radius:50%;
+          background:rgba(201,168,76,0.1);
+          border:1.5px solid rgba(201,168,76,0.25);
+          display:flex;align-items:center;justify-content:center;
+          font-size:20px;flex-shrink:0;overflow:hidden;"
+          id="cv2SettingsIconPreview">
+          ${room?.icon_url
+            ? `<img src="${room.icon_url}" style="width:100%;height:100%;object-fit:cover;" draggable="false"/>`
+            : `<span>${room?.icon_emoji || '👥'}</span>`}
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:7px;letter-spacing:3px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:2px;">
+            GRUP AYARLARI
+          </div>
+          <div style="font-size:15px;font-weight:900;color:#fff;">
+            ${room?.name || 'Grup'}
+          </div>
+        </div>
+        <button onclick="closeCV2RoomSettings()" style="
+          background:none;border:none;color:rgba(255,255,255,0.3);
+          font-size:18px;cursor:pointer;padding:4px;
+          font-family:'Montserrat',sans-serif;transition:color 0.2s;"
+          onmouseover="this.style.color='#ef4444'"
+          onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- محتوى قابل للتمرير -->
+      <div style="flex:1;overflow-y:auto;padding:16px 18px;">
+
+        <!-- اسم الغرفة -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:9px;letter-spacing:2px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;
+               margin-bottom:7px;font-weight:700;">
+            Grup Adı
+          </div>
+          <input type="text" id="cv2SettingsName"
+                 value="${room?.name || ''}"
+                 maxlength="40"
+                 style="
+                   width:100%;background:rgba(255,255,255,0.05);
+                   border:1px solid rgba(255,255,255,0.1);
+                   border-radius:10px;color:#fff;
+                   font-family:'Montserrat',sans-serif;
+                   font-size:13px;font-weight:700;
+                   padding:10px 13px;outline:none;
+                   transition:border-color 0.25s;box-sizing:border-box;
+                   -webkit-user-select:text;user-select:text;"
+                 onfocus="this.style.borderColor='rgba(201,168,76,0.5)'"
+                 onblur="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+        </div>
+
+        <!-- إيموجي الغرفة -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:9px;letter-spacing:2px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;
+               margin-bottom:7px;font-weight:700;">
+            Grup İkonu (Emoji)
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            ${['👥','🏢','💼','🚀','⭐','🔥','💎','🏆','📦','🛋️','✨','🎯']
+              .map(em => `
+                <div onclick="cv2SelectEmoji('${em}')"
+                     style="
+                       width:38px;height:38px;border-radius:10px;
+                       background:rgba(255,255,255,0.05);
+                       border:1.5px solid ${room?.icon_emoji === em
+                         ? 'rgba(201,168,76,0.6)' : 'rgba(255,255,255,0.08)'};
+                       display:flex;align-items:center;justify-content:center;
+                       font-size:18px;cursor:pointer;transition:all 0.2s;"
+                     id="cv2em-${em}"
+                     onmouseover="this.style.borderColor='rgba(201,168,76,0.4)'"
+                     onmouseout="if('${room?.icon_emoji}'!=='${em}')this.style.borderColor='rgba(255,255,255,0.08)'">
+                  ${em}
+                </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- رفع صورة للغرفة -->
+        <div style="margin-bottom:16px;">
+          <div style="font-size:9px;letter-spacing:2px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;
+               margin-bottom:7px;font-weight:700;">
+            Grup Fotoğrafı
+          </div>
+          <label style="cursor:pointer;">
+            <input type="file" id="cv2SettingsIconFile"
+                   accept="image/*"
+                   onchange="cv2UploadRoomIcon(this,${roomId})"
+                   style="display:none;"/>
+            <div style="
+              padding:10px 14px;border-radius:10px;
+              border:1px dashed rgba(201,168,76,0.3);
+              background:rgba(201,168,76,0.04);
+              display:flex;align-items:center;gap:10px;
+              transition:all 0.2s;"
+              onmouseover="this.style.background='rgba(201,168,76,0.08)'"
+              onmouseout="this.style.background='rgba(201,168,76,0.04)'">
+              <i class="fas fa-camera" style="color:#c9a84c;font-size:16px;"></i>
+              <span style="font-size:11px;color:rgba(255,255,255,0.4);
+                   font-family:'Montserrat',sans-serif;font-weight:600;">
+                Fotoğraf yükle (opsiyonel)
+              </span>
+            </div>
+          </label>
+        </div>
+
+        <!-- الأعضاء الحاليون -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:9px;letter-spacing:2px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;
+               margin-bottom:8px;font-weight:700;">
+            Üyeler (${members.filter(m => !m.is_banned).length})
+          </div>
+          <div id="cv2MembersList" style="display:flex;flex-wrap:wrap;gap:4px;">
+            ${members.map(m => {
+              const p = cv2GetProfile(m.username);
+              const name = p.display_name || m.username;
+              const isOwner = m.role === 'owner';
+              const isBanned = m.is_banned;
+              return `
+                <div class="cv2-member-chip ${isOwner ? 'owner' : ''} ${isBanned ? 'banned' : ''}"
+                     onclick="${!isOwner ? `cv2MemberAction(${roomId},'${m.username}',${isBanned})` : ''}">
+                  ${isOwner ? '<i class="fas fa-crown" style="font-size:10px;"></i>' : ''}
+                  ${isBanned ? '<i class="fas fa-ban" style="font-size:10px;"></i>' : ''}
+                  ${name}
+                  ${!isOwner ? '<i class="fas fa-chevron-down" style="font-size:8px;opacity:0.4;"></i>' : ''}
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- إضافة أدمن -->
+        ${notInRoom.length > 0 ? `
+        <div style="margin-bottom:16px;">
+          <div style="font-size:9px;letter-spacing:2px;
+               color:rgba(201,168,76,0.55);text-transform:uppercase;
+               margin-bottom:8px;font-weight:700;">
+            Üye Ekle
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;">
+            ${notInRoom.map(a => `
+              <div class="cv2-member-chip"
+                   onclick="cv2AddMemberToRoom(${roomId},'${a.username}','${a.name}')">
+                <i class="fas fa-plus" style="font-size:9px;color:#4ade80;"></i>
+                ${a.name}
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+
+      </div>
+
+      <!-- أزرار الحفظ -->
+      <div style="
+        padding:14px 18px;flex-shrink:0;
+        border-top:1px solid rgba(255,255,255,0.06);
+        display:flex;gap:8px;">
+        <button onclick="closeCV2RoomSettings()" style="
+          flex:1;padding:11px;border-radius:10px;
+          border:1px solid rgba(255,255,255,0.1);
+          background:rgba(255,255,255,0.04);
+          color:rgba(255,255,255,0.4);
+          font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1px;
+          cursor:pointer;transition:all 0.2s;"
+          onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+          KAPAT
+        </button>
+        <button onclick="cv2SaveRoomSettings(${roomId})" style="
+          flex:2;padding:11px;border-radius:10px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:2px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:7px;"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+          onmouseout="this.style.transform='';this.style.boxShadow=''">
+          <i class="fas fa-save"></i> KAYDET
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) closeCV2RoomSettings();
+  });
+
+  /* حفظ الإيموجي المختار */
+  window._cv2SelectedEmoji = room?.icon_emoji || '👥';
+}
+
+function closeCV2RoomSettings() {
+  const m = document.getElementById('cv2RoomSettings');
+  if (!m) return;
+  m.style.opacity   = '0';
+  m.style.transform = 'scale(0.95)';
+  m.style.transition = 'all 0.2s ease';
+  setTimeout(() => m.remove(), 200);
+}
+
+/* ── اختيار إيموجي ── */
+function cv2SelectEmoji(em) {
+  window._cv2SelectedEmoji = em;
+  document.querySelectorAll('[id^="cv2em-"]').forEach(el => {
+    el.style.borderColor = 'rgba(255,255,255,0.08)';
+  });
+  const el = document.getElementById('cv2em-' + em);
+  if (el) el.style.borderColor = 'rgba(201,168,76,0.6)';
+
+  /* تحديث المعاينة */
+  const preview = document.getElementById('cv2SettingsIconPreview');
+  if (preview) preview.innerHTML = `<span style="font-size:20px;">${em}</span>`;
+}
+
+/* ── رفع صورة الغرفة ── */
+async function cv2UploadRoomIcon(input, roomId) {
+  const file = input.files?.[0];
+  if (!file) return;
+
+  showInvToast('Fotoğraf yükleniyor...', 'info');
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const ext      = file.name.split('.').pop() || 'jpg';
+  const filePath = `rooms/room_${roomId}_${Date.now()}.${ext}`;
+
+  const { error } = await sb.storage
+    .from(CHAT_BUCKET_V2)
+    .upload(filePath, file, { cacheControl: '3600', upsert: true, contentType: file.type });
+
+  if (error) { showInvToast('Yükleme hatası!', 'error'); return; }
+
+  const { data: urlData } = sb.storage.from(CHAT_BUCKET_V2).getPublicUrl(filePath);
+  window._cv2RoomIconUrl = urlData?.publicUrl;
+
+  /* تحديث المعاينة */
+  const preview = document.getElementById('cv2SettingsIconPreview');
+  if (preview && urlData?.publicUrl) {
+    preview.innerHTML = `<img src="${urlData.publicUrl}"
+      style="width:100%;height:100%;object-fit:cover;" draggable="false"/>`;
+  }
+
+  showInvToast('Fotoğraf yüklendi ✓', 'success');
+  input.value = '';
+}
+
+/* ── حفظ إعدادات الغرفة ── */
+async function cv2SaveRoomSettings(roomId) {
+  const nameEl = document.getElementById('cv2SettingsName');
+  const name   = nameEl?.value.trim();
+  if (!name) { showInvToast('Grup adı boş olamaz!', 'error'); return; }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const updateData = {
+    name       : name,
+    icon_emoji : window._cv2SelectedEmoji || '👥',
+    updated_at : new Date().toISOString(),
+  };
+  if (window._cv2RoomIconUrl) {
+    updateData.icon_url = window._cv2RoomIconUrl;
+  }
+
+  const { error } = await sb
+    .from(ROOMS_TABLE)
+    .update(updateData)
+    .eq('id', roomId);
+
+  if (error) { showInvToast('Kayıt hatası!', 'error'); return; }
+
+  /* تحديث محلي */
+  const idx = _rooms.findIndex(r => r.id === roomId);
+  if (idx !== -1) Object.assign(_rooms[idx], updateData);
+
+  showInvToast('Grup ayarları kaydedildi ✓', 'success');
+  closeCV2RoomSettings();
+  cv2RenderRoomList();
+  window._cv2RoomIconUrl = null;
+}
+
+/* ── إجراء على عضو (حظر / إزالة) ── */
+async function cv2MemberAction(roomId, username, isBanned) {
+  if (currentUser !== 'WOW') return;
+
+  const p    = cv2GetProfile(username);
+  const name = p.display_name || username;
+
+  const action = isBanned ? 'unban' : await cv2ShowMemberMenu(name);
+  if (!action) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  if (action === 'ban') {
+    await sb.from(MEMBERS_TABLE)
+      .update({ is_banned: true })
+      .eq('room_id', roomId).eq('username', username);
+    showInvToast(`${name} engellendi`, 'success');
+
+  } else if (action === 'unban') {
+    await sb.from(MEMBERS_TABLE)
+      .update({ is_banned: false })
+      .eq('room_id', roomId).eq('username', username);
+    showInvToast(`${name} engeli kaldırıldı`, 'success');
+
+  } else if (action === 'remove') {
+    await sb.from(MEMBERS_TABLE)
+      .delete()
+      .eq('room_id', roomId).eq('username', username);
+    showInvToast(`${name} gruptan çıkarıldı`, 'success');
+  }
+
+  await cv2LoadMembers(roomId);
+  closeCV2RoomSettings();
+  await openCV2RoomSettings(roomId);
+}
+
+/* ── قائمة إجراءات العضو ── */
+function cv2ShowMemberMenu(name) {
+  return new Promise(resolve => {
+    document.getElementById('cv2MemberMenuModal')?.remove();
+
+    const m = document.createElement('div');
+    m.id = 'cv2MemberMenuModal';
+    m.style.cssText = `
+      position:fixed;inset:0;z-index:9900;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);`;
+
+    m.innerHTML = `
+      <div style="
+        background:#111;border:1px solid rgba(201,168,76,0.2);
+        border-radius:16px;overflow:hidden;min-width:220px;
+        animation:devModalIn 0.2s ease;">
+        <div style="padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);
+             font-size:12px;font-weight:900;color:#c9a84c;
+             font-family:'Montserrat',sans-serif;letter-spacing:1px;">
+          ${name}
+        </div>
+        <div class="cv2-ctx-item" onclick="this.closest('#cv2MemberMenuModal').remove();resolve_member('ban')">
+          <i class="fas fa-ban"></i> Engelle
+        </div>
+        <div class="cv2-ctx-item danger" onclick="this.closest('#cv2MemberMenuModal').remove();resolve_member('remove')">
+          <i class="fas fa-user-minus"></i> Gruptan Çıkar
+        </div>
+        <div class="cv2-ctx-item" onclick="this.closest('#cv2MemberMenuModal').remove();resolve_member(null)">
+          <i class="fas fa-times"></i> İptal
+        </div>
+      </div>`;
+
+    document.body.appendChild(m);
+    m.addEventListener('click', e => { if (e.target === m) { m.remove(); resolve(null); } });
+
+    window.resolve_member = val => { resolve(val); delete window.resolve_member; };
+  });
+}
+
+/* ── إضافة عضو للغرفة الجماعية ── */
+async function cv2AddMemberToRoom(roomId, username, name) {
+  if (currentUser !== 'WOW') return;
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from(MEMBERS_TABLE)
+    .insert([{ room_id: roomId, username, role: 'member' }]);
+
+  if (error && !error.message.includes('duplicate')) {
+    showInvToast('Ekleme hatası!', 'error'); return;
+  }
+
+  showInvToast(`${name} gruba eklendi ✓`, 'success');
+  await cv2LoadMembers(roomId);
+  closeCV2RoomSettings();
+  await openCV2RoomSettings(roomId);
+}
+
+
+/* ══════════════════════════════════════════════════════
+   ★ إنشاء الغرف تلقائياً عند إضافة أدمن ★
+══════════════════════════════════════════════════════ */
+async function cv2EnsureRoomsForAdmin(username, displayName) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* استدعاء الدالة SQL */
+  const { error } = await sb.rpc('create_private_room_for_admin', {
+    p_username : username,
+    p_name     : displayName,
+  });
+
+  if (error) {
+    console.warn('[CV2] create_private_room_for_admin:', error.message);
+  }
+}
+
+
+/* ══════════════════════════════════════════════════════
+   ملف شخصي
+══════════════════════════════════════════════════════ */
+async function openCV2Profile(username) {
+  document.getElementById('cv2ProfileModal')?.remove();
+
+  const isMe   = username === currentUser;
+  const p      = cv2GetProfile(username);
+
+  const modal = document.createElement('div');
+  modal.id = 'cv2ProfileModal';
   modal.style.cssText = `
     position:fixed;inset:0;z-index:9800;
     display:flex;align-items:center;justify-content:center;
-    background:rgba(0,0,0,0.88);
-    backdrop-filter:blur(18px);
+    background:rgba(0,0,0,0.88);backdrop-filter:blur(18px);
     padding:16px;`;
 
   modal.innerHTML = `
     <div style="
-      width:100%;max-width:400px;
+      width:100%;max-width:380px;
       background:linear-gradient(145deg,#0f0f0f,#161616);
       border:1px solid rgba(201,168,76,0.25);
-      border-radius:24px;overflow:hidden;
+      border-radius:22px;overflow:hidden;
       box-shadow:0 40px 100px rgba(0,0,0,0.8);
-      animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;">
+      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
 
-      <!-- خط ذهبي -->
       <div style="height:3px;background:linear-gradient(90deg,
         transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
 
-      <!-- صورة الغلاف -->
-      <div style="
-        height:100px;
-        background:linear-gradient(135deg,#0a0a0a,#1a1a1a,#0f0f0f);
-        position:relative;">
-        <div style="
-          position:absolute;inset:0;
-          background:radial-gradient(ellipse at center,
-            rgba(201,168,76,0.08) 0%,transparent 70%);"></div>
-      </div>
-
-      <!-- الأفاتار -->
+      <!-- أفاتار -->
       <div style="
         display:flex;justify-content:center;
-        margin-top:-40px;margin-bottom:12px;
-        position:relative;z-index:1;">
+        padding-top:24px;margin-bottom:12px;">
         <div style="
-          width:80px;height:80px;border-radius:50%;
-          overflow:hidden;
-          border:3px solid #0f0f0f;
+          width:76px;height:76px;border-radius:50%;
+          overflow:hidden;border:3px solid #0f0f0f;
           box-shadow:0 8px 24px rgba(0,0,0,0.5);
           position:relative;cursor:${isMe ? 'pointer' : 'default'};"
-          ${isMe ? `onclick="triggerProfileAvatarUpload()"` : ''}>
-          ${profile.avatar_url
-            ? `<img src="${profile.avatar_url}"
-                    style="width:100%;height:100%;object-fit:cover;"
-                    draggable="false"/>`
+          ${isMe ? `onclick="document.getElementById('cv2AvatarInput').click()"` : ''}>
+          ${p.avatar_url
+            ? `<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;" draggable="false"/>`
             : `<div style="
                  width:100%;height:100%;
-                 background:linear-gradient(135deg,
-                   rgba(201,168,76,0.2),rgba(201,168,76,0.05));
+                 background:linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
                  display:flex;align-items:center;justify-content:center;
-                 font-size:28px;font-weight:900;color:#c9a84c;">
-                 ${(profile.display_name || username).substring(0,2).toUpperCase()}
+                 font-size:26px;font-weight:900;color:#c9a84c;">
+                 ${(p.display_name || username).substring(0,2).toUpperCase()}
                </div>`}
           ${isMe ? `
           <div style="
-            position:absolute;inset:0;
-            background:rgba(0,0,0,0.4);
+            position:absolute;inset:0;background:rgba(0,0,0,0.4);
             display:flex;align-items:center;justify-content:center;
-            opacity:0;transition:opacity 0.25s;"
+            opacity:0;transition:opacity 0.2s;"
             onmouseover="this.style.opacity='1'"
             onmouseout="this.style.opacity='0'">
-            <i class="fas fa-camera"
-               style="color:#fff;font-size:20px;"></i>
+            <i class="fas fa-camera" style="color:#fff;font-size:18px;"></i>
           </div>` : ''}
         </div>
-        ${isMe ? `
-        <input type="file" id="profileAvatarInput"
-               accept="image/*"
-               onchange="uploadProfileAvatar(this)"
-               style="display:none;"/>` : ''}
+        ${isMe ? `<input type="file" id="cv2AvatarInput" accept="image/*"
+                         onchange="cv2UploadAvatar(this)" style="display:none;"/>` : ''}
       </div>
 
-      <!-- المعلومات -->
-      <div style="padding:0 24px 24px;text-align:center;">
-
+      <!-- معلومات -->
+      <div style="padding:0 20px 20px;text-align:center;">
         ${isMe ? `
-        <!-- اسم قابل للتعديل -->
-        <div id="profileNameWrap" style="margin-bottom:8px;">
-          <div id="profileNameDisplay"
-               onclick="editProfileName()"
-               style="
-                 font-size:20px;font-weight:900;color:#fff;
-                 cursor:pointer;display:inline-flex;
-                 align-items:center;gap:8px;
-                 transition:color 0.2s;"
+        <div id="cv2ProfNameWrap" style="margin-bottom:6px;">
+          <div onclick="cv2EditProfName()"
+               style="font-size:18px;font-weight:900;color:#fff;
+                      cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+                      transition:color 0.2s;"
                onmouseover="this.style.color='#c9a84c'"
                onmouseout="this.style.color='#fff'">
-            ${profile.display_name || username}
-            <i class="fas fa-pen"
-               style="font-size:12px;color:rgba(201,168,76,0.5);"></i>
+            ${p.display_name || username}
+            <i class="fas fa-pen" style="font-size:11px;color:rgba(201,168,76,0.5);"></i>
           </div>
         </div>
-
-        <!-- النص الحالة -->
-        <div style="margin-bottom:20px;">
-          <div id="profileStatusDisplay"
-               onclick="editProfileStatus()"
-               style="
-                 font-size:12px;color:rgba(255,255,255,0.35);
-                 cursor:pointer;display:inline-flex;
-                 align-items:center;gap:6px;
-                 transition:color 0.2s;"
+        <div id="cv2ProfStatusWrap" style="margin-bottom:18px;">
+          <div onclick="cv2EditProfStatus()"
+               style="font-size:11px;color:rgba(255,255,255,0.3);
+                      cursor:pointer;display:inline-flex;align-items:center;gap:5px;
+                      transition:color 0.2s;"
                onmouseover="this.style.color='rgba(201,168,76,0.7)'"
-               onmouseout="this.style.color='rgba(255,255,255,0.35)'">
-            <i class="fas fa-circle"
-               style="font-size:8px;color:#4ade80;"></i>
-            ${profile.status_text || 'Durum ekle...'}
-            <i class="fas fa-pen"
-               style="font-size:10px;color:rgba(201,168,76,0.4);"></i>
+               onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+            <i class="fas fa-circle" style="font-size:7px;color:#4ade80;"></i>
+            ${p.status_text || 'Durum ekle...'}
+            <i class="fas fa-pen" style="font-size:9px;color:rgba(201,168,76,0.4);"></i>
           </div>
         </div>` : `
-
-        <!-- عرض فقط -->
-        <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:6px;">
-          ${profile.display_name || username}
+        <div style="font-size:18px;font-weight:900;color:#fff;margin-bottom:6px;">
+          ${p.display_name || username}
         </div>
-        <div style="
-          font-size:12px;color:rgba(255,255,255,0.35);
-          margin-bottom:20px;
-          display:flex;align-items:center;justify-content:center;gap:6px;">
-          <i class="fas fa-circle"
-             style="font-size:8px;color:#4ade80;"></i>
-          ${profile.status_text || 'Çevrimiçi'}
+        <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-bottom:18px;
+             display:flex;align-items:center;justify-content:center;gap:5px;">
+          <i class="fas fa-circle" style="font-size:7px;color:#4ade80;"></i>
+          ${p.status_text || 'Çevrimiçi'}
         </div>`}
 
         <!-- معلومات إضافية -->
         <div style="
           background:rgba(255,255,255,0.025);
           border:1px solid rgba(255,255,255,0.06);
-          border-radius:14px;padding:14px;
-          margin-bottom:16px;
-          display:flex;flex-direction:column;gap:10px;
-          text-align:left;">
-          <div style="display:flex;align-items:center;gap:10px;">
+          border-radius:12px;padding:12px;
+          margin-bottom:14px;text-align:left;">
+          <div style="display:flex;align-items:center;gap:9px;">
             <div style="
-              width:32px;height:32px;border-radius:9px;
+              width:30px;height:30px;border-radius:8px;
               background:rgba(201,168,76,0.1);
               border:1px solid rgba(201,168,76,0.2);
               display:flex;align-items:center;justify-content:center;
-              color:#c9a84c;font-size:13px;flex-shrink:0;">
+              color:#c9a84c;font-size:12px;flex-shrink:0;">
               <i class="fas fa-at"></i>
             </div>
             <div>
               <div style="font-size:8px;letter-spacing:2px;
-                   color:rgba(255,255,255,0.2);text-transform:uppercase;
-                   margin-bottom:2px;">Kullanıcı Adı</div>
-              <div style="font-size:13px;font-weight:700;color:#fff;">
-                ${username}
+                   color:rgba(255,255,255,0.2);text-transform:uppercase;margin-bottom:1px;">
+                Kullanıcı Adı
               </div>
-            </div>
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="
-              width:32px;height:32px;border-radius:9px;
-              background:rgba(201,168,76,0.1);
-              border:1px solid rgba(201,168,76,0.2);
-              display:flex;align-items:center;justify-content:center;
-              color:#c9a84c;font-size:13px;flex-shrink:0;">
-              <i class="fas fa-shield-alt"></i>
-            </div>
-            <div>
-              <div style="font-size:8px;letter-spacing:2px;
-                   color:rgba(255,255,255,0.2);text-transform:uppercase;
-                   margin-bottom:2px;">Rol</div>
-              <div style="font-size:13px;font-weight:700;color:#fff;">
-                ${username === ADMIN_USER ? 'WOW Yönetici' : 'Admin'}
-              </div>
+              <div style="font-size:13px;font-weight:700;color:#fff;">${username}</div>
             </div>
           </div>
         </div>
 
         <!-- أزرار -->
         <div style="display:flex;gap:8px;">
-          <button onclick="closeChatProfileModal()" style="
-            flex:1;padding:12px;border-radius:11px;
+          <button onclick="document.getElementById('cv2ProfileModal').remove()" style="
+            flex:1;padding:11px;border-radius:10px;
             border:1px solid rgba(255,255,255,0.1);
             background:rgba(255,255,255,0.04);
-            color:rgba(255,255,255,0.5);
+            color:rgba(255,255,255,0.4);
             font-family:'Montserrat',sans-serif;
             font-size:11px;font-weight:700;letter-spacing:1px;
-            cursor:pointer;transition:all 0.25s;"
+            cursor:pointer;transition:all 0.2s;"
             onmouseover="this.style.background='rgba(255,255,255,0.08)'"
             onmouseout="this.style.background='rgba(255,255,255,0.04)'">
             KAPAT
           </button>
           ${isMe ? `
-          <button onclick="saveProfileChanges('${username}')" style="
-            flex:2;padding:12px;border-radius:11px;border:none;
+          <button onclick="cv2SaveProfile('${username}')" style="
+            flex:2;padding:11px;border-radius:10px;border:none;
             background:linear-gradient(135deg,#c9a84c,#f0d080);
             color:#0a0a0a;font-family:'Montserrat',sans-serif;
             font-size:11px;font-weight:900;letter-spacing:2px;
             cursor:pointer;transition:all 0.25s;
-            display:flex;align-items:center;justify-content:center;gap:7px;"
-            onmouseover="this.style.transform='translateY(-2px)';
-                         this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
-            onmouseout="this.style.transform='';this.style.boxShadow=''">
+            display:flex;align-items:center;justify-content:center;gap:6px;"
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">
             <i class="fas fa-save"></i> KAYDET
           </button>` : ''}
         </div>
@@ -29039,507 +29492,316 @@ function openChatProfileModal(username) {
 
   document.body.appendChild(modal);
   modal.addEventListener('click', e => {
-    if (e.target === modal) closeChatProfileModal();
+    if (e.target === modal) modal.remove();
   });
 
-  /* حفظ البيانات للتعديل */
-  window._editingProfile = {
+  window._cv2EditingProfile = {
     username,
-    display_name : profile.display_name || username,
-    status_text  : profile.status_text  || '',
-    avatar_url   : profile.avatar_url   || null,
+    display_name : p.display_name || username,
+    status_text  : p.status_text  || '',
+    avatar_url   : p.avatar_url   || null,
   };
 }
 
-function closeChatProfileModal() {
-  document.getElementById('chatProfileModal')?.remove();
-  window._editingProfile = null;
-}
-
-/* ── تعديل الاسم ── */
-function editProfileName() {
-  const display = document.getElementById('profileNameDisplay');
-  if (!display) return;
-
-  const current = window._editingProfile?.display_name || '';
-  display.innerHTML = `
-    <input type="text"
-           id="profileNameInput"
-           value="${current}"
-           maxlength="30"
-           autofocus
-           style="
-             background:rgba(255,255,255,0.06);
-             border:1.5px solid rgba(201,168,76,0.5);
-             border-radius:9px;color:#fff;
-             font-family:'Montserrat',sans-serif;
-             font-size:16px;font-weight:900;
-             padding:8px 14px;outline:none;
-             text-align:center;
-             -webkit-user-select:text;user-select:text;"
-           onblur="confirmProfileName(this)"
+function cv2EditProfName() {
+  const wrap = document.getElementById('cv2ProfNameWrap');
+  if (!wrap) return;
+  const cur = window._cv2EditingProfile?.display_name || '';
+  wrap.innerHTML = `
+    <input type="text" id="cv2ProfNameInput" value="${cur}" maxlength="30" autofocus
+           style="background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.5);
+                  border-radius:9px;color:#fff;font-family:'Montserrat',sans-serif;
+                  font-size:15px;font-weight:900;padding:7px 13px;outline:none;
+                  text-align:center;-webkit-user-select:text;user-select:text;"
+           onblur="cv2ConfirmProfName(this)"
            onkeydown="if(event.key==='Enter')this.blur()"/>`;
-
-  setTimeout(() => {
-    document.getElementById('profileNameInput')?.focus();
-  }, 50);
+  setTimeout(() => document.getElementById('cv2ProfNameInput')?.focus(), 40);
 }
 
-function confirmProfileName(inp) {
-  const val = inp.value.trim() || window._editingProfile?.username;
-  if (window._editingProfile) window._editingProfile.display_name = val;
-
-  const display = document.getElementById('profileNameDisplay');
-  if (display) {
-    display.innerHTML = `
+function cv2ConfirmProfName(inp) {
+  const val = inp.value.trim() || window._cv2EditingProfile?.username;
+  if (window._cv2EditingProfile) window._cv2EditingProfile.display_name = val;
+  const wrap = document.getElementById('cv2ProfNameWrap');
+  if (wrap) wrap.innerHTML = `
+    <div onclick="cv2EditProfName()"
+         style="font-size:18px;font-weight:900;color:#fff;
+                cursor:pointer;display:inline-flex;align-items:center;gap:7px;"
+         onmouseover="this.style.color='#c9a84c'"
+         onmouseout="this.style.color='#fff'">
       ${val}
-      <i class="fas fa-pen"
-         style="font-size:12px;color:rgba(201,168,76,0.5);"></i>`;
-  }
+      <i class="fas fa-pen" style="font-size:11px;color:rgba(201,168,76,0.5);"></i>
+    </div>`;
 }
 
-/* ── تعديل نص الحالة ── */
-function editProfileStatus() {
-  const display = document.getElementById('profileStatusDisplay');
-  if (!display) return;
-
-  const current = window._editingProfile?.status_text || '';
-  display.innerHTML = `
-    <input type="text"
-           id="profileStatusInput"
-           value="${current}"
-           maxlength="50"
-           placeholder="Durum mesajı..."
-           autofocus
-           style="
-             background:rgba(255,255,255,0.06);
-             border:1.5px solid rgba(201,168,76,0.4);
-             border-radius:9px;color:#fff;
-             font-family:'Montserrat',sans-serif;
-             font-size:12px;padding:7px 12px;
-             outline:none;text-align:center;
-             -webkit-user-select:text;user-select:text;"
-           onblur="confirmProfileStatus(this)"
+function cv2EditProfStatus() {
+  const wrap = document.getElementById('cv2ProfStatusWrap');
+  if (!wrap) return;
+  const cur = window._cv2EditingProfile?.status_text || '';
+  wrap.innerHTML = `
+    <input type="text" id="cv2ProfStatusInput" value="${cur}" maxlength="50"
+           placeholder="Durum mesajı..." autofocus
+           style="background:rgba(255,255,255,0.06);border:1.5px solid rgba(201,168,76,0.4);
+                  border-radius:9px;color:#fff;font-family:'Montserrat',sans-serif;
+                  font-size:12px;padding:6px 12px;outline:none;text-align:center;
+                  -webkit-user-select:text;user-select:text;"
+           onblur="cv2ConfirmProfStatus(this)"
            onkeydown="if(event.key==='Enter')this.blur()"/>`;
-
-  setTimeout(() => {
-    document.getElementById('profileStatusInput')?.focus();
-  }, 50);
+  setTimeout(() => document.getElementById('cv2ProfStatusInput')?.focus(), 40);
 }
 
-function confirmProfileStatus(inp) {
+function cv2ConfirmProfStatus(inp) {
   const val = inp.value.trim();
-  if (window._editingProfile) window._editingProfile.status_text = val;
-
-  const display = document.getElementById('profileStatusDisplay');
-  if (display) {
-    display.innerHTML = `
-      <i class="fas fa-circle"
-         style="font-size:8px;color:#4ade80;"></i>
+  if (window._cv2EditingProfile) window._cv2EditingProfile.status_text = val;
+  const wrap = document.getElementById('cv2ProfStatusWrap');
+  if (wrap) wrap.innerHTML = `
+    <div onclick="cv2EditProfStatus()"
+         style="font-size:11px;color:rgba(255,255,255,0.3);
+                cursor:pointer;display:inline-flex;align-items:center;gap:5px;"
+         onmouseover="this.style.color='rgba(201,168,76,0.7)'"
+         onmouseout="this.style.color='rgba(255,255,255,0.3)'">
+      <i class="fas fa-circle" style="font-size:7px;color:#4ade80;"></i>
       ${val || 'Durum ekle...'}
-      <i class="fas fa-pen"
-         style="font-size:10px;color:rgba(201,168,76,0.4);"></i>`;
-  }
+      <i class="fas fa-pen" style="font-size:9px;color:rgba(201,168,76,0.4);"></i>
+    </div>`;
 }
 
-/* ── رفع صورة الأفاتار ── */
-function triggerProfileAvatarUpload() {
-  document.getElementById('profileAvatarInput')?.click();
-}
-
-async function uploadProfileAvatar(input) {
+async function cv2UploadAvatar(input) {
   const file = input.files?.[0];
   if (!file) return;
-
-  if (!file.type.startsWith('image/')) {
-    showInvToast('Lütfen bir görsel seçin!', 'error');
-    return;
-  }
-
-  showInvToast('Yükleniyor...', 'info');
+  showInvToast('Fotoğraf yükleniyor...', 'info');
 
   const sb = await initSupabase();
   if (!sb) return;
 
   const ext      = file.name.split('.').pop() || 'jpg';
-  const fileName = `avatar_${currentUser}_${Date.now()}.${ext}`;
-  const filePath = `avatars/${fileName}`;
+  const filePath = `avatars/avatar_${currentUser}_${Date.now()}.${ext}`;
 
-  const { error: upErr } = await sb.storage
-    .from(CHAT_BUCKET)
-    .upload(filePath, file, {
-      cacheControl : '3600',
-      upsert       : true,
-      contentType  : file.type,
-    });
+  const { error } = await sb.storage
+    .from(CHAT_BUCKET_V2)
+    .upload(filePath, file, { cacheControl: '3600', upsert: true, contentType: file.type });
 
-  if (upErr) {
-    showInvToast('Yükleme hatası!', 'error');
-    return;
-  }
+  if (error) { showInvToast('Yükleme hatası!', 'error'); return; }
 
-  const { data: urlData } = sb.storage
-    .from(CHAT_BUCKET)
-    .getPublicUrl(filePath);
-
-  if (window._editingProfile) {
-    window._editingProfile.avatar_url = urlData?.publicUrl;
-  }
-
-  /* تحديث المعاينة */
-  const avatarWrap = document.querySelector(
-    '#chatProfileModal [style*="width:80px"]'
-  );
-  if (avatarWrap && urlData?.publicUrl) {
-    avatarWrap.querySelector('img')?.remove();
-    avatarWrap.querySelector('div[style*="font-size:28px"]')?.remove();
-    const img = document.createElement('img');
-    img.src   = urlData.publicUrl;
-    img.style.cssText =
-      'width:100%;height:100%;object-fit:cover;';
-    avatarWrap.prepend(img);
-  }
+  const { data: urlData } = sb.storage.from(CHAT_BUCKET_V2).getPublicUrl(filePath);
+  if (window._cv2EditingProfile) window._cv2EditingProfile.avatar_url = urlData?.publicUrl;
 
   showInvToast('Fotoğraf yüklendi ✓', 'success');
   input.value = '';
 }
 
-/* ── حفظ الملف الشخصي ── */
-async function saveProfileChanges(username) {
-  const p = window._editingProfile;
-  if (!p) return;
+async function cv2SaveProfile(username) {
+  const ep = window._cv2EditingProfile;
+  if (!ep) return;
 
   const sb = await initSupabase();
   if (!sb) return;
 
   const { error } = await sb
-    .from(PROFILE_TABLE)
+    .from(PROF_TABLE)
     .upsert([{
       username     : username,
-      display_name : p.display_name,
-      status_text  : p.status_text,
-      avatar_url   : p.avatar_url,
+      display_name : ep.display_name,
+      status_text  : ep.status_text,
+      avatar_url   : ep.avatar_url,
       updated_at   : new Date().toISOString(),
     }], { onConflict: 'username' });
 
-  if (error) {
-    showInvToast('Kayıt hatası: ' + error.message, 'error');
-    return;
-  }
+  if (error) { showInvToast('Kayıt hatası!', 'error'); return; }
 
-  /* تحديث الكاش المحلي */
-  _chatProfiles[username] = {
-    username,
-    display_name : p.display_name,
-    status_text  : p.status_text,
-    avatar_url   : p.avatar_url,
-  };
-
+  _profiles[username] = { ...ep };
   showInvToast('Profil güncellendi ✓', 'success');
-  closeChatProfileModal();
-
-  /* تحديث الهيدر إذا كانت نافذة المحادثة مفتوحة */
-  if (_activeChatUser) {
-    updateChatOnlineStatus(_activeChatUser);
-  }
+  document.getElementById('cv2ProfileModal')?.remove();
+  window._cv2EditingProfile = null;
 }
 
 
 /* ══════════════════════════════════════════════════════
-   عارض الصور
+   شارة غير المقروء في الهيدر
 ══════════════════════════════════════════════════════ */
-function openChatImageViewer(url) {
-  document.getElementById('chatImgViewer')?.remove();
-
-  const viewer = document.createElement('div');
-  viewer.id = 'chatImgViewer';
-  viewer.style.cssText = `
-    position:fixed;inset:0;z-index:99999;
-    background:rgba(0,0,0,0.96);
-    display:flex;align-items:center;justify-content:center;
-    flex-direction:column;gap:14px;
-    animation:updBgIn 0.25s ease forwards;`;
-
-  viewer.innerHTML = `
-    <button onclick="document.getElementById('chatImgViewer').remove()"
-            style="
-              position:absolute;top:16px;right:16px;
-              background:rgba(255,255,255,0.1);
-              border:1px solid rgba(255,255,255,0.15);
-              border-radius:50%;width:40px;height:40px;
-              color:#fff;font-size:18px;cursor:pointer;
-              display:flex;align-items:center;justify-content:center;
-              transition:all 0.25s;font-family:'Montserrat',sans-serif;">
-      <i class="fas fa-times"></i>
-    </button>
-    <img src="${url}"
-         style="
-           max-width:92vw;max-height:82vh;
-           object-fit:contain;border-radius:10px;
-           animation:lbFade 0.3s ease;"
-         draggable="false"/>
-    <a href="${url}" download target="_blank" style="
-      padding:10px 22px;border-radius:50px;
-      background:linear-gradient(135deg,#c9a84c,#f0d080);
-      color:#0a0a0a;font-family:'Montserrat',sans-serif;
-      font-size:11px;font-weight:900;letter-spacing:2px;
-      text-decoration:none;
-      display:flex;align-items:center;gap:7px;
-      transition:all 0.25s;">
-      <i class="fas fa-download"></i> İNDİR
-    </a>`;
-
-  document.body.appendChild(viewer);
-  viewer.addEventListener('click', e => {
-    if (e.target === viewer) viewer.remove();
+function cv2UpdateHeaderBadge() {
+  const total  = Object.values(_unreadCounts).reduce((a, b) => a + b, 0);
+  const badges = document.querySelectorAll('.cv2-header-badge');
+  badges.forEach(b => {
+    if (total > 0) {
+      b.textContent  = total > 99 ? '99+' : total;
+      b.style.display = 'flex';
+    } else {
+      b.style.display = 'none';
+    }
   });
 }
 
-
-/* ══════════════════════════════════════════════════════
-   قائمة خيارات المحادثة (⋮)
-══════════════════════════════════════════════════════ */
-function toggleChatMenu() {
-  document.getElementById('chatMenuDropdown')?.remove();
-
-  const menu = document.createElement('div');
-  menu.id = 'chatMenuDropdown';
-  menu.style.cssText = `
-    position:fixed;
-    top:65px;right:14px;
-    z-index:9999;
-    background:rgba(15,15,15,0.97);
-    border:1px solid rgba(201,168,76,0.2);
-    border-radius:14px;overflow:hidden;
-    box-shadow:0 16px 48px rgba(0,0,0,0.7);
-    backdrop-filter:blur(20px);
-    min-width:180px;
-    animation:devModalIn 0.2s ease forwards;`;
-
-  menu.innerHTML = `
-    <div class="ctx-item"
-         onclick="openChatProfileModal('${currentUser}');
-                  document.getElementById('chatMenuDropdown')?.remove()">
-      <i class="fas fa-user-circle"></i> Profilim
-    </div>
-    <div class="ctx-item"
-         onclick="clearChatHistory();
-                  document.getElementById('chatMenuDropdown')?.remove()">
-      <i class="fas fa-broom"></i> Geçmişi Temizle
-    </div>
-    <div class="ctx-item danger"
-         onclick="closeChatWindow(true);
-                  document.getElementById('chatMenuDropdown')?.remove()">
-      <i class="fas fa-times"></i> Kapat
-    </div>`;
-
-  document.body.appendChild(menu);
-  setTimeout(() => {
-    document.addEventListener('click', () => {
-      document.getElementById('chatMenuDropdown')?.remove();
-    }, { once: true });
-  }, 100);
-}
-
-/* ── مسح سجل المحادثة ── */
-async function clearChatHistory() {
-  if (!_activeChatUser) return;
-
-  const confirmed = await showDeleteConfirm();
-  if (!confirmed) return;
-
+async function cv2LoadUnreadCounts() {
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* حذف ناعم — فقط من جانب المستخدم الحالي */
-  await sb
-    .from(CHAT_TABLE)
-    .update({ is_deleted_by_sender: true })
-    .eq('from_user', currentUser)
-    .eq('to_user', _activeChatUser);
+  const { count } = await sb
+    .from(MSGS_TABLE)
+    .select('id', { count: 'exact', head: true })
+    .neq('from_user', currentUser)
+    .eq('deleted_for_all', false);
 
-  await sb
-    .from(CHAT_TABLE)
-    .update({ is_deleted_by_receiver: true })
-    .eq('from_user', _activeChatUser)
-    .eq('to_user', currentUser);
+  /* تبسيط: جلب إجمالي غير المقروء */
+  const { data: reads } = await sb
+    .from(READS_TABLE)
+    .select('room_id, last_read_at')
+    .eq('username', currentUser);
 
-  _chatMessages = [];
-  renderChatMessages();
-  showInvToast('Sohbet geçmişi temizlendi ✓', 'success');
+  const readMap = {};
+  (reads || []).forEach(r => { readMap[r.room_id] = r.last_read_at; });
+
+  let total = 0;
+  for (const room of _rooms) {
+    const lastRead = readMap[room.id] || '1970-01-01';
+    const { count: c } = await sb
+      .from(MSGS_TABLE)
+      .select('id', { count: 'exact', head: true })
+      .eq('room_id', room.id)
+      .neq('from_user', currentUser)
+      .eq('deleted_for_all', false)
+      .gt('created_at', lastRead);
+    _unreadCounts[room.id] = c || 0;
+    total += c || 0;
+  }
+
+  cv2UpdateHeaderBadge();
 }
 
 
 /* ══════════════════════════════════════════════════════
-   ربط بنظام التنقل
+   ربط بنظام التنقل — زر الهوم
 ══════════════════════════════════════════════════════ */
 
 /* ── إضافة زر المحادثة في هوم WOW ── */
-const _origRenderAdminHomeCards_chat = renderAdminHomeCards;
-renderAdminHomeCards = function(container) {
-  _origRenderAdminHomeCards_chat(container);
+const _origRenderAdminHomeCards_v2 = typeof renderAdminHomeCards === 'function'
+  ? renderAdminHomeCards : null;
 
-  /* إضافة زر المحادثة */
-  const chatBtn = document.createElement('div');
-  chatBtn.className = 'admin-chat-home-btn';
-  chatBtn.onclick   = openChatListPage;
-  chatBtn.innerHTML = `
+if (_origRenderAdminHomeCards_v2) {
+  renderAdminHomeCards = function(container) {
+    _origRenderAdminHomeCards_v2(container);
+    cv2InjectHomeBtn(container);
+  };
+}
+
+/* ── إضافة زر في هوم admin_accounts ── */
+const _origShowAdminAccountHome_v2 = typeof showAdminAccountHome === 'function'
+  ? showAdminAccountHome : null;
+
+if (_origShowAdminAccountHome_v2) {
+  showAdminAccountHome = function(admin) {
+    _origShowAdminAccountHome_v2(admin);
+    setTimeout(() => {
+      const grid = document.getElementById('adminAccHomeGrid');
+      if (grid) cv2InjectHomeBtn(grid);
+    }, 350);
+  };
+}
+
+function cv2InjectHomeBtn(container) {
+  /* تجنب التكرار */
+  if (container.querySelector('.cv2-home-btn')) return;
+
+  const btn = document.createElement('div');
+  btn.className = 'cv2-home-btn';
+  btn.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;">
       <div style="
         width:42px;height:42px;border-radius:12px;
-        background:linear-gradient(135deg,
-          rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+        background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
         border:1px solid rgba(201,168,76,0.3);
         display:flex;align-items:center;justify-content:center;
         font-size:19px;color:#c9a84c;flex-shrink:0;">
         <i class="fas fa-comments"></i>
       </div>
       <div>
-        <div style="font-size:13px;font-weight:900;color:#fff;
-             margin-bottom:2px;">Mesajlar</div>
-        <div style="font-size:9px;color:rgba(255,255,255,0.3);
-             letter-spacing:0.5px;">
-          Admin ekibiyle anlık mesajlaş
+        <div style="font-size:13px;font-weight:900;color:#fff;margin-bottom:2px;">
+          Mesajlar
+        </div>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);letter-spacing:0.5px;">
+          Grup & Özel sohbet
         </div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;">
-      <div id="chatHeaderBadge" style="
-        display:none;
-        min-width:22px;height:22px;border-radius:50%;
-        background:#ef4444;color:#fff;
-        font-size:10px;font-weight:900;
-        align-items:center;justify-content:center;
-        padding:0 4px;
+      <div class="cv2-header-badge" style="
+        display:none;min-width:20px;height:20px;border-radius:50%;
+        background:#ef4444;color:#fff;font-size:10px;font-weight:900;
+        align-items:center;justify-content:center;padding:0 4px;
         font-family:'Montserrat',sans-serif;"></div>
       <i class="fas fa-chevron-right"
          style="color:rgba(201,168,76,0.4);font-size:13px;"></i>
     </div>`;
 
-  container.appendChild(chatBtn);
+  /* إصلاح تأخير الزر — تنفيذ فوري */
+  btn.addEventListener('pointerdown', () => {
+    requestAnimationFrame(() => openChatV2());
+  });
 
-  /* تحديث عداد غير المقروء */
-  setTimeout(() => updateChatUnreadCount(), 1000);
-};
-
-/* ── إضافة زر المحادثة في هوم admin_accounts ── */
-const _origShowAdminAccountHome_chat = showAdminAccountHome;
-showAdminAccountHome = function(admin) {
-  _origShowAdminAccountHome_chat(admin);
-
-  setTimeout(() => {
-    const grid = document.getElementById('adminAccHomeGrid');
-    if (!grid) return;
-
-    const chatCard = document.createElement('div');
-    chatCard.style.cssText = `
-      grid-column:1/-1;
-      display:flex;align-items:center;justify-content:space-between;
-      gap:12px;padding:13px 16px;border-radius:14px;
-      border:1px solid rgba(201,168,76,0.2);
-      background:rgba(255,255,255,0.025);
-      cursor:pointer;transition:all 0.25s ease;
-      font-family:'Montserrat',sans-serif;
-      animation:cardSlideIn 0.6s ease 0.95s both;`;
-    chatCard.onclick = openChatListPage;
-    chatCard.onmouseover = function() {
-      this.style.background    = 'rgba(201,168,76,0.08)';
-      this.style.borderColor   = 'rgba(201,168,76,0.4)';
-      this.style.transform     = 'translateY(-2px)';
-    };
-    chatCard.onmouseout = function() {
-      this.style.background    = 'rgba(255,255,255,0.025)';
-      this.style.borderColor   = 'rgba(201,168,76,0.2)';
-      this.style.transform     = '';
-    };
-    chatCard.innerHTML = `
-      <div style="display:flex;align-items:center;gap:12px;">
-        <div style="
-          width:42px;height:42px;border-radius:12px;
-          background:linear-gradient(135deg,
-            rgba(201,168,76,0.18),rgba(201,168,76,0.04));
-          border:1px solid rgba(201,168,76,0.3);
-          display:flex;align-items:center;justify-content:center;
-          font-size:18px;color:#c9a84c;flex-shrink:0;">
-          <i class="fas fa-comments"></i>
-        </div>
-        <div>
-          <div style="font-size:13px;font-weight:900;color:#fff;
-               margin-bottom:2px;">Mesajlar</div>
-          <div style="font-size:9px;color:rgba(255,255,255,0.3);">
-            WOW ile anlık mesajlaş
-          </div>
-        </div>
-      </div>
-      <i class="fas fa-chevron-right"
-         style="color:rgba(201,168,76,0.4);font-size:13px;"></i>`;
-
-    grid.appendChild(chatCard);
-    setTimeout(() => updateChatUnreadCount(), 800);
-  }, 400);
-};
-
-/* ── تحديث عداد غير المقروء ── */
-async function updateChatUnreadCount() {
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  const { count } = await sb
-    .from(CHAT_TABLE)
-    .select('id', { count: 'exact', head: true })
-    .eq('to_user', currentUser)
-    .eq('is_read', false)
-    .eq('is_deleted_by_receiver', false);
-
-  const badge = document.getElementById('chatHeaderBadge');
-  if (badge) {
-    if (count > 0) {
-      badge.textContent  = count > 99 ? '99+' : count;
-      badge.style.display = 'flex';
-    } else {
-      badge.style.display = 'none';
-    }
-  }
+  container.appendChild(btn);
+  setTimeout(() => cv2LoadUnreadCounts(), 800);
 }
 
-/* ── Popstate للرجوع ── */
-const _origPopstate_chat = window.onpopstate;
+/* ── ربط إضافة الأدمن بإنشاء الغرف ── */
+const _origSaveNewAdmin_v2 = typeof saveNewAdminAccount === 'function'
+  ? saveNewAdminAccount : null;
+
+if (_origSaveNewAdmin_v2) {
+  saveNewAdminAccount = async function(...args) {
+    const result = await _origSaveNewAdmin_v2(...args);
+    /* بعد الحفظ — إنشاء الغرف */
+    const usernameEl = document.getElementById('newAdminUsername');
+    const nameEl     = document.getElementById('newAdminName');
+    if (usernameEl && nameEl) {
+      await cv2EnsureRoomsForAdmin(
+        usernameEl.value.trim(),
+        nameEl.value.trim()
+      );
+    }
+    return result;
+  };
+}
+
+/* ── Popstate ── */
 window.addEventListener('popstate', () => {
-  if (document.getElementById('chatWindow')) {
-    closeChatWindow(true);
-    return;
-  }
-  if (document.getElementById('chatPage')) {
-    closeChatListPage();
-    return;
-  }
+  if (document.getElementById('chatV2Room')) { cv2CloseRoom(); return; }
+  if (document.getElementById('chatV2Page')) { closeCV2Page(); return; }
 });
 
-/* ── تحميل البيانات عند تسجيل الدخول ── */
-const _masterFinishLogin_chat = finishLogin;
-finishLogin = function() {
-  _masterFinishLogin_chat();
-  setTimeout(async () => {
-    await loadChatProfiles();
-    await updateChatUnreadCount();
-    subscribeChatRealtime();
-  }, 1500);
-};
+/* ── تهيئة عند تسجيل الدخول ── */
+const _origFinishLogin_v2 = typeof finishLogin === 'function' ? finishLogin : null;
+if (_origFinishLogin_v2) {
+  finishLogin = function(...args) {
+    _origFinishLogin_v2(...args);
+    setTimeout(async () => {
+      await cv2LoadProfiles();
+      await cv2LoadRooms();
+      await cv2LoadUnreadCounts();
+      cv2SubscribeRealtime();
+    }, 1200);
+  };
+}
 
-const _origFinishAdminAccountLogin_chat = finishAdminAccountLogin;
-finishAdminAccountLogin = function(admin) {
-  _origFinishAdminAccountLogin_chat(admin);
-  setTimeout(async () => {
-    await loadChatProfiles();
-    await updateChatUnreadCount();
-    subscribeChatRealtime();
-  }, 1500);
-};
+const _origFinishAdminLogin_v2 = typeof finishAdminAccountLogin === 'function'
+  ? finishAdminAccountLogin : null;
+if (_origFinishAdminLogin_v2) {
+  finishAdminAccountLogin = function(...args) {
+    _origFinishAdminLogin_v2(...args);
+    setTimeout(async () => {
+      await cv2LoadProfiles();
+      await cv2LoadRooms();
+      await cv2LoadUnreadCounts();
+      cv2SubscribeRealtime();
+    }, 1200);
+  };
+}
 
 /* ══════════════════════════════════════════════════════
-   نهاية نظام المحادثة
+   نهاية نظام المحادثة v2.0
 ══════════════════════════════════════════════════════ */
-console.log('[Chat System] ✅ Admin Chat System loaded');
+console.log('[Chat V2] ✅ نظام المحادثة المتكامل جاهز');
+
+
+
 
 
 
