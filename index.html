@@ -27037,54 +27037,36 @@ let _chatPageReady    = false;
     font-size:15px;color:#c9a84c;flex-shrink:0;
   }
 
-  /* ══ رسالة صوتية — واتساب ══ */
+  /* ══ رسالة صوتية — واتساب (النسخة المطابقة) ══ */
   .cb-voice {
-    display:flex;align-items:center;gap:10px;
-    min-width:240px;max-width:290px;
-    padding:2px;
-  }
-  .cb-voice-avatar-wrap {
-    position:relative;flex-shrink:0;
-  }
-  .cb-voice-avatar-wrap .cb-avatar, 
-  .cb-voice-avatar-wrap .cb-avatar-ph {
-    width:42px !important; height:42px !important;
-    font-size:16px !important; border-width:1px !important;
-  }
-  .cb-voice-mic {
-    position:absolute;bottom:-2px;right:-4px;
-    font-size:11px;background:inherit;
-    border-radius:50%;padding:2px;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;align-items:center;gap:12px;
+    min-width:260px;max-width:310px;
+    padding:4px 2px;
   }
   .cb-voice-play {
     width:36px;height:36px;border-radius:50%;
     border:none;cursor:pointer;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    font-size:14px;transition:all .2s;
+    font-size:15px;transition:transform .2s;
   }
   .cb.mine   .cb-voice-play { background:rgba(0,0,0,.2);color:#0a0a0a; }
   .cb.theirs .cb-voice-play { background:rgba(201,168,76,.15);color:#c9a84c; }
-  .cb-voice-play:hover{transform:scale(1.08)}
+  .cb-voice-play:hover { transform:scale(1.08); }
 
-  .cb-voice-body { flex:1;min-width:0; }
+  .cb-voice-body { flex:1;min-width:0;display:flex;flex-direction:column;gap:4px; }
 
   /* شريط التقدم */
   .cb-voice-bar {
-    width:100%;height:28px;
-    display:flex;align-items:center;
+    width:100%;height:28px;display:flex;align-items:center;
     cursor:pointer;position:relative;
-    gap:0;
   }
   .cb-voice-waves {
     display:flex;align-items:center;gap:2px;
     flex:1;height:28px;overflow:hidden;
   }
   .cb-voice-wave-bar {
-    flex-shrink:0;
-    width:3px;border-radius:3px;
-    transition:background .15s;
-    cursor:pointer;
+    flex-shrink:0;width:3px;border-radius:3px;
+    transition:background .15s;cursor:pointer;
   }
   .cb.mine   .cb-voice-wave-bar.played { background:rgba(0,0,0,.55); }
   .cb.mine   .cb-voice-wave-bar.unplayed { background:rgba(0,0,0,.22); }
@@ -27092,29 +27074,52 @@ let _chatPageReady    = false;
   .cb.theirs .cb-voice-wave-bar.unplayed { background:rgba(255,255,255,.2); }
 
   .cb-voice-info {
-    display:flex;align-items:center;
-    justify-content:space-between;
-    margin-top:2px;
+    display:flex;align-items:center;justify-content:space-between;
   }
   .cb-voice-dur {
-    font-size:10px;font-weight:700;
-    font-family:'Montserrat',sans-serif;
+    font-size:11px;font-weight:700;font-family:'Montserrat',sans-serif;
   }
   .cb.mine   .cb-voice-dur { color:rgba(0,0,0,.55); }
   .cb.theirs .cb-voice-dur { color:rgba(255,255,255,.45); }
 
-  /* أزرار السرعة */
-  .cb-voice-speed {
-    font-size:9px;font-weight:900;
-    font-family:'Montserrat',sans-serif;
-    padding:2px 6px;border-radius:20px;
-    cursor:pointer;border:none;
-    transition:all .2s;letter-spacing:.5px;
+  /* ── قسم الصورة وسرعة الصوت (اليمين) ── */
+  .cb-voice-right {
+    position:relative;width:44px;height:44px;flex-shrink:0;
   }
-  .cb.mine   .cb-voice-speed { background:rgba(0,0,0,.15);color:rgba(0,0,0,.6); }
-  .cb.mine   .cb-voice-speed:hover { background:rgba(0,0,0,.25); }
-  .cb.theirs .cb-voice-speed { background:rgba(255,255,255,.1);color:rgba(255,255,255,.6); }
-  .cb.theirs .cb-voice-speed:hover { background:rgba(201,168,76,.2);color:#c9a84c; }
+  .cb-voice-avatar-wrap {
+    width:100%;height:100%;position:relative;
+    transition:opacity .25s, transform .25s;
+  }
+  .cb-voice-avatar-wrap .cb-avatar, 
+  .cb-voice-avatar-wrap .cb-avatar-ph {
+    width:44px !important; height:44px !important;
+    font-size:16px !important; border-width:1px !important;
+  }
+  .cb-voice-mic {
+    position:absolute;bottom:-4px;right:-4px;
+    font-size:11px;border-radius:50%;padding:3px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  
+  /* زر السرعة (مخفي افتراضياً) */
+  .cb-voice-speed {
+    position:absolute;inset:0;border-radius:50%;border:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;font-weight:900;font-family:'Montserrat',sans-serif;
+    cursor:pointer;opacity:0;transform:scale(0.8);pointer-events:none;
+    transition:opacity .25s, transform .25s;
+  }
+  .cb.mine   .cb-voice-speed { background:rgba(0,0,0,.15);color:rgba(0,0,0,.7); }
+  .cb.theirs .cb-voice-speed { background:rgba(255,255,255,.15);color:rgba(255,255,255,.9); }
+
+  /* تأثير التبديل عند التشغيل */
+  .cb-voice-right.playing .cb-voice-avatar-wrap {
+    opacity:0;transform:scale(0.8);pointer-events:none;
+  }
+  .cb-voice-right.playing .cb-voice-speed {
+    opacity:1;transform:scale(1);pointer-events:auto;
+  }
+
 
 
   /* ── أفاتار ── */
@@ -27426,11 +27431,14 @@ function fmtTime(dateStr) {
 }
 
 
+/* ── تنسيق الوقت (دقائق:ثواني) ── */
 function fmtDuration(sec) {
-  if (!sec || sec<1) return '0:00';
-  const m=Math.floor(sec/60), s=sec%60;
-  return m+':'+(s<10?'0':'')+s;
+  if (!sec || isNaN(sec) || !isFinite(sec)) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ':' + (s < 10 ? '0' + s : s);
 }
+
 
 function getFileIcon(name) {
   if (!name) return 'fa-file';
@@ -28201,62 +28209,64 @@ function buildMsgBubble(msg, idx) {
 
 
 
-/* ── مشغّل الصوت بتصميم واتساب (سريع + صورة + ميكروفون مقروء) ── */
+/* ── مشغّل الصوت بتصميم واتساب (تبديل الصورة بالسرعة) ── */
 function buildVoicePlayer(msg, isMine) {
   const url = msg.media_url;
   const durSec = msg.duration_sec || 0;
   const msgId = 'voice_' + msg.id;
-  const durStr = fmtDuration(durSec);
   
-  /* أشرطة الموجة */
+  /* حل مشكلة Infinity:NaN مبدئياً */
+  const isValidDur = durSec && !isNaN(durSec) && isFinite(durSec);
+  const durStr = isValidDur ? fmtDuration(durSec) : '0:00';
+  
   const bars = generateWaveBars(32);
   const barsHtml = bars.map((h,i)=>
     `<div class="cb-voice-wave-bar unplayed"
-      data-idx="${i}"
-      style="height:${h}px;min-height:4px;"
+      data-idx="${i}" style="height:${h}px;min-height:4px;"
       onclick="seekVoice('${msgId}',${i/bars.length})"></div>`
   ).join('');
 
-  /* الأفاتار الداخلي */
-  const avatarHtml = buildAvatar(msg.from_user, 42);
-  
-  /* لون الميكروفون: أزرق إذا قُرئت، رمادي إذا لم تُقرأ */
+  const avatarHtml = buildAvatar(msg.from_user, 44);
   const micColor = msg.is_read ? '#3b82f6' : (isMine ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)');
-  const micBg    = isMine ? '#d4a843' : '#2a2a2a'; // لون خلفية المايك لتندمج مع الفقاعة
+  const micBg    = isMine ? '#d4a843' : '#2a2a2a'; 
 
   return `
   <div class="cb-voice" id="${msgId}">
     
-    <!-- الصورة الشخصية والميكروفون -->
-    <div class="cb-voice-avatar-wrap">
-      ${avatarHtml}
-      <div class="cb-voice-mic" style="background:${micBg};">
-        <i class="fas fa-microphone" style="color:${micColor};"></i>
-      </div>
-    </div>
-
-    <!-- زر التشغيل -->
+    <!-- زر التشغيل (يسار) -->
     <button class="cb-voice-play" onclick="toggleVoice('${msgId}')">
       <i class="fas fa-play" id="playIcon_${msgId}"></i>
     </button>
 
-    <!-- جسم المشغل -->
+    <!-- جسم المشغل والموجات (منتصف) -->
     <div class="cb-voice-body">
       <div class="cb-voice-bar">
         <div class="cb-voice-waves" id="waves_${msgId}">${barsHtml}</div>
       </div>
       <div class="cb-voice-info">
         <span class="cb-voice-dur" id="voiceDur_${msgId}">${durStr}</span>
-        <button class="cb-voice-speed" id="speedBtn_${msgId}"
-          onclick="cycleVoiceSpeed('${msgId}')">1×</button>
       </div>
     </div>
     
-    <!-- preload="auto" يضمن تحميل الصوت فوراً لتشغيل سريع جداً -->
+    <!-- الصورة وسرعة الصوت (يمين) -->
+    <div class="cb-voice-right" id="voiceRight_${msgId}">
+      <div class="cb-voice-avatar-wrap">
+        ${avatarHtml}
+        <div class="cb-voice-mic" style="background:${micBg};">
+          <i class="fas fa-microphone" id="micIcon_${msg.id}" style="color:${micColor};"></i>
+        </div>
+      </div>
+      <button class="cb-voice-speed" id="speedBtn_${msgId}" onclick="cycleVoiceSpeed('${msgId}')">1×</button>
+    </div>
+
+    <!-- إضافة أحداث onplay و onpause للتبديل التلقائي -->
     <audio id="aud_${msgId}" src="${url}" preload="auto"
       ontimeupdate="updateVoiceProgress('${msgId}',this)"
       onended="onVoiceEnded('${msgId}',this)"
-      onloadedmetadata="onVoiceMeta('${msgId}',this)"></audio>
+      onloadedmetadata="onVoiceMeta('${msgId}',this)"
+      onplay="document.getElementById('voiceRight_${msgId}').classList.add('playing')"
+      onpause="document.getElementById('voiceRight_${msgId}').classList.remove('playing')">
+    </audio>
   </div>`;
 }
 
@@ -28356,10 +28366,15 @@ function onVoiceEnded(msgId, aud) {
   if(durEl&&dur&&!isNaN(dur)) durEl.textContent=fmtDuration(Math.ceil(dur));
 }
 
+/* ── تحديث مدة الصوت بعد تحميله ── */
 function onVoiceMeta(msgId, aud) {
-  const durEl=document.getElementById('voiceDur_'+msgId);
-  if(durEl&&aud.duration&&!isNaN(aud.duration))
-    durEl.textContent=fmtDuration(Math.ceil(aud.duration));
+  // التحقق من أن المدة رقم صحيح وليست Infinity
+  if (aud.duration && !isNaN(aud.duration) && isFinite(aud.duration)) {
+    const durEl = document.getElementById('voiceDur_' + msgId);
+    if (durEl) {
+      durEl.textContent = fmtDuration(aud.duration);
+    }
+  }
 }
 
 function seekVoice(msgId, pct) {
