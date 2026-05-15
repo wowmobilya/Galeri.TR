@@ -30445,430 +30445,366 @@ console.log('[Chat Btn] ✅ مراقب الزر مفعّل');
 
 
 
-/* ══════════════════════════════════════════════════════════════
-   ★ WHATSAPP FEATURES v4.0 — ميزات واتساب الكاملة
+
+
+  /* ══════════════════════════════════════════════════════════════
+   ★ CHAT SYSTEM v4.0 — واتساب كامل
+   • Reply   • Reactions   • Typing   • Scroll Down
+   • Search  • Swipe Reply • Forward  • Msg Info
+   • Online Status
 ══════════════════════════════════════════════════════════════ */
 
-/* ─── CSS الميزات الجديدة ─── */
-(function injectWAFeaturesCSS() {
-  if (document.getElementById('waFeaturesCSS')) return;
+/* ─── ثوابت ─── */
+const TYPING_TABLE  = 'typing_status';
+const READS_TABLE   = 'message_reads';
+const TYPING_EXPIRE = 4000; // ms
+
+/* ─── حالة ─── */
+let _replyingTo        = null;   // { id, from_user, message, media_type }
+let _typingTimer       = null;
+let _typingChannel     = null;
+let _typingUsers       = {};     // { roomId: { username: timestamp } }
+let _typingDisplayTimer = null;
+let _searchActive      = false;
+let _searchResults     = [];
+let _searchIdx         = 0;
+let _newMsgCount       = 0;
+let _isAtBottom        = true;
+let _swipeStartX       = 0;
+let _swipeStartY       = 0;
+let _swipingMsgEl      = null;
+let _swipeTriggered    = false;
+let _onlineChannel     = null;
+let _onlineUsers       = {};     // { username: lastSeen }
+let _reactionsChannel  = null;
+
+/* ══════════════════════════════════════════════════════════════
+   CSS الإضافي
+══════════════════════════════════════════════════════════════ */
+(function injectV4CSS() {
+  if (document.getElementById('chatV4CSS')) return;
   const s = document.createElement('style');
-  s.id = 'waFeaturesCSS';
+  s.id = 'chatV4CSS';
   s.textContent = `
 
-    /* ══ الرد على رسالة ══ */
-    .cb-reply-bar {
-      background: rgba(0,0,0,0.18);
-      border-left: 3px solid #c9a84c;
-      border-radius: 8px;
-      padding: 5px 9px;
-      margin-bottom: 5px;
-      cursor: pointer;
-      transition: background .18s;
-    }
-    .cb.mine .cb-reply-bar {
-      border-left-color: rgba(0,0,0,0.35);
-      background: rgba(0,0,0,0.15);
-    }
-    .cb-reply-bar:hover { background: rgba(0,0,0,0.28); }
-    .cb-reply-sender {
-      font-size: 10px;
-      font-weight: 900;
-      margin-bottom: 2px;
-      font-family: 'Montserrat', sans-serif;
-    }
-    .cb-reply-text {
-      font-size: 11px;
-      opacity: 0.65;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 220px;
-      font-family: 'Montserrat', sans-serif;
-    }
+  /* ── شريط الرد ── */
+  #chatReplyBar {
+    display:none;
+    background:rgba(201,168,76,.07);
+    border-top:1px solid rgba(201,168,76,.18);
+    border-left:3px solid #c9a84c;
+    padding:8px 13px;
+    flex-shrink:0;
+    align-items:center;
+    gap:9px;
+    animation:replyBarIn .2s ease forwards;
+  }
+  #chatReplyBar.visible { display:flex; }
+  @keyframes replyBarIn {
+    from { opacity:0; transform:translateY(6px); }
+    to   { opacity:1; transform:translateY(0);   }
+  }
+  .reply-preview-img {
+    width:36px;height:36px;border-radius:6px;
+    object-fit:cover;flex-shrink:0;
+  }
 
-    /* ══ شريط الرد في الإدخال ══ */
-    #chatReplyBar {
-      display: none;
-      background: rgba(201,168,76,0.06);
-      border-top: 1px solid rgba(201,168,76,0.18);
-      padding: 8px 13px;
-      flex-shrink: 0;
-      align-items: center;
-      gap: 10px;
-    }
-    #chatReplyBar.visible { display: flex; }
-    .reply-bar-line {
-      width: 3px;
-      height: 36px;
-      border-radius: 3px;
-      background: #c9a84c;
-      flex-shrink: 0;
-    }
-    .reply-bar-content { flex: 1; min-width: 0; }
-    .reply-bar-sender {
-      font-size: 10px;
-      font-weight: 900;
-      color: #c9a84c;
-      font-family: 'Montserrat', sans-serif;
-    }
-    .reply-bar-text {
-      font-size: 11px;
-      color: rgba(255,255,255,0.45);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-family: 'Montserrat', sans-serif;
-    }
+  /* ── معاينة الرد داخل الفقاعة ── */
+  .cb-reply-preview {
+    border-radius:9px;
+    padding:7px 10px;
+    margin-bottom:5px;
+    cursor:pointer;
+    transition:opacity .18s;
+    position:relative;
+    overflow:hidden;
+    border-left:3px solid;
+  }
+  .cb-reply-preview::before {
+    content:'';
+    position:absolute;inset:0;
+    background:rgba(0,0,0,.12);
+    border-radius:9px;
+  }
+  .cb.mine   .cb-reply-preview { background:rgba(0,0,0,.15); border-color:rgba(0,0,0,.35); }
+  .cb.theirs .cb-reply-preview { background:rgba(255,255,255,.07); border-color:#c9a84c; }
+  .cb-reply-preview:hover { opacity:.8; }
+  .cb-reply-name {
+    font-size:10px;font-weight:900;margin-bottom:2px;
+    font-family:'Montserrat',sans-serif;
+  }
+  .cb.mine   .cb-reply-name { color:rgba(0,0,0,.6); }
+  .cb.theirs .cb-reply-name { color:#c9a84c; }
+  .cb-reply-text {
+    font-size:11px;opacity:.65;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    font-family:'Montserrat',sans-serif;
+  }
+  .cb-reply-img {
+    width:32px;height:32px;border-radius:5px;
+    object-fit:cover;flex-shrink:0;
+    position:absolute;right:8px;top:50%;transform:translateY(-50%);
+  }
 
-    /* ══ تفاعلات Emoji ══ */
-    .cb-reactions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      margin-top: 4px;
-    }
-    .cb-reaction-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 50px;
-      padding: 2px 8px;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all .18s;
-      font-family: 'Montserrat', sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .cb-reaction-pill:hover {
-      background: rgba(201,168,76,0.15);
-      border-color: rgba(201,168,76,0.35);
-      transform: scale(1.08);
-    }
-    .cb-reaction-pill.mine {
-      background: rgba(201,168,76,0.12);
-      border-color: rgba(201,168,76,0.3);
-    }
-    .cb-reaction-count {
-      font-size: 10px;
-      font-weight: 700;
-      color: rgba(255,255,255,0.55);
-    }
+  /* ── التفاعلات ── */
+  .cb-reactions {
+    display:flex;flex-wrap:wrap;gap:3px;
+    margin-top:4px;
+  }
+  .cb-reaction-pill {
+    display:inline-flex;align-items:center;gap:3px;
+    padding:2px 7px;border-radius:50px;
+    font-size:12px;cursor:pointer;
+    transition:transform .18s, background .18s;
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.07);
+    font-family:'Montserrat',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cb-reaction-pill:hover { transform:scale(1.12); }
+  .cb-reaction-pill.mine-reacted {
+    background:rgba(201,168,76,.18);
+    border-color:rgba(201,168,76,.4);
+  }
+  .cb-reaction-count {
+    font-size:10px;font-weight:700;
+    color:rgba(255,255,255,.6);
+  }
 
-    /* ══ منتقي الإيموجي ══ */
-    #emojiPicker {
-      position: fixed;
-      z-index: 99999;
-      background: rgba(14,14,14,0.97);
-      border: 1px solid rgba(201,168,76,0.22);
-      border-radius: 50px;
-      padding: 6px 10px;
-      display: flex;
-      gap: 4px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.7);
-      backdrop-filter: blur(20px);
-      animation: emojiPickerIn .2s cubic-bezier(.34,1.56,.64,1) forwards;
-    }
-    @keyframes emojiPickerIn {
-      from { opacity:0; transform:scale(0.7) translateY(8px); }
-      to   { opacity:1; transform:scale(1)   translateY(0);   }
-    }
-    .emoji-pick-btn {
-      font-size: 22px;
-      cursor: pointer;
-      padding: 4px 5px;
-      border-radius: 8px;
-      transition: all .15s;
-      -webkit-tap-highlight-color: transparent;
-      line-height: 1;
-    }
-    .emoji-pick-btn:hover {
-      background: rgba(255,255,255,0.1);
-      transform: scale(1.25);
-    }
+  /* ── نافذة اختيار التفاعل ── */
+  .reactions-picker {
+    position:fixed;z-index:10001;
+    background:rgba(14,14,14,.97);
+    border:1px solid rgba(201,168,76,.22);
+    border-radius:50px;
+    padding:8px 14px;
+    display:flex;gap:6px;
+    box-shadow:0 16px 48px rgba(0,0,0,.7);
+    backdrop-filter:blur(20px);
+    animation:reactPickerIn .2s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes reactPickerIn {
+    from { opacity:0; transform:scale(.7) translateY(8px); }
+    to   { opacity:1; transform:scale(1)  translateY(0);   }
+  }
+  .react-emoji-btn {
+    font-size:22px;cursor:pointer;
+    transition:transform .18s;
+    -webkit-tap-highlight-color:transparent;
+    border:none;background:none;padding:2px;
+    line-height:1;
+  }
+  .react-emoji-btn:hover { transform:scale(1.3); }
 
-    /* ══ مؤشر الكتابة ══ */
-    #typingIndicator {
-      display: none;
-      padding: 4px 14px 6px;
-      flex-shrink: 0;
-    }
-    #typingIndicator.visible { display: flex; }
-    .typing-dots {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      background: rgba(255,255,255,0.07);
-      border-radius: 18px;
-      padding: 8px 14px;
-      width: fit-content;
-    }
-    .typing-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.4);
-      animation: typingBounce 1.2s infinite;
-    }
-    .typing-dot:nth-child(2) { animation-delay: .2s; }
-    .typing-dot:nth-child(3) { animation-delay: .4s; }
-    @keyframes typingBounce {
-      0%,60%,100% { transform: translateY(0); opacity: .4; }
-      30% { transform: translateY(-6px); opacity: 1; }
-    }
-    .typing-name {
-      font-size: 10px;
-      color: rgba(255,255,255,0.35);
-      font-family: 'Montserrat', sans-serif;
-      margin-left: 8px;
-      font-weight: 600;
-    }
+  /* ── مؤشر الكتابة ── */
+  #typingIndicator {
+    display:none;
+    padding:6px 16px;
+    align-items:center;gap:8px;
+    flex-shrink:0;
+    animation:typingIn .25s ease forwards;
+  }
+  #typingIndicator.visible { display:flex; }
+  @keyframes typingIn {
+    from { opacity:0; transform:translateY(4px); }
+    to   { opacity:1; transform:translateY(0);   }
+  }
+  .typing-dots {
+    display:flex;gap:4px;align-items:center;
+  }
+  .typing-dot {
+    width:7px;height:7px;border-radius:50%;
+    background:#c9a84c;
+    animation:typingBounce 1.2s ease infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay:.2s; }
+  .typing-dot:nth-child(3) { animation-delay:.4s; }
+  @keyframes typingBounce {
+    0%,60%,100% { transform:translateY(0);   opacity:.4; }
+    30%         { transform:translateY(-6px); opacity:1;  }
+  }
+  .typing-text {
+    font-size:11px;color:rgba(255,255,255,.35);
+    font-family:'Montserrat',sans-serif;
+    font-style:italic;
+  }
 
-    /* ══ زر التمرير للأسفل ══ */
-    #scrollDownBtn {
-      position: absolute;
-      bottom: 70px;
-      right: 14px;
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      background: rgba(14,14,14,0.95);
-      border: 1px solid rgba(201,168,76,0.3);
-      color: #c9a84c;
-      font-size: 16px;
-      cursor: pointer;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-      transition: all .22s;
-      z-index: 10;
-      font-family: 'Montserrat', sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
-    #scrollDownBtn.visible { display: flex; }
-    #scrollDownBtn:hover {
-      background: rgba(201,168,76,0.15);
-      transform: scale(1.08);
-    }
-    #scrollDownBadge {
-      position: absolute;
-      top: -6px;
-      right: -4px;
-      min-width: 18px;
-      height: 18px;
-      background: #ef4444;
-      color: #fff;
-      font-size: 10px;
-      font-weight: 900;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 3px;
-      border: 2px solid rgba(14,14,14,0.95);
-      font-family: 'Montserrat', sans-serif;
-    }
+  /* ── زر التمرير للأسفل ── */
+  #scrollDownBtn {
+    position:absolute;
+    bottom:14px;right:14px;
+    width:42px;height:42px;
+    border-radius:50%;
+    background:rgba(14,14,14,.95);
+    border:1px solid rgba(201,168,76,.3);
+    color:#c9a84c;font-size:16px;
+    cursor:pointer;
+    display:none;
+    align-items:center;justify-content:center;
+    box-shadow:0 4px 18px rgba(0,0,0,.5);
+    transition:all .22s;
+    z-index:50;
+    font-family:'Montserrat',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  #scrollDownBtn.visible { display:flex; }
+  #scrollDownBtn:hover { transform:scale(1.08); background:rgba(201,168,76,.15); }
+  #scrollDownBadge {
+    position:absolute;top:-7px;right:-7px;
+    min-width:18px;height:18px;border-radius:50%;
+    background:#ef4444;color:#fff;
+    font-size:9px;font-weight:900;
+    display:flex;align-items:center;justify-content:center;
+    padding:0 3px;
+    border:2px solid rgba(14,14,14,.95);
+    font-family:'Montserrat',sans-serif;
+  }
 
-    /* ══ رسالة مثبّتة ══ */
-    #pinnedMsgBar {
-      display: none;
-      background: rgba(201,168,76,0.06);
-      border-bottom: 1px solid rgba(201,168,76,0.15);
-      padding: 8px 14px;
-      flex-shrink: 0;
-      align-items: center;
-      gap: 10px;
-      cursor: pointer;
-      transition: background .18s;
-    }
-    #pinnedMsgBar.visible { display: flex; }
-    #pinnedMsgBar:hover { background: rgba(201,168,76,0.1); }
-    .pin-icon {
-      color: #c9a84c;
-      font-size: 12px;
-      flex-shrink: 0;
-    }
-    .pin-text {
-      flex: 1;
-      min-width: 0;
-    }
-    .pin-label {
-      font-size: 8px;
-      letter-spacing: 2px;
-      color: rgba(201,168,76,0.6);
-      text-transform: uppercase;
-      font-weight: 700;
-      font-family: 'Montserrat', sans-serif;
-    }
-    .pin-content {
-      font-size: 11px;
-      color: rgba(255,255,255,0.45);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      font-family: 'Montserrat', sans-serif;
-    }
+  /* ── شريط البحث ── */
+  #chatSearchBar {
+    display:none;
+    flex-shrink:0;
+    background:rgba(10,10,10,.97);
+    border-bottom:1px solid rgba(255,255,255,.07);
+    padding:8px 12px;
+    align-items:center;gap:8px;
+    animation:searchBarIn .22s ease forwards;
+  }
+  #chatSearchBar.visible { display:flex; }
+  @keyframes searchBarIn {
+    from { opacity:0; transform:translateY(-8px); }
+    to   { opacity:1; transform:translateY(0);    }
+  }
+  #chatSearchInput {
+    flex:1;background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:20px;padding:8px 14px;
+    color:#fff;font-family:'Montserrat',sans-serif;
+    font-size:12px;outline:none;
+    -webkit-user-select:text;user-select:text;
+    transition:border-color .22s;
+  }
+  #chatSearchInput:focus { border-color:rgba(201,168,76,.5); }
+  #chatSearchInput::placeholder { color:rgba(255,255,255,.22); }
+  .search-nav-btn {
+    width:32px;height:32px;border-radius:8px;
+    border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.5);font-size:12px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all .18s;font-family:'Montserrat',sans-serif;
+  }
+  .search-nav-btn:hover { background:rgba(201,168,76,.1); color:#c9a84c; }
+  .search-nav-btn:disabled { opacity:.3; cursor:not-allowed; }
+  .msg-search-highlight {
+    background:rgba(201,168,76,.35);
+    border-radius:3px;padding:0 2px;
+  }
+  .msg-search-active {
+    outline:2px solid #c9a84c;
+    outline-offset:3px;
+    border-radius:14px;
+  }
 
-    /* ══ شريط البحث في المحادثة ══ */
-    #chatSearchBar {
-      display: none;
-      background: rgba(10,10,10,0.97);
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      padding: 8px 12px;
-      flex-shrink: 0;
-      align-items: center;
-      gap: 8px;
-    }
-    #chatSearchBar.visible { display: flex; }
-    #chatSearchInput {
-      flex: 1;
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px;
-      padding: 8px 14px;
-      color: #fff;
-      font-family: 'Montserrat', sans-serif;
-      font-size: 12px;
-      outline: none;
-      -webkit-user-select: text;
-      user-select: text;
-    }
-    #chatSearchInput:focus {
-      border-color: rgba(201,168,76,0.5);
-    }
-    .search-nav-btn {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: none;
-      background: rgba(255,255,255,0.07);
-      color: rgba(255,255,255,0.5);
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all .18s;
-      font-family: 'Montserrat', sans-serif;
-    }
-    .search-nav-btn:hover {
-      background: rgba(201,168,76,0.12);
-      color: #c9a84c;
-    }
-    .search-highlight {
-      background: rgba(201,168,76,0.35);
-      border-radius: 3px;
-      padding: 0 2px;
-    }
-    .search-highlight.active {
-      background: rgba(201,168,76,0.7);
-    }
+  /* ── Swipe للرد ── */
+  .cb-wrap {
+    touch-action:pan-y;
+    user-select:none;
+    -webkit-user-select:none;
+  }
+  .swipe-reply-icon {
+    position:absolute;
+    top:50%;transform:translateY(-50%);
+    width:32px;height:32px;border-radius:50%;
+    background:rgba(201,168,76,.2);
+    border:1.5px solid rgba(201,168,76,.45);
+    display:flex;align-items:center;justify-content:center;
+    font-size:13px;color:#c9a84c;
+    opacity:0;transition:opacity .18s;
+    pointer-events:none;
+    z-index:5;
+  }
+  .cb-wrap.mine   .swipe-reply-icon { right:-44px; }
+  .cb-wrap.theirs .swipe-reply-icon { left:-44px;  }
+  .cb-wrap.swipe-show .swipe-reply-icon { opacity:1; }
 
-    /* ══ سحب للرد (Swipe to Reply) ══ */
-    .cb-wrap {
-      position: relative;
-    }
-    .swipe-reply-icon {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: rgba(201,168,76,0.15);
-      border: 1px solid rgba(201,168,76,0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #c9a84c;
-      font-size: 13px;
-      opacity: 0;
-      transition: opacity .18s;
-      pointer-events: none;
-    }
-    .cb-wrap.mine .swipe-reply-icon { left: -44px; }
-    .cb-wrap.theirs .swipe-reply-icon { right: -44px; }
+  /* ── إعادة التوجيه ── */
+  .cb-forwarded-label {
+    font-size:9px;color:rgba(255,255,255,.35);
+    display:flex;align-items:center;gap:4px;
+    margin-bottom:4px;
+    font-family:'Montserrat',sans-serif;
+    font-style:italic;
+  }
+  .cb.mine .cb-forwarded-label { color:rgba(0,0,0,.45); }
 
-    /* ══ تأثير الرسالة المُشار إليها ══ */
-    @keyframes msgHighlight {
-      0%   { background: rgba(201,168,76,0.25); }
-      100% { background: transparent; }
-    }
-    .msg-highlighted {
-      animation: msgHighlight 1.5s ease forwards;
-      border-radius: 8px;
-    }
+  /* ── نافذة إعادة التوجيه ── */
+  #forwardModal {
+    position:fixed;inset:0;z-index:10002;
+    display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.88);backdrop-filter:blur(18px);
+    padding:16px;
+  }
+  #forwardModal.active { display:flex; }
 
-    /* ══ معلومات القراءة التفصيلية ══ */
-    #msgInfoModal {
-      position: fixed;
-      inset: 0;
-      z-index: 99999;
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(16px);
-    }
-    #msgInfoModal.active { display: flex; }
-    .msg-info-sheet {
-      width: 100%;
-      max-width: 480px;
-      background: linear-gradient(145deg,#0f0f0f,#161616);
-      border: 1px solid rgba(201,168,76,0.2);
-      border-radius: 24px 24px 0 0;
-      max-height: 70vh;
-      overflow-y: auto;
-      animation: sheetUp .35s cubic-bezier(.34,1.56,.64,1) forwards;
-    }
+  /* ── نافذة معلومات الرسالة ── */
+  #msgInfoModal {
+    position:fixed;inset:0;z-index:10002;
+    display:none;align-items:flex-end;justify-content:center;
+    background:rgba(0,0,0,.85);backdrop-filter:blur(16px);
+  }
+  #msgInfoModal.active { display:flex; }
+  .msg-info-sheet {
+    width:100%;max-width:480px;
+    background:linear-gradient(145deg,#0f0f0f,#161616);
+    border:1px solid rgba(201,168,76,.2);
+    border-radius:24px 24px 0 0;
+    max-height:80vh;overflow-y:auto;
+    animation:sheetUp .35s cubic-bezier(.34,1.56,.64,1) forwards;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
 
-    /* ══ حالة الاتصال ══ */
-    .online-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #4ade80;
-      box-shadow: 0 0 6px rgba(74,222,128,0.6);
-      flex-shrink: 0;
-    }
-    .offline-dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #6b7280;
-      flex-shrink: 0;
-    }
+  /* ── حالة الاتصال ── */
+  .online-dot {
+    width:9px;height:9px;border-radius:50%;
+    background:#4ade80;
+    box-shadow:0 0 6px rgba(74,222,128,.6);
+    animation:onlinePulse 2s infinite;
+    flex-shrink:0;
+  }
+  .offline-dot {
+    width:9px;height:9px;border-radius:50%;
+    background:#6b7280;flex-shrink:0;
+  }
+  @keyframes onlinePulse {
+    0%,100%{ box-shadow:0 0 0 0 rgba(74,222,128,.4); }
+    50%    { box-shadow:0 0 0 5px rgba(74,222,128,0); }
+  }
 
-    /* ══ إعادة التوجيه ══ */
-    .cb-forwarded {
-      font-size: 10px;
-      color: rgba(255,255,255,0.35);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin-bottom: 4px;
-      font-family: 'Montserrat', sans-serif;
-      font-style: italic;
-    }
-    .cb.mine .cb-forwarded { color: rgba(0,0,0,0.35); }
+  /* ── زر البحث في الهيدر ── */
+  .chat-header-search-btn {
+    width:34px;height:34px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:9px;color:rgba(255,255,255,.45);
+    font-size:14px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .2s;font-family:'Montserrat',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .chat-header-search-btn:hover {
+    background:rgba(201,168,76,.1);color:#c9a84c;
+  }
 
-    /* ══ حالة الإرسال ══ */
-    .cb-status-sending {
-      opacity: 0.6;
-    }
-    .cb-status-sent {
-      opacity: 1;
-    }
-
-    /* ══ صوت الإرسال ══ */
-    @keyframes sendWave {
-      0%   { transform: scale(1); }
-      50%  { transform: scale(1.15); }
-      100% { transform: scale(1); }
-    }
+  /* ── تمييز رسالة الرد ── */
+  @keyframes replyHighlight {
+    0%   { background:rgba(201,168,76,.25); }
+    100% { background:transparent; }
+  }
+  .reply-highlight-anim {
+    animation:replyHighlight 1.2s ease forwards;
+    border-radius:14px;
+  }
 
   `;
   document.head.appendChild(s);
@@ -30876,799 +30812,806 @@ console.log('[Chat Btn] ✅ مراقب الزر مفعّل');
 
 
 /* ══════════════════════════════════════════════════════════════
-   المتغيرات العامة الجديدة
-══════════════════════════════════════════════════════════════ */
-let _replyToMsg       = null;   // الرسالة المراد الرد عليها
-let _pinnedMsgId      = null;   // الرسالة المثبّتة
-let _typingTimer      = null;   // مؤقت مؤشر الكتابة
-let _typingChannel    = null;   // قناة Realtime للكتابة
-let _isTyping         = false;  // هل المستخدم يكتب؟
-let _searchResults    = [];     // نتائج البحث
-let _searchIdx        = 0;      // مؤشر النتيجة الحالية
-let _msgReactions     = {};     // { msgId: { emoji: [username,...] } }
-let _unreadBelowCount = 0;      // عدد الرسائل غير المقروءة أسفل الشاشة
-let _touchStartX      = 0;      // لسحب الرد
-let _touchStartY      = 0;
-let _swipeTarget      = null;
-
-/* الإيموجيات المتاحة للتفاعل */
-const REACTION_EMOJIS = ['❤️','😂','😮','😢','👍','🙏'];
-
-
-/* ══════════════════════════════════════════════════════════════
-   1. ردود الرسائل (Reply)
+   1. REPLY — الرد على الرسائل
 ══════════════════════════════════════════════════════════════ */
 
-/* ── بدء الرد على رسالة ── */
-function startReply(msgId) {
-  document.getElementById('chatCtxMenu')?.remove();
-  const msg = _chatMessages.find(m => m.id === msgId);
-  if (!msg) return;
+function setReplyTo(msg) {
+  _replyingTo = msg;
 
-  _replyToMsg = msg;
+  const bar = document.getElementById('chatReplyBar');
+  if (!bar) return;
 
-  /* إظهار شريط الرد */
-  let bar = document.getElementById('chatReplyBar');
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.id = 'chatReplyBar';
-    bar.innerHTML = `
-      <div class="reply-bar-line"></div>
-      <div class="reply-bar-content">
-        <div class="reply-bar-sender" id="replyBarSender"></div>
-        <div class="reply-bar-text"   id="replyBarText"></div>
+  let preview = '';
+  if (msg.media_type === 'image' && msg.media_url) {
+    preview = `<img src="${msg.media_url}" class="reply-preview-img" draggable="false"/>`;
+  } else if (msg.media_type === 'audio') {
+    preview = `<i class="fas fa-microphone" style="color:#c9a84c;font-size:14px;"></i>`;
+  } else if (msg.media_type === 'video') {
+    preview = `<i class="fas fa-video" style="color:#c9a84c;font-size:14px;"></i>`;
+  } else if (msg.media_type === 'file') {
+    preview = `<i class="fas fa-paperclip" style="color:#c9a84c;font-size:14px;"></i>`;
+  }
+
+  const text = msg.media_type === 'text'
+    ? (msg.message || '').substring(0, 60)
+    : msg.media_type === 'image' ? '📷 Fotoğraf'
+    : msg.media_type === 'audio' ? '🎤 Ses mesajı'
+    : msg.media_type === 'video' ? '🎥 Video'
+    : `📎 ${msg.file_name || 'Dosya'}`;
+
+  bar.innerHTML = `
+    <i class="fas fa-reply" style="color:#c9a84c;font-size:13px;flex-shrink:0;"></i>
+    <div style="flex:1;min-width:0;border-left:3px solid #c9a84c;padding-left:9px;">
+      <div style="font-size:10px;font-weight:900;color:#c9a84c;margin-bottom:2px;
+        font-family:'Montserrat',sans-serif;">
+        ${escHtml(getDisplayName(msg.from_user))}
       </div>
-      <button onclick="cancelReply()" style="
-        background:none;border:none;color:rgba(255,255,255,.3);
-        font-size:16px;cursor:pointer;padding:4px;transition:color .2s;
-        font-family:'Montserrat',sans-serif;"
-        onmouseover="this.style.color='#ef4444'"
-        onmouseout="this.style.color='rgba(255,255,255,.3)'">
-        <i class="fas fa-times"></i>
-      </button>`;
-
-    /* أدرجه قبل شريط الإدخال */
-    const inputBar = document.getElementById('chatInputBar');
-    if (inputBar) inputBar.before(bar);
-  }
-
-  const senderEl = document.getElementById('replyBarSender');
-  const textEl   = document.getElementById('replyBarText');
-  if (senderEl) senderEl.textContent = getDisplayName(msg.from_user);
-  if (textEl) {
-    if      (msg.media_type === 'image')  textEl.textContent = '📷 Fotoğraf';
-    else if (msg.media_type === 'audio')  textEl.textContent = '🎤 Ses mesajı';
-    else if (msg.media_type === 'video')  textEl.textContent = '🎬 Video';
-    else if (msg.media_type === 'file')   textEl.textContent = `📎 ${msg.file_name || 'Dosya'}`;
-    else textEl.textContent = (msg.message || '').substring(0, 60);
-  }
+      <div style="font-size:11px;color:rgba(255,255,255,.45);
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        font-family:'Montserrat',sans-serif;">
+        ${escHtml(text)}
+      </div>
+    </div>
+    ${preview ? `<div style="flex-shrink:0;">${preview}</div>` : ''}
+    <button onclick="cancelReply()" style="background:none;border:none;
+      color:rgba(255,255,255,.3);font-size:16px;cursor:pointer;
+      padding:4px;transition:color .2s;font-family:'Montserrat',sans-serif;"
+      onmouseover="this.style.color='#ef4444'"
+      onmouseout="this.style.color='rgba(255,255,255,.3)'">
+      <i class="fas fa-times"></i>
+    </button>`;
 
   bar.classList.add('visible');
   document.getElementById('chatTextInput')?.focus();
 }
 
-/* ── إلغاء الرد ── */
 function cancelReply() {
-  _replyToMsg = null;
+  _replyingTo = null;
   const bar = document.getElementById('chatReplyBar');
   if (bar) bar.classList.remove('visible');
 }
 
-/* ── بناء عرض الرد داخل الفقاعة ── */
-function buildReplyPreview(msg) {
+/* ── بناء معاينة الرد داخل الفقاعة ── */
+function buildReplyPreviewHTML(msg) {
   if (!msg.reply_to_id) return '';
-  const original = _chatMessages.find(m => m.id === msg.reply_to_id);
-  if (!original) return '';
 
-  const isMine = msg.from_user === currentUser;
-  let preview = '';
-  if      (original.media_type === 'image')  preview = '📷 Fotoğraf';
-  else if (original.media_type === 'audio')  preview = '🎤 Ses mesajı';
-  else if (original.media_type === 'video')  preview = '🎬 Video';
-  else if (original.media_type === 'file')   preview = `📎 ${original.file_name || 'Dosya'}`;
-  else preview = (original.message || '').substring(0, 55);
+  const replyFrom = msg.reply_from_user || '?';
+  const replyText = msg.reply_preview || '';
+  const replyType = msg.reply_type || 'text';
 
-  const senderColor = isMine
-    ? 'rgba(0,0,0,0.6)'
-    : getUserColor(original.from_user);
+  let icon = '';
+  let displayText = replyText;
+  if (replyType === 'image')  { icon = '📷 '; displayText = 'Fotoğraf'; }
+  if (replyType === 'audio')  { icon = '🎤 '; displayText = 'Ses mesajı'; }
+  if (replyType === 'video')  { icon = '🎥 '; displayText = 'Video'; }
+  if (replyType === 'file')   { icon = '📎 '; displayText = replyText || 'Dosya'; }
 
   return `
-    <div class="cb-reply-bar"
-         onclick="scrollToMsg(${original.id})">
-      <div class="cb-reply-sender" style="color:${senderColor};">
-        ${escHtml(getDisplayName(original.from_user))}
-      </div>
-      <div class="cb-reply-text">${escHtml(preview)}</div>
+    <div class="cb-reply-preview"
+         onclick="scrollToMsg(${msg.reply_to_id})">
+      <div class="cb-reply-name">${escHtml(getDisplayName(replyFrom))}</div>
+      <div class="cb-reply-text">${icon}${escHtml(displayText.substring(0, 55))}</div>
     </div>`;
 }
 
-/* ── التمرير إلى رسالة محددة ── */
 function scrollToMsg(msgId) {
   const el = document.getElementById('msg-' + msgId);
   if (!el) return;
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  el.classList.add('msg-highlighted');
-  setTimeout(() => el.classList.remove('msg-highlighted'), 1600);
+  el.classList.add('reply-highlight-anim');
+  setTimeout(() => el.classList.remove('reply-highlight-anim'), 1300);
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   2. تفاعلات الإيموجي (Reactions)
+   2. REACTIONS — التفاعلات
 ══════════════════════════════════════════════════════════════ */
 
-/* ── إظهار منتقي الإيموجي ── */
-function showEmojiPicker(msgId, triggerEl) {
-  document.getElementById('emojiPicker')?.remove();
-  document.getElementById('chatCtxMenu')?.remove();
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
+function showReactionPicker(msgId, anchorEl) {
+  document.getElementById('reactionPicker')?.remove();
 
   const picker = document.createElement('div');
-  picker.id = 'emojiPicker';
+  picker.id = 'reactionPicker';
+  picker.className = 'reactions-picker';
 
   picker.innerHTML = REACTION_EMOJIS.map(em =>
-    `<div class="emoji-pick-btn"
-          onclick="addReaction(${msgId},'${em}');this.closest('#emojiPicker').remove()">
-       ${em}
-     </div>`
+    `<button class="react-emoji-btn"
+       onclick="toggleReaction(${msgId},'${em}')">${em}</button>`
   ).join('');
-
-  /* تحديد الموضع */
-  const rect = triggerEl?.getBoundingClientRect() || { left: window.innerWidth/2, top: window.innerHeight/2 };
-  picker.style.left = Math.min(rect.left, window.innerWidth - 280) + 'px';
-  picker.style.top  = Math.max(rect.top - 60, 10) + 'px';
 
   document.body.appendChild(picker);
 
+  /* تحديد الموضع */
+  const rect = anchorEl.getBoundingClientRect();
+  const pw = 280, ph = 52;
+  let left = rect.left + rect.width / 2 - pw / 2;
+  let top  = rect.top - ph - 10;
+  left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+  if (top < 8) top = rect.bottom + 10;
+
+  picker.style.left = left + 'px';
+  picker.style.top  = top  + 'px';
+
   setTimeout(() => {
-    document.addEventListener('click', () => document.getElementById('emojiPicker')?.remove(), { once: true });
+    document.addEventListener('click', () =>
+      document.getElementById('reactionPicker')?.remove(),
+    { once: true });
   }, 80);
 }
 
-/* ── إضافة / إزالة تفاعل ── */
-async function addReaction(msgId, emoji) {
-  if (!_msgReactions[msgId]) _msgReactions[msgId] = {};
-  if (!_msgReactions[msgId][emoji]) _msgReactions[msgId][emoji] = [];
+async function toggleReaction(msgId, emoji) {
+  document.getElementById('reactionPicker')?.remove();
+  const sb = await initSupabase(); if (!sb) return;
 
-  const users = _msgReactions[msgId][emoji];
-  const idx   = users.indexOf(currentUser);
+  const { data: msg } = await sb.from(GRP_MSGS)
+    .select('reactions').eq('id', msgId).single();
 
-  if (idx !== -1) {
-    /* إزالة التفاعل */
-    users.splice(idx, 1);
-    if (!users.length) delete _msgReactions[msgId][emoji];
+  const reactions = msg?.reactions || {};
+  if (!reactions[emoji]) reactions[emoji] = [];
+
+  const idx = reactions[emoji].indexOf(currentUser);
+  if (idx === -1) {
+    /* إضافة */
+    reactions[emoji].push(currentUser);
+    /* إزالة من باقي الإيموجيات */
+    REACTION_EMOJIS.forEach(e => {
+      if (e !== emoji && reactions[e]) {
+        const i = reactions[e].indexOf(currentUser);
+        if (i !== -1) reactions[e].splice(i, 1);
+        if (!reactions[e].length) delete reactions[e];
+      }
+    });
   } else {
-    /* إضافة التفاعل */
-    users.push(currentUser);
+    /* إزالة */
+    reactions[emoji].splice(idx, 1);
+    if (!reactions[emoji].length) delete reactions[emoji];
   }
 
-  /* تحديث الواجهة */
-  updateMsgReactions(msgId);
+  await sb.from(GRP_MSGS).update({ reactions }).eq('id', msgId);
 
-  /* حفظ في Supabase عبر حقل JSON في الرسالة */
-  const sb = await initSupabase();
-  if (sb) {
-    const reactions = JSON.stringify(_msgReactions[msgId] || {});
-    /* نستخدم حقل message لتخزين التفاعلات مؤقتاً — يمكن إضافة عمود reactions لاحقاً */
-    /* هنا نرسل عبر قناة Realtime broadcast بدلاً من تعديل الرسالة */
-    await sb.channel('reactions-' + _activeRoomId).send({
-      type    : 'broadcast',
-      event   : 'reaction',
-      payload : { msgId, emoji, username: currentUser, reactions: _msgReactions[msgId] }
-    });
+  /* تحديث محلي فوري */
+  const msgIdx = _chatMessages.findIndex(m => m.id === msgId);
+  if (msgIdx !== -1) {
+    _chatMessages[msgIdx].reactions = reactions;
+    updateReactionDisplay(msgId, reactions);
   }
 }
 
-/* ── تحديث عرض التفاعلات ── */
-function updateMsgReactions(msgId) {
+function buildReactionsHTML(msg) {
+  const reactions = msg.reactions || {};
+  const entries = Object.entries(reactions).filter(([, users]) => users.length > 0);
+  if (!entries.length) return '';
+
+  const pills = entries.map(([emoji, users]) => {
+    const iMine = users.includes(currentUser);
+    return `<div class="cb-reaction-pill ${iMine ? 'mine-reacted' : ''}"
+      onclick="toggleReaction(${msg.id},'${emoji}')"
+      title="${users.map(u => getDisplayName(u)).join(', ')}">
+      ${emoji}
+      ${users.length > 1 ? `<span class="cb-reaction-count">${users.length}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  return `<div class="cb-reactions">${pills}</div>`;
+}
+
+function updateReactionDisplay(msgId, reactions) {
   const msgEl = document.getElementById('msg-' + msgId);
   if (!msgEl) return;
-
   const cb = msgEl.querySelector('.cb');
   if (!cb) return;
 
   /* إزالة التفاعلات القديمة */
   cb.querySelector('.cb-reactions')?.remove();
 
-  const reactions = _msgReactions[msgId];
-  if (!reactions || !Object.keys(reactions).length) return;
-
-  const reactDiv = document.createElement('div');
-  reactDiv.className = 'cb-reactions';
-
-  Object.entries(reactions).forEach(([emoji, users]) => {
-    if (!users.length) return;
-    const isMine = users.includes(currentUser);
-    const pill   = document.createElement('div');
-    pill.className = `cb-reaction-pill${isMine ? ' mine' : ''}`;
-    pill.innerHTML = `${emoji}<span class="cb-reaction-count">${users.length}</span>`;
-    pill.title     = users.map(u => getDisplayName(u)).join(', ');
-    pill.onclick   = () => addReaction(msgId, emoji);
-    reactDiv.appendChild(pill);
-  });
-
-  cb.appendChild(reactDiv);
-}
-
-/* ── بناء التفاعلات في الفقاعة ── */
-function buildReactionsHTML(msgId) {
-  const reactions = _msgReactions[msgId];
-  if (!reactions || !Object.keys(reactions).length) return '';
-
-  let html = '<div class="cb-reactions">';
-  Object.entries(reactions).forEach(([emoji, users]) => {
-    if (!users.length) return;
-    const isMine = users.includes(currentUser);
-    html += `<div class="cb-reaction-pill${isMine ? ' mine' : ''}"
-      onclick="addReaction(${msgId},'${emoji}')"
-      title="${users.map(u => getDisplayName(u)).join(', ')}">
-      ${emoji}<span class="cb-reaction-count">${users.length}</span>
-    </div>`;
-  });
-  html += '</div>';
-  return html;
+  /* إضافة الجديدة */
+  const msg = _chatMessages.find(m => m.id === msgId);
+  if (!msg) return;
+  const html = buildReactionsHTML({ ...msg, reactions });
+  if (html) cb.insertAdjacentHTML('beforeend', html);
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   3. مؤشر الكتابة (Typing Indicator)
+   3. TYPING — مؤشر الكتابة
 ══════════════════════════════════════════════════════════════ */
 
-/* ── إرسال حالة الكتابة ── */
-async function sendTypingStatus(isTyping) {
+async function sendTypingSignal() {
   if (!_activeRoomId) return;
-  const sb = await initSupabase();
-  if (!sb) return;
+  const sb = await initSupabase(); if (!sb) return;
 
-  try {
-    await sb.channel('typing-' + _activeRoomId).send({
-      type    : 'broadcast',
-      event   : 'typing',
-      payload : { username: currentUser, isTyping, roomId: _activeRoomId }
-    });
-  } catch(e) {}
+  await sb.from(TYPING_TABLE).upsert([{
+    room_id    : _activeRoomId,
+    username   : currentUser,
+    updated_at : new Date().toISOString()
+  }], { onConflict: 'room_id,username' });
+
+  /* مسح بعد 3 ثواني */
+  clearTimeout(_typingTimer);
+  _typingTimer = setTimeout(clearTypingSignal, 3000);
 }
 
-/* ── الاشتراك في مؤشر الكتابة ── */
-async function subscribeTyping(roomId) {
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  _typingChannel = sb.channel('typing-' + roomId)
-    .on('broadcast', { event: 'typing' }, payload => {
-      const { username, isTyping } = payload.payload || {};
-      if (!username || username === currentUser) return;
-      showTypingIndicator(username, isTyping);
-    })
-    .subscribe();
+async function clearTypingSignal() {
+  if (!_activeRoomId) return;
+  const sb = await initSupabase(); if (!sb) return;
+  await sb.from(TYPING_TABLE).delete()
+    .eq('room_id', _activeRoomId)
+    .eq('username', currentUser);
 }
 
-/* ── إظهار/إخفاء مؤشر الكتابة ── */
-const _typingUsers = {};
-let _typingHideTimer = {};
+function subscribeTyping(roomId) {
+  unsubscribeTyping();
+  initSupabase().then(sb => {
+    if (!sb) return;
+    _typingChannel = sb.channel('typing-' + roomId)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: TYPING_TABLE,
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        if (payload.eventType === 'DELETE') {
+          const u = payload.old?.username;
+          if (u) delete _typingUsers[u];
+        } else {
+          const u = payload.new?.username;
+          if (u && u !== currentUser) {
+            _typingUsers[u] = Date.now();
+          }
+        }
+        renderTypingIndicator();
+      })
+      .subscribe();
+  });
+}
 
-function showTypingIndicator(username, isTyping) {
-  if (isTyping) {
-    _typingUsers[username] = true;
-  } else {
-    delete _typingUsers[username];
+function unsubscribeTyping() {
+  if (_typingChannel) {
+    initSupabase().then(sb => sb?.removeChannel(_typingChannel));
+    _typingChannel = null;
   }
+  _typingUsers = {};
+}
 
-  const indicator = document.getElementById('typingIndicator');
-  if (!indicator) return;
+function renderTypingIndicator() {
+  const el = document.getElementById('typingIndicator');
+  if (!el) return;
+
+  /* تنظيف المنتهية (أكثر من 4 ثواني) */
+  const now = Date.now();
+  Object.keys(_typingUsers).forEach(u => {
+    if (now - _typingUsers[u] > TYPING_EXPIRE) delete _typingUsers[u];
+  });
 
   const users = Object.keys(_typingUsers);
   if (!users.length) {
-    indicator.classList.remove('visible');
+    el.classList.remove('visible');
     return;
   }
 
-  const names = users.map(u => getDisplayName(u)).join(', ');
-  indicator.innerHTML = `
+  const names = users.map(u => getDisplayName(u));
+  const label = names.length === 1
+    ? `${names[0]} yazıyor`
+    : names.length === 2
+    ? `${names[0]} ve ${names[1]} yazıyor`
+    : `${names.length} kişi yazıyor`;
+
+  el.innerHTML = `
     <div class="typing-dots">
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
     </div>
-    <span class="typing-name">${escHtml(names)} yazıyor...</span>`;
-  indicator.classList.add('visible');
-
-  /* إخفاء تلقائي بعد 4 ثواني */
-  clearTimeout(_typingHideTimer[username]);
-  _typingHideTimer[username] = setTimeout(() => {
-    delete _typingUsers[username];
-    showTypingIndicator(username, false);
-  }, 4000);
-}
-
-/* ── معالج الكتابة في حقل الإدخال ── */
-function onChatInputWithTyping(el) {
-  onChatInput(el);
-
-  if (!_isTyping && el.value.trim()) {
-    _isTyping = true;
-    sendTypingStatus(true);
-  }
-
-  clearTimeout(_typingTimer);
-  _typingTimer = setTimeout(() => {
-    _isTyping = false;
-    sendTypingStatus(false);
-  }, 2000);
-
-  if (!el.value.trim() && _isTyping) {
-    _isTyping = false;
-    sendTypingStatus(false);
-  }
+    <span class="typing-text">${escHtml(label)}...</span>`;
+  el.classList.add('visible');
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   4. زر التمرير للأسفل + عداد الرسائل الجديدة
+   4. SCROLL DOWN — زر التمرير للأسفل
 ══════════════════════════════════════════════════════════════ */
 
-function setupScrollDownBtn() {
-  const area = document.getElementById('chatMsgsArea');
+function initScrollDownBtn(area) {
   if (!area) return;
 
-  /* إضافة الزر */
-  let btn = document.getElementById('scrollDownBtn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'scrollDownBtn';
-    btn.innerHTML = `
-      <i class="fas fa-chevron-down"></i>
-      <span id="scrollDownBadge" class="cart-reminder-badge" style="display:none;"></span>`;
-    btn.onclick = () => {
-      scrollToBottom(true);
-      _unreadBelowCount = 0;
-      const badge = document.getElementById('scrollDownBadge');
-      if (badge) badge.style.display = 'none';
-    };
-
-    /* أضفه داخل chatWin */
-    const win = document.getElementById('chatWin');
-    if (win) {
-      win.style.position = 'relative';
-      win.appendChild(btn);
-    }
-  }
-
-  /* مراقبة التمرير */
   area.addEventListener('scroll', () => {
     const threshold = 200;
-    const isNearBottom = area.scrollHeight - area.scrollTop - area.clientHeight < threshold;
+    const distFromBottom = area.scrollHeight - area.scrollTop - area.clientHeight;
+    _isAtBottom = distFromBottom < threshold;
 
-    if (isNearBottom) {
+    const btn = document.getElementById('scrollDownBtn');
+    if (!btn) return;
+
+    if (_isAtBottom) {
       btn.classList.remove('visible');
-      _unreadBelowCount = 0;
-      const badge = document.getElementById('scrollDownBadge');
-      if (badge) badge.style.display = 'none';
+      _newMsgCount = 0;
+      updateScrollBadge();
     } else {
       btn.classList.add('visible');
     }
   }, { passive: true });
 }
 
-/* ── تحديث عداد الرسائل الجديدة ── */
-function incrementUnreadBelow() {
-  const area = document.getElementById('chatMsgsArea');
-  if (!area) return;
-  const isNearBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 200;
-  if (isNearBottom) return;
-
-  _unreadBelowCount++;
+function updateScrollBadge() {
   const badge = document.getElementById('scrollDownBadge');
-  if (badge) {
-    badge.textContent = _unreadBelowCount > 99 ? '99+' : _unreadBelowCount;
+  if (!badge) return;
+  if (_newMsgCount > 0) {
+    badge.textContent = _newMsgCount > 99 ? '99+' : _newMsgCount;
     badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
   }
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   5. تثبيت الرسائل (Pin Message)
+   5. SEARCH — البحث في الرسائل
 ══════════════════════════════════════════════════════════════ */
 
-async function pinMessage(msgId) {
-  document.getElementById('chatCtxMenu')?.remove();
-  const msg = _chatMessages.find(m => m.id === msgId);
-  if (!msg) return;
-
-  _pinnedMsgId = msgId;
-
-  /* تحديث شريط الرسالة المثبّتة */
-  let bar = document.getElementById('pinnedMsgBar');
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.id = 'pinnedMsgBar';
-    bar.innerHTML = `
-      <i class="fas fa-thumbtack pin-icon"></i>
-      <div class="pin-text">
-        <div class="pin-label">Sabitlenmiş Mesaj</div>
-        <div class="pin-content" id="pinnedContent"></div>
-      </div>
-      <button onclick="unpinMessage()" style="
-        background:none;border:none;color:rgba(255,255,255,.25);
-        font-size:14px;cursor:pointer;padding:4px;
-        font-family:'Montserrat',sans-serif;"
-        onmouseover="this.style.color='#ef4444'"
-        onmouseout="this.style.color='rgba(255,255,255,.25)'">
-        <i class="fas fa-times"></i>
-      </button>`;
-    bar.onclick = (e) => {
-      if (e.target.closest('button')) return;
-      scrollToMsg(msgId);
-    };
-
-    /* أدرجه بعد الهيدر مباشرة */
-    const area = document.getElementById('chatMsgsArea');
-    if (area) area.before(bar);
-  }
-
-  const contentEl = document.getElementById('pinnedContent');
-  if (contentEl) {
-    if      (msg.media_type === 'image') contentEl.textContent = '📷 Fotoğraf';
-    else if (msg.media_type === 'audio') contentEl.textContent = '🎤 Ses mesajı';
-    else if (msg.media_type === 'video') contentEl.textContent = '🎬 Video';
-    else contentEl.textContent = (msg.message || '').substring(0, 50);
-  }
-
-  bar.classList.add('visible');
-  showInvToast('Mesaj sabitlendi ✓', 'success');
-
-  /* حفظ في Supabase */
-  const sb = await initSupabase();
-  if (sb) {
-    await sb.from(GRP_ROOMS)
-      .update({ description: `pinned:${msgId}`, updated_at: new Date().toISOString() })
-      .eq('id', _activeRoomId);
-  }
-}
-
-function unpinMessage() {
-  _pinnedMsgId = null;
-  const bar = document.getElementById('pinnedMsgBar');
-  if (bar) bar.classList.remove('visible');
-}
-
-
-/* ══════════════════════════════════════════════════════════════
-   6. البحث في المحادثة
-══════════════════════════════════════════════════════════════ */
-
-function openChatSearch() {
-  document.getElementById('chatCtxMenu')?.remove();
-
-  let bar = document.getElementById('chatSearchBar');
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.id = 'chatSearchBar';
-    bar.innerHTML = `
-      <button onclick="closeChatSearch()" style="
-        background:none;border:none;color:rgba(255,255,255,.5);
-        font-size:15px;cursor:pointer;padding:4px;
-        font-family:'Montserrat',sans-serif;">
-        <i class="fas fa-arrow-left"></i>
-      </button>
-      <input type="text" id="chatSearchInput"
-        placeholder="Mesajlarda ara..."
-        oninput="performChatSearch(this.value)"
-        style="flex:1;background:rgba(255,255,255,.07);
-        border:1px solid rgba(255,255,255,.1);border-radius:20px;
-        padding:8px 14px;color:#fff;font-family:'Montserrat',sans-serif;
-        font-size:12px;outline:none;-webkit-user-select:text;user-select:text;"
-        onfocus="this.style.borderColor='rgba(201,168,76,.5)'"
-        onfocusout="this.style.borderColor='rgba(255,255,255,.1)'"/>
-      <div id="searchCounter" style="font-size:10px;color:rgba(255,255,255,.3);
-        font-family:'Montserrat',sans-serif;white-space:nowrap;min-width:40px;
-        text-align:center;"></div>
-      <button class="search-nav-btn" onclick="navigateSearch(-1)">
-        <i class="fas fa-chevron-up"></i>
-      </button>
-      <button class="search-nav-btn" onclick="navigateSearch(1)">
-        <i class="fas fa-chevron-down"></i>
-      </button>`;
-
-    /* أدرجه بعد الهيدر */
-    const area = document.getElementById('chatMsgsArea');
-    if (area) area.before(bar);
-  }
-
-  bar.classList.add('visible');
-  setTimeout(() => document.getElementById('chatSearchInput')?.focus(), 100);
-}
-
-function closeChatSearch() {
+function toggleChatSearch() {
+  _searchActive = !_searchActive;
   const bar = document.getElementById('chatSearchBar');
-  if (bar) bar.classList.remove('visible');
+  if (!bar) return;
 
-  /* إزالة التمييز */
-  document.querySelectorAll('.search-highlight').forEach(el => {
-    el.outerHTML = el.textContent;
-  });
-  _searchResults = [];
-  _searchIdx     = 0;
+  if (_searchActive) {
+    bar.classList.add('visible');
+    setTimeout(() => document.getElementById('chatSearchInput')?.focus(), 100);
+  } else {
+    bar.classList.remove('visible');
+    clearSearch();
+  }
 }
 
-function performChatSearch(query) {
-  /* إزالة التمييز القديم */
-  document.querySelectorAll('.search-highlight').forEach(el => {
+function clearSearch() {
+  _searchResults = [];
+  _searchIdx = 0;
+  /* إزالة التمييزات */
+  document.querySelectorAll('.msg-search-highlight').forEach(el => {
     el.outerHTML = el.textContent;
   });
-  _searchResults = [];
-  _searchIdx     = 0;
+  document.querySelectorAll('.msg-search-active').forEach(el => {
+    el.classList.remove('msg-search-active');
+  });
+  const inp = document.getElementById('chatSearchInput');
+  if (inp) inp.value = '';
+  updateSearchCounter();
+}
 
-  const counter = document.getElementById('searchCounter');
-  if (!query.trim()) {
-    if (counter) counter.textContent = '';
-    return;
-  }
+function performSearch(query) {
+  /* إزالة التمييزات القديمة */
+  document.querySelectorAll('.msg-search-active').forEach(el =>
+    el.classList.remove('msg-search-active')
+  );
+
+  if (!query.trim()) { clearSearch(); return; }
 
   const q = query.toLowerCase();
+  _searchResults = _chatMessages
+    .filter(m => m.media_type === 'text' && m.message?.toLowerCase().includes(q))
+    .map(m => m.id);
 
-  /* البحث في الرسائل */
-  _chatMessages.forEach(msg => {
-    if (msg.media_type !== 'text' && msg.media_type !== 'system') return;
-    if (!msg.message?.toLowerCase().includes(q)) return;
-
-    const el = document.getElementById('msg-' + msg.id);
-    if (!el) return;
-
-    /* تمييز النص */
-    const cb = el.querySelector('.cb');
-    if (!cb) return;
-
-    const textDivs = cb.querySelectorAll('div:not(.cb-reply-bar):not(.cb-reactions):not(.cb-time)');
-    textDivs.forEach(div => {
-      if (!div.textContent.toLowerCase().includes(q)) return;
-      const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-      div.innerHTML = div.innerHTML.replace(regex,
-        `<span class="search-highlight">$1</span>`);
-    });
-
-    _searchResults.push(msg.id);
-  });
-
-  if (counter) counter.textContent = _searchResults.length
-    ? `1/${_searchResults.length}`
-    : '0';
-
-  if (_searchResults.length) {
-    navigateSearch(0, true);
-  }
+  _searchIdx = _searchResults.length - 1; /* آخر نتيجة أولاً */
+  if (_searchResults.length) jumpToSearchResult();
+  updateSearchCounter();
 }
 
-function navigateSearch(dir, reset = false) {
+function jumpToSearchResult() {
   if (!_searchResults.length) return;
-
-  /* إزالة التمييز النشط */
-  document.querySelectorAll('.search-highlight.active').forEach(el => {
-    el.classList.remove('active');
-  });
-
-  if (!reset) {
-    _searchIdx = (_searchIdx + dir + _searchResults.length) % _searchResults.length;
-  }
-
   const msgId = _searchResults[_searchIdx];
-  const el    = document.getElementById('msg-' + msgId);
+  const el = document.getElementById('msg-' + msgId);
   if (!el) return;
 
-  /* تفعيل التمييز الأول في هذه الرسالة */
-  const firstHighlight = el.querySelector('.search-highlight');
-  if (firstHighlight) firstHighlight.classList.add('active');
-
+  document.querySelectorAll('.msg-search-active').forEach(e =>
+    e.classList.remove('msg-search-active')
+  );
+  el.classList.add('msg-search-active');
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
 
-  const counter = document.getElementById('searchCounter');
-  if (counter) counter.textContent = `${_searchIdx + 1}/${_searchResults.length}`;
+function searchNavPrev() {
+  if (!_searchResults.length) return;
+  _searchIdx = (_searchIdx + 1) % _searchResults.length;
+  jumpToSearchResult();
+  updateSearchCounter();
+}
+
+function searchNavNext() {
+  if (!_searchResults.length) return;
+  _searchIdx = (_searchIdx - 1 + _searchResults.length) % _searchResults.length;
+  jumpToSearchResult();
+  updateSearchCounter();
+}
+
+function updateSearchCounter() {
+  const el = document.getElementById('searchCounter');
+  if (!el) return;
+  if (!_searchResults.length) {
+    el.textContent = '0/0';
+    el.style.color = 'rgba(255,255,255,.2)';
+  } else {
+    el.textContent = `${_searchResults.length - _searchIdx}/${_searchResults.length}`;
+    el.style.color = '#c9a84c';
+  }
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   7. السحب للرد (Swipe to Reply)
+   6. SWIPE REPLY — السحب للرد (موبايل)
 ══════════════════════════════════════════════════════════════ */
 
-function setupSwipeToReply() {
-  const area = document.getElementById('chatMsgsArea');
+function initSwipeReply(area) {
   if (!area) return;
 
-  let startX = 0, startY = 0, target = null, swiped = false;
-
   area.addEventListener('touchstart', e => {
-    startX   = e.touches[0].clientX;
-    startY   = e.touches[0].clientY;
-    target   = e.target.closest('.cb-wrap');
-    swiped   = false;
+    const wrap = e.target.closest('.cb-wrap');
+    if (!wrap) return;
+    _swipeStartX    = e.touches[0].clientX;
+    _swipeStartY    = e.touches[0].clientY;
+    _swipingMsgEl   = wrap;
+    _swipeTriggered = false;
   }, { passive: true });
 
   area.addEventListener('touchmove', e => {
-    if (!target) return;
-    const dx = e.touches[0].clientX - startX;
-    const dy = Math.abs(e.touches[0].clientY - startY);
+    if (!_swipingMsgEl) return;
+    const dx = e.touches[0].clientX - _swipeStartX;
+    const dy = Math.abs(e.touches[0].clientY - _swipeStartY);
 
-    /* فقط سحب أفقي */
-    if (dy > 20) { target = null; return; }
+    /* تجاهل التمرير العمودي */
+    if (dy > 20) { _swipingMsgEl = null; return; }
 
-    const isMine = target.classList.contains('mine');
-    /* سحب يسار للرسائل المرسلة، يمين للمستقبلة */
-    const validSwipe = (isMine && dx < -40) || (!isMine && dx > 40);
+    const isMine = _swipingMsgEl.classList.contains('mine');
+    const threshold = 60;
 
-    if (validSwipe && !swiped) {
-      swiped = true;
-      const msgId = parseInt(target.dataset.id);
-      if (msgId) {
-        /* اهتزاز خفيف */
-        if (navigator.vibrate) navigator.vibrate(30);
-        startReply(msgId);
-      }
+    /* سحب لليسار للرسائل الخاصة بنا، لليمين للآخرين */
+    const validSwipe = isMine ? dx < -threshold : dx > threshold;
+
+    if (Math.abs(dx) > 15) {
+      const translateX = Math.max(-80, Math.min(80, dx * 0.4));
+      _swipingMsgEl.style.transform = `translateX(${translateX}px)`;
+      _swipingMsgEl.style.transition = 'none';
     }
+
+    if (validSwipe && !_swipeTriggered) {
+      _swipeTriggered = true;
+      _swipingMsgEl.classList.add('swipe-show');
+
+      /* اهتزاز خفيف */
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+  }, { passive: true });
+
+  area.addEventListener('touchend', () => {
+    if (!_swipingMsgEl) return;
+
+    _swipingMsgEl.style.transform  = '';
+    _swipingMsgEl.style.transition = 'transform .25s cubic-bezier(.34,1.56,.64,1)';
+    _swipingMsgEl.classList.remove('swipe-show');
+
+    if (_swipeTriggered) {
+      const msgId = parseInt(_swipingMsgEl.dataset.id);
+      const msg   = _chatMessages.find(m => m.id === msgId);
+      if (msg) setReplyTo(msg);
+    }
+
+    _swipingMsgEl   = null;
+    _swipeTriggered = false;
   }, { passive: true });
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   8. إعادة التوجيه (Forward)
+   7. FORWARD — إعادة التوجيه
 ══════════════════════════════════════════════════════════════ */
 
-async function forwardMessage(msgId) {
+async function openForwardModal(msgId) {
   document.getElementById('chatCtxMenu')?.remove();
+  document.getElementById('forwardModal')?.remove();
+
   const msg = _chatMessages.find(m => m.id === msgId);
   if (!msg) return;
 
-  /* جلب الغرف المتاحة */
-  const sb = await initSupabase();
-  if (!sb) return;
+  const sb = await initSupabase(); if (!sb) return;
 
+  /* جلب الغرف المتاحة */
   const { data: memberRows } = await sb.from(GRP_MEMBERS)
     .select('room_id').eq('username', currentUser).eq('is_banned', false);
   const roomIds = (memberRows || []).map(r => r.room_id);
 
-  const { data: rooms } = await sb.from(GRP_ROOMS)
-    .select('id,name,icon_emoji').in('id', roomIds).eq('is_active', true);
+  let rooms = [];
+  if (roomIds.length) {
+    const { data } = await sb.from(GRP_ROOMS)
+      .select('*').in('id', roomIds).eq('is_active', true);
+    rooms = data || [];
+  }
 
-  /* نافذة اختيار الغرفة */
   const modal = document.createElement('div');
   modal.id = 'forwardModal';
-  modal.style.cssText = `position:fixed;inset:0;z-index:99999;
-    background:rgba(0,0,0,.88);backdrop-filter:blur(16px);
-    display:flex;align-items:center;justify-content:center;padding:16px;`;
-
+  modal.className = 'active';
   modal.innerHTML = `
-    <div style="background:#111;border:1px solid rgba(201,168,76,.2);
-      border-radius:18px;padding:20px;max-width:360px;width:100%;
-      animation:devModalIn .3s ease forwards;">
-      <div style="font-size:14px;font-weight:900;color:#fff;margin-bottom:14px;
-        font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:8px;">
-        <i class="fas fa-share" style="color:#c9a84c;"></i>
-        Mesajı İlet
+    <div style="width:100%;max-width:400px;
+      background:linear-gradient(145deg,#0f0f0f,#161616);
+      border:1px solid rgba(201,168,76,.22);border-radius:22px;
+      overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.8);
+      animation:devModalIn .4s cubic-bezier(.34,1.56,.64,1) forwards;">
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+      <div style="padding:16px 18px 12px;display:flex;align-items:center;
+        justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.05);">
+        <div style="display:flex;align-items:center;gap:11px;">
+          <div style="width:40px;height:40px;border-radius:11px;
+            background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.25);
+            display:flex;align-items:center;justify-content:center;
+            color:#c9a84c;font-size:17px;">
+            <i class="fas fa-share"></i>
+          </div>
+          <div>
+            <div style="font-size:7px;letter-spacing:3px;color:rgba(201,168,76,.5);
+              text-transform:uppercase;margin-bottom:2px;">İLETİ İLET</div>
+            <div style="font-size:15px;font-weight:900;color:#fff;">Odayı Seç</div>
+          </div>
+        </div>
+        <button onclick="closeForwardModal()" style="width:32px;height:32px;
+          background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+          border-radius:8px;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Montserrat',sans-serif;">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
-      <div style="display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto;">
-        ${(rooms || []).filter(r => r.id !== _activeRoomId).map(r => `
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;
-            border-radius:10px;background:rgba(255,255,255,.04);
-            border:1px solid rgba(255,255,255,.06);cursor:pointer;
-            transition:all .2s;font-family:'Montserrat',sans-serif;"
-            onclick="doForwardMsg(${msgId},${r.id},this)"
-            onmouseover="this.style.background='rgba(201,168,76,.07)'"
-            onmouseout="this.style.background='rgba(255,255,255,.04)'">
-            <div style="font-size:22px;">${r.icon_emoji || '💬'}</div>
-            <div style="font-size:13px;font-weight:700;color:#fff;">
-              ${escHtml(r.name)}
+
+      <!-- معاينة الرسالة -->
+      <div style="margin:12px 16px;padding:10px 13px;
+        background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+        border-radius:11px;border-left:3px solid #c9a84c;">
+        <div style="font-size:9px;color:rgba(201,168,76,.6);
+          letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;
+          font-family:'Montserrat',sans-serif;">
+          <i class="fas fa-share" style="margin-right:4px;"></i>İletilecek Mesaj
+        </div>
+        <div style="font-size:12px;color:rgba(255,255,255,.5);
+          font-family:'Montserrat',sans-serif;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${msg.media_type === 'text'
+            ? escHtml((msg.message || '').substring(0, 60))
+            : msg.media_type === 'image' ? '📷 Fotoğraf'
+            : msg.media_type === 'audio' ? '🎤 Ses mesajı'
+            : msg.media_type === 'video' ? '🎥 Video'
+            : `📎 ${msg.file_name || 'Dosya'}`}
+        </div>
+      </div>
+
+      <!-- قائمة الغرف -->
+      <div style="max-height:300px;overflow-y:auto;padding:0 10px 14px;">
+        ${rooms.filter(r => r.id !== _activeRoomId).map(r => `
+          <div onclick="forwardMsgToRoom(${msgId},${r.id},'${escHtml(r.name)}')"
+            style="display:flex;align-items:center;gap:11px;padding:11px 10px;
+            border-radius:11px;cursor:pointer;transition:background .18s;
+            -webkit-tap-highlight-color:transparent;"
+            onmouseover="this.style.background='rgba(201,168,76,.06)'"
+            onmouseout="this.style.background='transparent'">
+            <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;
+              background:${r.room_type==='group'
+                ?'linear-gradient(135deg,rgba(99,102,241,.2),rgba(99,102,241,.05))'
+                :'linear-gradient(135deg,rgba(201,168,76,.2),rgba(201,168,76,.05))'};
+              border:1.5px solid ${r.room_type==='group'
+                ?'rgba(99,102,241,.25)':'rgba(201,168,76,.25)'};
+              display:flex;align-items:center;justify-content:center;font-size:18px;">
+              ${r.icon_emoji || '💬'}
             </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:700;color:#fff;
+                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${escHtml(r.name)}
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:1px;">
+                ${r.room_type === 'group' ? 'Grup' : 'Özel Sohbet'}
+              </div>
+            </div>
+            <i class="fas fa-chevron-right"
+               style="color:rgba(255,255,255,.15);font-size:11px;"></i>
           </div>`).join('')}
+        ${rooms.filter(r => r.id !== _activeRoomId).length === 0
+          ? `<div style="text-align:center;padding:30px;color:rgba(255,255,255,.2);
+              font-size:12px;font-family:'Montserrat',sans-serif;">
+              Başka oda yok
+            </div>` : ''}
       </div>
-      <button onclick="document.getElementById('forwardModal').remove()"
-        style="width:100%;margin-top:14px;padding:11px;border-radius:10px;
-        border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);
-        color:rgba(255,255,255,.4);font-family:'Montserrat',sans-serif;
-        font-size:11px;font-weight:700;cursor:pointer;">İPTAL</button>
     </div>`;
 
   document.body.appendChild(modal);
-  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  modal.onclick = e => { if (e.target === modal) closeForwardModal(); };
 }
 
-async function doForwardMsg(msgId, targetRoomId, el) {
-  el.style.opacity = '.5';
-  el.style.pointerEvents = 'none';
+function closeForwardModal() {
+  document.getElementById('forwardModal')?.remove();
+}
 
+async function forwardMsgToRoom(msgId, targetRoomId, roomName) {
+  closeForwardModal();
   const msg = _chatMessages.find(m => m.id === msgId);
   if (!msg) return;
 
-  const sb = await initSupabase();
-  if (!sb) return;
+  const sb = await initSupabase(); if (!sb) return;
 
-  await sb.from(GRP_MSGS).insert([{
-    room_id    : targetRoomId,
-    from_user  : currentUser,
-    message    : msg.message || '',
-    media_url  : msg.media_url || null,
-    media_type : msg.media_type,
-    file_name  : msg.file_name || null,
-    file_size  : msg.file_size || 0,
-    duration_sec: msg.duration_sec || 0,
-    /* علامة إعادة التوجيه */
-    reply_to_id: null,
+  const { error } = await sb.from(GRP_MSGS).insert([{
+    room_id         : targetRoomId,
+    from_user       : currentUser,
+    message         : msg.message || '',
+    media_url       : msg.media_url || null,
+    media_type      : msg.media_type,
+    file_name       : msg.file_name || null,
+    file_size       : msg.file_size || 0,
+    duration_sec    : msg.duration_sec || 0,
+    forwarded_from  : msg.from_user,
   }]);
 
-  document.getElementById('forwardModal')?.remove();
-  showInvToast('Mesaj iletildi ✓', 'success');
+  if (!error) {
+    showInvToast(`"${roomName}" odasına iletildi ✓`, 'success');
+  } else {
+    showInvToast('İletme hatası!', 'error');
+  }
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   9. معلومات الرسالة التفصيلية
+   8. MSG INFO — تفاصيل الرسالة
 ══════════════════════════════════════════════════════════════ */
 
-function showMsgInfo(msgId) {
+async function openMsgInfo(msgId) {
   document.getElementById('chatCtxMenu')?.remove();
+  document.getElementById('msgInfoModal')?.remove();
+
   const msg = _chatMessages.find(m => m.id === msgId);
   if (!msg) return;
 
-  document.getElementById('msgInfoModal')?.remove();
+  const sb = await initSupabase(); if (!sb) return;
+
+  /* جلب من قرأ الرسالة */
+  const { data: reads } = await sb.from(READS_TABLE)
+    .select('username, read_at')
+    .eq('msg_id', msgId)
+    .order('read_at', { ascending: true });
 
   const modal = document.createElement('div');
   modal.id = 'msgInfoModal';
   modal.className = 'active';
+
+  const sentTime = new Date(msg.created_at);
+  const editTime = msg.edited_at ? new Date(msg.edited_at) : null;
+
   modal.innerHTML = `
     <div class="msg-info-sheet">
+      <!-- مقبض -->
       <div style="display:flex;justify-content:center;padding:12px 0 4px;">
         <div style="width:36px;height:4px;border-radius:4px;
           background:rgba(255,255,255,.12);"></div>
       </div>
       <div style="height:2px;background:linear-gradient(90deg,
         transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
-      <div style="padding:16px 18px 24px;">
-        <div style="font-size:14px;font-weight:900;color:#fff;margin-bottom:16px;
-          font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:8px;">
-          <i class="fas fa-info-circle" style="color:#c9a84c;"></i>
-          Mesaj Bilgisi
+
+      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;">
+        <!-- عنوان -->
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:16px;font-weight:900;color:#fff;">
+            <i class="fas fa-info-circle" style="color:#c9a84c;margin-right:8px;"></i>
+            Mesaj Bilgisi
+          </div>
+          <button onclick="closeMsgInfo()" style="width:32px;height:32px;
+            background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+            border-radius:8px;color:rgba(255,255,255,.3);font-size:13px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            font-family:'Montserrat',sans-serif;">
+            <i class="fas fa-times"></i>
+          </button>
         </div>
 
         <!-- معاينة الرسالة -->
-        <div style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
-          border-radius:12px;padding:12px;margin-bottom:16px;">
-          <div style="font-size:12px;color:rgba(255,255,255,.5);
-            font-family:'Montserrat',sans-serif;line-height:1.6;">
+        <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);
+          border-radius:12px;padding:12px 14px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,.55);
+            text-transform:uppercase;margin-bottom:7px;font-weight:700;">
+            MESAJ
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,.65);
+            line-height:1.6;word-break:break-word;
+            font-family:'Montserrat',sans-serif;">
             ${msg.media_type === 'text'
-              ? escHtml((msg.message || '').substring(0, 100))
-              : `📎 ${msg.media_type}`}
+              ? escHtml(msg.message || '')
+              : msg.media_type === 'image' ? '📷 Fotoğraf'
+              : msg.media_type === 'audio' ? '🎤 Ses mesajı'
+              : msg.media_type === 'video' ? '🎥 Video'
+              : `📎 ${escHtml(msg.file_name || 'Dosya')}`}
           </div>
         </div>
 
-        <!-- التفاصيل -->
-        <div style="display:flex;flex-direction:column;gap:10px;">
-          ${[
-            { icon:'fa-user',        label:'Gönderen',     val: getDisplayName(msg.from_user) },
-            { icon:'fa-clock',       label:'Gönderilme',   val: new Date(msg.created_at).toLocaleString('tr-TR') },
-            { icon:'fa-check-double',label:'Durum',        val: msg.is_read ? '✅ Okundu' : '✓ Gönderildi' },
-            { icon:'fa-edit',        label:'Düzenlendi',   val: msg.edited_at ? new Date(msg.edited_at).toLocaleString('tr-TR') : 'Hayır' },
-          ].map(item => `
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:32px;height:32px;border-radius:9px;flex-shrink:0;
-                background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.15);
-                display:flex;align-items:center;justify-content:center;
-                color:#c9a84c;font-size:12px;">
-                <i class="fas ${item.icon}"></i>
-              </div>
-              <div>
-                <div style="font-size:8px;letter-spacing:1.5px;color:rgba(255,255,255,.2);
-                  text-transform:uppercase;font-family:'Montserrat',sans-serif;">
-                  ${item.label}
-                </div>
-                <div style="font-size:12px;font-weight:700;color:#fff;
-                  font-family:'Montserrat',sans-serif;">
-                  ${item.val}
-                </div>
-              </div>
-            </div>`).join('')}
+        <!-- تفاصيل -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${buildInfoRow('fa-user', 'Gönderen', getDisplayName(msg.from_user))}
+          ${buildInfoRow('fa-clock', 'Gönderildi',
+            sentTime.toLocaleString('tr-TR', {
+              day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'
+            }))}
+          ${editTime ? buildInfoRow('fa-pen', 'Düzenlendi',
+            editTime.toLocaleString('tr-TR', {
+              day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'
+            })) : ''}
+          ${buildInfoRow('fa-tag', 'Tür',
+            msg.media_type === 'text'  ? 'Metin'
+          : msg.media_type === 'image' ? 'Fotoğraf'
+          : msg.media_type === 'audio' ? 'Ses'
+          : msg.media_type === 'video' ? 'Video'
+          : 'Dosya')}
+          ${msg.file_size ? buildInfoRow('fa-weight', 'Boyut',
+            msg.file_size > 1048576
+              ? (msg.file_size / 1048576).toFixed(1) + ' MB'
+              : (msg.file_size / 1024).toFixed(0) + ' KB') : ''}
+          ${msg.duration_sec ? buildInfoRow('fa-stopwatch', 'Süre',
+            fmtDuration(msg.duration_sec)) : ''}
+          ${msg.forwarded_from ? buildInfoRow('fa-share', 'İletildi',
+            getDisplayName(msg.forwarded_from)) : ''}
         </div>
 
-        <button onclick="document.getElementById('msgInfoModal').remove()"
-          style="width:100%;margin-top:18px;padding:12px;border-radius:11px;
-          border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);
-          color:rgba(255,255,255,.4);font-family:'Montserrat',sans-serif;
-          font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;"
+        <!-- من قرأ -->
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,.55);
+            text-transform:uppercase;font-weight:700;margin-bottom:10px;">
+            <i class="fas fa-check-double" style="margin-right:5px;color:#3b82f6;"></i>
+            OKUYANLAR (${(reads || []).length})
+          </div>
+          ${(reads || []).length === 0
+            ? `<div style="font-size:11px;color:rgba(255,255,255,.2);
+                font-family:'Montserrat',sans-serif;padding:8px 0;">
+                Henüz kimse okumadı
+              </div>`
+            : (reads || []).map(r => `
+              <div style="display:flex;align-items:center;gap:10px;
+                padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+                ${buildAvatar(r.username, 32)}
+                <div style="flex:1;">
+                  <div style="font-size:12px;font-weight:700;color:#fff;">
+                    ${escHtml(getDisplayName(r.username))}
+                  </div>
+                  <div style="font-size:9px;color:rgba(255,255,255,.25);margin-top:1px;">
+                    ${new Date(r.read_at).toLocaleString('tr-TR', {
+                      hour:'2-digit',minute:'2-digit',
+                      day:'2-digit',month:'short'
+                    })}
+                  </div>
+                </div>
+                <i class="fas fa-check-double" style="color:#3b82f6;font-size:12px;"></i>
+              </div>`).join('')}
+        </div>
+
+        <!-- التفاعلات -->
+        ${Object.keys(msg.reactions || {}).length > 0 ? `
+        <div>
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,.55);
+            text-transform:uppercase;font-weight:700;margin-bottom:10px;">
+            <i class="fas fa-heart" style="margin-right:5px;color:#ef4444;"></i>
+            TEPKİLER
+          </div>
+          ${Object.entries(msg.reactions || {}).filter(([,u]) => u.length).map(([em, users]) => `
+            <div style="display:flex;align-items:center;gap:10px;
+              padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+              <span style="font-size:22px;">${em}</span>
+              <div style="flex:1;">
+                <div style="font-size:11px;color:rgba(255,255,255,.55);
+                  font-family:'Montserrat',sans-serif;">
+                  ${users.map(u => escHtml(getDisplayName(u))).join(', ')}
+                </div>
+              </div>
+              <span style="font-size:12px;font-weight:900;color:#c9a84c;">
+                ${users.length}
+              </span>
+            </div>`).join('')}
+        </div>` : ''}
+
+        <button onclick="closeMsgInfo()" style="width:100%;padding:12px;
+          border-radius:11px;border:1px solid rgba(255,255,255,.08);
+          background:rgba(255,255,255,.04);color:rgba(255,255,255,.45);
+          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;
+          cursor:pointer;transition:all .2s;"
           onmouseover="this.style.background='rgba(255,255,255,.08)'"
           onmouseout="this.style.background='rgba(255,255,255,.04)'">
           KAPAT
@@ -31677,64 +31620,402 @@ function showMsgInfo(msgId) {
     </div>`;
 
   document.body.appendChild(modal);
-  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  modal.onclick = e => { if (e.target === modal) closeMsgInfo(); };
+}
+function buildInfoRow(icon, label, value) {
+  return `
+    <div style="background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);
+      border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:9px;">
+      <div style="width:28px;height:28px;border-radius:7px;flex-shrink:0;
+        background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.15);
+        display:flex;align-items:center;justify-content:center;
+        color:#c9a84c;font-size:11px;">
+        <i class="fas ${icon}"></i>
+      </div>
+      <div style="min-width:0;">
+        <div style="font-size:7px;letter-spacing:2px;color:rgba(255,255,255,.2);
+          text-transform:uppercase;margin-bottom:2px;font-family:'Montserrat',sans-serif;">
+          ${label}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#fff;
+          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+          font-family:'Montserrat',sans-serif;">
+          ${value}
+        </div>
+      </div>
+    </div>`;
+}
+
+function closeMsgInfo() {
+  document.getElementById('msgInfoModal')?.remove();
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   10. Override الدوال الأصلية لدمج الميزات
+   9. ONLINE STATUS — حالة الاتصال
 ══════════════════════════════════════════════════════════════ */
 
-/* ── Override sendTextMsg لدعم الرد ── */
+async function subscribeOnlineStatus() {
+  unsubscribeOnlineStatus();
+  const sb = await initSupabase(); if (!sb) return;
+
+  /* تحديث حالتنا كل 30 ثانية */
+  async function heartbeat() {
+    if (!currentUser) return;
+    const table = currentUser === ADMIN_USER ? 'admin_accounts' : 'users';
+    await sb.from(table)
+      .update({ last_seen: new Date().toISOString() })
+      .eq('username', currentUser);
+  }
+
+  heartbeat();
+  const _onlineHeartbeat = setInterval(heartbeat, 30000);
+  window._onlineHeartbeat = _onlineHeartbeat;
+
+  /* مراقبة حالة الأعضاء في الغرفة */
+  if (!_activeRoomId) return;
+
+  const { data: members } = await sb.from(GRP_MEMBERS)
+    .select('username').eq('room_id', _activeRoomId).eq('is_banned', false);
+
+  const usernames = (members || []).map(m => m.username);
+
+  /* جلب آخر ظهور لكل عضو */
+  for (const u of usernames) {
+    const table = u === ADMIN_USER ? 'admin_accounts' : 'users';
+    const { data } = await sb.from(table)
+      .select('last_seen').eq('username', u).maybeSingle();
+    if (data) _onlineUsers[u] = data.last_seen;
+  }
+
+  updateOnlineStatusDisplay();
+
+  /* Realtime للمستخدمين */
+  _onlineChannel = sb.channel('online-room-' + _activeRoomId)
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'users'
+    }, payload => {
+      if (payload.new?.username) {
+        _onlineUsers[payload.new.username] = payload.new.last_seen;
+        updateOnlineStatusDisplay();
+      }
+    })
+    .on('postgres_changes', {
+      event: 'UPDATE', schema: 'public', table: 'admin_accounts'
+    }, payload => {
+      if (payload.new?.username) {
+        _onlineUsers[payload.new.username] = payload.new.last_seen;
+        updateOnlineStatusDisplay();
+      }
+    })
+    .subscribe();
+}
+
+function unsubscribeOnlineStatus() {
+  if (_onlineChannel) {
+    initSupabase().then(sb => sb?.removeChannel(_onlineChannel));
+    _onlineChannel = null;
+  }
+  if (window._onlineHeartbeat) {
+    clearInterval(window._onlineHeartbeat);
+    window._onlineHeartbeat = null;
+  }
+}
+
+function isOnlineNow(username) {
+  const lastSeen = _onlineUsers[username];
+  if (!lastSeen) return false;
+  return Date.now() - new Date(lastSeen).getTime() < 3 * 60 * 1000;
+}
+
+function updateOnlineStatusDisplay() {
+  const el = document.getElementById('roomSubtitle');
+  if (!el || !_activeRoomId) return;
+
+  if (_activeRoomType === 'group') {
+    const onlineCount = Object.keys(_onlineUsers)
+      .filter(u => u !== currentUser && isOnlineNow(u)).length;
+    const total = Object.keys(_onlineUsers).length;
+    el.innerHTML = `
+      <span style="display:inline-flex;align-items:center;gap:5px;">
+        ${onlineCount > 0
+          ? `<span class="online-dot" style="width:7px;height:7px;"></span>
+             <span>${total} üye, ${onlineCount} çevrimiçi</span>`
+          : `<span>${total} üye</span>`}
+      </span>`;
+  } else {
+    /* غرفة خاصة — نعرض حالة الطرف الآخر */
+    const otherUser = Object.keys(_onlineUsers).find(u => u !== currentUser);
+    if (!otherUser) return;
+    const online = isOnlineNow(otherUser);
+    el.innerHTML = `
+      <span style="display:inline-flex;align-items:center;gap:5px;">
+        <span class="${online ? 'online-dot' : 'offline-dot'}"
+              style="width:7px;height:7px;"></span>
+        <span>${online ? 'Çevrimiçi' : 'Son görülme: ' + fmtLastSeen(_onlineUsers[otherUser])}</span>
+      </span>`;
+  }
+}
+
+function fmtLastSeen(dateStr) {
+  if (!dateStr) return 'bilinmiyor';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  if (mins < 1)   return 'az önce';
+  if (mins < 60)  return `${mins} dk önce`;
+  if (hours < 24) return `${hours} saat önce`;
+  return new Date(dateStr).toLocaleDateString('tr-TR');
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   تسجيل قراءة الرسالة (Msg Info)
+══════════════════════════════════════════════════════════════ */
+
+async function recordMessageRead(roomId) {
+  if (!roomId || !currentUser) return;
+  const sb = await initSupabase(); if (!sb) return;
+
+  /* جلب الرسائل التي لم يُسجَّل قراءتها بعد */
+  const { data: rs } = await sb.from(GRP_READ)
+    .select('last_read_id').eq('room_id', roomId)
+    .eq('username', currentUser).maybeSingle();
+
+  const lastReadId = rs?.last_read_id || 0;
+
+  const { data: unread } = await sb.from(GRP_MSGS)
+    .select('id, from_user')
+    .eq('room_id', roomId)
+    .eq('is_deleted', false)
+    .neq('from_user', currentUser)
+    .gt('id', lastReadId);
+
+  if (!unread?.length) return;
+
+  /* تسجيل القراءة */
+  const reads = unread.map(m => ({
+    msg_id   : m.id,
+    room_id  : roomId,
+    username : currentUser,
+    read_at  : new Date().toISOString()
+  }));
+
+  await sb.from(READS_TABLE)
+    .upsert(reads, { onConflict: 'msg_id,username' });
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   Override: openRoomWindow — إضافة كل الميزات الجديدة
+══════════════════════════════════════════════════════════════ */
+
+const _origOpenRoomWindow_v4 = openRoomWindow;
+openRoomWindow = async function(roomId, roomType) {
+
+  /* استدعاء الأصلي */
+  await _origOpenRoomWindow_v4(roomId, roomType);
+
+  /* ننتظر لحظة حتى يكتمل بناء الـ DOM */
+  await new Promise(r => setTimeout(r, 120));
+
+  const win  = document.getElementById('chatWin');
+  const area = document.getElementById('chatMsgsArea');
+  if (!win || !area) return;
+
+  /* ── 1. إضافة شريط الرد ── */
+  const inputBar = document.getElementById('chatInputBar');
+  if (inputBar && !document.getElementById('chatReplyBar')) {
+    const replyBar = document.createElement('div');
+    replyBar.id = 'chatReplyBar';
+    inputBar.before(replyBar);
+  }
+
+  /* ── 2. إضافة شريط البحث (بعد الهيدر مباشرة) ── */
+  const header = win.querySelector('[style*="border-bottom"]');
+  if (header && !document.getElementById('chatSearchBar')) {
+    const searchBar = document.createElement('div');
+    searchBar.id = 'chatSearchBar';
+    searchBar.innerHTML = `
+      <button onclick="toggleChatSearch()" style="width:30px;height:30px;
+        background:none;border:none;color:rgba(255,255,255,.4);
+        font-size:15px;cursor:pointer;
+        font-family:'Montserrat',sans-serif;">
+        <i class="fas fa-times"></i>
+      </button>
+      <input type="text" id="chatSearchInput"
+        placeholder="Mesajlarda ara..."
+        oninput="performSearch(this.value)"
+        onkeydown="if(event.key==='Enter')searchNavNext()"/>
+      <span id="searchCounter" style="font-size:10px;color:rgba(255,255,255,.2);
+        font-family:'Montserrat',sans-serif;white-space:nowrap;min-width:32px;
+        text-align:center;">0/0</span>
+      <button class="search-nav-btn" onclick="searchNavPrev()" id="searchPrevBtn">
+        <i class="fas fa-chevron-up"></i>
+      </button>
+      <button class="search-nav-btn" onclick="searchNavNext()" id="searchNextBtn">
+        <i class="fas fa-chevron-down"></i>
+      </button>`;
+    header.after(searchBar);
+  }
+
+  /* ── 3. إضافة مؤشر الكتابة ── */
+  if (!document.getElementById('typingIndicator')) {
+    const typingEl = document.createElement('div');
+    typingEl.id = 'typingIndicator';
+    area.after(typingEl);
+  }
+
+  /* ── 4. إضافة زر التمرير للأسفل ── */
+  if (!document.getElementById('scrollDownBtn')) {
+    const scrollBtn = document.createElement('button');
+    scrollBtn.id = 'scrollDownBtn';
+    scrollBtn.innerHTML = `
+      <i class="fas fa-chevron-down"></i>
+      <div id="scrollDownBadge" style="display:none;"></div>`;
+    scrollBtn.onclick = () => {
+      scrollToBottom(true);
+      _newMsgCount = 0;
+      updateScrollBadge();
+    };
+    /* نضعه داخل container نسبي */
+    const container = area.parentElement;
+    if (container) {
+      container.style.position = 'relative';
+      container.appendChild(scrollBtn);
+    }
+  }
+
+  /* ── 5. إضافة زر البحث في الهيدر ── */
+  const headerBtns = win.querySelector('[style*="padding:9px 13px"]');
+  if (headerBtns && !win.querySelector('.chat-header-search-btn')) {
+    const searchBtn = document.createElement('button');
+    searchBtn.className = 'chat-header-search-btn';
+    searchBtn.innerHTML = '<i class="fas fa-search"></i>';
+    searchBtn.onclick = toggleChatSearch;
+    searchBtn.title = 'Mesajlarda Ara';
+    /* أضفه قبل زر الإعدادات أو في نهاية الهيدر */
+    const settingsBtn = headerBtns.querySelector('[onclick*="openGrpSettings"]');
+    if (settingsBtn) settingsBtn.before(searchBtn);
+    else headerBtns.appendChild(searchBtn);
+  }
+
+  /* ── 6. تفعيل Swipe للرد ── */
+  initSwipeReply(area);
+
+  /* ── 7. تفعيل Scroll Down ── */
+  initScrollDownBtn(area);
+
+  /* ── 8. تفعيل الكتابة ── */
+  subscribeTyping(roomId);
+
+  /* ── 9. تفعيل حالة الاتصال ── */
+  subscribeOnlineStatus();
+
+  /* ── 10. تسجيل القراءة ── */
+  recordMessageRead(roomId);
+
+  /* ── 11. تفعيل Reactions Realtime ── */
+  subscribeReactionsRealtime(roomId);
+};
+
+
+/* ══════════════════════════════════════════════════════════════
+   Override: closeRoomWindow — تنظيف الميزات الجديدة
+══════════════════════════════════════════════════════════════ */
+
+const _origCloseRoomWindow_v4 = closeRoomWindow;
+closeRoomWindow = function() {
+  cancelReply();
+  clearSearch();
+  _searchActive = false;
+  unsubscribeTyping();
+  clearTypingSignal();
+  unsubscribeOnlineStatus();
+  unsubscribeReactionsRealtime();
+  _typingUsers  = {};
+  _onlineUsers  = {};
+  _newMsgCount  = 0;
+  _origCloseRoomWindow_v4();
+};
+
+
+/* ══════════════════════════════════════════════════════════════
+   Override: sendTextMsg — إضافة بيانات الرد
+══════════════════════════════════════════════════════════════ */
+
 const _origSendTextMsg_v4 = sendTextMsg;
 sendTextMsg = async function() {
   const inp = document.getElementById('chatTextInput');
   if (!inp || !_activeRoomId) return;
   const text = inp.value.trim();
 
-  if (_editingMsgId) { await saveEdit(text); return; }
+  /* إذا كان في وضع التعديل — استخدم الأصلي */
+  if (_editingMsgId) {
+    await _origSendTextMsg_v4();
+    return;
+  }
+
   if (!text) return;
 
   inp.value = '';
   onChatInput(inp);
-
-  /* إيقاف مؤشر الكتابة */
-  _isTyping = false;
-  sendTypingStatus(false);
+  cancelReply();
+  clearTypingSignal();
 
   const btn = document.getElementById('chatSendBtn');
-  if (btn) { btn.classList.add('send-pop'); setTimeout(() => btn.classList.remove('send-pop'), 280); }
+  if (btn) {
+    btn.classList.add('send-pop');
+    setTimeout(() => btn.classList.remove('send-pop'), 280);
+  }
 
-  const sb = await initSupabase();
-  if (!sb) return;
+  const sb = await initSupabase(); if (!sb) return;
 
   const msgData = {
     room_id    : _activeRoomId,
     from_user  : currentUser,
     message    : text,
     media_type : 'text',
-    reply_to_id: _replyToMsg?.id || null,
   };
 
-  /* إلغاء الرد */
-  cancelReply();
+  /* إضافة بيانات الرد إن وُجد */
+  if (_replyingTo) {
+    msgData.reply_to_id    = _replyingTo.id;
+    msgData.reply_from_user = _replyingTo.from_user;
+    msgData.reply_preview  = _replyingTo.media_type === 'text'
+      ? (_replyingTo.message || '').substring(0, 80)
+      : _replyingTo.media_type;
+    msgData.reply_type     = _replyingTo.media_type;
+  }
 
-  const { data, error } = await sb.from(GRP_MSGS).insert([msgData]).select().single();
+  const { data, error } = await sb.from(GRP_MSGS)
+    .insert([msgData]).select().single();
 
   if (!error && data) {
     _chatMessages.push(data);
     appendMsgBubble(data);
-    scrollToBottom(true);
+
+    if (_isAtBottom) {
+      scrollToBottom(true);
+    } else {
+      _newMsgCount++;
+      updateScrollBadge();
+    }
     updateRoomTimestamp(_activeRoomId);
   }
 };
 
-/* ── Override buildMsgBubble لدعم الرد والتفاعلات والتوجيه ── */
+
+/* ══════════════════════════════════════════════════════════════
+   Override: buildMsgBubble — إضافة كل الميزات الجديدة
+══════════════════════════════════════════════════════════════ */
+
 const _origBuildMsgBubble_v4 = buildMsgBubble;
 buildMsgBubble = function(msg, idx) {
-  /* رسالة نظام */
+
+  /* رسالة نظام — بدون تغيير */
   if (msg.media_type === 'system') {
-    return `<div class="cb-system">${escHtml(msg.message)}</div>`;
+    return _origBuildMsgBubble_v4(msg, idx);
   }
 
   const isMine = msg.from_user === currentUser;
@@ -31742,27 +32023,24 @@ buildMsgBubble = function(msg, idx) {
   const isGroup = _activeRoomType === 'group';
   const timeStr = fmtTime(msg.created_at);
 
-  /* محتوى الرسالة */
+  /* ── محتوى الرسالة (نفس المنطق الأصلي) ── */
   let content = '';
 
-  /* ── عرض الرد ── */
-  const replyHTML = buildReplyPreview(msg);
-
   if (msg.media_type === 'image' && msg.media_url) {
-    content = `${replyHTML}
-      <img class="cb-img" src="${msg.media_url}"
-        onclick="openImgViewer('${msg.media_url}')" draggable="false"
-        onerror="this.style.display='none'"/>
+    content = `<img class="cb-img" src="${msg.media_url}"
+      onclick="openImgViewer('${msg.media_url}')" draggable="false"
+      onerror="this.style.display='none'"/>
       ${msg.message ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>` : ''}`;
 
   } else if (msg.media_type === 'video' && msg.media_url) {
     const dur = msg.duration_sec ? fmtDuration(msg.duration_sec) : '';
-    content = `${replyHTML}
+    content = `
       <div onclick="openVideoFullscreen('${msg.media_url}','${escHtml(msg.file_name||'')}')"
         style="position:relative;width:220px;border-radius:14px;overflow:hidden;
-        background:#000;cursor:pointer;flex-shrink:0;">
+               background:#000;cursor:pointer;flex-shrink:0;">
         <video src="${msg.media_url}#t=0.1" preload="metadata" playsinline muted
-          style="width:220px;height:160px;object-fit:cover;display:block;pointer-events:none;"></video>
+          style="width:220px;height:160px;object-fit:cover;display:block;pointer-events:none;">
+        </video>
         <div style="position:absolute;inset:0;background:rgba(0,0,0,.28);
           display:flex;align-items:center;justify-content:center;">
           <div style="width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,.55);
@@ -31773,7 +32051,8 @@ buildMsgBubble = function(msg, idx) {
         </div>
         ${dur ? `<div style="position:absolute;bottom:7px;right:8px;
           background:rgba(0,0,0,.62);border-radius:5px;padding:2px 7px;
-          font-size:11px;font-weight:700;color:#fff;">${dur}</div>` : ''}
+          font-size:11px;font-weight:700;color:#fff;
+          font-family:'Montserrat',sans-serif;">${dur}</div>` : ''}
       </div>
       ${msg.message ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>` : ''}`;
 
@@ -31781,580 +32060,294 @@ buildMsgBubble = function(msg, idx) {
     const ext = (msg.file_name || '').split('.').pop().toUpperCase() || 'FILE';
     const sz  = msg.file_size
       ? (msg.file_size > 1048576
-          ? (msg.file_size/1048576).toFixed(1)+' MB'
-          : (msg.file_size/1024).toFixed(0)+' KB')
+          ? (msg.file_size / 1048576).toFixed(1) + ' MB'
+          : (msg.file_size / 1024).toFixed(0) + ' KB')
       : '';
-    content = `${replyHTML}
-      <div class="cb-file"
-        onclick="downloadFile('${msg.media_url}','${msg.file_name||'dosya'}')">
-        <div class="cb-file-icon">
-          <i class="fas ${getFileIcon(msg.file_name)}"></i>
+    content = `<div class="cb-file"
+      onclick="downloadFile('${msg.media_url}','${msg.file_name||'dosya'}')">
+      <div class="cb-file-icon"><i class="fas ${getFileIcon(msg.file_name)}"></i></div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:700;white-space:nowrap;
+          overflow:hidden;text-overflow:ellipsis;">${escHtml(msg.file_name||'Dosya')}</div>
+        <div style="font-size:9px;opacity:.45;margin-top:1px;">
+          ${ext}${sz ? ' · ' + sz : ''}
         </div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:12px;font-weight:700;white-space:nowrap;
-            overflow:hidden;text-overflow:ellipsis;">
-            ${escHtml(msg.file_name || 'Dosya')}
-          </div>
-          <div style="font-size:9px;opacity:.45;margin-top:1px;">
-            ${ext}${sz ? ' · '+sz : ''}
-          </div>
-        </div>
-        <i class="fas fa-download" style="font-size:12px;opacity:.5;flex-shrink:0;"></i>
-      </div>`;
+      </div>
+      <i class="fas fa-download" style="font-size:12px;opacity:.5;flex-shrink:0;"></i>
+    </div>`;
 
   } else if (msg.media_type === 'audio' && msg.media_url) {
-    content = `${replyHTML}${buildVoicePlayer(msg, isMine)}`;
+    content = buildVoicePlayer(msg, isMine);
 
   } else {
-    content = `${replyHTML}<div>${escHtml(msg.message || '')}</div>`;
+    content = `<div>${escHtml(msg.message || '')}</div>`;
   }
 
-  /* ── علامات الحالة ── */
+  /* ── علامة القراءة ── */
   const readIcon = isMine
     ? `<i class="fas fa-check${msg.is_read ? '-double' : ''}"
-        style="font-size:8px;color:${msg.is_read ? '#3b82f6' : 'inherit'};"></i>`
+          style="font-size:8px;color:${msg.is_read ? '#3b82f6' : 'inherit'};"></i>`
     : '';
   const editBadge = msg.edited_at
-    ? `<span class="cb-edited">düzenlendi</span>`
-    : '';
+    ? `<span class="cb-edited">düzenlendi</span>` : '';
 
   /* ── اسم المرسل في الكروب ── */
   const senderName = (!isMine && isGroup)
     ? `<div class="cb-sender-name" style="color:${getUserColor(msg.from_user)};">
-        ${escHtml(getDisplayName(msg.from_user))}
-       </div>`
-    : '';
+         ${escHtml(getDisplayName(msg.from_user))}
+       </div>` : '';
 
-  /* ── علامة إعادة التوجيه ── */
-  const forwardedBadge = msg.is_forwarded
-    ? `<div class="cb-forwarded">
-        <i class="fas fa-share" style="font-size:9px;"></i>
-        İletildi
-       </div>`
-    : '';
+  /* ── إشارة إعادة التوجيه ── */
+  const forwardedLabel = msg.forwarded_from
+    ? `<div class="cb-forwarded-label">
+         <i class="fas fa-share" style="font-size:9px;"></i>
+         İletildi: ${escHtml(getDisplayName(msg.forwarded_from))}
+       </div>` : '';
+
+  /* ── معاينة الرد ── */
+  const replyPreview = buildReplyPreviewHTML(msg);
 
   /* ── التفاعلات ── */
-  const reactionsHTML = buildReactionsHTML(msg.id);
+  const reactionsHTML = buildReactionsHTML(msg);
 
-  /* ── إخفاء الأفاتار الخارجي للرسائل الصوتية ── */
-  const showExtAvatar    = !isMine && msg.media_type !== 'audio';
-  const showMineExtAvatar = isMine && msg.media_type !== 'audio';
+  /* ── أيقونة Swipe ── */
+  const swipeIcon = `<div class="swipe-reply-icon">
+    <i class="fas fa-reply"></i>
+  </div>`;
 
-  return `
-    <div class="cb-wrap ${side}" id="msg-${msg.id}"
-      data-id="${msg.id}" data-mine="${isMine}"
-      oncontextmenu="showMsgCtxV4(event,${msg.id},${isMine},'${msg.media_type}')"
-      ontouchstart="handleTouchCtxV4(event,${msg.id},${isMine},'${msg.media_type}')">
-      ${showExtAvatar ? buildAvatar(msg.from_user, 30) : ''}
-      <div class="cb ${side} new-glow">
-        ${forwardedBadge}
-        ${senderName}
-        ${content}
-        ${reactionsHTML}
-        <div class="cb-time">
-          ${editBadge}${timeStr}${readIcon}
-        </div>
+  /* ── إخفاء الأفاتار للصوت ── */
+  const showExtAvatar = !isMine && msg.media_type !== 'audio';
+
+  return `<div class="cb-wrap ${side}" id="msg-${msg.id}"
+    data-id="${msg.id}" data-mine="${isMine}"
+    style="position:relative;"
+    oncontextmenu="showMsgCtxV4(event,${msg.id},${isMine},'${msg.media_type}')"
+    ontouchstart="handleTouchCtxV4(event,${msg.id},${isMine},'${msg.media_type}')">
+    ${swipeIcon}
+    ${showExtAvatar ? buildAvatar(msg.from_user, 30) : ''}
+    <div class="cb ${side} new-glow"
+      ondblclick="setReplyTo(${JSON.stringify(msg).replace(/"/g,'&quot;')})">
+      ${forwardedLabel}
+      ${senderName}
+      ${replyPreview}
+      ${content}
+      ${reactionsHTML}
+      <div class="cb-time">
+        ${editBadge}${timeStr}${readIcon}
       </div>
-      ${showMineExtAvatar ? buildAvatar(msg.from_user, 30) : ''}
-    </div>`;
+    </div>
+    ${isMine && msg.media_type !== 'audio' ? buildAvatar(msg.from_user, 30) : ''}
+  </div>`;
 };
 
 
 /* ══════════════════════════════════════════════════════════════
-   قائمة السياق المحدّثة — تشمل كل الميزات
+   Override: قائمة السياق — إضافة الميزات الجديدة
 ══════════════════════════════════════════════════════════════ */
 
 let _ctxTimerV4 = null;
 
 function handleTouchCtxV4(e, msgId, isMine, type) {
-  _ctxTimerV4 = setTimeout(() => showMsgCtxV4(e, msgId, isMine, type), 550);
+  _ctxTimerV4 = setTimeout(() => showMsgCtxV4(e, msgId, isMine, type), 600);
 }
-
-document.addEventListener('touchend',  () => clearTimeout(_ctxTimerV4), { passive: true });
-document.addEventListener('touchmove', () => clearTimeout(_ctxTimerV4), { passive: true });
+document.addEventListener('touchend', () => clearTimeout(_ctxTimerV4), { passive: true });
 
 function showMsgCtxV4(e, msgId, isMine, type) {
   e.preventDefault();
   e.stopPropagation();
   document.getElementById('chatCtxMenu')?.remove();
-  document.getElementById('emojiPicker')?.remove();
 
   const msg = _chatMessages.find(m => m.id === msgId);
+  if (!msg) return;
 
-  /* ── منتقي الإيموجي أولاً ── */
-  const pickerWrap = document.createElement('div');
-  pickerWrap.id = 'chatCtxMenu';
-  pickerWrap.style.cssText = `
-    position: fixed;
-    z-index: 99999;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    background: rgba(14,14,14,0.97);
-    border: 1px solid rgba(201,168,76,0.22);
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 16px 48px rgba(0,0,0,0.7);
-    backdrop-filter: blur(20px);
-    min-width: 195px;
-    animation: devModalIn .18s ease forwards;`;
+  /* ── Picker التفاعل أعلى القائمة ── */
+  const menu = document.createElement('div');
+  menu.id = 'chatCtxMenu';
 
-  /* ── صف الإيموجي ── */
-  const emojiRow = document.createElement('div');
-  emojiRow.style.cssText = `
-    display: flex;
-    justify-content: space-around;
-    padding: 8px 10px 6px;
-    border-bottom: 1px solid rgba(255,255,255,0.06);`;
-
-  REACTION_EMOJIS.forEach(em => {
-    const btn = document.createElement('div');
-    btn.className = 'emoji-pick-btn';
-    btn.textContent = em;
-    btn.style.fontSize = '22px';
-    btn.onclick = () => {
-      addReaction(msgId, em);
-      pickerWrap.remove();
-    };
-    emojiRow.appendChild(btn);
-  });
-  pickerWrap.appendChild(emojiRow);
-
-  /* ── عناصر القائمة ── */
-  const items = [];
-
-  /* رد */
-  items.push({
-    icon  : 'fa-reply',
-    label : 'Yanıtla',
-    color : '',
-    action: () => startReply(msgId),
-  });
-
-  /* نسخ (نص فقط) */
-  if (msg?.message && (type === 'text' || !type)) {
-    items.push({
-      icon  : 'fa-copy',
-      label : 'Kopyala',
-      color : '',
-      action: () => copyMsgText(msg.message),
-    });
-  }
-
-  /* تعديل (مرسل + نص فقط) */
-  if (isMine && (type === 'text' || !type) && msg?.message) {
-    items.push({
-      icon  : 'fa-pen',
-      label : 'Düzenle',
-      color : '',
-      action: () => startEdit(msgId),
-    });
-  }
-
-  /* إعادة توجيه */
-  items.push({
-    icon  : 'fa-share',
-    label : 'İlet',
-    color : '',
-    action: () => forwardMessage(msgId),
-  });
-
-  /* تثبيت (WOW فقط) */
-  if (currentUser === ADMIN_USER) {
-    items.push({
-      icon  : 'fa-thumbtack',
-      label : _pinnedMsgId === msgId ? 'Sabitlemeyi Kaldır' : 'Sabitle',
-      color : '',
-      action: () => _pinnedMsgId === msgId ? unpinMessage() : pinMessage(msgId),
-    });
-  }
-
-  /* معلومات الرسالة */
-  items.push({
-    icon  : 'fa-info-circle',
-    label : 'Mesaj Bilgisi',
-    color : '',
-    action: () => showMsgInfo(msgId),
-  });
-
-  /* حذف */
-  if (isMine) {
-    items.push({
-      icon  : 'fa-trash-alt',
-      label : 'Benden Sil',
-      color : 'danger',
-      action: () => deleteMsg(msgId, 'mine'),
-    });
-  }
-  if (isMine || currentUser === ADMIN_USER) {
-    items.push({
-      icon  : 'fa-trash-alt',
-      label : 'Herkesten Sil',
-      color : 'danger',
-      action: () => deleteMsg(msgId, 'all'),
-    });
-  }
-
-  /* بناء العناصر */
-  items.forEach(item => {
-    const el = document.createElement('div');
-    el.className = `ctx-i${item.color ? ' ' + item.color : ''}`;
-    el.innerHTML = `<i class="fas ${item.icon}"></i>${item.label}`;
-    el.onclick = () => {
-      pickerWrap.remove();
-      item.action();
-    };
-    pickerWrap.appendChild(el);
-  });
-
-  /* تحديد الموضع */
+  /* حساب الموضع */
   const x = e.clientX || e.touches?.[0]?.clientX || window.innerWidth / 2;
   const y = e.clientY || e.touches?.[0]?.clientY || window.innerHeight / 2;
-  pickerWrap.style.left = Math.min(x, window.innerWidth  - 210) + 'px';
-  pickerWrap.style.top  = Math.min(y, window.innerHeight - 320) + 'px';
 
-  document.body.appendChild(pickerWrap);
+  menu.innerHTML = `
+    <!-- شريط التفاعلات السريعة -->
+    <div style="display:flex;gap:4px;padding:8px 12px;
+      border-bottom:1px solid rgba(255,255,255,.06);">
+      ${REACTION_EMOJIS.map(em => `
+        <button class="react-emoji-btn" style="font-size:20px;"
+          onclick="toggleReaction(${msgId},'${em}');
+                   document.getElementById('chatCtxMenu')?.remove()">
+          ${em}
+        </button>`).join('')}
+    </div>
+
+    <!-- الإجراءات -->
+    <div class="ctx-i" onclick="setReplyTo(${JSON.stringify(msg).replace(/"/g,'&quot;')});
+      document.getElementById('chatCtxMenu')?.remove()">
+      <i class="fas fa-reply"></i>Yanıtla
+    </div>
+
+    ${type === 'text' && msg.message ? `
+    <div class="ctx-i" onclick="copyMsgText('${escHtml(msg.message)}')">
+      <i class="fas fa-copy"></i>Kopyala
+    </div>` : ''}
+
+    <div class="ctx-i" onclick="openForwardModal(${msgId})">
+      <i class="fas fa-share"></i>İlet
+    </div>
+
+    <div class="ctx-i" onclick="openMsgInfo(${msgId})">
+      <i class="fas fa-info-circle"></i>Mesaj Bilgisi
+    </div>
+
+    ${isMine && type === 'text' && msg.message ? `
+    <div class="ctx-i" onclick="startEdit(${msgId})">
+      <i class="fas fa-pen"></i>Düzenle
+    </div>` : ''}
+
+    ${isMine ? `
+    <div class="ctx-i danger" onclick="deleteMsg(${msgId},'mine')">
+      <i class="fas fa-trash-alt"></i>Benden Sil
+    </div>
+    ${currentUser === ADMIN_USER ? `
+    <div class="ctx-i danger" onclick="deleteMsg(${msgId},'all')">
+      <i class="fas fa-trash-alt"></i>Herkesten Sil
+    </div>` : ''}` : `
+    ${currentUser === ADMIN_USER ? `
+    <div class="ctx-i danger" onclick="deleteMsg(${msgId},'all')">
+      <i class="fas fa-trash-alt"></i>Sil (Admin)
+    </div>` : ''}`}
+  `;
+
+  menu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
+  menu.style.top  = Math.min(y, window.innerHeight - 320) + 'px';
+  document.body.appendChild(menu);
 
   setTimeout(() => {
-    document.addEventListener('click', () => pickerWrap.remove(), { once: true });
+    document.addEventListener('click',
+      () => document.getElementById('chatCtxMenu')?.remove(),
+    { once: true });
   }, 80);
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   Override openRoomWindow لإضافة كل الميزات
+   Override: onChatInput — إرسال إشارة الكتابة
 ══════════════════════════════════════════════════════════════ */
 
-const _origOpenRoomWindow_v4 = openRoomWindow;
-openRoomWindow = async function(roomId, roomType) {
-
-  /* استدعاء الأصل */
-  await _origOpenRoomWindow_v4(roomId, roomType);
-
-  /* ── إضافة مؤشر الكتابة ── */
-  const area = document.getElementById('chatMsgsArea');
-  if (area) {
-    const typingEl = document.createElement('div');
-    typingEl.id = 'typingIndicator';
-    area.after(typingEl);
-  }
-
-  /* ── إضافة شريط الرد ── */
-  const inputBar = document.getElementById('chatInputBar');
-  if (inputBar && !document.getElementById('chatReplyBar')) {
-    const replyBar = document.createElement('div');
-    replyBar.id = 'chatReplyBar';
-    replyBar.innerHTML = `
-      <div class="reply-bar-line"></div>
-      <div class="reply-bar-content">
-        <div class="reply-bar-sender" id="replyBarSender"></div>
-        <div class="reply-bar-text"   id="replyBarText"></div>
-      </div>
-      <button onclick="cancelReply()" style="
-        background:none;border:none;color:rgba(255,255,255,.3);
-        font-size:16px;cursor:pointer;padding:4px;transition:color .2s;
-        font-family:'Montserrat',sans-serif;"
-        onmouseover="this.style.color='#ef4444'"
-        onmouseout="this.style.color='rgba(255,255,255,.3)'">
-        <i class="fas fa-times"></i>
-      </button>`;
-    inputBar.before(replyBar);
-  }
-
-  /* ── إضافة زر البحث في الهيدر ── */
-  setTimeout(() => {
-    const win = document.getElementById('chatWin');
-    if (!win) return;
-
-    /* زر البحث */
-    const headerTools = win.querySelector('[style*="padding:9px 13px"]');
-    if (headerTools && !headerTools.querySelector('#chatSearchToggle')) {
-      const searchBtn = document.createElement('button');
-      searchBtn.id = 'chatSearchToggle';
-      searchBtn.style.cssText = `
-        width:34px;height:34px;
-        background:rgba(255,255,255,.06);
-        border:1px solid rgba(255,255,255,.08);
-        border-radius:9px;color:rgba(255,255,255,.45);
-        font-size:13px;cursor:pointer;
-        display:flex;align-items:center;justify-content:center;
-        font-family:'Montserrat',sans-serif;
-        transition:all .2s;
-        -webkit-tap-highlight-color:transparent;`;
-      searchBtn.innerHTML = '<i class="fas fa-search"></i>';
-      searchBtn.onclick = openChatSearch;
-      searchBtn.onmouseover = () => {
-        searchBtn.style.background = 'rgba(201,168,76,.1)';
-        searchBtn.style.color = '#c9a84c';
-      };
-      searchBtn.onmouseout = () => {
-        searchBtn.style.background = 'rgba(255,255,255,.06)';
-        searchBtn.style.color = 'rgba(255,255,255,.45)';
-      };
-
-      /* أضفه قبل زر الإعدادات أو في نهاية الهيدر */
-      const settingsBtn = headerTools.querySelector('[onclick*="openGrpSettings"]');
-      if (settingsBtn) headerTools.insertBefore(searchBtn, settingsBtn);
-      else headerTools.appendChild(searchBtn);
-    }
-
-    /* ── تفعيل السحب للرد ── */
-    setupSwipeToReply();
-
-    /* ── تفعيل زر التمرير للأسفل ── */
-    setupScrollDownBtn();
-
-    /* ── تحديث حقل الإدخال ليدعم مؤشر الكتابة ── */
-    const textInput = document.getElementById('chatTextInput');
-    if (textInput) {
-      textInput.oninput = function() { onChatInputWithTyping(this); };
-    }
-
-    /* ── تحميل الرسالة المثبّتة ── */
-    loadPinnedMessage(roomId);
-
-  }, 300);
-
-  /* ── الاشتراك في مؤشر الكتابة ── */
-  subscribeTyping(roomId);
-};
-
-
-/* ══════════════════════════════════════════════════════════════
-   Override closeRoomWindow لتنظيف الميزات الجديدة
-══════════════════════════════════════════════════════════════ */
-
-const _origCloseRoomWindow_v4 = closeRoomWindow;
-closeRoomWindow = function() {
-  /* إيقاف مؤشر الكتابة */
-  if (_isTyping) {
-    _isTyping = false;
-    sendTypingStatus(false);
-  }
-  clearTimeout(_typingTimer);
-
-  /* إلغاء اشتراك الكتابة */
-  if (_typingChannel) {
-    initSupabase().then(sb => sb?.removeChannel(_typingChannel));
-    _typingChannel = null;
-  }
-
-  /* إعادة تعيين المتغيرات */
-  _replyToMsg       = null;
-  _pinnedMsgId      = null;
-  _searchResults    = [];
-  _searchIdx        = 0;
-  _unreadBelowCount = 0;
-  Object.keys(_typingUsers).forEach(k => delete _typingUsers[k]);
-
-  _origCloseRoomWindow_v4();
-};
-
-
-/* ══════════════════════════════════════════════════════════════
-   Override appendMsgBubble لدعم الميزات الجديدة
-══════════════════════════════════════════════════════════════ */
-
-const _origAppendMsgBubble_v4 = appendMsgBubble;
-appendMsgBubble = function(msg) {
-  _origAppendMsgBubble_v4(msg);
-
-  /* تحديث عداد الرسائل الجديدة */
-  if (msg.from_user !== currentUser) {
-    incrementUnreadBelow();
+const _origOnChatInput_v4 = onChatInput;
+onChatInput = function(el) {
+  _origOnChatInput_v4(el);
+  if (el.value.trim() && _activeRoomId) {
+    sendTypingSignal();
   }
 };
 
 
 /* ══════════════════════════════════════════════════════════════
-   تحميل الرسالة المثبّتة
+   Realtime للتفاعلات
 ══════════════════════════════════════════════════════════════ */
 
-async function loadPinnedMessage(roomId) {
-  const sb = await initSupabase();
-  if (!sb) return;
+function subscribeReactionsRealtime(roomId) {
+  unsubscribeReactionsRealtime();
+  initSupabase().then(sb => {
+    if (!sb) return;
+    _reactionsChannel = sb.channel('reactions-' + roomId)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: GRP_MSGS,
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        const msg = payload.new;
+        if (!msg || !msg.reactions) return;
+        const idx = _chatMessages.findIndex(m => m.id === msg.id);
+        if (idx !== -1) {
+          _chatMessages[idx].reactions = msg.reactions;
+          updateReactionDisplay(msg.id, msg.reactions);
+        }
+      })
+      .subscribe();
+  });
+}
 
-  const { data: room } = await sb.from(GRP_ROOMS)
-    .select('description').eq('id', roomId).single();
-
-  if (!room?.description?.startsWith('pinned:')) return;
-
-  const pinnedId = parseInt(room.description.replace('pinned:', ''));
-  if (!pinnedId) return;
-
-  /* انتظر تحميل الرسائل */
-  setTimeout(() => {
-    const msg = _chatMessages.find(m => m.id === pinnedId);
-    if (msg) {
-      _pinnedMsgId = pinnedId;
-      pinMessage(pinnedId);
-    }
-  }, 500);
+function unsubscribeReactionsRealtime() {
+  if (_reactionsChannel) {
+    initSupabase().then(sb => sb?.removeChannel(_reactionsChannel));
+    _reactionsChannel = null;
+  }
 }
 
 
 /* ══════════════════════════════════════════════════════════════
-   Override subscribeRoomRealtime لدعم التفاعلات
+   Override: subscribeRoomRealtime — إضافة الرسائل الجديدة
+   مع دعم Scroll Down و Typing
 ══════════════════════════════════════════════════════════════ */
 
-const _origSubscribeRoomRealtime_v4 = subscribeRoomRealtime;
+const _origSubscribeRoom_v4 = subscribeRoomRealtime;
 subscribeRoomRealtime = function(roomId) {
-  _origSubscribeRoomRealtime_v4(roomId);
-
-  /* اشتراك إضافي للتفاعلات */
+  unsubscribeRoomRealtime();
   initSupabase().then(sb => {
     if (!sb) return;
-    sb.channel('reactions-' + roomId)
-      .on('broadcast', { event: 'reaction' }, payload => {
-        const { msgId, reactions } = payload.payload || {};
-        if (!msgId) return;
-        _msgReactions[msgId] = reactions || {};
-        updateMsgReactions(msgId);
+    _grpChannel = sb.channel('room-v4-' + roomId + '-' + currentUser)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: GRP_MSGS,
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        const msg = payload.new;
+        if (!msg || msg.from_user === currentUser) return;
+
+        _chatMessages.push(msg);
+        appendMsgBubble(msg);
+
+        /* تسجيل القراءة إذا كنا في الأسفل */
+        if (_isAtBottom) {
+          scrollToBottom(true);
+          recordMessageRead(roomId);
+        } else {
+          _newMsgCount++;
+          updateScrollBadge();
+          playChatNotif();
+        }
       })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: GRP_MSGS,
+        filter: `room_id=eq.${roomId}`
+      }, payload => {
+        const msg = payload.new;
+        if (!msg) return;
+
+        if (msg.is_deleted) {
+          const el = document.getElementById('msg-' + msg.id);
+          if (el) { el.style.opacity = '0'; setTimeout(() => el.remove(), 250); }
+          const idx = _chatMessages.findIndex(m => m.id === msg.id);
+          if (idx !== -1) _chatMessages.splice(idx, 1);
+          return;
+        }
+
+        /* تحديث الرسالة (تعديل أو تفاعل) */
+        const idx = _chatMessages.findIndex(m => m.id === msg.id);
+        if (idx !== -1) {
+          _chatMessages[idx] = msg;
+          const el = document.getElementById('msg-' + msg.id);
+          if (el) {
+            const w = document.createElement('div');
+            w.innerHTML = buildMsgBubble(msg, idx);
+            el.replaceWith(w.firstElementChild);
+          }
+        }
+      })
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: GRP_MEMBERS,
+        filter: `room_id=eq.${roomId}`
+      }, () => updateRoomSubtitle(roomId, _activeRoomType))
       .subscribe();
   });
 };
 
 
 /* ══════════════════════════════════════════════════════════════
-   حالة الاتصال في قائمة المحادثات
+   تهيئة v4 عند فتح الغرفة
 ══════════════════════════════════════════════════════════════ */
 
-async function updateOnlineStatus() {
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  /* تحديث last_seen في admin_profiles */
-  await sb.from(PROFILE_TABLE).upsert([{
-    username   : currentUser,
-    updated_at : new Date().toISOString(),
-  }], { onConflict: 'username' });
-}
-
-/* تحديث كل 30 ثانية */
-setInterval(updateOnlineStatus, 30000);
-
-
-/* ══════════════════════════════════════════════════════════════
-   CSS إضافي لتحسين الهيدر والشريط السفلي
-══════════════════════════════════════════════════════════════ */
-
-(function injectExtraCSS() {
-  if (document.getElementById('waExtraCSS')) return;
-  const s = document.createElement('style');
-  s.id = 'waExtraCSS';
-  s.textContent = `
-
-    /* ── تحسين شريط الإدخال ── */
-    #chatInputBar {
-      gap: 6px !important;
-    }
-
-    /* ── تحسين الفقاعات ── */
-    .cb.mine {
-      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    }
-    .cb.theirs {
-      box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-    }
-
-    /* ── تحسين شريط الرد في الإدخال ── */
-    #chatReplyBar {
-      background: rgba(201,168,76,0.05);
-      border-top: 1px solid rgba(201,168,76,0.15);
-      padding: 8px 14px;
-      flex-shrink: 0;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* ── تحسين منطقة الرسائل ── */
-    #chatMsgsArea {
-      background: linear-gradient(
-        to bottom,
-        rgba(10,10,10,0.3),
-        rgba(10,10,10,0.1)
-      );
-    }
-
-    /* ── تحسين الفاصل الزمني ── */
-    .cb-date-div {
-      position: sticky;
-      top: 8px;
-      z-index: 5;
-    }
-
-    /* ── نبض الرسالة الجديدة ── */
-    @keyframes newMsgPulse {
-      0%   { box-shadow: 0 0 0 0   rgba(201,168,76,0.4); }
-      70%  { box-shadow: 0 0 0 8px rgba(201,168,76,0);   }
-      100% { box-shadow: none; }
-    }
-    .cb-wrap:last-child .cb {
-      animation: newMsgPulse 0.8s ease;
-    }
-
-    /* ── تحسين زر التسجيل ── */
-    #chatRecordBtn {
-      background: rgba(255,255,255,0.07) !important;
-    }
-    #chatRecordBtn:hover {
-      background: rgba(201,168,76,0.12) !important;
-      color: #c9a84c !important;
-    }
-
-    /* ── تحسين قائمة السياق ── */
-    #chatCtxMenu {
-      max-height: 85vh;
-      overflow-y: auto;
-    }
-
-    /* ── شريط البحث ── */
-    #chatSearchBar {
-      background: rgba(10,10,10,0.97);
-      border-bottom: 1px solid rgba(255,255,255,0.07);
-      padding: 8px 12px;
-      flex-shrink: 0;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* ── تحسين الرسائل الصوتية على الموبايل ── */
-    @media (max-width: 400px) {
-      .cb-voice-right {
-        width: 38px !important;
-        height: 38px !important;
-      }
-    }
-
-    /* ── تأثير ظهور الرسائل ── */
-    .cb-wrap {
-      transition: transform 0.15s ease;
-    }
-    .cb-wrap:active {
-      transform: scale(0.98);
-    }
-
-  `;
-  document.head.appendChild(s);
-})();
-
-
-/* ══════════════════════════════════════════════════════════════
-   تهيئة نهائية
-══════════════════════════════════════════════════════════════ */
-
-console.log('[WA Features v4.0] ✅ كل الميزات محمّلة');
-console.log('  ✓ ردود الرسائل (Reply)');
-console.log('  ✓ تفاعلات الإيموجي (Reactions)');
-console.log('  ✓ مؤشر الكتابة (Typing Indicator)');
-console.log('  ✓ زر التمرير للأسفل');
-console.log('  ✓ تثبيت الرسائل (Pin)');
-console.log('  ✓ البحث في المحادثة');
-console.log('  ✓ السحب للرد (Swipe to Reply)');
-console.log('  ✓ إعادة التوجيه (Forward)');
-console.log('  ✓ معلومات الرسالة');
-console.log('  ✓ حالة الاتصال');
+console.log('[Chat System v4.0] ✅ واتساب كامل — جاهز');
 
 
 
