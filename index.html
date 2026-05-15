@@ -28283,7 +28283,6 @@ function buildVoicePlayer(msg, isMine) {
   const durStr  = (durSec && isFinite(durSec)) ? fmtDuration(durSec) : '0:00';
   const timeStr = fmtTime(msg.created_at);
 
-  /* ── الأفاتار ── */
   const p        = _chatProfiles[msg.from_user] || {};
   const initials = (p.display_name || msg.from_user || '?').substring(0,2).toUpperCase();
   const avatarInner = p.avatar_url
@@ -28298,16 +28297,15 @@ function buildVoicePlayer(msg, isMine) {
            font-size:15px;font-weight:900;
            color:${isMine ? '#5a3e00' : '#c9a84c'};">${initials}</div>`;
 
-  /* ── ألوان ── */
   const dotColor     = '#3b82f6';
-  const lineColor    = isMine ? 'rgba(0,0,0,0.20)'   : 'rgba(255,255,255,0.25)';
-  const durColor     = isMine ? 'rgba(0,0,0,0.58)'   : 'rgba(255,255,255,0.58)';
-  const timeColor    = isMine ? 'rgba(0,0,0,0.42)'   : 'rgba(255,255,255,0.42)';
-  const playBg       = isMine ? 'rgba(0,0,0,0.13)'   : 'rgba(255,255,255,0.13)';
-  const playColor    = isMine ? '#222'                : '#fff';
-  const speedBg      = isMine ? 'rgba(0,0,0,0.15)'   : 'rgba(255,255,255,0.15)';
-  const speedColor   = isMine ? 'rgba(0,0,0,0.72)'   : 'rgba(255,255,255,0.92)';
-  const avatarBorder = isMine ? 'rgba(0,0,0,0.15)'   : 'rgba(201,168,76,0.35)';
+  const lineColor    = isMine ? 'rgba(0,0,0,0.20)'  : 'rgba(255,255,255,0.25)';
+  const durColor     = isMine ? 'rgba(0,0,0,0.58)'  : 'rgba(255,255,255,0.58)';
+  const timeColor    = isMine ? 'rgba(0,0,0,0.42)'  : 'rgba(255,255,255,0.42)';
+  const playBg       = isMine ? 'rgba(0,0,0,0.13)'  : 'rgba(255,255,255,0.13)';
+  const playColor    = isMine ? '#222'               : '#fff';
+  const speedBg      = isMine ? 'rgba(0,0,0,0.15)'  : 'rgba(255,255,255,0.15)';
+  const speedColor   = isMine ? 'rgba(0,0,0,0.72)'  : 'rgba(255,255,255,0.92)';
+  const avatarBorder = isMine ? 'rgba(0,0,0,0.15)'  : 'rgba(201,168,76,0.35)';
 
   return `
   <div id="${msgId}" style="
@@ -28319,95 +28317,86 @@ function buildVoicePlayer(msg, isMine) {
   ">
 
     <!-- ══ الصف العلوي ══ -->
-    <div style="
-      display:flex;
-      align-items:center;
-      gap:10px;
-    ">
+    <div style="display:flex;align-items:center;gap:10px;">
 
       <!-- ① الأفاتار / السرعة -->
       <div style="position:relative;width:52px;height:52px;flex-shrink:0;">
-
         <div id="voiceAvatar_${msgId}" style="
-          position:absolute;inset:0;
-          border-radius:50%;
+          position:absolute;inset:0;border-radius:50%;
           background:rgba(201,168,76,0.07);
           border:2px solid ${avatarBorder};
           overflow:hidden;
           display:flex;align-items:center;justify-content:center;
-          transition:opacity .25s, transform .25s;">
+          transition:opacity .25s,transform .25s;">
           ${avatarInner}
         </div>
-
         <button id="speedBtn_${msgId}"
                 onclick="cycleVoiceSpeedWA('${msgId}')"
                 style="
           position:absolute;inset:0;
           border-radius:50%;border:none;cursor:pointer;
-          background:${speedBg};
-          color:${speedColor};
+          background:${speedBg};color:${speedColor};
           font-size:12px;font-weight:900;
           font-family:'Montserrat',sans-serif;
           display:flex;align-items:center;justify-content:center;
           opacity:0;transform:scale(0.75);pointer-events:none;
-          transition:opacity .25s, transform .25s;
+          transition:opacity .25s,transform .25s;
           -webkit-tap-highlight-color:transparent;">
           1×
         </button>
       </div>
 
-      <!-- ② زر التشغيل ▶ مضغوط بدون padding -->
+      <!-- ② زر التشغيل ▶ -->
       <button onclick="toggleVoiceWA('${msgId}')" style="
         width:28px;height:28px;min-width:28px;
         border-radius:50%;border:none;cursor:pointer;
-        background:${playBg};
-        color:${playColor};
+        background:${playBg};color:${playColor};
         display:flex;align-items:center;justify-content:center;
-        font-size:11px;
-        flex-shrink:0;
-        padding:0;
-        line-height:1;
+        font-size:11px;flex-shrink:0;
+        padding:0;line-height:1;
         transition:transform .18s;
         -webkit-tap-highlight-color:transparent;"
         onmouseover="this.style.transform='scale(1.1)'"
         onmouseout="this.style.transform='scale(1)'">
         <i class="fas fa-play" id="playIcon_${msgId}"
-           style="margin-left:1px;"></i>
+           style="position:relative;left:1px;margin:0;line-height:1;"></i>
       </button>
 
-      <!-- ③ الخط المتقطع -->
+      <!-- ③ شريط التقدم — يدعم سحب الماوس واللمس -->
       <div id="waProgressBar_${msgId}"
-           onclick="seekVoiceWA('${msgId}',event)"
            style="
-             flex:1;
-             height:52px;
-             cursor:pointer;
+             flex:1;height:52px;
              position:relative;
-             display:flex;
-             align-items:center;
-           ">
+             display:flex;align-items:center;
+             cursor:pointer;
+             touch-action:none;
+             user-select:none;
+             -webkit-user-select:none;"
 
-        <!-- الخط الخلفي -->
+           onmousedown="startVoiceDrag('${msgId}',event)"
+           ontouchstart="startVoiceDrag('${msgId}',event)"
+      >
+
+        <!-- الخط المتقطع الخلفي -->
         <div style="
-          position:absolute;
-          left:0;right:0;
+          position:absolute;left:0;right:0;
           top:50%;transform:translateY(-50%);
           height:2px;
           background:repeating-linear-gradient(
             to right,
-            ${lineColor} 0px, ${lineColor} 5px,
-            transparent 5px, transparent 9px
+            ${lineColor} 0px,${lineColor} 5px,
+            transparent 5px,transparent 9px
           );
-          border-radius:2px;
-          z-index:1;">
+          border-radius:2px;z-index:1;pointer-events:none;">
+
           <!-- الجزء المُشغَّل -->
           <div id="waPlayed_${msgId}" style="
             position:absolute;top:0;left:0;
             height:100%;width:0%;
             background:${dotColor};
-            border-radius:2px;
-            opacity:0.55;
-            transition:width .08s linear;"></div>
+            border-radius:2px;opacity:0.55;
+            transition:width .08s linear;
+            pointer-events:none;"></div>
         </div>
 
         <!-- النقطة الزرقاء -->
@@ -28420,11 +28409,11 @@ function buildVoicePlayer(msg, isMine) {
           background:${dotColor};
           box-shadow:0 1px 6px rgba(59,130,246,0.6);
           z-index:3;
-          transition:left .08s linear;"></div>
+          transition:left .08s linear;
+          pointer-events:none;"></div>
       </div>
 
     </div>
-    <!-- ══ نهاية الصف العلوي ══ -->
 
     <!-- ══ الصف السفلي: مدة + وقت ══ -->
     <!-- أفاتار 52 + gap 10 + زر 28 + gap 10 = 100px -->
@@ -28433,9 +28422,8 @@ function buildVoicePlayer(msg, isMine) {
       align-items:center;
       justify-content:space-between;
       padding-left:100px;
-      margin-top:3px;
-    ">
-      <!-- مدة الصوت تحت بداية الخط -->
+      margin-top:3px;">
+
       <span id="voiceDur_${msgId}" style="
         font-size:11px;font-weight:700;
         font-family:'Montserrat',sans-serif;
@@ -28443,7 +28431,6 @@ function buildVoicePlayer(msg, isMine) {
         ${durStr}
       </span>
 
-      <!-- وقت الإرسال + ✓✓ تحت نهاية الخط -->
       <span style="
         font-size:10px;
         font-family:'Montserrat',sans-serif;
@@ -28459,7 +28446,6 @@ function buildVoicePlayer(msg, isMine) {
       </span>
     </div>
 
-    <!-- الصوت المخفي -->
     <audio id="aud_${msgId}" src="${url}" preload="auto" style="display:none;"
       ontimeupdate="updateVoiceProgressWA('${msgId}',this)"
       onended="onVoiceEndedWA('${msgId}',this)"
@@ -28468,6 +28454,7 @@ function buildVoicePlayer(msg, isMine) {
     </audio>
   </div>`;
 }
+
 
 
 
@@ -28498,90 +28485,138 @@ function getUserColor(username) {
 
 
 /* ══════════════════════════════════════════════════════════════
-   مشغّل الصوت — واتساب
+   مشغّل الصوت — واتساب (نسخة كاملة مع السحب)
 ══════════════════════════════════════════════════════════════ */
-const _voiceSpeeds=[1,1.5,2];
-const _voiceSpeedIdx={};
-const _voicePlaying={};
+const _voiceSpeeds   = [1, 1.5, 2];
+const _voiceSpeedIdx = {};
+const _voicePlaying  = {};
+const _voiceDragging = {};
 
-/* ── تشغيل / إيقاف مع تبديل الأفاتار ↔ السرعة ── */
+/* ── تشغيل / إيقاف ── */
 function toggleVoiceWA(msgId) {
-  const aud   = document.getElementById('aud_'       + msgId);
-  const icon  = document.getElementById('playIcon_'  + msgId);
-  const avatar= document.getElementById('voiceAvatar_' + msgId);
-  const speed = document.getElementById('speedBtn_'  + msgId);
+  const aud  = document.getElementById('aud_'      + msgId);
+  const icon = document.getElementById('playIcon_' + msgId);
   if (!aud || !icon) return;
 
-  /* إيقاف أي صوت آخر يعمل */
+  /* أوقف أي صوت آخر يعمل */
   document.querySelectorAll('audio').forEach(a => {
     if (a.id !== 'aud_' + msgId && !a.paused) {
       a.pause();
-      const otherId = a.id.replace('aud_', '');
-      _showVoiceAvatar(otherId);
-      const otherIcon = document.getElementById('playIcon_' + otherId);
-      if (otherIcon) otherIcon.className = 'fas fa-play';
-      otherIcon && (otherIcon.style.marginLeft = '2px');
+      const oid = a.id.replace('aud_', '');
+      _showVoiceAvatar(oid);
+      const oi = document.getElementById('playIcon_' + oid);
+      if (oi) { oi.className = 'fas fa-play'; oi.style.left = '1px'; }
     }
   });
 
   if (aud.paused) {
     aud.play().catch(() => {});
-    icon.className    = 'fas fa-pause';
-    icon.style.marginLeft = '0';
-    _hideVoiceAvatar(msgId);   /* أخفِ الأفاتار، أظهر السرعة */
+    icon.className  = 'fas fa-pause';
+    icon.style.left = '0px';
+    _hideVoiceAvatar(msgId);
     _voicePlaying[msgId] = true;
   } else {
     aud.pause();
-    icon.className    = 'fas fa-play';
-    icon.style.marginLeft = '2px';
-    _showVoiceAvatar(msgId);   /* أعِد الأفاتار */
+    icon.className  = 'fas fa-play';
+    icon.style.left = '1px';
+    _showVoiceAvatar(msgId);
     _voicePlaying[msgId] = false;
   }
 }
 
 /* ── إخفاء الأفاتار وإظهار السرعة ── */
 function _hideVoiceAvatar(msgId) {
-  const avatar = document.getElementById('voiceAvatar_' + msgId);
-  const speed  = document.getElementById('speedBtn_'    + msgId);
-  if (avatar) {
-    avatar.style.opacity       = '0';
-    avatar.style.transform     = 'scale(0.75)';
-    avatar.style.pointerEvents = 'none';
-  }
-  if (speed) {
-    speed.style.opacity       = '1';
-    speed.style.transform     = 'scale(1)';
-    speed.style.pointerEvents = 'auto';
-  }
+  const av = document.getElementById('voiceAvatar_' + msgId);
+  const sp = document.getElementById('speedBtn_'    + msgId);
+  if (av) { av.style.opacity = '0'; av.style.transform = 'scale(0.75)'; av.style.pointerEvents = 'none'; }
+  if (sp) { sp.style.opacity = '1'; sp.style.transform = 'scale(1)';    sp.style.pointerEvents = 'auto'; }
 }
 
 /* ── إظهار الأفاتار وإخفاء السرعة ── */
 function _showVoiceAvatar(msgId) {
-  const avatar = document.getElementById('voiceAvatar_' + msgId);
-  const speed  = document.getElementById('speedBtn_'    + msgId);
-  if (avatar) {
-    avatar.style.opacity       = '1';
-    avatar.style.transform     = 'scale(1)';
-    avatar.style.pointerEvents = 'auto';
+  const av = document.getElementById('voiceAvatar_' + msgId);
+  const sp = document.getElementById('speedBtn_'    + msgId);
+  if (av) { av.style.opacity = '1'; av.style.transform = 'scale(1)';    av.style.pointerEvents = 'auto'; }
+  if (sp) { sp.style.opacity = '0'; sp.style.transform = 'scale(0.75)'; sp.style.pointerEvents = 'none'; }
+}
+
+/* ── بدء السحب (ماوس + لمس) ── */
+function startVoiceDrag(msgId, e) {
+  e.preventDefault();
+  _voiceDragging[msgId] = true;
+
+  const dot = document.getElementById('waDot_' + msgId);
+  if (dot) {
+    dot.style.transition = 'none';
+    dot.style.width      = '17px';
+    dot.style.height     = '17px';
   }
-  if (speed) {
-    speed.style.opacity       = '0';
-    speed.style.transform     = 'scale(0.75)';
-    speed.style.pointerEvents = 'none';
+
+  _applyVoiceSeek(msgId, e);
+
+  const onMove = ev => { if (_voiceDragging[msgId]) _applyVoiceSeek(msgId, ev); };
+  const onUp   = () => {
+    _voiceDragging[msgId] = false;
+    if (dot) {
+      dot.style.transition = 'left .08s linear';
+      dot.style.width      = '13px';
+      dot.style.height     = '13px';
+    }
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onUp);
+    document.removeEventListener('touchmove', onMove);
+    document.removeEventListener('touchend',  onUp);
+  };
+
+  document.addEventListener('mousemove', onMove, { passive: false });
+  document.addEventListener('mouseup',   onUp);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('touchend',  onUp);
+}
+
+/* ── تطبيق موضع السحب على الصوت ── */
+function _applyVoiceSeek(msgId, e) {
+  const bar = document.getElementById('waProgressBar_' + msgId);
+  const aud = document.getElementById('aud_'           + msgId);
+  if (!bar || !aud || !aud.duration) return;
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const rect    = bar.getBoundingClientRect();
+  const pct     = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+
+  aud.currentTime = pct * aud.duration;
+
+  const dot    = document.getElementById('waDot_'    + msgId);
+  const played = document.getElementById('waPlayed_' + msgId);
+  const durEl  = document.getElementById('voiceDur_' + msgId);
+  if (dot)    dot.style.left     = (pct * 100) + '%';
+  if (played) played.style.width = (pct * 100) + '%';
+  if (durEl) {
+    const rem = aud.duration - aud.currentTime;
+    durEl.textContent = fmtDuration(Math.ceil(rem));
+  }
+
+  if (aud.paused) {
+    aud.play().catch(() => {});
+    const icon = document.getElementById('playIcon_' + msgId);
+    if (icon) { icon.className = 'fas fa-pause'; icon.style.left = '0px'; }
+    _hideVoiceAvatar(msgId);
+    _voicePlaying[msgId] = true;
   }
 }
 
 /* ── تحديث الشريط أثناء التشغيل ── */
 function updateVoiceProgressWA(msgId, aud) {
+  if (_voiceDragging[msgId]) return;
   if (!aud.duration || isNaN(aud.duration) || !isFinite(aud.duration)) return;
-  const pct = aud.currentTime / aud.duration;
 
+  const pct    = aud.currentTime / aud.duration;
   const dot    = document.getElementById('waDot_'    + msgId);
   const played = document.getElementById('waPlayed_' + msgId);
   const durEl  = document.getElementById('voiceDur_' + msgId);
 
-  if (dot)    dot.style.left      = (pct * 100) + '%';
-  if (played) played.style.width  = (pct * 100) + '%';
+  if (dot)    dot.style.left     = (pct * 100) + '%';
+  if (played) played.style.width = (pct * 100) + '%';
   if (durEl) {
     const rem = aud.duration - aud.currentTime;
     durEl.textContent = fmtDuration(Math.ceil(rem));
@@ -28591,9 +28626,9 @@ function updateVoiceProgressWA(msgId, aud) {
 /* ── عند انتهاء التشغيل ── */
 function onVoiceEndedWA(msgId, aud) {
   const icon = document.getElementById('playIcon_' + msgId);
-  if (icon) { icon.className = 'fas fa-play'; icon.style.marginLeft = '2px'; }
+  if (icon) { icon.className = 'fas fa-play'; icon.style.left = '1px'; }
   _voicePlaying[msgId] = false;
-  _showVoiceAvatar(msgId);   /* أعِد الأفاتار */
+  _showVoiceAvatar(msgId);
 
   const dot    = document.getElementById('waDot_'    + msgId);
   const played = document.getElementById('waPlayed_' + msgId);
@@ -28604,25 +28639,22 @@ function onVoiceEndedWA(msgId, aud) {
     durEl.textContent = fmtDuration(Math.ceil(aud.duration));
 }
 
-/* ── النقر على الشريط للتخطي ── */
-function seekVoiceWA(msgId, event) {
-  const bar = document.getElementById('waProgressBar_' + msgId);
-  const aud = document.getElementById('aud_'           + msgId);
-  if (!bar || !aud || !aud.duration) return;
-
-  const rect = bar.getBoundingClientRect();
-  const pct  = Math.max(0, Math.min(1,
-    (event.clientX - rect.left) / rect.width
-  ));
-  aud.currentTime = pct * aud.duration;
-
-  if (aud.paused) {
-    aud.play().catch(() => {});
-    const icon = document.getElementById('playIcon_' + msgId);
-    if (icon) { icon.className = 'fas fa-pause'; icon.style.marginLeft = '0'; }
-    _hideVoiceAvatar(msgId);
-    _voicePlaying[msgId] = true;
+/* ── تحميل المدة (مع إصلاح WebM/Infinity) ── */
+function onVoiceMeta(msgId, aud) {
+  if (!aud.duration || isNaN(aud.duration) || !isFinite(aud.duration)) {
+    aud.currentTime = 1e101;
+    aud.addEventListener('timeupdate', function fixDur() {
+      if (aud.duration && isFinite(aud.duration)) {
+        const durEl = document.getElementById('voiceDur_' + msgId);
+        if (durEl) durEl.textContent = fmtDuration(aud.duration);
+        aud.currentTime = 0;
+        aud.removeEventListener('timeupdate', fixDur);
+      }
+    });
+    return;
   }
+  const durEl = document.getElementById('voiceDur_' + msgId);
+  if (durEl) durEl.textContent = fmtDuration(aud.duration);
 }
 
 /* ── تدوير السرعة: 1× → 1.5× → 2× → 1× ── */
@@ -28630,105 +28662,12 @@ function cycleVoiceSpeedWA(msgId) {
   const aud = document.getElementById('aud_'      + msgId);
   const btn = document.getElementById('speedBtn_' + msgId);
   if (!aud || !btn) return;
-
   _voiceSpeedIdx[msgId] = ((_voiceSpeedIdx[msgId] || 0) + 1) % _voiceSpeeds.length;
   const spd = _voiceSpeeds[_voiceSpeedIdx[msgId]];
-  aud.playbackRate  = spd;
-  btn.textContent   = spd + '×';
+  aud.playbackRate = spd;
+  btn.textContent  = spd + '×';
 }
 
-
-
-function onVoiceEnded(msgId, aud) {
-  const icon=document.getElementById('playIcon_'+msgId);
-  if(icon) icon.className='fas fa-play';
-  _voicePlaying[msgId]=false;
-
-  /* إعادة الأشرطة */
-  const waves=document.getElementById('waves_'+msgId);
-  if(waves) waves.querySelectorAll('.cb-voice-wave-bar')
-    .forEach(b=>b.className='cb-voice-wave-bar unplayed');
-
-  /* إعادة الوقت */
-  const durEl=document.getElementById('voiceDur_'+msgId);
-  const dur=aud.duration;
-  if(durEl&&dur&&!isNaN(dur)) durEl.textContent=fmtDuration(Math.ceil(dur));
-}
-
-/* ── تحديث مدة الصوت بعد تحميله ── */
-function onVoiceMeta(msgId, aud) {
-    /* بعض متصفحات الموبايل تُعيد Infinity لملفات WebM */
-    if (!aud.duration || isNaN(aud.duration) || !isFinite(aud.duration)) {
-        /* محاولة إصلاح: نضع currentTime في النهاية لإجبار المتصفح على حساب المدة */
-        aud.currentTime = 1e101;
-        aud.addEventListener('timeupdate', function fixDur() {
-            if (aud.duration && isFinite(aud.duration)) {
-                const durEl = document.getElementById('voiceDur_' + msgId);
-                if (durEl) durEl.textContent = fmtDuration(aud.duration);
-                aud.currentTime = 0;
-                aud.removeEventListener('timeupdate', fixDur);
-            }
-        });
-        return;
-    }
-    const durEl = document.getElementById('voiceDur_' + msgId);
-    if (durEl) durEl.textContent = fmtDuration(aud.duration);
-}
-
-
-function seekVoice(msgId, pct) {
-  const aud=document.getElementById('aud_'+msgId);
-  if(!aud||!aud.duration) return;
-  aud.currentTime=pct*aud.duration;
-  if(aud.paused) {
-    aud.play().catch(()=>{});
-    const icon=document.getElementById('playIcon_'+msgId);
-    if(icon) icon.className='fas fa-pause';
-    _voicePlaying[msgId]=true;
-  }
-}
-
-function cycleVoiceSpeed(msgId) {
-  const aud=document.getElementById('aud_'+msgId);
-  const btn=document.getElementById('speedBtn_'+msgId);
-  if(!aud||!btn) return;
-  _voiceSpeedIdx[msgId]=((_voiceSpeedIdx[msgId]||0)+1)%_voiceSpeeds.length;
-  const spd=_voiceSpeeds[_voiceSpeedIdx[msgId]];
-  aud.playbackRate=spd;
-  btn.textContent=spd+'×';
-}
-
-/* ← أضف هاتين الدالتين هنا مباشرة */
-
-function _onVoicePlay(msgId) {
-  const avatar = document.getElementById('voiceAvatar_' + msgId);
-  const speed  = document.getElementById('speedBtn_'   + msgId);
-  if (avatar) {
-    avatar.style.opacity      = '0';
-    avatar.style.transform    = 'scale(0.75)';
-    avatar.style.pointerEvents = 'none';
-  }
-  if (speed) {
-    speed.style.opacity      = '1';
-    speed.style.transform    = 'scale(1)';
-    speed.style.pointerEvents = 'auto';
-  }
-}
-
-function _onVoicePause(msgId) {
-  const avatar = document.getElementById('voiceAvatar_' + msgId);
-  const speed  = document.getElementById('speedBtn_'   + msgId);
-  if (avatar) {
-    avatar.style.opacity      = '1';
-    avatar.style.transform    = 'scale(1)';
-    avatar.style.pointerEvents = 'auto';
-  }
-  if (speed) {
-    speed.style.opacity      = '0';
-    speed.style.transform    = 'scale(0.75)';
-    speed.style.pointerEvents = 'none';
-  }
-}
 
 
 
