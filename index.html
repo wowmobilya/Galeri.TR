@@ -27149,6 +27149,19 @@ let _chatPageReady    = false;
         font-size: 13px !important;
     }
 }
+/* ── ألوان الموجات ── */
+.cb.mine   .cb-voice-wave-bar.played   { background: rgba(0,0,0,0.55) !important; }
+.cb.mine   .cb-voice-wave-bar.unplayed { background: rgba(0,0,0,0.22) !important; }
+.cb.theirs .cb-voice-wave-bar.played   { background: #c9a84c !important; }
+.cb.theirs .cb-voice-wave-bar.unplayed { background: rgba(255,255,255,0.25) !important; }
+
+/* ── الفقاعة الصوتية لا تتجاوز الحدود ── */
+.cb .cb-voice { overflow: visible; }
+
+/* ── موبايل ── */
+@media (max-width: 480px) {
+  .cb .cb-voice { max-width: 240px !important; min-width: 180px !important; }
+}
 
 
 
@@ -28264,126 +28277,153 @@ function buildMsgBubble(msg, idx) {
 
 /* ── مشغّل الصوت بتصميم واتساب (تبديل الصورة بالسرعة) ── */
 function buildVoicePlayer(msg, isMine) {
-  const url = msg.media_url;
+  const url    = msg.media_url;
   const durSec = msg.duration_sec || 0;
-  const msgId = 'voice_' + msg.id;
-  const isValidDur = durSec && !isNaN(durSec) && isFinite(durSec);
-  const durStr = isValidDur ? fmtDuration(durSec) : '0:00';
-  const bars = generateWaveBars(28); /* ← قللنا الأشرطة */
+  const msgId  = 'voice_' + msg.id;
+  const durStr = (durSec && isFinite(durSec)) ? fmtDuration(durSec) : '0:00';
 
+  /* ── موجات عشوائية مثل واتساب ── */
+  const bars = generateWaveBars(40);
   const barsHtml = bars.map((h, i) =>
     `<div class="cb-voice-wave-bar unplayed"
-      data-idx="${i}" style="height:${h}px;min-height:4px;"
-      onclick="seekVoice('${msgId}',${i / bars.length})"></div>`
+       data-idx="${i}"
+       style="height:${h}px;min-height:3px;width:2.5px;border-radius:2px;flex-shrink:0;"
+       onclick="seekVoice('${msgId}',${i / bars.length})"></div>`
   ).join('');
 
-  /* ── الأفاتار مع الميكروفون ── */
-  const initials = ((msg.from_user) || '?').substring(0, 2).toUpperCase();
-  const p = _chatProfiles[msg.from_user] || {};
+  /* ── الأفاتار ── */
+  const p       = _chatProfiles[msg.from_user] || {};
+  const initials = (p.display_name || msg.from_user || '?').substring(0, 2).toUpperCase();
   const avatarInner = p.avatar_url
-    ? `<img src="${p.avatar_url}" style="width:100%;height:100%;
-        object-fit:cover;border-radius:50%;" draggable="false"
-        onerror="this.style.display='none'"/>`
-    : `<span style="font-size:14px;font-weight:900;color:#c9a84c;">${initials}</span>`;
+    ? `<img src="${p.avatar_url}"
+         style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;"
+         draggable="false"
+         onerror="this.style.display='none'"/>`
+    : `<span style="font-size:15px;font-weight:900;
+         color:${isMine ? '#5a3e00' : '#c9a84c'};">${initials}</span>`;
 
-  const micColor = isMine ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
-  const micBg    = isMine ? 'rgba(0,0,0,0.2)' : 'rgba(201,168,76,0.25)';
+  /* ── ألوان حسب الجانب ── */
+  const playBg    = isMine ? 'rgba(0,0,0,0.18)'          : 'rgba(201,168,76,0.18)';
+  const playColor = isMine ? '#3a2800'                    : '#c9a84c';
+  const wavePlayed   = isMine ? 'rgba(0,0,0,0.55)'        : '#c9a84c';
+  const waveUnplayed = isMine ? 'rgba(0,0,0,0.22)'        : 'rgba(255,255,255,0.25)';
+  const durColor  = isMine ? 'rgba(0,0,0,0.5)'            : 'rgba(255,255,255,0.5)';
+  const micBg     = isMine ? '#c9a84c'                    : '#25d366';
+  const micColor  = '#fff';
+  const speedBg   = isMine ? 'rgba(0,0,0,0.15)'          : 'rgba(255,255,255,0.15)';
+  const speedColor= isMine ? 'rgba(0,0,0,0.65)'          : 'rgba(255,255,255,0.85)';
 
   return `
-  <div class="cb-voice" id="${msgId}" style="
+  <div id="${msgId}" style="
     display:flex;
     align-items:center;
     gap:10px;
-    min-width:220px;
-    max-width:100%;        /* ← لا يتجاوز عرض الفقاعة */
-    padding:2px 0;
+    width:100%;
+    max-width:280px;
+    min-width:200px;
     box-sizing:border-box;
-    overflow:hidden;       /* ← يمنع الخروج */
+    padding:2px 0;
   ">
 
-    <!-- زر التشغيل -->
-    <button class="cb-voice-play"
-            onclick="toggleVoice('${msgId}')"
-            style="flex-shrink:0;">
+    <!-- ① زر التشغيل -->
+    <button onclick="toggleVoice('${msgId}')" style="
+      width:42px; height:42px; min-width:42px;
+      border-radius:50%; border:none; cursor:pointer;
+      background:${playBg};
+      color:${playColor};
+      display:flex; align-items:center; justify-content:center;
+      font-size:16px; flex-shrink:0;
+      transition:transform .18s;
+      -webkit-tap-highlight-color:transparent;
+    " onmouseover="this.style.transform='scale(1.08)'"
+       onmouseout="this.style.transform='scale(1)'">
       <i class="fas fa-play" id="playIcon_${msgId}"></i>
     </button>
 
-    <!-- الموجات والوقت -->
-    <div class="cb-voice-body" style="flex:1;min-width:0;overflow:hidden;">
-      <div class="cb-voice-bar">
-        <div class="cb-voice-waves" id="waves_${msgId}"
-             style="overflow:hidden;">${barsHtml}</div>
-      </div>
-      <div class="cb-voice-info">
-        <span class="cb-voice-dur" id="voiceDur_${msgId}">${durStr}</span>
-      </div>
+    <!-- ② الموجات + الوقت -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+
+      <!-- الموجات -->
+      <div id="waves_${msgId}" style="
+        display:flex;
+        align-items:center;
+        gap:2px;
+        height:28px;
+        overflow:hidden;
+        cursor:pointer;
+      ">${barsHtml}</div>
+
+      <!-- الوقت -->
+      <div style="
+        font-size:11px; font-weight:700;
+        font-family:'Montserrat',sans-serif;
+        color:${durColor};
+        letter-spacing:.3px;
+      " id="voiceDur_${msgId}">${durStr}</div>
+
     </div>
 
-    <!-- الأفاتار + سرعة الصوت — محاط بحاوية ثابتة الحجم -->
-    <div class="cb-voice-right" id="voiceRight_${msgId}" style="
+    <!-- ③ الأفاتار + ميكروفون + سرعة -->
+    <div style="
       position:relative;
-      width:40px;           /* ← حجم ثابت */
-      height:40px;          /* ← حجم ثابت */
-      flex-shrink:0;        /* ← لا يتقلص */
-      overflow:visible;
+      width:44px; height:44px;
+      flex-shrink:0;
     ">
       <!-- الأفاتار -->
-      <div class="cb-voice-avatar-wrap" style="
-        width:40px;height:40px;border-radius:50%;
-        background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.04));
-        border:1.5px solid rgba(201,168,76,.3);
-        display:flex;align-items:center;justify-content:center;
+      <div id="voiceAvatar_${msgId}" style="
+        position:absolute; inset:0;
+        border-radius:50%;
+        background:rgba(201,168,76,.08);
+        border:1.5px solid rgba(201,168,76,.25);
+        display:flex; align-items:center; justify-content:center;
         overflow:hidden;
-        position:absolute;inset:0;
         transition:opacity .25s, transform .25s;
       ">${avatarInner}</div>
 
-      <!-- أيقونة الميكروفون — تظهر فوق الأفاتار -->
+      <!-- ميكروفون أخضر في الأسفل -->
       <div style="
         position:absolute;
-        bottom:-4px;right:-4px;
-        width:18px;height:18px;
+        bottom:-3px; right:-3px;
+        width:20px; height:20px;
         border-radius:50%;
         background:${micBg};
-        border:2px solid ${isMine ? '#d4a843' : '#1a1a1a'};
-        display:flex;align-items:center;justify-content:center;
-        z-index:2;
-        pointer-events:none;
+        border:2px solid ${isMine ? '#d4a843' : '#0a0a0a'};
+        display:flex; align-items:center; justify-content:center;
+        z-index:3; pointer-events:none;
       ">
         <i class="fas fa-microphone"
-           style="font-size:8px;color:${micColor};"></i>
+           style="font-size:9px;color:${micColor};"></i>
       </div>
 
       <!-- زر السرعة (يظهر عند التشغيل) -->
-      <button class="cb-voice-speed"
-              id="speedBtn_${msgId}"
-              onclick="cycleVoiceSpeed('${msgId}')"
-              style="
-                position:absolute;inset:0;
-                border-radius:50%;border:none;
-                display:flex;align-items:center;justify-content:center;
-                font-size:12px;font-weight:900;
-                font-family:'Montserrat',sans-serif;
-                cursor:pointer;
-                opacity:0;transform:scale(0.8);
-                pointer-events:none;
-                transition:opacity .25s, transform .25s;
-                background:${isMine ? 'rgba(0,0,0,.2)' : 'rgba(255,255,255,.15)'};
-                color:${isMine ? 'rgba(0,0,0,.7)' : 'rgba(255,255,255,.9)'};
-              ">1×</button>
+      <button id="speedBtn_${msgId}"
+              onclick="cycleVoiceSpeed('${msgId}')" style="
+        position:absolute; inset:0;
+        border-radius:50%; border:none; cursor:pointer;
+        background:${speedBg};
+        color:${speedColor};
+        font-size:13px; font-weight:900;
+        font-family:'Montserrat',sans-serif;
+        display:flex; align-items:center; justify-content:center;
+        opacity:0; transform:scale(0.75);
+        pointer-events:none;
+        transition:opacity .25s, transform .25s;
+        -webkit-tap-highlight-color:transparent;
+      ">1×</button>
     </div>
 
-    <!-- عنصر الصوت -->
-    <audio id="aud_${msgId}" src="${url}" preload="auto"
+    <!-- عنصر الصوت المخفي -->
+    <audio id="aud_${msgId}" src="${url}" preload="auto" style="display:none;"
       ontimeupdate="updateVoiceProgress('${msgId}',this)"
       onended="onVoiceEnded('${msgId}',this)"
       onloadedmetadata="onVoiceMeta('${msgId}',this)"
       ondurationchange="onVoiceMeta('${msgId}',this)"
-      onplay="document.getElementById('voiceRight_${msgId}').classList.add('playing')"
-      onpause="document.getElementById('voiceRight_${msgId}').classList.remove('playing')">
+      onplay="_onVoicePlay('${msgId}')"
+      onpause="_onVoicePause('${msgId}')">
     </audio>
   </div>`;
 }
+
 
 
 
@@ -28524,6 +28564,39 @@ function cycleVoiceSpeed(msgId) {
   aud.playbackRate=spd;
   btn.textContent=spd+'×';
 }
+
+/* ← أضف هاتين الدالتين هنا مباشرة */
+
+function _onVoicePlay(msgId) {
+  const avatar = document.getElementById('voiceAvatar_' + msgId);
+  const speed  = document.getElementById('speedBtn_'   + msgId);
+  if (avatar) {
+    avatar.style.opacity      = '0';
+    avatar.style.transform    = 'scale(0.75)';
+    avatar.style.pointerEvents = 'none';
+  }
+  if (speed) {
+    speed.style.opacity      = '1';
+    speed.style.transform    = 'scale(1)';
+    speed.style.pointerEvents = 'auto';
+  }
+}
+
+function _onVoicePause(msgId) {
+  const avatar = document.getElementById('voiceAvatar_' + msgId);
+  const speed  = document.getElementById('speedBtn_'   + msgId);
+  if (avatar) {
+    avatar.style.opacity      = '1';
+    avatar.style.transform    = 'scale(1)';
+    avatar.style.pointerEvents = 'auto';
+  }
+  if (speed) {
+    speed.style.opacity      = '0';
+    speed.style.transform    = 'scale(0.75)';
+    speed.style.pointerEvents = 'none';
+  }
+}
+
 
 
 /* ══════════════════════════════════════════════════════════════
