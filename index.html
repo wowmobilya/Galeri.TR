@@ -28277,66 +28277,57 @@ function buildMsgBubble(msg, idx) {
 
 /* ── مشغّل الصوت بتصميم واتساب (تبديل الصورة بالسرعة) ── */
 function buildVoicePlayer(msg, isMine) {
-  const url     = msg.media_url;
-  const durSec  = msg.duration_sec || 0;
-  const msgId   = 'voice_' + msg.id;
-  const durStr  = (durSec && isFinite(durSec)) ? fmtDuration(durSec) : '0:00';
+  const url    = msg.media_url;
+  const durSec = msg.duration_sec || 0;
+  const msgId  = 'voice_' + msg.id;
+  const durStr = (durSec && isFinite(durSec)) ? fmtDuration(durSec) : '0:00';
 
   /* ── الأفاتار ── */
   const p        = _chatProfiles[msg.from_user] || {};
   const initials = (p.display_name || msg.from_user || '?').substring(0, 2).toUpperCase();
-  const avatarHtml = p.avatar_url
+  const avatarInner = p.avatar_url
     ? `<img src="${p.avatar_url}"
-         style="width:46px;height:46px;border-radius:50%;
-                object-fit:cover;display:block;flex-shrink:0;
-                border:2px solid rgba(255,255,255,0.15);"
+         style="width:100%;height:100%;object-fit:cover;
+                border-radius:50%;display:block;"
          draggable="false"
          onerror="this.style.display='none'"/>`
     : `<div style="
-         width:46px;height:46px;border-radius:50%;flex-shrink:0;
-         background:linear-gradient(135deg,rgba(201,168,76,.25),rgba(201,168,76,.08));
-         border:2px solid rgba(201,168,76,.35);
+         width:100%;height:100%;border-radius:50%;
          display:flex;align-items:center;justify-content:center;
          font-size:16px;font-weight:900;
          color:${isMine ? '#5a3e00' : '#c9a84c'};">${initials}</div>`;
 
-  /* ── ألوان حسب الجانب (mine = أخضر واتساب / theirs = رمادي) ── */
-  const bubbleBg   = isMine
-    ? 'linear-gradient(135deg,#dcf8c6,#c8f0a8)'
-    : 'rgba(255,255,255,0.10)';
-  const textColor  = isMine ? '#111' : '#fff';
-  const dotColor   = '#3b82f6';   /* النقطة الزرقاء دائماً */
+  /* ── ألوان ── */
+  const dotColor   = '#3b82f6';
   const lineColor  = isMine ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.22)';
   const timeColor  = isMine ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
   const playBg     = isMine ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)';
   const playColor  = isMine ? '#333' : '#fff';
+  const speedBg    = isMine ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
+  const speedColor = isMine ? 'rgba(0,0,0,0.7)'  : 'rgba(255,255,255,0.9)';
+  const avatarBorder = isMine
+    ? 'rgba(0,0,0,0.15)'
+    : 'rgba(201,168,76,0.35)';
 
   return `
   <div id="${msgId}" style="
     display:flex;
     align-items:center;
     gap:10px;
-    padding:8px 12px;
-    border-radius:18px;
-    background:${bubbleBg};
     min-width:220px;
     max-width:280px;
     box-sizing:border-box;
-    position:relative;
   ">
 
-    <!-- ① الأفاتار -->
-    ${avatarHtml}
-
-    <!-- ② زر التشغيل -->
-    <button onclick="toggleVoice('${msgId}')" style="
-      width:38px;height:38px;min-width:38px;
+    <!-- ① زر التشغيل -->
+    <button onclick="toggleVoiceWA('${msgId}')" style="
+      width:40px;height:40px;min-width:40px;
       border-radius:50%;border:none;cursor:pointer;
       background:${playBg};
       color:${playColor};
       display:flex;align-items:center;justify-content:center;
-      font-size:14px;flex-shrink:0;
-      transition:transform .18s, background .18s;
+      font-size:15px;flex-shrink:0;
+      transition:transform .18s;
       -webkit-tap-highlight-color:transparent;"
       onmouseover="this.style.transform='scale(1.1)'"
       onmouseout="this.style.transform='scale(1)'">
@@ -28344,60 +28335,90 @@ function buildVoicePlayer(msg, isMine) {
          style="margin-left:2px;"></i>
     </button>
 
-    <!-- ③ شريط التقدم (نقطة + خط متقطع) -->
-    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px;">
+    <!-- ② الشريط + الوقت -->
+    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
 
       <!-- النقطة + الخط المتقطع -->
-      <div id="waProgressBar_${msgId}" style="
-        display:flex;align-items:center;gap:0;
-        height:16px;cursor:pointer;position:relative;"
-        onclick="seekVoiceWA('${msgId}', event)">
+      <div id="waProgressBar_${msgId}"
+           onclick="seekVoiceWA('${msgId}',event)"
+           style="
+             display:flex;align-items:center;
+             height:18px;cursor:pointer;position:relative;">
 
-        <!-- النقطة الزرقاء (موضعها يتحرك) -->
+        <!-- النقطة الزرقاء المتحركة -->
         <div id="waDot_${msgId}" style="
           width:14px;height:14px;border-radius:50%;
           background:${dotColor};
           flex-shrink:0;
-          box-shadow:0 1px 4px rgba(59,130,246,0.5);
-          transition:left .1s linear;
+          box-shadow:0 1px 5px rgba(59,130,246,0.55);
           position:absolute;
           left:0%;
           transform:translateX(-50%);
-          z-index:2;"></div>
+          z-index:2;
+          transition:left .08s linear;"></div>
 
-        <!-- الخط المتقطع الكامل -->
+        <!-- الخط المتقطع -->
         <div style="
           width:100%;height:2px;
           background:repeating-linear-gradient(
             to right,
-            ${lineColor} 0px,
-            ${lineColor} 4px,
-            transparent 4px,
-            transparent 8px
+            ${lineColor} 0px, ${lineColor} 4px,
+            transparent 4px, transparent 8px
           );
-          border-radius:2px;
-          position:relative;z-index:1;">
-
-          <!-- الجزء المُشغَّل (لون مختلف) -->
+          border-radius:2px;position:relative;z-index:1;">
+          <!-- الجزء المُشغَّل -->
           <div id="waPlayed_${msgId}" style="
             position:absolute;top:0;left:0;
             height:100%;width:0%;
             background:${dotColor};
             border-radius:2px;
-            transition:width .1s linear;
-            opacity:0.6;"></div>
+            opacity:0.55;
+            transition:width .08s linear;"></div>
         </div>
       </div>
 
       <!-- الوقت -->
-      <div style="
+      <div id="voiceDur_${msgId}" style="
         font-size:11px;font-weight:700;
         font-family:'Montserrat',sans-serif;
-        color:${timeColor};letter-spacing:.3px;"
-        id="voiceDur_${msgId}">${durStr}</div>
+        color:${timeColor};letter-spacing:.3px;">
+        ${durStr}
+      </div>
     </div>
 
-    <!-- عنصر الصوت المخفي -->
+    <!-- ③ الأفاتار / زر السرعة (يتبادلان) -->
+    <div style="position:relative;width:44px;height:44px;flex-shrink:0;">
+
+      <!-- الأفاتار — يظهر عند الإيقاف -->
+      <div id="voiceAvatar_${msgId}" style="
+        position:absolute;inset:0;border-radius:50%;
+        background:rgba(201,168,76,0.08);
+        border:2px solid ${avatarBorder};
+        overflow:hidden;
+        display:flex;align-items:center;justify-content:center;
+        transition:opacity .25s, transform .25s;">
+        ${avatarInner}
+      </div>
+
+      <!-- زر السرعة — يظهر عند التشغيل -->
+      <button id="speedBtn_${msgId}"
+              onclick="cycleVoiceSpeedWA('${msgId}')"
+              style="
+        position:absolute;inset:0;
+        border-radius:50%;border:none;cursor:pointer;
+        background:${speedBg};
+        color:${speedColor};
+        font-size:13px;font-weight:900;
+        font-family:'Montserrat',sans-serif;
+        display:flex;align-items:center;justify-content:center;
+        opacity:0;transform:scale(0.75);pointer-events:none;
+        transition:opacity .25s, transform .25s;
+        -webkit-tap-highlight-color:transparent;">
+        1×
+      </button>
+    </div>
+
+    <!-- الصوت المخفي -->
     <audio id="aud_${msgId}" src="${url}" preload="auto" style="display:none;"
       ontimeupdate="updateVoiceProgressWA('${msgId}',this)"
       onended="onVoiceEndedWA('${msgId}',this)"
@@ -28442,48 +28463,84 @@ const _voiceSpeeds=[1,1.5,2];
 const _voiceSpeedIdx={};
 const _voicePlaying={};
 
-function toggleVoice(msgId) {
-  const aud=document.getElementById('aud_'+msgId);
-  const icon=document.getElementById('playIcon_'+msgId);
-  if(!aud||!icon) return;
+/* ── تشغيل / إيقاف مع تبديل الأفاتار ↔ السرعة ── */
+function toggleVoiceWA(msgId) {
+  const aud   = document.getElementById('aud_'       + msgId);
+  const icon  = document.getElementById('playIcon_'  + msgId);
+  const avatar= document.getElementById('voiceAvatar_' + msgId);
+  const speed = document.getElementById('speedBtn_'  + msgId);
+  if (!aud || !icon) return;
 
   /* إيقاف أي صوت آخر يعمل */
-  document.querySelectorAll('audio').forEach(a=>{
-    if(a.id!=='aud_'+msgId&&!a.paused) {
+  document.querySelectorAll('audio').forEach(a => {
+    if (a.id !== 'aud_' + msgId && !a.paused) {
       a.pause();
-      const otherId=a.id.replace('aud_','');
-      const otherIcon=document.getElementById('playIcon_'+otherId);
-      if(otherIcon) otherIcon.className='fas fa-play';
-      _voicePlaying[otherId]=false;
+      const otherId = a.id.replace('aud_', '');
+      _showVoiceAvatar(otherId);
+      const otherIcon = document.getElementById('playIcon_' + otherId);
+      if (otherIcon) otherIcon.className = 'fas fa-play';
+      otherIcon && (otherIcon.style.marginLeft = '2px');
     }
   });
 
-  if(aud.paused) {
-    aud.play().catch(()=>{});
-    icon.className='fas fa-pause';
-    _voicePlaying[msgId]=true;
+  if (aud.paused) {
+    aud.play().catch(() => {});
+    icon.className    = 'fas fa-pause';
+    icon.style.marginLeft = '0';
+    _hideVoiceAvatar(msgId);   /* أخفِ الأفاتار، أظهر السرعة */
+    _voicePlaying[msgId] = true;
   } else {
     aud.pause();
-    icon.className='fas fa-play';
-    _voicePlaying[msgId]=false;
+    icon.className    = 'fas fa-play';
+    icon.style.marginLeft = '2px';
+    _showVoiceAvatar(msgId);   /* أعِد الأفاتار */
+    _voicePlaying[msgId] = false;
   }
 }
 
-/* ── تحديث النقطة والخط أثناء التشغيل ── */
+/* ── إخفاء الأفاتار وإظهار السرعة ── */
+function _hideVoiceAvatar(msgId) {
+  const avatar = document.getElementById('voiceAvatar_' + msgId);
+  const speed  = document.getElementById('speedBtn_'    + msgId);
+  if (avatar) {
+    avatar.style.opacity       = '0';
+    avatar.style.transform     = 'scale(0.75)';
+    avatar.style.pointerEvents = 'none';
+  }
+  if (speed) {
+    speed.style.opacity       = '1';
+    speed.style.transform     = 'scale(1)';
+    speed.style.pointerEvents = 'auto';
+  }
+}
+
+/* ── إظهار الأفاتار وإخفاء السرعة ── */
+function _showVoiceAvatar(msgId) {
+  const avatar = document.getElementById('voiceAvatar_' + msgId);
+  const speed  = document.getElementById('speedBtn_'    + msgId);
+  if (avatar) {
+    avatar.style.opacity       = '1';
+    avatar.style.transform     = 'scale(1)';
+    avatar.style.pointerEvents = 'auto';
+  }
+  if (speed) {
+    speed.style.opacity       = '0';
+    speed.style.transform     = 'scale(0.75)';
+    speed.style.pointerEvents = 'none';
+  }
+}
+
+/* ── تحديث الشريط أثناء التشغيل ── */
 function updateVoiceProgressWA(msgId, aud) {
   if (!aud.duration || isNaN(aud.duration) || !isFinite(aud.duration)) return;
   const pct = aud.currentTime / aud.duration;
 
-  /* تحريك النقطة */
-  const dot = document.getElementById('waDot_' + msgId);
-  if (dot) dot.style.left = (pct * 100) + '%';
-
-  /* تمديد الجزء المُشغَّل */
+  const dot    = document.getElementById('waDot_'    + msgId);
   const played = document.getElementById('waPlayed_' + msgId);
-  if (played) played.style.width = (pct * 100) + '%';
+  const durEl  = document.getElementById('voiceDur_' + msgId);
 
-  /* تحديث الوقت المتبقي */
-  const durEl = document.getElementById('voiceDur_' + msgId);
+  if (dot)    dot.style.left      = (pct * 100) + '%';
+  if (played) played.style.width  = (pct * 100) + '%';
   if (durEl) {
     const rem = aud.duration - aud.currentTime;
     durEl.textContent = fmtDuration(Math.ceil(rem));
@@ -28493,41 +28550,52 @@ function updateVoiceProgressWA(msgId, aud) {
 /* ── عند انتهاء التشغيل ── */
 function onVoiceEndedWA(msgId, aud) {
   const icon = document.getElementById('playIcon_' + msgId);
-  if (icon) icon.className = 'fas fa-play';
+  if (icon) { icon.className = 'fas fa-play'; icon.style.marginLeft = '2px'; }
   _voicePlaying[msgId] = false;
+  _showVoiceAvatar(msgId);   /* أعِد الأفاتار */
 
-  /* إعادة النقطة للبداية */
   const dot    = document.getElementById('waDot_'    + msgId);
   const played = document.getElementById('waPlayed_' + msgId);
-  if (dot)    dot.style.left    = '0%';
+  const durEl  = document.getElementById('voiceDur_' + msgId);
+  if (dot)    dot.style.left     = '0%';
   if (played) played.style.width = '0%';
-
-  /* إعادة عرض المدة الكاملة */
-  const durEl = document.getElementById('voiceDur_' + msgId);
   if (durEl && aud.duration && isFinite(aud.duration))
     durEl.textContent = fmtDuration(Math.ceil(aud.duration));
 }
 
 /* ── النقر على الشريط للتخطي ── */
-/* ── النقر على الشريط للتخطي ── */
 function seekVoiceWA(msgId, event) {
   const bar = document.getElementById('waProgressBar_' + msgId);
-  const aud = document.getElementById('aud_' + msgId);
+  const aud = document.getElementById('aud_'           + msgId);
   if (!bar || !aud || !aud.duration) return;
 
   const rect = bar.getBoundingClientRect();
   const pct  = Math.max(0, Math.min(1,
     (event.clientX - rect.left) / rect.width
   ));
-
   aud.currentTime = pct * aud.duration;
+
   if (aud.paused) {
     aud.play().catch(() => {});
     const icon = document.getElementById('playIcon_' + msgId);
-    if (icon) icon.className = 'fas fa-pause';
+    if (icon) { icon.className = 'fas fa-pause'; icon.style.marginLeft = '0'; }
+    _hideVoiceAvatar(msgId);
     _voicePlaying[msgId] = true;
   }
 }
+
+/* ── تدوير السرعة: 1× → 1.5× → 2× → 1× ── */
+function cycleVoiceSpeedWA(msgId) {
+  const aud = document.getElementById('aud_'      + msgId);
+  const btn = document.getElementById('speedBtn_' + msgId);
+  if (!aud || !btn) return;
+
+  _voiceSpeedIdx[msgId] = ((_voiceSpeedIdx[msgId] || 0) + 1) % _voiceSpeeds.length;
+  const spd = _voiceSpeeds[_voiceSpeedIdx[msgId]];
+  aud.playbackRate  = spd;
+  btn.textContent   = spd + '×';
+}
+
 
 
 function onVoiceEnded(msgId, aud) {
