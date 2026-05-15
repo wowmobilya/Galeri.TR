@@ -31791,6 +31791,1411 @@ console.log('[WOW CHAT UPGRADE] ✅ Combined addon loaded — No pin messages');
 
 
 
+/* ═══════════════════════════════════════════════════════════════
+   ★ WOW CHAT EXTRA FEATURES ADDON
+   ميزات إضافية:
+   - تحديد متعدد
+   - نسخ متعدد
+   - حذف متعدد
+   - Forward
+   - Message Info
+   - Archive / Mute
+   - Draft لكل غرفة
+   - Link Preview
+   - Image Compression
+   - Upload Progress
+   - Load More Messages
+   - Scroll Down Button
+   - Failed Message Retry
+   - بدون تثبيت رسائل
+═══════════════════════════════════════════════════════════════ */
+
+(function injectWowChatExtraCSS() {
+  if (document.getElementById('wowChatExtraCSS')) return;
+
+  const st = document.createElement('style');
+  st.id = 'wowChatExtraCSS';
+  st.textContent = `
+    /* ═════════ Multi Select ═════════ */
+    body.chat-select-mode .cb-wrap {
+      cursor: pointer;
+    }
+
+    .chat-select-checkbox {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(201,168,76,0.45);
+      background: rgba(0,0,0,0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: #0a0a0a;
+      flex-shrink: 0;
+      transition: all .2s;
+    }
+
+    body.chat-select-mode .chat-select-checkbox {
+      display: flex;
+    }
+
+    .cb-wrap.selected-msg .chat-select-checkbox {
+      background: linear-gradient(135deg,#c9a84c,#f0d080);
+      border-color: #c9a84c;
+    }
+
+    .cb-wrap.selected-msg .chat-select-checkbox::after {
+      content: "\\f00c";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      font-size: 11px;
+    }
+
+    .cb-wrap.selected-msg .cb {
+      outline: 2px solid rgba(201,168,76,0.65);
+      box-shadow: 0 0 18px rgba(201,168,76,0.18);
+    }
+
+    #chatSelectBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100001;
+      height: 58px;
+      background: rgba(10,10,10,0.98);
+      border-bottom: 1px solid rgba(201,168,76,0.22);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      animation: replyPreviewIn .2s ease forwards;
+    }
+
+    body.chat-select-mode #chatSelectBar {
+      display: flex;
+    }
+
+    .chat-select-action {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.04);
+      color: rgba(255,255,255,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .chat-select-action:hover {
+      background: rgba(201,168,76,0.12);
+      color: #c9a84c;
+      border-color: rgba(201,168,76,0.3);
+    }
+
+    .chat-select-action.danger:hover {
+      background: rgba(239,68,68,0.14);
+      color: #ef4444;
+      border-color: rgba(239,68,68,0.35);
+    }
+
+    /* ═════════ Forward Modal ═════════ */
+    #forwardModal {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: rgba(0,0,0,.9);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .forward-sheet {
+      width: 100%;
+      max-width: 460px;
+      max-height: 86vh;
+      background: linear-gradient(145deg,#0f0f0f,#161616);
+      border: 1px solid rgba(201,168,76,.22);
+      border-radius: 22px 22px 0 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: sheetUp .3s ease forwards;
+    }
+
+    /* ═════════ Upload Progress ═════════ */
+    .upload-progress-bubble {
+      margin: 0 12px 8px auto;
+      max-width: 260px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(201,168,76,0.18);
+      border-radius: 14px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 11px;
+    }
+
+    .upload-progress-track {
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 7px;
+    }
+
+    .upload-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg,#c9a84c,#f0d080);
+      transition: width .25s ease;
+    }
+
+    /* ═════════ Link Preview ═════════ */
+    .link-preview-card {
+      margin-top: 7px;
+      border-radius: 11px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.18);
+      max-width: 240px;
+      cursor: pointer;
+      transition: transform .18s, background .18s;
+    }
+
+    .link-preview-card:hover {
+      transform: scale(1.02);
+      background: rgba(0,0,0,0.25);
+    }
+
+    .link-preview-img {
+      width: 100%;
+      height: 105px;
+      object-fit: cover;
+      display: block;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .link-preview-body {
+      padding: 8px 10px;
+    }
+
+    .link-preview-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.35;
+      margin-bottom: 3px;
+    }
+
+    .cb.mine .link-preview-title {
+      color: #0a0a0a;
+    }
+
+    .link-preview-desc {
+      font-size: 9px;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.45;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .cb.mine .link-preview-desc {
+      color: rgba(0,0,0,0.55);
+    }
+
+    .link-preview-site {
+      font-size: 8px;
+      color: #c9a84c;
+      margin-top: 5px;
+      letter-spacing: .5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .cb.mine .link-preview-site {
+      color: rgba(0,0,0,0.55);
+    }
+
+    /* ═════════ Scroll Down ═════════ */
+    #chatScrollDownBtn {
+      position: fixed;
+      right: 16px;
+      bottom: 132px;
+      z-index: 8700;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(201,168,76,0.28);
+      background: rgba(12,12,12,0.92);
+      color: #c9a84c;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    #chatLoadMoreBtn {
+      margin: 8px auto 12px;
+      padding: 7px 14px;
+      border-radius: 50px;
+      border: 1px solid rgba(201,168,76,0.22);
+      background: rgba(201,168,76,0.07);
+      color: #c9a84c;
+      font-size: 10px;
+      font-weight: 800;
+      font-family: 'Montserrat', sans-serif;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ═════════ Failed Message ═════════ */
+    .failed-msg .cb {
+      outline: 1.5px solid rgba(239,68,68,0.55);
+    }
+
+    .retry-msg-btn {
+      margin-top: 5px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(239,68,68,0.35);
+      background: rgba(239,68,68,0.12);
+      color: #ef4444;
+      font-size: 9px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ═════════ Info Modal ═════════ */
+    #msgInfoModal {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: rgba(0,0,0,.9);
+      backdrop-filter: blur(18px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .msg-info-sheet {
+      width: 100%;
+      max-width: 430px;
+      max-height: 82vh;
+      background: linear-gradient(145deg,#0f0f0f,#161616);
+      border: 1px solid rgba(201,168,76,.22);
+      border-radius: 22px 22px 0 0;
+      overflow-y: auto;
+      animation: sheetUp .3s ease forwards;
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   متغيرات إضافية
+═══════════════════════════════════════════════════════════════ */
+
+let _selectedChatMsgs = new Set();
+let _selectMode = false;
+let _oldestLoadedMsgId = null;
+let _isLoadingMoreMsgs = false;
+let _chatDraftTimer = null;
+let _linkPreviews = {};
+let _failedMessages = {};
+
+/* ═══════════════════════════════════════════════════════════════
+   1) Multi Select
+═══════════════════════════════════════════════════════════════ */
+
+function ensureChatSelectBar() {
+  if (document.getElementById('chatSelectBar')) return;
+
+  const bar = document.createElement('div');
+  bar.id = 'chatSelectBar';
+  bar.innerHTML = `
+    <button class="chat-select-action" onclick="exitChatSelectMode()">
+      <i class="fas fa-times"></i>
+    </button>
+
+    <div style="
+      flex:1;
+      color:#fff;
+      font-size:14px;
+      font-weight:900;
+      font-family:'Montserrat',sans-serif;
+    ">
+      <span id="chatSelectedCount">0</span> seçildi
+    </div>
+
+    <button class="chat-select-action" title="Kopyala" onclick="copySelectedMessages()">
+      <i class="fas fa-copy"></i>
+    </button>
+
+    <button class="chat-select-action" title="İlet" onclick="openForwardModalSelected()">
+      <i class="fas fa-share"></i>
+    </button>
+
+    <button class="chat-select-action danger" title="Sil" onclick="deleteSelectedMessages()">
+      <i class="fas fa-trash-alt"></i>
+    </button>
+  `;
+  document.body.appendChild(bar);
+}
+
+function enterChatSelectMode(msgId) {
+  ensureChatSelectBar();
+  _selectMode = true;
+  document.body.classList.add('chat-select-mode');
+  toggleSelectMsg(msgId);
+}
+
+function exitChatSelectMode() {
+  _selectMode = false;
+  _selectedChatMsgs.clear();
+  document.body.classList.remove('chat-select-mode');
+  document.querySelectorAll('.selected-msg').forEach(el => el.classList.remove('selected-msg'));
+  updateSelectedCount();
+}
+
+function toggleSelectMsg(msgId) {
+  const id = String(msgId);
+  const el = document.getElementById('msg-' + msgId);
+  if (!el) return;
+
+  if (_selectedChatMsgs.has(id)) {
+    _selectedChatMsgs.delete(id);
+    el.classList.remove('selected-msg');
+  } else {
+    _selectedChatMsgs.add(id);
+    el.classList.add('selected-msg');
+  }
+
+  if (_selectedChatMsgs.size === 0) exitChatSelectMode();
+  else updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const el = document.getElementById('chatSelectedCount');
+  if (el) el.textContent = _selectedChatMsgs.size;
+}
+
+function copySelectedMessages() {
+  const texts = Array.from(_selectedChatMsgs)
+    .map(id => _chatMessages.find(m => String(m.id) === String(id)))
+    .filter(Boolean)
+    .map(m => {
+      const who = getDisplayName(m.from_user);
+      const body = m.message || m.file_name || m.media_type;
+      return `${who}: ${body}`;
+    })
+    .join('\n');
+
+  navigator.clipboard?.writeText(texts)
+    .then(() => showInvToast('Mesajlar kopyalandı ✓', 'success'))
+    .catch(() => showInvToast('Kopyalanamadı', 'error'));
+
+  exitChatSelectMode();
+}
+
+async function deleteSelectedMessages() {
+  if (!_selectedChatMsgs.size) return;
+
+  const ok = await showChatConfirm(`${_selectedChatMsgs.size} mesaj silinsin mi?`);
+  if (!ok) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const ids = Array.from(_selectedChatMsgs).map(Number);
+
+  await sb.from(GRP_MSGS)
+    .update({ is_deleted:true, deleted_by:currentUser })
+    .in('id', ids);
+
+  ids.forEach(id => {
+    document.getElementById('msg-' + id)?.remove();
+    const idx = _chatMessages.findIndex(m => Number(m.id) === Number(id));
+    if (idx !== -1) _chatMessages.splice(idx, 1);
+  });
+
+  exitChatSelectMode();
+  showInvToast('Mesajlar silindi ✓', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2) Forward
+═══════════════════════════════════════════════════════════════ */
+
+async function openForwardModalSelected() {
+  const ids = Array.from(_selectedChatMsgs);
+  if (!ids.length) return;
+  openForwardModal(ids);
+}
+
+async function openForwardModal(messageIds) {
+  document.getElementById('forwardModal')?.remove();
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: memberRows } = await sb.from(GRP_MEMBERS)
+    .select('room_id')
+    .eq('username', currentUser)
+    .eq('is_banned', false);
+
+  const roomIds = (memberRows || []).map(r => r.room_id);
+
+  let rooms = [];
+  if (roomIds.length) {
+    const { data } = await sb.from(GRP_ROOMS)
+      .select('*')
+      .in('id', roomIds)
+      .eq('is_active', true);
+    rooms = data || [];
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'forwardModal';
+  modal.innerHTML = `
+    <div class="forward-sheet">
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+
+      <div style="
+        padding:15px 18px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        border-bottom:1px solid rgba(255,255,255,0.06);
+      ">
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,.55);font-weight:700;">
+            MESAJ İLET
+          </div>
+          <div style="font-size:16px;font-weight:900;color:#fff;">
+            Sohbet seç
+          </div>
+        </div>
+
+        <button onclick="closeForwardModal()" style="
+          width:34px;height:34px;border-radius:9px;
+          border:1px solid rgba(255,255,255,.08);
+          background:rgba(255,255,255,.04);
+          color:rgba(255,255,255,.45);
+          cursor:pointer;
+        ">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div style="overflow-y:auto;flex:1;">
+        ${rooms.map(r => `
+          <div class="cl-item" onclick='forwardMessagesToRoom(${JSON.stringify(messageIds)}, ${r.id})'>
+            <div style="
+              width:46px;height:46px;border-radius:50%;
+              background:rgba(201,168,76,.08);
+              border:1px solid rgba(201,168,76,.2);
+              display:flex;align-items:center;justify-content:center;
+              font-size:20px;flex-shrink:0;
+            ">
+              ${r.icon_url ? `<img src="${r.icon_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : (r.icon_emoji || '💬')}
+            </div>
+
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${escHtml(r.name)}
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:2px;">
+                ${r.room_type === 'group' ? 'Grup' : 'Özel sohbet'}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) closeForwardModal(); };
+}
+
+function closeForwardModal() {
+  document.getElementById('forwardModal')?.remove();
+}
+
+async function forwardMessagesToRoom(messageIds, targetRoomId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const originals = messageIds
+    .map(id => _chatMessages.find(m => String(m.id) === String(id)))
+    .filter(Boolean);
+
+  for (const m of originals) {
+    const payload = {
+      room_id: targetRoomId,
+      from_user: currentUser,
+      message: m.message || '',
+      media_url: m.media_url || null,
+      media_type: m.media_type || 'text',
+      file_name: m.file_name || null,
+      file_size: m.file_size || 0,
+      duration_sec: m.duration_sec || 0,
+      forwarded_from_id: m.id,
+      metadata: {
+        ...(m.metadata || {}),
+        forwarded: true,
+        original_from: m.from_user
+      }
+    };
+
+    const { data } = await sb.from(GRP_MSGS).insert([payload]).select().single();
+
+    if (data) {
+      await sb.from('message_forwards').insert([{
+        scope: 'group',
+        original_message_id: m.id,
+        new_message_id: data.id,
+        forwarded_by: currentUser,
+        forwarded_to_room_id: targetRoomId
+      }]);
+    }
+  }
+
+  closeForwardModal();
+  exitChatSelectMode();
+  showInvToast('Mesaj iletildi ✓', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3) Message Info
+═══════════════════════════════════════════════════════════════ */
+
+async function openMessageInfo(msgId) {
+  const msg = _chatMessages.find(m => String(m.id) === String(msgId));
+  if (!msg) return;
+
+  document.getElementById('msgInfoModal')?.remove();
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: receipts } = await sb.from('message_read_receipts')
+    .select('*')
+    .eq('scope', 'group')
+    .eq('message_id', msgId)
+    .order('read_at', { ascending:false });
+
+  const modal = document.createElement('div');
+  modal.id = 'msgInfoModal';
+
+  modal.innerHTML = `
+    <div class="msg-info-sheet">
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+
+      <div style="padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,.55);font-weight:700;">
+            MESAJ BİLGİSİ
+          </div>
+          <div style="font-size:16px;font-weight:900;color:#fff;">Detaylar</div>
+        </div>
+        <button onclick="closeMsgInfo()" style="
+          width:34px;height:34px;border-radius:9px;
+          border:1px solid rgba(255,255,255,.08);
+          background:rgba(255,255,255,.04);
+          color:rgba(255,255,255,.45);
+          cursor:pointer;
+        ">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div style="padding:16px 18px;">
+        <div style="
+          background:rgba(255,255,255,.035);
+          border:1px solid rgba(255,255,255,.06);
+          border-radius:12px;
+          padding:12px;
+          margin-bottom:14px;
+          color:rgba(255,255,255,.65);
+          font-size:12px;
+          line-height:1.7;
+        ">
+          ${escHtml(msg.message || msg.file_name || msg.media_type)}
+        </div>
+
+        ${infoRow('Gönderen', getDisplayName(msg.from_user), 'fa-user')}
+        ${infoRow('Gönderildi', new Date(msg.created_at).toLocaleString('tr-TR'), 'fa-clock')}
+        ${msg.edited_at ? infoRow('Düzenlendi', new Date(msg.edited_at).toLocaleString('tr-TR'), 'fa-pen') : ''}
+        ${infoRow('Durum', msg.delivery_status || 'sent', 'fa-check-double')}
+
+        <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,.55);font-weight:700;margin:18px 0 10px;">
+          OKUYANLAR
+        </div>
+
+        ${(receipts || []).length ? (receipts || []).map(r => `
+          <div style="
+            display:flex;align-items:center;gap:10px;
+            padding:8px 0;
+            border-bottom:1px solid rgba(255,255,255,.04);
+          ">
+            ${buildAvatar(r.username, 32)}
+            <div style="flex:1;">
+              <div style="font-size:12px;font-weight:800;color:#fff;">
+                ${escHtml(getDisplayName(r.username))}
+              </div>
+              <div style="font-size:9px;color:rgba(255,255,255,.28);">
+                ${new Date(r.read_at).toLocaleString('tr-TR')}
+              </div>
+            </div>
+          </div>
+        `).join('') : `
+          <div style="font-size:11px;color:rgba(255,255,255,.22);padding:12px;text-align:center;">
+            Henüz okuyan yok
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) closeMsgInfo(); };
+}
+
+function infoRow(label, value, icon) {
+  return `
+    <div style="
+      display:flex;align-items:center;gap:10px;
+      padding:9px 0;
+      border-bottom:1px solid rgba(255,255,255,.04);
+    ">
+      <div style="
+        width:30px;height:30px;border-radius:8px;
+        background:rgba(201,168,76,.08);
+        border:1px solid rgba(201,168,76,.18);
+        display:flex;align-items:center;justify-content:center;
+        color:#c9a84c;font-size:12px;
+      ">
+        <i class="fas ${icon}"></i>
+      </div>
+      <div>
+        <div style="font-size:8px;color:rgba(255,255,255,.2);letter-spacing:2px;text-transform:uppercase;">
+          ${label}
+        </div>
+        <div style="font-size:11px;font-weight:700;color:#fff;margin-top:2px;">
+          ${escHtml(String(value))}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeMsgInfo() {
+  document.getElementById('msgInfoModal')?.remove();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4) Draft لكل غرفة
+═══════════════════════════════════════════════════════════════ */
+
+async function saveChatDraftNow() {
+  if (!_activeRoomId) return;
+
+  const inp = document.getElementById('chatTextInput');
+  if (!inp) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  await sb.from('chat_user_settings').upsert([{
+    scope: 'group',
+    room_id: _activeRoomId,
+    pair_key: null,
+    username: currentUser,
+    draft_text: inp.value || '',
+    last_draft_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }], {
+    onConflict: 'scope,username,room_id,pair_key'
+  });
+}
+
+async function loadChatDraft(roomId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data } = await sb.from('chat_user_settings')
+    .select('draft_text')
+    .eq('scope', 'group')
+    .eq('room_id', roomId)
+    .eq('username', currentUser)
+    .maybeSingle();
+
+  const inp = document.getElementById('chatTextInput');
+  if (inp && data?.draft_text) {
+    inp.value = data.draft_text;
+    onChatInput(inp);
+  }
+}
+
+function scheduleDraftSave() {
+  clearTimeout(_chatDraftTimer);
+  _chatDraftTimer = setTimeout(saveChatDraftNow, 700);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5) Archive / Mute
+═══════════════════════════════════════════════════════════════ */
+
+async function setRoomMute(roomId, isMuted) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  await sb.from('chat_user_settings').upsert([{
+    scope: 'group',
+    room_id: roomId,
+    username: currentUser,
+    is_muted: isMuted,
+    updated_at: new Date().toISOString()
+  }], {
+    onConflict: 'scope,username,room_id,pair_key'
+  });
+
+  showInvToast(isMuted ? 'Sohbet sessize alındı' : 'Sessiz kaldırıldı', 'success');
+}
+
+async function setRoomArchive(roomId, isArchived) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  await sb.from('chat_user_settings').upsert([{
+    scope: 'group',
+    room_id: roomId,
+    username: currentUser,
+    is_archived: isArchived,
+    updated_at: new Date().toISOString()
+  }], {
+    onConflict: 'scope,username,room_id,pair_key'
+  });
+
+  showInvToast(isArchived ? 'Sohbet arşivlendi' : 'Arşivden çıkarıldı', 'success');
+  renderChatList();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6) Link Preview
+═══════════════════════════════════════════════════════════════ */
+
+function extractFirstUrl(text) {
+  if (!text) return null;
+  const m = text.match(/https?:\/\/[^\s]+/i);
+  return m ? m[0] : null;
+}
+
+function buildLinkPreviewHTML(msg) {
+  const url = extractFirstUrl(msg.message);
+  if (!url) return '';
+
+  const p = _linkPreviews[msg.id]?.[url];
+
+  if (!p) {
+    return `
+      <div class="link-preview-card" onclick="window.open('${url}', '_blank')">
+        <div class="link-preview-body">
+          <div class="link-preview-title">${escHtml(url)}</div>
+          <div class="link-preview-desc">Bağlantı önizlemesi</div>
+          <div class="link-preview-site">${escHtml(new URL(url).hostname)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="link-preview-card" onclick="window.open('${url}', '_blank')">
+      ${p.image_url ? `<img class="link-preview-img" src="${p.image_url}" draggable="false">` : ''}
+      <div class="link-preview-body">
+        <div class="link-preview-title">${escHtml(p.title || url)}</div>
+        ${p.description ? `<div class="link-preview-desc">${escHtml(p.description)}</div>` : ''}
+        <div class="link-preview-site">${escHtml(p.site_name || new URL(url).hostname)}</div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadLinkPreviews() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const ids = _chatMessages.map(m => m.id).filter(Boolean);
+  if (!ids.length) return;
+
+  const { data } = await sb.from('message_link_previews')
+    .select('*')
+    .in('message_id', ids);
+
+  _linkPreviews = {};
+
+  (data || []).forEach(p => {
+    if (!_linkPreviews[p.message_id]) _linkPreviews[p.message_id] = {};
+    _linkPreviews[p.message_id][p.url] = p;
+  });
+}
+
+/* ملاحظة:
+   جلب Meta للروابط من المتصفح غالبًا سيصطدم بـ CORS.
+   لهذا الكود يعرض Preview بسيط. الأفضل لاحقًا Edge Function لجلب OG.
+*/
+
+/* ═══════════════════════════════════════════════════════════════
+   7) ضغط الصور قبل الرفع + Progress
+═══════════════════════════════════════════════════════════════ */
+
+function createUploadProgress(title) {
+  const area = document.getElementById('chatMsgsArea');
+  if (!area) return null;
+
+  const id = 'upload_' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'upload-progress-bubble';
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <i class="fas fa-cloud-upload-alt" style="color:#c9a84c;"></i>
+      <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        ${escHtml(title || 'Yükleniyor...')}
+      </span>
+      <span id="${id}_pct">0%</span>
+    </div>
+    <div class="upload-progress-track">
+      <div class="upload-progress-fill" id="${id}_fill"></div>
+    </div>
+  `;
+  area.appendChild(div);
+  scrollToBottom(true);
+  return id;
+}
+
+function updateUploadProgress(id, pct) {
+  const fill = document.getElementById(id + '_fill');
+  const txt = document.getElementById(id + '_pct');
+  if (fill) fill.style.width = pct + '%';
+  if (txt) txt.textContent = pct + '%';
+}
+
+function removeUploadProgress(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.opacity = '0';
+  el.style.transform = 'scale(.96)';
+  setTimeout(() => el.remove(), 250);
+}
+
+function compressImageFile(file, maxW = 1280, quality = 0.82) {
+  return new Promise(resolve => {
+    if (!file.type.startsWith('image/')) {
+      resolve(file);
+      return;
+    }
+
+    const img = new Image();
+    const reader = new FileReader();
+
+    reader.onload = e => {
+      img.onload = () => {
+        let w = img.width;
+        let h = img.height;
+
+        if (w > maxW) {
+          h = Math.round(h * maxW / w);
+          w = maxW;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        canvas.toBlob(blob => {
+          if (!blob) {
+            resolve(file);
+            return;
+          }
+
+          const newFile = new File(
+            [blob],
+            file.name.replace(/\.\w+$/, '.jpg'),
+            { type:'image/jpeg' }
+          );
+
+          resolve(newFile);
+        }, 'image/jpeg', quality);
+      };
+
+      img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8) Load More Messages
+═══════════════════════════════════════════════════════════════ */
+
+async function loadOlderMessages() {
+  if (!_activeRoomId || _isLoadingMoreMsgs) return;
+  if (!_oldestLoadedMsgId) return;
+
+  _isLoadingMoreMsgs = true;
+
+  const btn = document.getElementById('chatLoadMoreBtn');
+  if (btn) btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Yükleniyor...`;
+
+  const area = document.getElementById('chatMsgsArea');
+  const oldHeight = area?.scrollHeight || 0;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data } = await sb.from(GRP_MSGS)
+    .select('*')
+    .eq('room_id', _activeRoomId)
+    .eq('is_deleted', false)
+    .lt('id', _oldestLoadedMsgId)
+    .order('created_at', { ascending:false })
+    .limit(50);
+
+  if (data && data.length) {
+    const older = data.reverse();
+    _chatMessages = older.concat(_chatMessages);
+    _oldestLoadedMsgId = _chatMessages[0]?.id || _oldestLoadedMsgId;
+    await loadMessageReactions(_activeRoomId);
+    await loadLinkPreviews();
+    renderRoomMessages();
+
+    setTimeout(() => {
+      if (area) area.scrollTop = area.scrollHeight - oldHeight;
+    }, 30);
+  } else {
+    if (btn) btn.style.display = 'none';
+  }
+
+  _isLoadingMoreMsgs = false;
+}
+
+function injectLoadMoreButton() {
+  const area = document.getElementById('chatMsgsArea');
+  if (!area || document.getElementById('chatLoadMoreBtn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'chatLoadMoreBtn';
+  btn.innerHTML = `<i class="fas fa-chevron-up"></i> Daha eski mesajlar`;
+  btn.onclick = loadOlderMessages;
+
+  area.prepend(btn);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   9) Scroll Down Button
+═══════════════════════════════════════════════════════════════ */
+
+function ensureScrollDownBtn() {
+  if (document.getElementById('chatScrollDownBtn')) return;
+
+  const btn = document.createElement('div');
+  btn.id = 'chatScrollDownBtn';
+  btn.innerHTML = `<i class="fas fa-arrow-down"></i>`;
+  btn.onclick = () => {
+    scrollToBottom(true);
+    btn.style.display = 'none';
+  };
+
+  document.body.appendChild(btn);
+}
+
+function attachScrollDownWatcher() {
+  const area = document.getElementById('chatMsgsArea');
+  if (!area) return;
+
+  ensureScrollDownBtn();
+
+  area.addEventListener('scroll', () => {
+    const btn = document.getElementById('chatScrollDownBtn');
+    if (!btn) return;
+
+    const near = area.scrollHeight - area.scrollTop - area.clientHeight < 180;
+    btn.style.display = near ? 'none' : 'flex';
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10) Failed Message Retry
+═══════════════════════════════════════════════════════════════ */
+
+function renderFailedMessage(tempId, text) {
+  const msg = {
+    id: tempId,
+    room_id: _activeRoomId,
+    from_user: currentUser,
+    message: text,
+    media_type: 'text',
+    created_at: new Date().toISOString(),
+    delivery_status: 'failed'
+  };
+
+  _failedMessages[tempId] = msg;
+  appendMsgBubble(msg);
+
+  const el = document.getElementById('msg-' + tempId);
+  if (el) {
+    el.classList.add('failed-msg');
+    const cb = el.querySelector('.cb');
+    if (cb) {
+      cb.insertAdjacentHTML('beforeend', `
+        <div>
+          <button class="retry-msg-btn" onclick="retryFailedMessage('${tempId}')">
+            <i class="fas fa-redo"></i> Tekrar dene
+          </button>
+        </div>
+      `);
+    }
+  }
+}
+
+async function retryFailedMessage(tempId) {
+  const msg = _failedMessages[tempId];
+  if (!msg) return;
+
+  document.getElementById('msg-' + tempId)?.remove();
+  delete _failedMessages[tempId];
+
+  const inp = document.getElementById('chatTextInput');
+  if (inp) {
+    inp.value = msg.message;
+    await sendTextMsg();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11) Overrides لتفعيل الميزات
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof buildMsgBubble === 'function') {
+  const _origBuildMsgBubble_extra = buildMsgBubble;
+
+  buildMsgBubble = function(msg, idx) {
+    let html = _origBuildMsgBubble_extra(msg, idx);
+
+    if (!msg || msg.media_type === 'system') return html;
+
+    const linkPreview = buildLinkPreviewHTML(msg);
+
+    if (linkPreview && msg.media_type === 'text') {
+      html = html.replace(
+        /(<div class="cb-time">)/,
+        `${linkPreview}$1`
+      );
+    }
+
+    /* إضافة checkbox للتحديد */
+    html = html.replace(
+      /(<div class="cb-wrap [^"]*" id="msg-([^"]+)"[^>]*>)/,
+      `$1<div class="chat-select-checkbox"></div>`
+    );
+
+    /* Long press للتحديد */
+    html = html.replace(
+      /(<div class="cb-wrap [^"]*" id="msg-([^"]+)"[^>]*)(>)/,
+      (full, start, id, end) => {
+        return `${start}
+          onmousedown="chatLongPressStart(event, ${id})"
+          onmouseup="chatLongPressEnd()"
+          onmouseleave="chatLongPressEnd()"
+          ontouchstart="chatLongPressStart(event, ${id}); startSwipeReply(event, ${id})"
+          ontouchend="chatLongPressEnd(); endSwipeReply(event, this)"
+          onclick="if(_selectMode){toggleSelectMsg(${id}); event.stopPropagation();}"
+        ${end}`;
+      }
+    );
+
+    /* إذا كانت رسالة Forward */
+    if (msg.metadata?.forwarded || msg.forwarded_from_id) {
+      html = html.replace(
+        /(<div class="cb [^"]*[^>]*>)/,
+        `$1<div style="
+          font-size:9px;
+          opacity:.55;
+          margin-bottom:4px;
+          display:flex;
+          align-items:center;
+          gap:4px;
+          font-style:italic;
+        "><i class="fas fa-share"></i> İletildi</div>`
+      );
+    }
+
+    return html;
+  };
+}
+
+/* Long press timer */
+let _chatLongPressTimer = null;
+
+function chatLongPressStart(e, msgId) {
+  if (_selectMode) return;
+
+  _chatLongPressTimer = setTimeout(() => {
+    if (navigator.vibrate) navigator.vibrate(35);
+    enterChatSelectMode(msgId);
+  }, 520);
+}
+
+function chatLongPressEnd() {
+  clearTimeout(_chatLongPressTimer);
+}
+
+/* إضافة عناصر للقائمة */
+if (typeof showMsgCtx === 'function') {
+  const _origShowMsgCtx_extra = showMsgCtx;
+
+  showMsgCtx = function(e, msgId, isMine, type) {
+    _origShowMsgCtx_extra(e, msgId, isMine, type);
+
+    setTimeout(() => {
+      const menu = document.getElementById('chatCtxMenu');
+      if (!menu) return;
+
+      const selectItem = document.createElement('div');
+      selectItem.className = 'ctx-i';
+      selectItem.innerHTML = `<i class="fas fa-check-square"></i> Seç`;
+      selectItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        enterChatSelectMode(msgId);
+      };
+
+      const forwardItem = document.createElement('div');
+      forwardItem.className = 'ctx-i';
+      forwardItem.innerHTML = `<i class="fas fa-share"></i> İlet`;
+      forwardItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        openForwardModal([String(msgId)]);
+      };
+
+      const infoItem = document.createElement('div');
+      infoItem.className = 'ctx-i';
+      infoItem.innerHTML = `<i class="fas fa-info-circle"></i> Bilgi`;
+      infoItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        openMessageInfo(msgId);
+      };
+
+      menu.prepend(infoItem);
+      menu.prepend(forwardItem);
+      menu.prepend(selectItem);
+    }, 50);
+  };
+}
+
+/* تحميل روابط وحقن Load More */
+if (typeof loadRoomMessages === 'function') {
+  const _origLoadRoomMessages_extra = loadRoomMessages;
+
+  loadRoomMessages = async function(roomId) {
+    await _origLoadRoomMessages_extra(roomId);
+
+    _oldestLoadedMsgId = _chatMessages[0]?.id || null;
+
+    await loadLinkPreviews();
+    await loadMessageReactions(roomId);
+    renderRoomMessages();
+
+    injectLoadMoreButton();
+    attachScrollDownWatcher();
+  };
+}
+
+/* Draft hook */
+if (typeof onChatInput === 'function') {
+  const _origOnChatInput_extra = onChatInput;
+
+  onChatInput = function(el) {
+    _origOnChatInput_extra(el);
+    scheduleDraftSave();
+  };
+}
+
+/* فتح الغرفة: تحميل Draft */
+if (typeof openRoomWindow === 'function') {
+  const _origOpenRoomWindow_extra = openRoomWindow;
+
+  openRoomWindow = async function(roomId, roomType) {
+    await _origOpenRoomWindow_extra(roomId, roomType);
+
+    setTimeout(async () => {
+      await loadChatDraft(roomId);
+      injectLoadMoreButton();
+      attachScrollDownWatcher();
+    }, 350);
+  };
+}
+
+/* إرسال الرسالة مع معالجة فشل */
+if (typeof sendTextMsg === 'function') {
+  const _origSendTextMsg_extra = sendTextMsg;
+
+  sendTextMsg = async function() {
+    const inp = document.getElementById('chatTextInput');
+    const text = inp?.value?.trim() || '';
+    if (!text || _editingMsgId) {
+      return _origSendTextMsg_extra();
+    }
+
+    try {
+      await _origSendTextMsg_extra();
+      saveChatDraftNow();
+    } catch(e) {
+      const tempId = 'failed_' + Date.now();
+      renderFailedMessage(tempId, text);
+      showInvToast('Mesaj gönderilemedi', 'error');
+    }
+  };
+}
+
+/* تحسين رفع الملفات: ضغط الصور + Progress */
+if (typeof handleFileSelect === 'function') {
+  handleFileSelect = async function(input) {
+    let file = input.files?.[0];
+    if (!file || !_activeRoomId) return;
+    input.value = '';
+
+    if (file.size > 20 * 1024 * 1024) {
+      showInvToast('Dosya 20MB\\'dan küçük olmalı!', 'error');
+      return;
+    }
+
+    const progressId = createUploadProgress(file.name);
+
+    try {
+      updateUploadProgress(progressId, 15);
+
+      if (file.type.startsWith('image/')) {
+        file = await compressImageFile(file, 1280, 0.82);
+      }
+
+      updateUploadProgress(progressId, 35);
+
+      const sb = await initSupabase();
+      if (!sb) throw new Error('Supabase yok');
+
+      const isImage = file.type.startsWith('image/');
+      const isAudio = file.type.startsWith('audio/');
+      const isVideo = file.type.startsWith('video/');
+      const mediaType = isImage ? 'image' : isAudio ? 'audio' : isVideo ? 'video' : 'file';
+
+      const ext = file.name.split('.').pop() || 'bin';
+      const path = `${mediaType}s/${currentUser}_${Date.now()}.${ext}`;
+
+      updateUploadProgress(progressId, 55);
+
+      const { error: upErr } = await sb.storage.from(CHAT_BUCKET)
+        .upload(path, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
+
+      if (upErr) throw upErr;
+
+      updateUploadProgress(progressId, 80);
+
+      const { data: urlData } = sb.storage.from(CHAT_BUCKET).getPublicUrl(path);
+
+      const { data, error } = await sb.from(GRP_MSGS).insert([{
+        room_id: _activeRoomId,
+        from_user: currentUser,
+        message: '',
+        media_url: urlData?.publicUrl,
+        media_type: mediaType,
+        file_name: file.name,
+        file_size: file.size,
+        client_msg_id: 'file_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        delivery_status: 'sent'
+      }]).select().single();
+
+      if (error) throw error;
+
+      updateUploadProgress(progressId, 100);
+      setTimeout(() => removeUploadProgress(progressId), 500);
+
+      if (data) {
+        _chatMessages.push(data);
+        appendMsgBubble(data);
+        scrollToBottom(true);
+        updateRoomTimestamp(_activeRoomId);
+      }
+
+    } catch(e) {
+      removeUploadProgress(progressId);
+      showInvToast('Yükleme hatası!', 'error');
+      console.error(e);
+    }
+  };
+}
+
+/* قراءة تفصيلية */
+async function markMsgReadReceipt(msgId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  await sb.from('message_read_receipts').upsert([{
+    scope: 'group',
+    message_id: msgId,
+    username: currentUser,
+    read_at: new Date().toISOString()
+  }], {
+    onConflict: 'scope,message_id,username'
+  });
+}
+
+if (typeof markRoomAsRead === 'function') {
+  const _origMarkRoomAsRead_extra = markRoomAsRead;
+
+  markRoomAsRead = async function(roomId) {
+    await _origMarkRoomAsRead_extra(roomId);
+
+    const unreadMsgs = (_chatMessages || [])
+      .filter(m => m.from_user !== currentUser)
+      .slice(-50);
+
+    for (const m of unreadMsgs) {
+      await markMsgReadReceipt(m.id);
+    }
+  };
+}
+
+console.log('[WOW CHAT EXTRA FEATURES] ✅ Loaded — No pin messages');
 
 
 
