@@ -27193,15 +27193,22 @@ let _chatPageReady    = false;
   .ctx-i i{width:15px;text-align:center;font-size:12px}
 
   /* ── شريط الإدخال ── */
-  #chatInputBar {
-    flex-shrink:0;
-    background:rgba(10,10,10,.97);
-    border-top:1px solid rgba(255,255,255,.06);
-    padding:8px 10px;
-    padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
-    display:flex;align-items:flex-end;gap:7px;
-    position:relative;
-  }
+ #chatInputBar {
+    flex-shrink: 0;
+    background: rgba(10,10,10,.97);
+    border-top: 1px solid rgba(255,255,255,.06);
+    padding: 8px 10px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    align-items: flex-end;
+    gap: 7px;
+    position: relative;
+    overflow: visible;   /* ← يمنع قطع الأيقونة */
+    flex-wrap: nowrap;   /* ← يمنع التكسر في الموبايل */
+    width: 100%;
+    box-sizing: border-box;
+}
+
 
   #chatTextInput {
     flex:1;background:rgba(255,255,255,.06);
@@ -27231,15 +27238,30 @@ let _chatPageReady    = false;
   .chat-btn.attach:hover{background:rgba(201,168,76,.1);color:#c9a84c}
 
   /* ── زر التسجيل الصوتي — واتساب ── */
-  #chatRecordBtn {
-    width:40px;height:40px;border-radius:50%;border:none;
-    display:flex;align-items:center;justify-content:center;
-    cursor:pointer;font-size:16px;transition:all .22s;
-    flex-shrink:0;background:rgba(255,255,255,.07);
-    color:rgba(255,255,255,.45);
-    -webkit-tap-highlight-color:transparent;
-    user-select:none;-webkit-user-select:none;
-  }
+  /* ── زر التسجيل الصوتي — واتساب ── */
+#chatRecordBtn {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;   /* ← يمنع الانكماش */
+    min-height: 40px;  /* ← يمنع الانكماش */
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all .22s;
+    flex-shrink: 0;     /* ← مهم جداً */
+    background: rgba(255,255,255,.07);
+    color: rgba(255,255,255,.45);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative; /* ← يضمن البقاء داخل الحاوية */
+    z-index: 1;
+}
+
   #chatRecordBtn.recording {
     background:rgba(239,68,68,.18);color:#ef4444;
     animation:recPulse 1.2s infinite;
@@ -28260,13 +28282,14 @@ function buildVoicePlayer(msg, isMine) {
     </div>
 
     <!-- إضافة أحداث onplay و onpause للتبديل التلقائي -->
-    <audio id="aud_${msgId}" src="${url}" preload="auto"
-      ontimeupdate="updateVoiceProgress('${msgId}',this)"
-      onended="onVoiceEnded('${msgId}',this)"
-      onloadedmetadata="onVoiceMeta('${msgId}',this)"
-      onplay="document.getElementById('voiceRight_${msgId}').classList.add('playing')"
-      onpause="document.getElementById('voiceRight_${msgId}').classList.remove('playing')">
-    </audio>
+   <audio id="aud_${msgId}" src="${url}" preload="auto"
+  ontimeupdate="updateVoiceProgress('${msgId}',this)"
+  onended="onVoiceEnded('${msgId}',this)"
+  onloadedmetadata="onVoiceMeta('${msgId}',this)"
+  ondurationchange="onVoiceMeta('${msgId}',this)"
+  onplay="document.getElementById('voiceRight_${msgId}').classList.add('playing')"
+  onpause="document.getElementById('voiceRight_${msgId}').classList.remove('playing')">
+</audio>
   </div>`;
 }
 
@@ -28368,14 +28391,24 @@ function onVoiceEnded(msgId, aud) {
 
 /* ── تحديث مدة الصوت بعد تحميله ── */
 function onVoiceMeta(msgId, aud) {
-  // التحقق من أن المدة رقم صحيح وليست Infinity
-  if (aud.duration && !isNaN(aud.duration) && isFinite(aud.duration)) {
-    const durEl = document.getElementById('voiceDur_' + msgId);
-    if (durEl) {
-      durEl.textContent = fmtDuration(aud.duration);
+    /* بعض متصفحات الموبايل تُعيد Infinity لملفات WebM */
+    if (!aud.duration || isNaN(aud.duration) || !isFinite(aud.duration)) {
+        /* محاولة إصلاح: نضع currentTime في النهاية لإجبار المتصفح على حساب المدة */
+        aud.currentTime = 1e101;
+        aud.addEventListener('timeupdate', function fixDur() {
+            if (aud.duration && isFinite(aud.duration)) {
+                const durEl = document.getElementById('voiceDur_' + msgId);
+                if (durEl) durEl.textContent = fmtDuration(aud.duration);
+                aud.currentTime = 0;
+                aud.removeEventListener('timeupdate', fixDur);
+            }
+        });
+        return;
     }
-  }
+    const durEl = document.getElementById('voiceDur_' + msgId);
+    if (durEl) durEl.textContent = fmtDuration(aud.duration);
 }
+
 
 function seekVoice(msgId, pct) {
   const aud=document.getElementById('aud_'+msgId);
