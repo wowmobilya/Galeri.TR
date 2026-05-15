@@ -27039,15 +27039,29 @@ let _chatPageReady    = false;
 
   /* ══ رسالة صوتية — واتساب ══ */
   .cb-voice {
-    display:flex;align-items:center;gap:8px;
-    min-width:200px;max-width:260px;
-    padding:4px 2px;
+    display:flex;align-items:center;gap:10px;
+    min-width:240px;max-width:290px;
+    padding:2px;
+  }
+  .cb-voice-avatar-wrap {
+    position:relative;flex-shrink:0;
+  }
+  .cb-voice-avatar-wrap .cb-avatar, 
+  .cb-voice-avatar-wrap .cb-avatar-ph {
+    width:42px !important; height:42px !important;
+    font-size:16px !important; border-width:1px !important;
+  }
+  .cb-voice-mic {
+    position:absolute;bottom:-2px;right:-4px;
+    font-size:11px;background:inherit;
+    border-radius:50%;padding:2px;
+    display:flex;align-items:center;justify-content:center;
   }
   .cb-voice-play {
-    width:38px;height:38px;border-radius:50%;
+    width:36px;height:36px;border-radius:50%;
     border:none;cursor:pointer;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    font-size:15px;transition:all .2s;
+    font-size:14px;transition:all .2s;
   }
   .cb.mine   .cb-voice-play { background:rgba(0,0,0,.2);color:#0a0a0a; }
   .cb.theirs .cb-voice-play { background:rgba(201,168,76,.15);color:#c9a84c; }
@@ -27101,6 +27115,7 @@ let _chatPageReady    = false;
   .cb.mine   .cb-voice-speed:hover { background:rgba(0,0,0,.25); }
   .cb.theirs .cb-voice-speed { background:rgba(255,255,255,.1);color:rgba(255,255,255,.6); }
   .cb.theirs .cb-voice-speed:hover { background:rgba(201,168,76,.2);color:#c9a84c; }
+
 
   /* ── أفاتار ── */
   .cb-avatar {
@@ -28031,6 +28046,7 @@ if (msgDate !== lastDate) {
 }
 
 /* ── بناء فقاعة رسالة ── */
+/* ── بناء فقاعة رسالة ── */
 function buildMsgBubble(msg, idx) {
   /* رسالة نظام */
   if(msg.media_type==='system') {
@@ -28050,90 +28066,83 @@ function buildMsgBubble(msg, idx) {
       onerror="this.style.display='none'"/>
       ${msg.message?`<div style="margin-top:5px;">${escHtml(msg.message)}</div>`:''}`;
 
-
-
-
-} else if(msg.media_type==='video' && msg.media_url) {
-  const vidId = 'vid_' + msg.id;
-  const dur   = msg.duration_sec ? fmtDuration(msg.duration_sec) : '';
-  content = `
-    <div
-      onclick="openVideoFullscreen('${msg.media_url}', '${escHtml(msg.file_name||'')}')"
-      style="
-        position:relative;
-        width:220px;
-        border-radius:14px;
-        overflow:hidden;
-        background:#000;
-        cursor:pointer;
-        flex-shrink:0;
-      ">
-
-      <!-- مصغّر الفيديو -->
-      <video
-        id="${vidId}"
-        src="${msg.media_url}#t=0.1"
-        preload="metadata"
-        playsinline
-        muted
+  } else if(msg.media_type==='video' && msg.media_url) {
+    const vidId = 'vid_' + msg.id;
+    const dur   = msg.duration_sec ? fmtDuration(msg.duration_sec) : '';
+    content = `
+      <div
+        onclick="openVideoFullscreen('${msg.media_url}', '${escHtml(msg.file_name||'')}')"
         style="
+          position:relative;
           width:220px;
-          height:160px;
-          object-fit:cover;
-          display:block;
-          pointer-events:none;
-        "
-      ></video>
+          border-radius:14px;
+          overflow:hidden;
+          background:#000;
+          cursor:pointer;
+          flex-shrink:0;
+        ">
 
-      <!-- طبقة التشغيل -->
-      <div style="
-        position:absolute;inset:0;
-        background:rgba(0,0,0,.28);
-        display:flex;align-items:center;justify-content:center;
-      ">
+        <!-- مصغّر الفيديو -->
+        <video
+          id="${vidId}"
+          src="${msg.media_url}#t=0.1"
+          preload="metadata"
+          playsinline
+          muted
+          style="
+            width:220px;
+            height:160px;
+            object-fit:cover;
+            display:block;
+            pointer-events:none;
+          "
+        ></video>
+
+        <!-- طبقة التشغيل -->
         <div style="
-          width:52px;height:52px;border-radius:50%;
-          background:rgba(0,0,0,.55);
-          border:2.5px solid rgba(255,255,255,.85);
+          position:absolute;inset:0;
+          background:rgba(0,0,0,.28);
           display:flex;align-items:center;justify-content:center;
         ">
-          <i class="fas fa-play"
-             style="color:#fff;font-size:18px;margin-left:3px;"></i>
+          <div style="
+            width:52px;height:52px;border-radius:50%;
+            background:rgba(0,0,0,.55);
+            border:2.5px solid rgba(255,255,255,.85);
+            display:flex;align-items:center;justify-content:center;
+          ">
+            <i class="fas fa-play"
+               style="color:#fff;font-size:18px;margin-left:3px;"></i>
+          </div>
         </div>
+
+        <!-- شارة المدة -->
+        ${dur ? `
+        <div style="
+          position:absolute;bottom:7px;right:8px;
+          background:rgba(0,0,0,.62);
+          border-radius:5px;padding:2px 7px;
+          font-size:11px;font-weight:700;
+          color:#fff;letter-spacing:.3px;
+          font-family:'Montserrat',sans-serif;
+        ">${dur}</div>` : ''}
+
+        <!-- أيقونة الفيديو -->
+        <div style="
+          position:absolute;top:7px;left:8px;
+          background:rgba(0,0,0,.5);
+          border-radius:5px;padding:2px 7px;
+          display:flex;align-items:center;gap:4px;
+        ">
+          <i class="fas fa-video"
+             style="color:#fff;font-size:10px;"></i>
+        </div>
+
       </div>
+      ${msg.message
+        ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>`
+        : ''}
+    `;
 
-      <!-- شارة المدة -->
-      ${dur ? `
-      <div style="
-        position:absolute;bottom:7px;right:8px;
-        background:rgba(0,0,0,.62);
-        border-radius:5px;padding:2px 7px;
-        font-size:11px;font-weight:700;
-        color:#fff;letter-spacing:.3px;
-        font-family:'Montserrat',sans-serif;
-      ">${dur}</div>` : ''}
-
-      <!-- أيقونة الفيديو -->
-      <div style="
-        position:absolute;top:7px;left:8px;
-        background:rgba(0,0,0,.5);
-        border-radius:5px;padding:2px 7px;
-        display:flex;align-items:center;gap:4px;
-      ">
-        <i class="fas fa-video"
-           style="color:#fff;font-size:10px;"></i>
-      </div>
-
-    </div>
-    ${msg.message
-      ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>`
-      : ''}
-  `;
-
-
-
-
-    
   } else if(msg.media_type==='file'&&msg.media_url) {
     const ext=(msg.file_name||'').split('.').pop().toUpperCase()||'FILE';
     const sz=msg.file_size?(msg.file_size>1048576
@@ -28152,17 +28161,16 @@ function buildMsgBubble(msg, idx) {
 
   } else if(msg.media_type==='audio'&&msg.media_url) {
     /* ── مشغّل الصوت بتصميم واتساب ── */
-    const dur=msg.duration_sec||0;
-    const msgId='voice_'+msg.id;
-    content=buildVoicePlayer(msg.media_url, dur, msgId, isMine);
+    content = buildVoicePlayer(msg, isMine);
 
   } else {
     content=`<div>${escHtml(msg.message||'')}</div>`;
   }
 
+  /* علامة الصح الزرقاء للمقروء */
   const readIcon=isMine
     ?`<i class="fas fa-check${msg.is_read?'-double':''}"
-        style="font-size:8px;color:${msg.is_read?'#4ade80':'inherit'};"></i>`:'';
+        style="font-size:8px;color:${msg.is_read?'#3b82f6':'inherit'};"></i>`:'';
   const editBadge=msg.edited_at?`<span class="cb-edited">düzenlendi</span>`:'';
 
   /* اسم المرسل في الكروب */
@@ -28171,11 +28179,15 @@ function buildMsgBubble(msg, idx) {
         ${escHtml(getDisplayName(msg.from_user))}
       </div>`:'';
 
+  /* إخفاء الأفاتار الخارجي للرسائل الصوتية لأننا نضعه بالداخل */
+  const showExtAvatar = !isMine && msg.media_type !== 'audio';
+  const showMineExtAvatar = isMine && msg.media_type !== 'audio';
+
   return `<div class="cb-wrap ${side}" id="msg-${msg.id}"
     data-id="${msg.id}" data-mine="${isMine}"
     oncontextmenu="showMsgCtx(event,${msg.id},${isMine},'${msg.media_type}')"
     ontouchstart="handleTouchCtx(event,${msg.id},${isMine},'${msg.media_type}')">
-    ${!isMine?buildAvatar(msg.from_user,30):''}
+    ${showExtAvatar ? buildAvatar(msg.from_user,30) : ''}
     <div class="cb ${side} new-glow">
       ${senderName}
       ${content}
@@ -28183,33 +28195,52 @@ function buildMsgBubble(msg, idx) {
         ${editBadge}${timeStr}${readIcon}
       </div>
     </div>
-    ${isMine?buildAvatar(msg.from_user,30):''}
+    ${showMineExtAvatar ? buildAvatar(msg.from_user,30) : ''}
   </div>`;
 }
 
-/* ── مشغّل الصوت بتصميم واتساب ── */
-function buildVoicePlayer(url, durSec, msgId, isMine) {
-  const durStr=fmtDuration(durSec);
-  /* أشرطة وهمية تمثّل الموجة الصوتية */
-  const bars=generateWaveBars(40);
-  const barsHtml=bars.map((h,i)=>
+
+
+/* ── مشغّل الصوت بتصميم واتساب (سريع + صورة + ميكروفون مقروء) ── */
+function buildVoicePlayer(msg, isMine) {
+  const url = msg.media_url;
+  const durSec = msg.duration_sec || 0;
+  const msgId = 'voice_' + msg.id;
+  const durStr = fmtDuration(durSec);
+  
+  /* أشرطة الموجة */
+  const bars = generateWaveBars(32);
+  const barsHtml = bars.map((h,i)=>
     `<div class="cb-voice-wave-bar unplayed"
       data-idx="${i}"
       style="height:${h}px;min-height:4px;"
       onclick="seekVoice('${msgId}',${i/bars.length})"></div>`
   ).join('');
 
+  /* الأفاتار الداخلي */
+  const avatarHtml = buildAvatar(msg.from_user, 42);
+  
+  /* لون الميكروفون: أزرق إذا قُرئت، رمادي إذا لم تُقرأ */
+  const micColor = msg.is_read ? '#3b82f6' : (isMine ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)');
+  const micBg    = isMine ? '#d4a843' : '#2a2a2a'; // لون خلفية المايك لتندمج مع الفقاعة
+
   return `
   <div class="cb-voice" id="${msgId}">
-    <audio id="aud_${msgId}" src="${url}" preload="none"
-      ontimeupdate="updateVoiceProgress('${msgId}',this)"
-      onended="onVoiceEnded('${msgId}',this)"
-      onloadedmetadata="onVoiceMeta('${msgId}',this)"></audio>
+    
+    <!-- الصورة الشخصية والميكروفون -->
+    <div class="cb-voice-avatar-wrap">
+      ${avatarHtml}
+      <div class="cb-voice-mic" style="background:${micBg};">
+        <i class="fas fa-microphone" style="color:${micColor};"></i>
+      </div>
+    </div>
 
+    <!-- زر التشغيل -->
     <button class="cb-voice-play" onclick="toggleVoice('${msgId}')">
       <i class="fas fa-play" id="playIcon_${msgId}"></i>
     </button>
 
+    <!-- جسم المشغل -->
     <div class="cb-voice-body">
       <div class="cb-voice-bar">
         <div class="cb-voice-waves" id="waves_${msgId}">${barsHtml}</div>
@@ -28220,8 +28251,15 @@ function buildVoicePlayer(url, durSec, msgId, isMine) {
           onclick="cycleVoiceSpeed('${msgId}')">1×</button>
       </div>
     </div>
+    
+    <!-- preload="auto" يضمن تحميل الصوت فوراً لتشغيل سريع جداً -->
+    <audio id="aud_${msgId}" src="${url}" preload="auto"
+      ontimeupdate="updateVoiceProgress('${msgId}',this)"
+      onended="onVoiceEnded('${msgId}',this)"
+      onloadedmetadata="onVoiceMeta('${msgId}',this)"></audio>
   </div>`;
 }
+
 
 /* ── توليد أشرطة الموجة ── */
 function generateWaveBars(count) {
