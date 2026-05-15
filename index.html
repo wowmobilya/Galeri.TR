@@ -29312,8 +29312,9 @@ function openImgViewer(url) {
 
 
 
-/* ══ عارض الفيديو بملء الشاشة — واتساب ══ */
-/* ══ عارض الفيديو بملء الشاشة — واتساب ══ */
+/* ══════════════════════════════════════════════
+   عارض الفيديو — واتساب (نسخة مُصلحة)
+══════════════════════════════════════════════ */
 function openVideoFullscreen(url, name) {
   document.getElementById('chatVideoViewer')?.remove();
 
@@ -29323,32 +29324,33 @@ function openVideoFullscreen(url, name) {
     position:fixed;inset:0;z-index:99999;
     background:#000;
     display:flex;flex-direction:column;
-    animation:updBgIn .22s ease forwards;
+    opacity:0;transition:opacity .22s;
   `;
 
   v.innerHTML = `
     <!-- شريط علوي -->
     <div style="
-      flex-shrink:0;padding:12px 14px;
+      position:absolute;top:0;left:0;right:0;z-index:5;
+      padding:12px 14px;
       display:flex;align-items:center;gap:12px;
-      background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent);
-      position:absolute;top:0;left:0;right:0;z-index:2;
+      background:linear-gradient(to bottom,rgba(0,0,0,.75),transparent);
     ">
-      <button onclick="closeVideoFullscreen()" style="
-        width:38px;height:38px;border-radius:50%;
-        background:rgba(255,255,255,.15);
-        border:none;color:#fff;font-size:16px;
-        cursor:pointer;display:flex;align-items:center;
-        justify-content:center;
+      <button id="vidBackBtn" style="
+        width:40px;height:40px;border-radius:50%;
+        background:rgba(255,255,255,.15);border:none;
+        color:#fff;font-size:17px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;
         -webkit-tap-highlight-color:transparent;
       "><i class="fas fa-arrow-left"></i></button>
+
       <div style="
         font-size:13px;font-weight:700;color:#fff;flex:1;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         font-family:'Montserrat',sans-serif;
       ">${name || 'Video'}</div>
+
       <a href="${url}" download="${name||'video'}" style="
-        width:38px;height:38px;border-radius:50%;
+        width:40px;height:40px;border-radius:50%;
         background:rgba(255,255,255,.15);
         display:flex;align-items:center;justify-content:center;
         color:#fff;font-size:15px;text-decoration:none;
@@ -29356,54 +29358,60 @@ function openVideoFullscreen(url, name) {
       "><i class="fas fa-download"></i></a>
     </div>
 
-    <!-- دائرة التحميل — واتساب -->
+    <!-- ★ دائرة التحميل — تظهر دائماً في البداية ★ -->
     <div id="vidLoader" style="
-      position:absolute;inset:0;z-index:3;
+      position:absolute;inset:0;z-index:4;
       display:flex;flex-direction:column;
       align-items:center;justify-content:center;
-      background:rgba(0,0,0,.55);
-      gap:14px;
+      gap:12px;
+      background:rgba(0,0,0,.6);
+      transition:opacity .3s;
     ">
-      <!-- الدائرة SVG -->
-      <div style="position:relative;width:64px;height:64px;">
-        <svg width="64" height="64" style="transform:rotate(-90deg);">
-          <circle cx="32" cy="32" r="26"
-            fill="none" stroke="rgba(255,255,255,.2)"
-            stroke-width="3.5"/>
-          <circle id="vidProgress" cx="32" cy="32" r="26"
-            fill="none" stroke="#fff"
-            stroke-width="3.5"
+      <div style="position:relative;width:68px;height:68px;">
+        <svg width="68" height="68"
+             style="transform:rotate(-90deg);display:block;">
+          <!-- خلفية الدائرة -->
+          <circle cx="34" cy="34" r="28"
+            fill="none"
+            stroke="rgba(255,255,255,.2)"
+            stroke-width="4"/>
+          <!-- دائرة التقدم -->
+          <circle id="vidProgressCircle"
+            cx="34" cy="34" r="28"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="4"
             stroke-linecap="round"
-            stroke-dasharray="163.4"
-            stroke-dashoffset="163.4"
-            style="transition:stroke-dashoffset .25s linear;"/>
+            stroke-dasharray="175.9"
+            stroke-dashoffset="175.9"/>
         </svg>
-        <!-- أيقونة وسط الدائرة -->
+        <!-- أيقونة play في المنتصف -->
         <div style="
           position:absolute;inset:0;
           display:flex;align-items:center;justify-content:center;
         ">
           <i class="fas fa-play"
-             style="color:#fff;font-size:18px;margin-left:3px;opacity:.9;"></i>
+             style="color:#fff;font-size:20px;margin-left:4px;"></i>
         </div>
       </div>
-      <!-- نسبة التحميل -->
-      <div id="vidPercent" style="
-        color:rgba(255,255,255,.85);
+      <span id="vidPercentText" style="
+        color:rgba(255,255,255,.9);
         font-size:12px;font-weight:700;
         font-family:'Montserrat',sans-serif;
-        letter-spacing:.5px;
-      ">0%</div>
+        letter-spacing:.8px;
+      ">0%</span>
     </div>
 
     <!-- الفيديو -->
-    <video
-      id="fullscreenVideo"
+    <video id="fullscreenVideo"
       src="${url}"
       playsinline
+      preload="auto"
       style="
+        position:absolute;inset:0;
         width:100%;height:100%;
-        object-fit:contain;display:block;
+        object-fit:contain;
+        z-index:2;
       "
     ></video>
   `;
@@ -29411,83 +29419,107 @@ function openVideoFullscreen(url, name) {
   document.body.appendChild(v);
   document.body.style.overflow = 'hidden';
 
-  /* ── تتبع التحميل ── */
-  const vid     = document.getElementById('fullscreenVideo');
-  const loader  = document.getElementById('vidLoader');
-  const circle  = document.getElementById('vidProgress');
-  const percent = document.getElementById('vidPercent');
-  const total   = 163.4; // 2π × 26
+  /* ظهور تدريجي */
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { v.style.opacity = '1'; });
+  });
 
-  vid.addEventListener('progress', () => {
+  /* ── ربط الأحداث ── */
+  const vid      = v.querySelector('#fullscreenVideo');
+  const loader   = v.querySelector('#vidLoader');
+  const circle   = v.querySelector('#vidProgressCircle');
+  const pctText  = v.querySelector('#vidPercentText');
+  const backBtn  = v.querySelector('#vidBackBtn');
+  const CIRC     = 175.9; // 2π×28
+
+  /* زر السهم في الشريط */
+  backBtn.addEventListener('click', closeVideoFullscreen);
+
+  /* تحديث دائرة التحميل */
+  function updateProgress() {
     if (!vid.duration) return;
     try {
       const buf = vid.buffered;
-      if (buf.length) {
-        const pct = Math.min(buf.end(buf.length - 1) / vid.duration, 1);
-        circle.style.strokeDashoffset = total - total * pct;
-        percent.textContent = Math.round(pct * 100) + '%';
+      if (buf.length > 0) {
+        const loaded = buf.end(buf.length - 1);
+        const pct    = Math.min(loaded / vid.duration, 1);
+        circle.style.transition       = 'stroke-dashoffset .3s linear';
+        circle.style.strokeDashoffset = CIRC - CIRC * pct;
+        pctText.textContent           = Math.round(pct * 100) + '%';
       }
     } catch(e) {}
-  });
+  }
 
+  vid.addEventListener('progress',  updateProgress);
+  vid.addEventListener('timeupdate', updateProgress);
+
+  /* جاهز للتشغيل — أخفِ الدائرة */
   vid.addEventListener('canplay', () => {
-    /* اكتمل التحميل الكافي — أخفِ الدائرة وشغّل */
     circle.style.strokeDashoffset = '0';
-    percent.textContent = '100%';
+    pctText.textContent           = '100%';
     setTimeout(() => {
-      loader.style.transition = 'opacity .3s';
       loader.style.opacity    = '0';
+      loader.style.pointerEvents = 'none';
       setTimeout(() => { loader.style.display = 'none'; }, 300);
       vid.play().catch(() => {});
-    }, 200);
+    }, 300);
   });
 
+  /* تعثّر — أعِد الدائرة */
   vid.addEventListener('waiting', () => {
-    /* تعثّر التشغيل — أعِد الدائرة */
-    loader.style.display  = 'flex';
-    loader.style.opacity  = '1';
+    loader.style.display      = 'flex';
+    loader.style.opacity      = '1';
+    loader.style.pointerEvents = 'auto';
   });
 
   vid.addEventListener('playing', () => {
-    loader.style.display = 'none';
+    loader.style.opacity      = '0';
+    loader.style.pointerEvents = 'none';
+    setTimeout(() => { loader.style.display = 'none'; }, 300);
   });
 
-  vid.load();
+  /* ── زر الرجوع من الهاتف — بدون history.pushState ── */
+  /* نستخدم hashchange بدلاً لتجنب التعارض مع router التطبيق */
+  const prevHash = location.hash;
+  location.hash  = 'video-viewer';
 
-  /* ── زر الرجوع من الهاتف ── */
-  history.pushState({ videoViewer: true }, '');
-  const onPop = (e) => {
-    if (document.getElementById('chatVideoViewer')) {
-      closeVideoFullscreen();
+  function onHashChange() {
+    if (location.hash !== '#video-viewer') {
+      closeVideoFullscreen(false); /* false = لا تغيّر الـ hash مرة ثانية */
     }
-  };
-  window.addEventListener('popstate', onPop, { once: true });
-  window._videoViewerPopState = onPop;
+  }
+  window.addEventListener('hashchange', onHashChange);
+  window._vidHashHandler = onHashChange;
+  window._vidPrevHash    = prevHash;
 }
 
 /* ══ إغلاق العارض ══ */
-function closeVideoFullscreen() {
+function closeVideoFullscreen(restoreHash = true) {
   const v = document.getElementById('chatVideoViewer');
   if (!v) return;
 
+  /* أوقف الفيديو */
   const vid = document.getElementById('fullscreenVideo');
   if (vid) { vid.pause(); vid.src = ''; }
 
-  v.style.transition = 'opacity .22s';
-  v.style.opacity    = '0';
+  /* أزل المستمع */
+  if (window._vidHashHandler) {
+    window.removeEventListener('hashchange', window._vidHashHandler);
+    window._vidHashHandler = null;
+  }
+
+  /* أعِد الـ hash السابق */
+  if (restoreHash) {
+    location.hash = window._vidPrevHash || '';
+  }
+
+  /* إخفاء تدريجي ثم حذف */
+  v.style.opacity = '0';
   setTimeout(() => {
     v.remove();
     document.body.style.overflow = '';
   }, 220);
-
-  window.removeEventListener('popstate', window._videoViewerPopState);
-
-  /* إذا لم يُضغط زر الرجوع يدوياً — تراجع عن history.pushState */
-  if (history.state?.videoViewer) {
-    history.back();
-  }
 }
-
 
   
   
