@@ -31240,19 +31240,43 @@ window.addEventListener('popstate', e => {
 });
 
 /* ══════════════════════════════════════════════════════════════
-   MutationObserver — حقن زر الدردشة
+   MutationObserver — حقن زر الدردشة (نسخة مصلحة)
 ══════════════════════════════════════════════════════════════ */
 let _injectDebounceTimer = null;
 
 function injectChatBtn() {
   if (document.getElementById('chatHomeTriggerBtn')) return;
-  const targets = document.querySelectorAll(
-    '.dashboard-grid,.quick-actions,.home-actions,[data-inject-chat]'
-  );
-  if (!targets.length) return;
+
+  /* ✅ ابحث عن أي حاوية موجودة في الصفحة */
+  const target =
+    document.querySelector('.dashboard-grid') ||
+    document.querySelector('.quick-actions') ||
+    document.querySelector('.home-actions') ||
+    document.querySelector('[data-inject-chat]') ||
+    document.querySelector('.admin-cards') ||
+    document.querySelector('.cards-grid') ||
+    document.querySelector('.home-grid') ||
+    document.querySelector('.main-content') ||
+    document.querySelector('main') ||
+    document.querySelector('#mainContent') ||
+    document.querySelector('#app') ||
+    document.body; /* ← آخر خيار: أضفه للـ body مباشرة */
+
+  if (!target) return;
+
   const btn = document.createElement('div');
   btn.id    = 'chatHomeTriggerBtn';
   btn.className = 'chat-home-btn';
+  btn.style.cssText = `
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:13px 15px;border-radius:14px;
+    border:1px solid rgba(201,168,76,.2);
+    background:rgba(255,255,255,.025);
+    cursor:pointer;transition:all .22s ease;
+    font-family:'Montserrat',sans-serif;
+    -webkit-tap-highlight-color:transparent;
+    margin:10px 0;
+  `;
   btn.innerHTML = `
     <div style="display:flex;align-items:center;gap:12px;">
       <div style="width:42px;height:42px;border-radius:12px;flex-shrink:0;
@@ -31272,17 +31296,41 @@ function injectChatBtn() {
       <div class="chat-home-unread-badge cl-unread" style="display:none;">0</div>
       <i class="fas fa-chevron-right" style="color:rgba(201,168,76,.4);font-size:13px;"></i>
     </div>`;
+
+  btn.onmouseover = () => {
+    btn.style.background   = 'rgba(201,168,76,.07)';
+    btn.style.borderColor  = 'rgba(201,168,76,.38)';
+    btn.style.transform    = 'translateY(-2px)';
+  };
+  btn.onmouseout = () => {
+    btn.style.background   = 'rgba(255,255,255,.025)';
+    btn.style.borderColor  = 'rgba(201,168,76,.2)';
+    btn.style.transform    = '';
+  };
   btn.onclick = () => openChatListPage();
-  targets[0].appendChild(btn);
+
+  target.appendChild(btn);
   updateChatHomeBadge();
+
+  console.log('[WOW Chat] ✅ زر المحادثة أُضيف إلى:', target.tagName, target.id || target.className);
 }
 
+/* ── Observer مع debounce ── */
 const _chatObserver = new MutationObserver(() => {
   clearTimeout(_injectDebounceTimer);
   _injectDebounceTimer = setTimeout(injectChatBtn, 100);
 });
 
 _chatObserver.observe(document.body, { childList:true, subtree:true });
+
+/* ── محاولات متعددة للتأكد من الحقن ── */
+injectChatBtn();
+setTimeout(injectChatBtn, 500);
+setTimeout(injectChatBtn, 1500);
+setTimeout(injectChatBtn, 3000);
+
+document.addEventListener('DOMContentLoaded', injectChatBtn);
+
 
 /* ══════════════════════════════════════════════════════════════
    تهيئة أولية
