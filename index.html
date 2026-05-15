@@ -31249,6 +31249,7 @@ function injectChatBtn() {
 
   /* ✅ ابحث عن أي حاوية موجودة في الصفحة */
   const target =
+    document.querySelector('.home-cards') || /* 👈 أضف هذا السطر هنا */
     document.querySelector('.dashboard-grid') ||
     document.querySelector('.quick-actions') ||
     document.querySelector('.home-actions') ||
