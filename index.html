@@ -28281,118 +28281,157 @@ function buildVoicePlayer(msg, isMine) {
   const durSec = msg.duration_sec || 0;
   const msgId  = 'voice_' + msg.id;
   const durStr = (durSec && isFinite(durSec)) ? fmtDuration(durSec) : '0:00';
+  const timeStr = fmtTime(msg.created_at);
 
   /* ── الأفاتار ── */
   const p        = _chatProfiles[msg.from_user] || {};
-  const initials = (p.display_name || msg.from_user || '?').substring(0, 2).toUpperCase();
+  const initials = (p.display_name || msg.from_user || '?').substring(0,2).toUpperCase();
   const avatarInner = p.avatar_url
     ? `<img src="${p.avatar_url}"
-         style="width:100%;height:100%;object-fit:cover;
-                border-radius:50%;display:block;"
-         draggable="false"
-         onerror="this.style.display='none'"/>`
+           style="width:100%;height:100%;object-fit:cover;
+                  border-radius:50%;display:block;"
+           draggable="false"
+           onerror="this.style.display='none'"/>`
     : `<div style="
-         width:100%;height:100%;border-radius:50%;
-         display:flex;align-items:center;justify-content:center;
-         font-size:16px;font-weight:900;
-         color:${isMine ? '#5a3e00' : '#c9a84c'};">${initials}</div>`;
+           width:100%;height:100%;border-radius:50%;
+           display:flex;align-items:center;justify-content:center;
+           font-size:16px;font-weight:900;
+           color:${isMine ? '#5a3e00' : '#c9a84c'};">${initials}</div>`;
 
   /* ── ألوان ── */
   const dotColor   = '#3b82f6';
-  const lineColor  = isMine ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.22)';
-  const timeColor  = isMine ? 'rgba(0,0,0,0.45)' : 'rgba(255,255,255,0.45)';
-  const playBg     = isMine ? 'rgba(0,0,0,0.12)' : 'rgba(255,255,255,0.12)';
-  const playColor  = isMine ? '#333' : '#fff';
+  const lineColor  = isMine ? 'rgba(0,0,0,0.20)' : 'rgba(255,255,255,0.25)';
+  const timeColor  = isMine ? 'rgba(0,0,0,0.42)' : 'rgba(255,255,255,0.42)';
+  const durColor   = isMine ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.55)';
+  const playBg     = isMine ? 'rgba(0,0,0,0.13)' : 'rgba(255,255,255,0.13)';
+  const playColor  = isMine ? '#222'             : '#fff';
   const speedBg    = isMine ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)';
-  const speedColor = isMine ? 'rgba(0,0,0,0.7)'  : 'rgba(255,255,255,0.9)';
-  const avatarBorder = isMine
-    ? 'rgba(0,0,0,0.15)'
-    : 'rgba(201,168,76,0.35)';
+  const speedColor = isMine ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.92)';
+  const avatarBorder = isMine ? 'rgba(0,0,0,0.15)' : 'rgba(201,168,76,0.35)';
 
   return `
   <div id="${msgId}" style="
     display:flex;
     align-items:center;
-    gap:10px;
-    min-width:220px;
-    max-width:280px;
+    gap:8px;
+    min-width:230px;
+    max-width:290px;
     box-sizing:border-box;
   ">
 
-    <!-- ① زر التشغيل -->
-    <button onclick="toggleVoiceWA('${msgId}')" style="
-      width:40px;height:40px;min-width:40px;
-      border-radius:50%;border:none;cursor:pointer;
-      background:${playBg};
-      color:${playColor};
-      display:flex;align-items:center;justify-content:center;
-      font-size:15px;flex-shrink:0;
-      transition:transform .18s;
-      -webkit-tap-highlight-color:transparent;"
-      onmouseover="this.style.transform='scale(1.1)'"
-      onmouseout="this.style.transform='scale(1)'">
-      <i class="fas fa-play" id="playIcon_${msgId}"
-         style="margin-left:2px;"></i>
-    </button>
+    <!-- ① دائرة التشغيل — الخط يمر من منتصفها -->
+    <div style="position:relative;flex-shrink:0;width:44px;height:44px;">
 
-    <!-- ② الشريط + الوقت -->
-    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;">
+      <!-- الدائرة -->
+      <button onclick="toggleVoiceWA('${msgId}')" style="
+        position:absolute;inset:0;
+        border-radius:50%;border:none;cursor:pointer;
+        background:${playBg};
+        color:${playColor};
+        display:flex;align-items:center;justify-content:center;
+        font-size:15px;z-index:2;
+        transition:transform .18s;
+        -webkit-tap-highlight-color:transparent;"
+        onmouseover="this.style.transform='scale(1.1)'"
+        onmouseout="this.style.transform='scale(1)'">
+        <i class="fas fa-play" id="playIcon_${msgId}"
+           style="margin-left:2px;"></i>
+      </button>
 
-      <!-- النقطة + الخط المتقطع -->
+      <!-- الخط يخرج من يمين الدائرة عند منتصفها (top:50%) -->
+      <!-- هذا الجزء مجرد امتداد بصري، الخط الحقيقي في القسم التالي -->
+    </div>
+
+    <!-- ② الشريط + المدة + الوقت -->
+    <div style="
+      flex:1;min-width:0;
+      display:flex;flex-direction:column;
+      justify-content:center;
+      gap:5px;
+    ">
+
+      <!-- الخط المتقطع — في نفس مستوى منتصف الدائرة -->
       <div id="waProgressBar_${msgId}"
            onclick="seekVoiceWA('${msgId}',event)"
            style="
-             display:flex;align-items:center;
-             height:18px;cursor:pointer;position:relative;">
+             position:relative;
+             height:14px;
+             cursor:pointer;
+             display:flex;
+             align-items:center;
+           ">
 
-        <!-- النقطة الزرقاء المتحركة -->
-        <div id="waDot_${msgId}" style="
-          width:14px;height:14px;border-radius:50%;
-          background:${dotColor};
-          flex-shrink:0;
-          box-shadow:0 1px 5px rgba(59,130,246,0.55);
-          position:absolute;
-          left:0%;
-          transform:translateX(-50%);
-          z-index:2;
-          transition:left .08s linear;"></div>
-
-        <!-- الخط المتقطع -->
+        <!-- الخط المتقطع الخلفي -->
         <div style="
-          width:100%;height:2px;
+          position:absolute;left:0;right:0;top:50%;
+          transform:translateY(-50%);
+          height:2px;
           background:repeating-linear-gradient(
             to right,
-            ${lineColor} 0px, ${lineColor} 4px,
-            transparent 4px, transparent 8px
+            ${lineColor} 0px, ${lineColor} 5px,
+            transparent 5px, transparent 9px
           );
-          border-radius:2px;position:relative;z-index:1;">
+          border-radius:2px;
+          z-index:1;">
           <!-- الجزء المُشغَّل -->
           <div id="waPlayed_${msgId}" style="
             position:absolute;top:0;left:0;
             height:100%;width:0%;
             background:${dotColor};
             border-radius:2px;
-            opacity:0.55;
+            opacity:0.6;
             transition:width .08s linear;"></div>
         </div>
+
+        <!-- النقطة الزرقاء المتحركة -->
+        <div id="waDot_${msgId}" style="
+          position:absolute;
+          top:50%;left:0%;
+          transform:translate(-50%,-50%);
+          width:13px;height:13px;
+          border-radius:50%;
+          background:${dotColor};
+          box-shadow:0 1px 5px rgba(59,130,246,0.55);
+          z-index:3;
+          transition:left .08s linear;"></div>
       </div>
 
-      <!-- الوقت -->
-      <div id="voiceDur_${msgId}" style="
-        font-size:11px;font-weight:700;
-        font-family:'Montserrat',sans-serif;
-        color:${timeColor};letter-spacing:.3px;">
-        ${durStr}
+      <!-- صف المدة + الوقت — المدة تحت بداية الخط، الوقت على اليمين -->
+      <div style="
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+      ">
+        <!-- المدة: تحت بداية الخط (يسار) -->
+        <span id="voiceDur_${msgId}" style="
+          font-size:11px;font-weight:700;
+          font-family:'Montserrat',sans-serif;
+          color:${durColor};letter-spacing:.3px;">
+          ${durStr}
+        </span>
+
+        <!-- الوقت + علامة القراءة (يمين) -->
+        <span style="
+          font-size:10px;
+          font-family:'Montserrat',sans-serif;
+          color:${timeColor};
+          display:flex;align-items:center;gap:3px;">
+          ${timeStr}
+          ${isMine
+            ? `<i class="fas fa-check-double"
+                 style="font-size:9px;color:${msg.is_read ? '#3b82f6' : timeColor};"></i>`
+            : ''}
+        </span>
       </div>
     </div>
 
-    <!-- ③ الأفاتار / زر السرعة (يتبادلان) -->
+    <!-- ③ الأفاتار ↔ السرعة -->
     <div style="position:relative;width:44px;height:44px;flex-shrink:0;">
 
-      <!-- الأفاتار — يظهر عند الإيقاف -->
+      <!-- الأفاتار -->
       <div id="voiceAvatar_${msgId}" style="
         position:absolute;inset:0;border-radius:50%;
-        background:rgba(201,168,76,0.08);
+        background:rgba(201,168,76,0.07);
         border:2px solid ${avatarBorder};
         overflow:hidden;
         display:flex;align-items:center;justify-content:center;
@@ -28400,7 +28439,7 @@ function buildVoicePlayer(msg, isMine) {
         ${avatarInner}
       </div>
 
-      <!-- زر السرعة — يظهر عند التشغيل -->
+      <!-- زر السرعة -->
       <button id="speedBtn_${msgId}"
               onclick="cycleVoiceSpeedWA('${msgId}')"
               style="
