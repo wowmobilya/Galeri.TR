@@ -29313,6 +29313,7 @@ function openImgViewer(url) {
 
 
 /* ══ عارض الفيديو بملء الشاشة — واتساب ══ */
+/* ══ عارض الفيديو بملء الشاشة — واتساب ══ */
 function openVideoFullscreen(url, name) {
   document.getElementById('chatVideoViewer')?.remove();
 
@@ -29328,8 +29329,7 @@ function openVideoFullscreen(url, name) {
   v.innerHTML = `
     <!-- شريط علوي -->
     <div style="
-      flex-shrink:0;
-      padding:12px 14px;
+      flex-shrink:0;padding:12px 14px;
       display:flex;align-items:center;gap:12px;
       background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent);
       position:absolute;top:0;left:0;right:0;z-index:2;
@@ -29340,16 +29340,11 @@ function openVideoFullscreen(url, name) {
         border:none;color:#fff;font-size:16px;
         cursor:pointer;display:flex;align-items:center;
         justify-content:center;
-        font-family:'Montserrat',sans-serif;
         -webkit-tap-highlight-color:transparent;
-      ">
-        <i class="fas fa-arrow-left"></i>
-      </button>
+      "><i class="fas fa-arrow-left"></i></button>
       <div style="
-        font-size:13px;font-weight:700;
-        color:#fff;flex:1;
-        white-space:nowrap;overflow:hidden;
-        text-overflow:ellipsis;
+        font-size:13px;font-weight:700;color:#fff;flex:1;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         font-family:'Montserrat',sans-serif;
       ">${name || 'Video'}</div>
       <a href="${url}" download="${name||'video'}" style="
@@ -29358,22 +29353,57 @@ function openVideoFullscreen(url, name) {
         display:flex;align-items:center;justify-content:center;
         color:#fff;font-size:15px;text-decoration:none;
         -webkit-tap-highlight-color:transparent;
-      ">
-        <i class="fas fa-download"></i>
-      </a>
+      "><i class="fas fa-download"></i></a>
+    </div>
+
+    <!-- دائرة التحميل — واتساب -->
+    <div id="vidLoader" style="
+      position:absolute;inset:0;z-index:3;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      background:rgba(0,0,0,.55);
+      gap:14px;
+    ">
+      <!-- الدائرة SVG -->
+      <div style="position:relative;width:64px;height:64px;">
+        <svg width="64" height="64" style="transform:rotate(-90deg);">
+          <circle cx="32" cy="32" r="26"
+            fill="none" stroke="rgba(255,255,255,.2)"
+            stroke-width="3.5"/>
+          <circle id="vidProgress" cx="32" cy="32" r="26"
+            fill="none" stroke="#fff"
+            stroke-width="3.5"
+            stroke-linecap="round"
+            stroke-dasharray="163.4"
+            stroke-dashoffset="163.4"
+            style="transition:stroke-dashoffset .25s linear;"/>
+        </svg>
+        <!-- أيقونة وسط الدائرة -->
+        <div style="
+          position:absolute;inset:0;
+          display:flex;align-items:center;justify-content:center;
+        ">
+          <i class="fas fa-play"
+             style="color:#fff;font-size:18px;margin-left:3px;opacity:.9;"></i>
+        </div>
+      </div>
+      <!-- نسبة التحميل -->
+      <div id="vidPercent" style="
+        color:rgba(255,255,255,.85);
+        font-size:12px;font-weight:700;
+        font-family:'Montserrat',sans-serif;
+        letter-spacing:.5px;
+      ">0%</div>
     </div>
 
     <!-- الفيديو -->
     <video
       id="fullscreenVideo"
       src="${url}"
-      controls
-      autoplay
       playsinline
       style="
         width:100%;height:100%;
-        object-fit:contain;
-        display:block;
+        object-fit:contain;display:block;
       "
     ></video>
   `;
@@ -29381,28 +29411,83 @@ function openVideoFullscreen(url, name) {
   document.body.appendChild(v);
   document.body.style.overflow = 'hidden';
 
-  /* زر الرجوع من المتصفح */
+  /* ── تتبع التحميل ── */
+  const vid     = document.getElementById('fullscreenVideo');
+  const loader  = document.getElementById('vidLoader');
+  const circle  = document.getElementById('vidProgress');
+  const percent = document.getElementById('vidPercent');
+  const total   = 163.4; // 2π × 26
+
+  vid.addEventListener('progress', () => {
+    if (!vid.duration) return;
+    try {
+      const buf = vid.buffered;
+      if (buf.length) {
+        const pct = Math.min(buf.end(buf.length - 1) / vid.duration, 1);
+        circle.style.strokeDashoffset = total - total * pct;
+        percent.textContent = Math.round(pct * 100) + '%';
+      }
+    } catch(e) {}
+  });
+
+  vid.addEventListener('canplay', () => {
+    /* اكتمل التحميل الكافي — أخفِ الدائرة وشغّل */
+    circle.style.strokeDashoffset = '0';
+    percent.textContent = '100%';
+    setTimeout(() => {
+      loader.style.transition = 'opacity .3s';
+      loader.style.opacity    = '0';
+      setTimeout(() => { loader.style.display = 'none'; }, 300);
+      vid.play().catch(() => {});
+    }, 200);
+  });
+
+  vid.addEventListener('waiting', () => {
+    /* تعثّر التشغيل — أعِد الدائرة */
+    loader.style.display  = 'flex';
+    loader.style.opacity  = '1';
+  });
+
+  vid.addEventListener('playing', () => {
+    loader.style.display = 'none';
+  });
+
+  vid.load();
+
+  /* ── زر الرجوع من الهاتف ── */
   history.pushState({ videoViewer: true }, '');
-  window._videoViewerPopState = () => closeVideoFullscreen();
-  window.addEventListener('popstate', window._videoViewerPopState, { once: true });
+  const onPop = (e) => {
+    if (document.getElementById('chatVideoViewer')) {
+      closeVideoFullscreen();
+    }
+  };
+  window.addEventListener('popstate', onPop, { once: true });
+  window._videoViewerPopState = onPop;
 }
 
+/* ══ إغلاق العارض ══ */
 function closeVideoFullscreen() {
   const v = document.getElementById('chatVideoViewer');
   if (!v) return;
 
-  /* إيقاف الفيديو قبل الإغلاق */
   const vid = document.getElementById('fullscreenVideo');
   if (vid) { vid.pause(); vid.src = ''; }
 
-  v.style.animation = 'cpOut .25s ease forwards';
+  v.style.transition = 'opacity .22s';
+  v.style.opacity    = '0';
   setTimeout(() => {
     v.remove();
     document.body.style.overflow = '';
-  }, 240);
+  }, 220);
 
   window.removeEventListener('popstate', window._videoViewerPopState);
+
+  /* إذا لم يُضغط زر الرجوع يدوياً — تراجع عن history.pushState */
+  if (history.state?.videoViewer) {
+    history.back();
+  }
 }
+
 
   
   
