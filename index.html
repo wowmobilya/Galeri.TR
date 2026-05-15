@@ -27113,12 +27113,43 @@ let _chatPageReady    = false;
   .cb.theirs .cb-voice-speed { background:rgba(255,255,255,.15);color:rgba(255,255,255,.9); }
 
   /* تأثير التبديل عند التشغيل */
-  .cb-voice-right.playing .cb-voice-avatar-wrap {
-    opacity:0;transform:scale(0.8);pointer-events:none;
-  }
-  .cb-voice-right.playing .cb-voice-speed {
-    opacity:1;transform:scale(1);pointer-events:auto;
-  }
+/* ── تأثير التبديل بين الأفاتار والسرعة ── */
+.cb-voice-right.playing .cb-voice-avatar-wrap {
+    opacity: 0 !important;
+    transform: scale(0.8) !important;
+    pointer-events: none !important;
+}
+.cb-voice-right.playing .cb-voice-speed {
+    opacity: 1 !important;
+    transform: scale(1) !important;
+    pointer-events: auto !important;
+}
+
+/* ── الفقاعة الصوتية لا تتجاوز عرض الشاشة ── */
+.cb.mine .cb-voice,
+.cb.theirs .cb-voice {
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* ── موبايل: تقليل الحجم قليلاً ── */
+@media (max-width: 480px) {
+    .cb-voice {
+        min-width: 190px !important;
+        gap: 8px !important;
+    }
+    .cb-voice-right {
+        width: 36px !important;
+        height: 36px !important;
+    }
+    .cb-voice-play {
+        width: 32px !important;
+        height: 32px !important;
+        font-size: 13px !important;
+    }
+}
+
 
 
 
@@ -28236,62 +28267,124 @@ function buildVoicePlayer(msg, isMine) {
   const url = msg.media_url;
   const durSec = msg.duration_sec || 0;
   const msgId = 'voice_' + msg.id;
-  
-  /* حل مشكلة Infinity:NaN مبدئياً */
   const isValidDur = durSec && !isNaN(durSec) && isFinite(durSec);
   const durStr = isValidDur ? fmtDuration(durSec) : '0:00';
-  
-  const bars = generateWaveBars(32);
-  const barsHtml = bars.map((h,i)=>
+  const bars = generateWaveBars(28); /* ← قللنا الأشرطة */
+
+  const barsHtml = bars.map((h, i) =>
     `<div class="cb-voice-wave-bar unplayed"
       data-idx="${i}" style="height:${h}px;min-height:4px;"
-      onclick="seekVoice('${msgId}',${i/bars.length})"></div>`
+      onclick="seekVoice('${msgId}',${i / bars.length})"></div>`
   ).join('');
 
-  const avatarHtml = buildAvatar(msg.from_user, 44);
-  const micColor = msg.is_read ? '#3b82f6' : (isMine ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)');
-  const micBg    = isMine ? '#d4a843' : '#2a2a2a'; 
+  /* ── الأفاتار مع الميكروفون ── */
+  const initials = ((msg.from_user) || '?').substring(0, 2).toUpperCase();
+  const p = _chatProfiles[msg.from_user] || {};
+  const avatarInner = p.avatar_url
+    ? `<img src="${p.avatar_url}" style="width:100%;height:100%;
+        object-fit:cover;border-radius:50%;" draggable="false"
+        onerror="this.style.display='none'"/>`
+    : `<span style="font-size:14px;font-weight:900;color:#c9a84c;">${initials}</span>`;
+
+  const micColor = isMine ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)';
+  const micBg    = isMine ? 'rgba(0,0,0,0.2)' : 'rgba(201,168,76,0.25)';
 
   return `
-  <div class="cb-voice" id="${msgId}">
-    
-    <!-- زر التشغيل (يسار) -->
-    <button class="cb-voice-play" onclick="toggleVoice('${msgId}')">
+  <div class="cb-voice" id="${msgId}" style="
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-width:220px;
+    max-width:100%;        /* ← لا يتجاوز عرض الفقاعة */
+    padding:2px 0;
+    box-sizing:border-box;
+    overflow:hidden;       /* ← يمنع الخروج */
+  ">
+
+    <!-- زر التشغيل -->
+    <button class="cb-voice-play"
+            onclick="toggleVoice('${msgId}')"
+            style="flex-shrink:0;">
       <i class="fas fa-play" id="playIcon_${msgId}"></i>
     </button>
 
-    <!-- جسم المشغل والموجات (منتصف) -->
-    <div class="cb-voice-body">
+    <!-- الموجات والوقت -->
+    <div class="cb-voice-body" style="flex:1;min-width:0;overflow:hidden;">
       <div class="cb-voice-bar">
-        <div class="cb-voice-waves" id="waves_${msgId}">${barsHtml}</div>
+        <div class="cb-voice-waves" id="waves_${msgId}"
+             style="overflow:hidden;">${barsHtml}</div>
       </div>
       <div class="cb-voice-info">
         <span class="cb-voice-dur" id="voiceDur_${msgId}">${durStr}</span>
       </div>
     </div>
-    
-    <!-- الصورة وسرعة الصوت (يمين) -->
-    <div class="cb-voice-right" id="voiceRight_${msgId}">
-      <div class="cb-voice-avatar-wrap">
-        ${avatarHtml}
-        <div class="cb-voice-mic" style="background:${micBg};">
-          <i class="fas fa-microphone" id="micIcon_${msg.id}" style="color:${micColor};"></i>
-        </div>
+
+    <!-- الأفاتار + سرعة الصوت — محاط بحاوية ثابتة الحجم -->
+    <div class="cb-voice-right" id="voiceRight_${msgId}" style="
+      position:relative;
+      width:40px;           /* ← حجم ثابت */
+      height:40px;          /* ← حجم ثابت */
+      flex-shrink:0;        /* ← لا يتقلص */
+      overflow:visible;
+    ">
+      <!-- الأفاتار -->
+      <div class="cb-voice-avatar-wrap" style="
+        width:40px;height:40px;border-radius:50%;
+        background:linear-gradient(135deg,rgba(201,168,76,.18),rgba(201,168,76,.04));
+        border:1.5px solid rgba(201,168,76,.3);
+        display:flex;align-items:center;justify-content:center;
+        overflow:hidden;
+        position:absolute;inset:0;
+        transition:opacity .25s, transform .25s;
+      ">${avatarInner}</div>
+
+      <!-- أيقونة الميكروفون — تظهر فوق الأفاتار -->
+      <div style="
+        position:absolute;
+        bottom:-4px;right:-4px;
+        width:18px;height:18px;
+        border-radius:50%;
+        background:${micBg};
+        border:2px solid ${isMine ? '#d4a843' : '#1a1a1a'};
+        display:flex;align-items:center;justify-content:center;
+        z-index:2;
+        pointer-events:none;
+      ">
+        <i class="fas fa-microphone"
+           style="font-size:8px;color:${micColor};"></i>
       </div>
-      <button class="cb-voice-speed" id="speedBtn_${msgId}" onclick="cycleVoiceSpeed('${msgId}')">1×</button>
+
+      <!-- زر السرعة (يظهر عند التشغيل) -->
+      <button class="cb-voice-speed"
+              id="speedBtn_${msgId}"
+              onclick="cycleVoiceSpeed('${msgId}')"
+              style="
+                position:absolute;inset:0;
+                border-radius:50%;border:none;
+                display:flex;align-items:center;justify-content:center;
+                font-size:12px;font-weight:900;
+                font-family:'Montserrat',sans-serif;
+                cursor:pointer;
+                opacity:0;transform:scale(0.8);
+                pointer-events:none;
+                transition:opacity .25s, transform .25s;
+                background:${isMine ? 'rgba(0,0,0,.2)' : 'rgba(255,255,255,.15)'};
+                color:${isMine ? 'rgba(0,0,0,.7)' : 'rgba(255,255,255,.9)'};
+              ">1×</button>
     </div>
 
-    <!-- إضافة أحداث onplay و onpause للتبديل التلقائي -->
-   <audio id="aud_${msgId}" src="${url}" preload="auto"
-  ontimeupdate="updateVoiceProgress('${msgId}',this)"
-  onended="onVoiceEnded('${msgId}',this)"
-  onloadedmetadata="onVoiceMeta('${msgId}',this)"
-  ondurationchange="onVoiceMeta('${msgId}',this)"
-  onplay="document.getElementById('voiceRight_${msgId}').classList.add('playing')"
-  onpause="document.getElementById('voiceRight_${msgId}').classList.remove('playing')">
-</audio>
+    <!-- عنصر الصوت -->
+    <audio id="aud_${msgId}" src="${url}" preload="auto"
+      ontimeupdate="updateVoiceProgress('${msgId}',this)"
+      onended="onVoiceEnded('${msgId}',this)"
+      onloadedmetadata="onVoiceMeta('${msgId}',this)"
+      ondurationchange="onVoiceMeta('${msgId}',this)"
+      onplay="document.getElementById('voiceRight_${msgId}').classList.add('playing')"
+      onpause="document.getElementById('voiceRight_${msgId}').classList.remove('playing')">
+    </audio>
   </div>`;
 }
+
 
 
 /* ── توليد أشرطة الموجة ── */
