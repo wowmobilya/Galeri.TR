@@ -29358,24 +29358,21 @@ function openVideoFullscreen(url, name) {
       "><i class="fas fa-download"></i></a>
     </div>
 
-    <!-- ★ دائرة التحميل — تظهر دائماً في البداية ★ -->
+    <!-- ★ دائرة التحميل — مرئية دائماً في البداية ★ -->
     <div id="vidLoader" style="
       position:absolute;inset:0;z-index:4;
       display:flex;flex-direction:column;
       align-items:center;justify-content:center;
       gap:12px;
-      background:rgba(0,0,0,.6);
-      transition:opacity .3s;
+      background:rgba(0,0,0,.7);
     ">
       <div style="position:relative;width:68px;height:68px;">
         <svg width="68" height="68"
              style="transform:rotate(-90deg);display:block;">
-          <!-- خلفية الدائرة -->
           <circle cx="34" cy="34" r="28"
             fill="none"
             stroke="rgba(255,255,255,.2)"
             stroke-width="4"/>
-          <!-- دائرة التقدم -->
           <circle id="vidProgressCircle"
             cx="34" cy="34" r="28"
             fill="none"
@@ -29383,15 +29380,16 @@ function openVideoFullscreen(url, name) {
             stroke-width="4"
             stroke-linecap="round"
             stroke-dasharray="175.9"
-            stroke-dashoffset="175.9"/>
+            stroke-dashoffset="175.9"
+            style="transition:stroke-dashoffset .3s linear;"/>
         </svg>
-        <!-- أيقونة play في المنتصف -->
         <div style="
           position:absolute;inset:0;
           display:flex;align-items:center;justify-content:center;
         ">
-          <i class="fas fa-play"
-             style="color:#fff;font-size:20px;margin-left:4px;"></i>
+          <i class="fas fa-spinner fa-spin"
+             id="vidLoaderIcon"
+             style="color:#fff;font-size:20px;"></i>
         </div>
       </div>
       <span id="vidPercentText" style="
@@ -29424,77 +29422,94 @@ function openVideoFullscreen(url, name) {
     requestAnimationFrame(() => { v.style.opacity = '1'; });
   });
 
-  /* ── ربط الأحداث ── */
-  const vid      = v.querySelector('#fullscreenVideo');
-  const loader   = v.querySelector('#vidLoader');
-  const circle   = v.querySelector('#vidProgressCircle');
-  const pctText  = v.querySelector('#vidPercentText');
-  const backBtn  = v.querySelector('#vidBackBtn');
-  const CIRC     = 175.9; // 2π×28
+  const vid     = v.querySelector('#fullscreenVideo');
+  const loader  = v.querySelector('#vidLoader');
+  const circle  = v.querySelector('#vidProgressCircle');
+  const pctText = v.querySelector('#vidPercentText');
+  const loaderIcon = v.querySelector('#vidLoaderIcon');
+  const backBtn = v.querySelector('#vidBackBtn');
+  const CIRC    = 175.9;
 
-  /* زر السهم في الشريط */
-  backBtn.addEventListener('click', closeVideoFullscreen);
+  /* ── زر السهم ── */
+  backBtn.addEventListener('click', () => closeVideoFullscreen());
 
-  /* تحديث دائرة التحميل */
+  /* ── تحديث دائرة التحميل ── */
   function updateProgress() {
-    if (!vid.duration) return;
+    if (!vid.duration || isNaN(vid.duration)) return;
     try {
       const buf = vid.buffered;
       if (buf.length > 0) {
         const loaded = buf.end(buf.length - 1);
         const pct    = Math.min(loaded / vid.duration, 1);
-        circle.style.transition       = 'stroke-dashoffset .3s linear';
         circle.style.strokeDashoffset = CIRC - CIRC * pct;
         pctText.textContent           = Math.round(pct * 100) + '%';
       }
     } catch(e) {}
   }
 
-  vid.addEventListener('progress',  updateProgress);
-  vid.addEventListener('timeupdate', updateProgress);
+  vid.addEventListener('progress',   updateProgress);
+  vid.addEventListener('timeupdate',  updateProgress);
 
-  /* جاهز للتشغيل — أخفِ الدائرة */
+  /* ── جاهز للتشغيل ── */
   vid.addEventListener('canplay', () => {
+    /* أكمل الدائرة بصرياً */
     circle.style.strokeDashoffset = '0';
     pctText.textContent           = '100%';
+    if (loaderIcon) {
+      loaderIcon.className = 'fas fa-play';
+      loaderIcon.style.marginLeft = '4px';
+    }
+    /* أخفِ الـ loader بعد 400ms */
     setTimeout(() => {
-      loader.style.opacity    = '0';
+      loader.style.transition  = 'opacity .3s';
+      loader.style.opacity     = '0';
       loader.style.pointerEvents = 'none';
       setTimeout(() => { loader.style.display = 'none'; }, 300);
       vid.play().catch(() => {});
-    }, 300);
+    }, 400);
   });
 
-  /* تعثّر — أعِد الدائرة */
+  /* ── تعثّر أثناء التشغيل ── */
   vid.addEventListener('waiting', () => {
-    loader.style.display      = 'flex';
-    loader.style.opacity      = '1';
+    loader.style.display       = 'flex';
+    loader.style.opacity       = '1';
     loader.style.pointerEvents = 'auto';
+    if (loaderIcon) {
+      loaderIcon.className = 'fas fa-spinner fa-spin';
+      loaderIcon.style.marginLeft = '0';
+    }
   });
 
   vid.addEventListener('playing', () => {
-    loader.style.opacity      = '0';
+    loader.style.transition    = 'opacity .3s';
+    loader.style.opacity       = '0';
     loader.style.pointerEvents = 'none';
     setTimeout(() => { loader.style.display = 'none'; }, 300);
   });
 
-  /* ── زر الرجوع من الهاتف — بدون history.pushState ── */
-  /* نستخدم hashchange بدلاً لتجنب التعارض مع router التطبيق */
-  const prevHash = location.hash;
-  location.hash  = 'video-viewer';
+  /* ── ★ الإصلاح الرئيسي: استخدام pushState بدلاً من hash ── */
+  history.pushState({ videoViewer: true }, '');
 
-  function onHashChange() {
-    if (location.hash !== '#video-viewer') {
-      closeVideoFullscreen(false); /* false = لا تغيّر الـ hash مرة ثانية */
+  function onPopState(e) {
+    /* فقط إذا كان هذا الحدث لإغلاق الفيديو */
+    if (document.getElementById('chatVideoViewer')) {
+      closeVideoFullscreen(false);
+      /* أعِد حالة الشات للـ history */
+      if (document.getElementById('chatWin')) {
+        history.pushState({ chatWin: true }, '');
+      } else if (document.getElementById('chatListPage')) {
+        history.pushState({ chatList: true }, '');
+      }
     }
+    window.removeEventListener('popstate', onPopState);
   }
-  window.addEventListener('hashchange', onHashChange);
-  window._vidHashHandler = onHashChange;
-  window._vidPrevHash    = prevHash;
+
+  window.addEventListener('popstate', onPopState);
+  window._vidPopHandler = onPopState;
 }
 
 /* ══ إغلاق العارض ══ */
-function closeVideoFullscreen(restoreHash = true) {
+function closeVideoFullscreen(goBack = true) {
   const v = document.getElementById('chatVideoViewer');
   if (!v) return;
 
@@ -29503,14 +29518,15 @@ function closeVideoFullscreen(restoreHash = true) {
   if (vid) { vid.pause(); vid.src = ''; }
 
   /* أزل المستمع */
-  if (window._vidHashHandler) {
-    window.removeEventListener('hashchange', window._vidHashHandler);
-    window._vidHashHandler = null;
+  if (window._vidPopHandler) {
+    window.removeEventListener('popstate', window._vidPopHandler);
+    window._vidPopHandler = null;
   }
 
-  /* أعِد الـ hash السابق */
-  if (restoreHash) {
-    location.hash = window._vidPrevHash || '';
+  /* إذا أُغلق بالزر (وليس بـ popstate) — ارجع في التاريخ */
+  if (goBack) {
+    history.back();
+    return;
   }
 
   /* إخفاء تدريجي ثم حذف */
