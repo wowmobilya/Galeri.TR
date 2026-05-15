@@ -32861,6 +32861,1249 @@ console.log('[WOW CHAT UPGRADE PACK 2] ✅ Loaded');
 
 
 
+
+
+  /* ═══════════════════════════════════════════════════════════════
+   ★ WOW CHAT UPGRADE PACK 3
+   WhatsApp-like advanced features
+   - Multi select
+   - Starred messages
+   - Disappearing messages
+   - Media gallery
+   - Mentions
+   - Upload progress bubble
+   - Retry failed send
+   - Voice lock preview base
+   - بدون تثبيت رسائل
+═══════════════════════════════════════════════════════════════ */
+
+(function injectWowChatPack3CSS() {
+  if (document.getElementById('wowChatPack3CSS')) return;
+
+  const st = document.createElement('style');
+  st.id = 'wowChatPack3CSS';
+  st.textContent = `
+    /* ═════════ Multi Select ═════════ */
+    #multiSelectBar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100000;
+      height: 58px;
+      background: rgba(10,10,10,.98);
+      border-bottom: 1px solid rgba(201,168,76,.18);
+      backdrop-filter: blur(18px);
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 0 12px;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    #multiSelectBar.visible {
+      display: flex;
+      animation: replyPreviewIn .2s ease forwards;
+    }
+
+    .selected-message {
+      position: relative;
+    }
+
+    .selected-message::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(201,168,76,.13);
+      border-radius: 18px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .multi-check {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg,#c9a84c,#f0d080);
+      color: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 900;
+      z-index: 3;
+      box-shadow: 0 3px 10px rgba(0,0,0,.35);
+    }
+
+    .cb-wrap.mine .multi-check {
+      left: 8px;
+    }
+
+    .cb-wrap.theirs .multi-check {
+      right: 8px;
+    }
+
+    /* ═════════ Star ═════════ */
+    .star-mark {
+      font-size: 10px;
+      color: #fbbf24;
+      margin-right: 4px;
+    }
+
+    .starred-bubble .cb {
+      box-shadow: 0 0 0 1px rgba(251,191,36,.25);
+    }
+
+    /* ═════════ Mention ═════════ */
+    .mention-chip {
+      color: #60a5fa;
+      font-weight: 900;
+      background: rgba(96,165,250,.12);
+      border-radius: 5px;
+      padding: 0 4px;
+    }
+
+    .mentioned-me .cb {
+      outline: 2px solid rgba(96,165,250,.45);
+      box-shadow: 0 0 18px rgba(96,165,250,.15);
+    }
+
+    #mentionList {
+      position: fixed;
+      z-index: 100000;
+      background: rgba(16,16,16,.98);
+      border: 1px solid rgba(201,168,76,.2);
+      border-radius: 14px;
+      box-shadow: 0 16px 45px rgba(0,0,0,.65);
+      overflow: hidden;
+      max-height: 220px;
+      overflow-y: auto;
+      min-width: 220px;
+      backdrop-filter: blur(18px);
+    }
+
+    .mention-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: background .18s;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .mention-item:hover {
+      background: rgba(201,168,76,.08);
+    }
+
+    /* ═════════ Upload Progress Bubble ═════════ */
+    .upload-bubble {
+      margin: 8px 12px;
+      padding: 10px 12px;
+      border-radius: 13px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(201,168,76,.15);
+      font-family: 'Montserrat', sans-serif;
+      animation: bubIn .22s ease forwards;
+    }
+
+    .upload-progress-track {
+      height: 5px;
+      background: rgba(255,255,255,.08);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .upload-progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg,#c9a84c,#f0d080);
+      border-radius: 8px;
+      transition: width .25s ease;
+    }
+
+    /* ═════════ Media Gallery ═════════ */
+    #mediaGalleryModal,
+    #starredMessagesModal {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: rgba(0,0,0,.92);
+      backdrop-filter: blur(18px);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .media-gallery-head {
+      flex-shrink: 0;
+      padding: 13px 14px;
+      background: rgba(10,10,10,.98);
+      border-bottom: 1px solid rgba(255,255,255,.07);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .media-tabs {
+      display: flex;
+      gap: 7px;
+      padding: 10px 12px;
+      background: rgba(10,10,10,.96);
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      overflow-x: auto;
+      flex-shrink: 0;
+    }
+
+    .media-tab {
+      padding: 7px 13px;
+      border-radius: 50px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+      color: rgba(255,255,255,.38);
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+      cursor: pointer;
+      font-family: 'Montserrat', sans-serif;
+    }
+
+    .media-tab.active {
+      background: rgba(201,168,76,.12);
+      border-color: rgba(201,168,76,.38);
+      color: #c9a84c;
+    }
+
+    .media-grid {
+      padding: 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .media-grid-item {
+      aspect-ratio: 1;
+      background: rgba(255,255,255,.04);
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+    }
+
+    .media-grid-item img,
+    .media-grid-item video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .media-file-item {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 13px;
+      background: rgba(255,255,255,.035);
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 11px;
+      cursor: pointer;
+    }
+
+    /* ═════════ Disappearing Badge ═════════ */
+    .disappearing-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 7px;
+      border-radius: 50px;
+      background: rgba(251,191,36,.1);
+      border: 1px solid rgba(251,191,36,.22);
+      color: #fbbf24;
+      font-size: 8px;
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    /* ═════════ Voice Preview ═════════ */
+    #voicePreviewBar {
+      flex-shrink: 0;
+      padding: 8px 10px;
+      background: rgba(10,10,10,.98);
+      border-top: 1px solid rgba(201,168,76,.16);
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #voicePreviewBar.visible {
+      display: flex;
+      animation: replyPreviewIn .2s ease forwards;
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
+let _multiSelectMode = false;
+let _selectedMsgIds = new Set();
+let _messageStars = {};
+let _isSendingLocked = false;
+let _voiceLocked = false;
+let _pendingVoiceBlob = null;
+let _pendingVoiceDuration = 0;
+
+/* ═══════════════════════════════════════════════════════════════
+   1) Multi Select
+═══════════════════════════════════════════════════════════════ */
+
+function enterMultiSelect(msgId) {
+  _multiSelectMode = true;
+  _selectedMsgIds.clear();
+  toggleSelectMessage(msgId, true);
+  showMultiSelectBar();
+}
+
+function exitMultiSelect() {
+  _multiSelectMode = false;
+  _selectedMsgIds.clear();
+  document.querySelectorAll('.selected-message').forEach(el => {
+    el.classList.remove('selected-message');
+    el.querySelector('.multi-check')?.remove();
+  });
+  document.getElementById('multiSelectBar')?.classList.remove('visible');
+}
+
+function toggleSelectMessage(msgId, force) {
+  const el = document.getElementById('msg-' + msgId);
+  if (!el) return;
+
+  const selected = force !== undefined ? force : !_selectedMsgIds.has(msgId);
+
+  if (selected) {
+    _selectedMsgIds.add(msgId);
+    el.classList.add('selected-message');
+
+    if (!el.querySelector('.multi-check')) {
+      const c = document.createElement('div');
+      c.className = 'multi-check';
+      c.innerHTML = `<i class="fas fa-check"></i>`;
+      el.appendChild(c);
+    }
+  } else {
+    _selectedMsgIds.delete(msgId);
+    el.classList.remove('selected-message');
+    el.querySelector('.multi-check')?.remove();
+  }
+
+  updateMultiSelectCounter();
+
+  if (_selectedMsgIds.size === 0) {
+    exitMultiSelect();
+  }
+}
+
+function showMultiSelectBar() {
+  let bar = document.getElementById('multiSelectBar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'multiSelectBar';
+    bar.innerHTML = `
+      <button onclick="exitMultiSelect()" style="
+        width:36px;height:36px;border-radius:50%;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.08);
+        color:#fff;cursor:pointer;">
+        <i class="fas fa-times"></i>
+      </button>
+
+      <div id="multiSelectCounter" style="
+        flex:1;
+        color:#fff;
+        font-size:14px;
+        font-weight:900;
+      ">1 seçildi</div>
+
+      <button onclick="copySelectedMessages()" title="Kopyala" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;cursor:pointer;">
+        <i class="fas fa-copy"></i>
+      </button>
+
+      <button onclick="forwardSelectedMessages()" title="İlet" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:#fff;cursor:pointer;">
+        <i class="fas fa-share"></i>
+      </button>
+
+      <button onclick="starSelectedMessages()" title="Yıldızla" style="width:36px;height:36px;border-radius:50%;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.22);color:#fbbf24;cursor:pointer;">
+        <i class="fas fa-star"></i>
+      </button>
+
+      <button onclick="deleteSelectedMessages()" title="Sil" style="width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.22);color:#ef4444;cursor:pointer;">
+        <i class="fas fa-trash-alt"></i>
+      </button>
+    `;
+    document.body.appendChild(bar);
+  }
+
+  bar.classList.add('visible');
+  updateMultiSelectCounter();
+}
+
+function updateMultiSelectCounter() {
+  const c = document.getElementById('multiSelectCounter');
+  if (c) c.textContent = `${_selectedMsgIds.size} seçildi`;
+}
+
+function copySelectedMessages() {
+  const texts = [..._selectedMsgIds].map(id => {
+    const m = _chatMessages.find(x => String(x.id) === String(id));
+    if (!m) return '';
+    return `[${fmtTime(m.created_at)}] ${getDisplayName(m.from_user)}: ${m.message || m.file_name || m.media_type}`;
+  }).filter(Boolean).join('\n');
+
+  navigator.clipboard?.writeText(texts);
+  showInvToast('Mesajlar kopyalandı ✓', 'success');
+  exitMultiSelect();
+}
+
+async function deleteSelectedMessages() {
+  const ok = await showChatConfirm(`${_selectedMsgIds.size} mesaj silinsin mi?`);
+  if (!ok) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const ids = [..._selectedMsgIds];
+
+  await sb.from(GRP_MSGS)
+    .update({ is_deleted:true, deleted_by: currentUser })
+    .in('id', ids);
+
+  ids.forEach(id => {
+    document.getElementById('msg-' + id)?.remove();
+  });
+
+  _chatMessages = _chatMessages.filter(m => !ids.includes(m.id));
+  showInvToast('Mesajlar silindi ✓', 'success');
+  exitMultiSelect();
+}
+
+function forwardSelectedMessages() {
+  if (!_selectedMsgIds.size) return;
+  const first = [..._selectedMsgIds][0];
+  openForwardModal(first);
+}
+
+async function starSelectedMessages() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const rows = [..._selectedMsgIds].map(id => ({
+    scope: 'group',
+    message_id: id,
+    username: currentUser
+  }));
+
+  await sb.from('message_stars').upsert(rows, {
+    onConflict: 'scope,message_id,username'
+  });
+
+  showInvToast('Mesajlar yıldızlandı ✓', 'success');
+  await loadMessageStars();
+  renderRoomMessages();
+  exitMultiSelect();
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2) Starred Messages
+═══════════════════════════════════════════════════════════════ */
+
+async function loadMessageStars() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const ids = (_chatMessages || []).map(m => m.id).filter(Boolean);
+  if (!ids.length) {
+    _messageStars = {};
+    return;
+  }
+
+  const { data } = await sb
+    .from('message_stars')
+    .select('*')
+    .eq('scope', 'group')
+    .eq('username', currentUser)
+    .in('message_id', ids);
+
+  _messageStars = {};
+  (data || []).forEach(s => {
+    _messageStars[s.message_id] = true;
+  });
+}
+
+async function toggleStarMessage(msgId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  if (_messageStars[msgId]) {
+    await sb.from('message_stars')
+      .delete()
+      .eq('scope', 'group')
+      .eq('message_id', msgId)
+      .eq('username', currentUser);
+
+    delete _messageStars[msgId];
+    showInvToast('Yıldız kaldırıldı', 'info');
+  } else {
+    await sb.from('message_stars').upsert([{
+      scope: 'group',
+      message_id: msgId,
+      username: currentUser
+    }], {
+      onConflict: 'scope,message_id,username'
+    });
+
+    _messageStars[msgId] = true;
+    showInvToast('Mesaj yıldızlandı ✓', 'success');
+  }
+
+  renderRoomMessages();
+}
+
+function buildStarHTML(msgId) {
+  return _messageStars[msgId]
+    ? `<i class="fas fa-star star-mark"></i>`
+    : '';
+}
+
+async function openStarredMessagesModal() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: stars } = await sb
+    .from('message_stars')
+    .select('*')
+    .eq('scope','group')
+    .eq('username', currentUser)
+    .order('starred_at', { ascending:false });
+
+  const ids = (stars || []).map(s => s.message_id);
+
+  let msgs = [];
+  if (ids.length) {
+    const { data } = await sb
+      .from(GRP_MSGS)
+      .select('*')
+      .in('id', ids)
+      .eq('is_deleted', false);
+
+    msgs = data || [];
+  }
+
+  document.getElementById('starredMessagesModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'starredMessagesModal';
+  modal.innerHTML = `
+    <div class="media-gallery-head">
+      <button onclick="document.getElementById('starredMessagesModal').remove()" style="
+        width:36px;height:36px;border-radius:50%;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.08);
+        color:#fff;cursor:pointer;">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div style="flex:1;">
+        <div style="font-size:8px;letter-spacing:3px;color:rgba(251,191,36,.6);">YILDIZLI MESAJLAR</div>
+        <div style="font-size:17px;font-weight:900;color:#fff;">Starred Messages</div>
+      </div>
+    </div>
+
+    <div style="flex:1;overflow-y:auto;padding:14px;">
+      ${msgs.length ? msgs.map(m => `
+        <div onclick="document.getElementById('starredMessagesModal').remove(); jumpToMessage(${m.id})" style="
+          padding:12px 14px;
+          margin-bottom:9px;
+          border-radius:12px;
+          background:rgba(255,255,255,.035);
+          border:1px solid rgba(255,255,255,.06);
+          cursor:pointer;
+        ">
+          <div style="font-size:11px;color:#fbbf24;font-weight:900;margin-bottom:4px;">
+            <i class="fas fa-star"></i> ${escHtml(getDisplayName(m.from_user))}
+          </div>
+          <div style="font-size:12px;color:#fff;line-height:1.6;">
+            ${escHtml(m.message || m.file_name || m.media_type)}
+          </div>
+          <div style="font-size:9px;color:rgba(255,255,255,.25);margin-top:6px;">
+            ${new Date(m.created_at).toLocaleString('tr-TR')}
+          </div>
+        </div>
+      `).join('') : `
+        <div style="text-align:center;padding:70px 20px;color:rgba(255,255,255,.18);">
+          <i class="fas fa-star" style="font-size:42px;color:rgba(251,191,36,.18);margin-bottom:14px;"></i>
+          <p>Yıldızlı mesaj yok</p>
+        </div>
+      `}
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3) Mentions
+═══════════════════════════════════════════════════════════════ */
+
+async function loadRoomMembersForMention() {
+  if (!_activeRoomId) return [];
+  const sb = await initSupabase();
+  if (!sb) return [];
+
+  const { data } = await sb
+    .from(GRP_MEMBERS)
+    .select('username')
+    .eq('room_id', _activeRoomId)
+    .eq('is_banned', false);
+
+  return data || [];
+}
+
+async function showMentionList(query) {
+  const inp = document.getElementById('chatTextInput');
+  if (!inp) return;
+
+  document.getElementById('mentionList')?.remove();
+
+  const members = await loadRoomMembersForMention();
+  const filtered = members.filter(m =>
+    m.username.toLowerCase().includes(query.toLowerCase()) ||
+    getDisplayName(m.username).toLowerCase().includes(query.toLowerCase())
+  ).slice(0, 8);
+
+  if (!filtered.length) return;
+
+  const list = document.createElement('div');
+  list.id = 'mentionList';
+
+  list.innerHTML = filtered.map(m => `
+    <div class="mention-item" onclick="insertMention('${m.username}')">
+      ${buildAvatar(m.username, 30)}
+      <div>
+        <div style="font-size:12px;font-weight:900;color:#fff;">${escHtml(getDisplayName(m.username))}</div>
+        <div style="font-size:10px;color:rgba(255,255,255,.25);">@${m.username}</div>
+      </div>
+    </div>
+  `).join('');
+
+  document.body.appendChild(list);
+
+  const r = inp.getBoundingClientRect();
+  list.style.left = Math.max(8, r.left) + 'px';
+  list.style.top = Math.max(8, r.top - list.offsetHeight - 8) + 'px';
+}
+
+function insertMention(username) {
+  const inp = document.getElementById('chatTextInput');
+  if (!inp) return;
+
+  const val = inp.value;
+  const pos = inp.selectionStart || val.length;
+  const before = val.slice(0, pos);
+  const after = val.slice(pos);
+
+  const newBefore = before.replace(/@[\w]*$/, '@' + username + ' ');
+  inp.value = newBefore + after;
+  inp.focus();
+  inp.selectionStart = inp.selectionEnd = newBefore.length;
+  document.getElementById('mentionList')?.remove();
+  onChatInput(inp);
+}
+
+function detectMentions(text) {
+  const matches = text.match(/@([a-zA-Z0-9_]+)/g) || [];
+  return matches.map(x => x.replace('@',''));
+}
+
+async function saveMentionsForMessage(msg) {
+  const usernames = detectMentions(msg.message || '');
+  if (!usernames.length) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const rows = usernames.map(u => ({
+    scope: 'group',
+    message_id: msg.id,
+    mentioned_username: u,
+    mentioned_by: currentUser
+  }));
+
+  await sb.from('message_mentions').upsert(rows, {
+    onConflict: 'scope,message_id,mentioned_username'
+  });
+}
+
+function renderMentionsInText(html) {
+  return html.replace(/@([a-zA-Z0-9_]+)/g, `<span class="mention-chip">@$1</span>`);
+}
+
+/* Hook onChatInput للمنشن */
+if (typeof onChatInput === 'function') {
+  const _origOnChatInput_mentions = onChatInput;
+
+  onChatInput = function(el) {
+    _origOnChatInput_mentions(el);
+
+    const val = el.value || '';
+    const pos = el.selectionStart || val.length;
+    const before = val.slice(0, pos);
+    const m = before.match(/@([a-zA-Z0-9_]*)$/);
+
+    if (m) showMentionList(m[1]);
+    else document.getElementById('mentionList')?.remove();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4) Disappearing Messages
+═══════════════════════════════════════════════════════════════ */
+
+function calculateExpiresAt(mode) {
+  const now = Date.now();
+  if (mode === '24h') return new Date(now + 24 * 60 * 60 * 1000).toISOString();
+  if (mode === '7d')  return new Date(now + 7  * 24 * 60 * 60 * 1000).toISOString();
+  if (mode === '30d') return new Date(now + 30 * 24 * 60 * 60 * 1000).toISOString();
+  return null;
+}
+
+async function setDisappearingMode(mode) {
+  if (!_activeRoomId) return;
+
+  await saveChatRoomSetting(_activeRoomId, {
+    disappearing_enabled: mode !== 'off',
+    disappearing_mode: mode
+  });
+
+  showInvToast(
+    mode === 'off' ? 'Geçici mesajlar kapatıldı' : `Geçici mesajlar: ${mode}`,
+    'success'
+  );
+}
+
+async function cleanupExpiredMessages() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  try {
+    await sb.rpc('cleanup_expired_chat_messages');
+  } catch(e) {
+    console.warn('[cleanup expired]', e);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5) Media Gallery
+═══════════════════════════════════════════════════════════════ */
+
+function openMediaGallery(tab = 'images') {
+  document.getElementById('mediaGalleryModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'mediaGalleryModal';
+
+  modal.innerHTML = `
+    <div class="media-gallery-head">
+      <button onclick="document.getElementById('mediaGalleryModal').remove()" style="
+        width:36px;height:36px;border-radius:50%;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.08);
+        color:#fff;cursor:pointer;">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div style="flex:1;">
+        <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,.55);">SOHBET MEDYASI</div>
+        <div style="font-size:17px;font-weight:900;color:#fff;">Medya, Dosya ve Linkler</div>
+      </div>
+    </div>
+
+    <div class="media-tabs">
+      <button class="media-tab" data-tab="images" onclick="renderMediaGalleryTab('images')">Fotoğraf</button>
+      <button class="media-tab" data-tab="videos" onclick="renderMediaGalleryTab('videos')">Video</button>
+      <button class="media-tab" data-tab="files" onclick="renderMediaGalleryTab('files')">Dosya</button>
+      <button class="media-tab" data-tab="audio" onclick="renderMediaGalleryTab('audio')">Ses</button>
+      <button class="media-tab" data-tab="links" onclick="renderMediaGalleryTab('links')">Link</button>
+    </div>
+
+    <div id="mediaGalleryBody" class="media-grid"></div>
+  `;
+
+  document.body.appendChild(modal);
+  renderMediaGalleryTab(tab);
+}
+
+function renderMediaGalleryTab(tab) {
+  document.querySelectorAll('.media-tab').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+
+  const body = document.getElementById('mediaGalleryBody');
+  if (!body) return;
+
+  let list = [];
+
+  if (tab === 'images') list = _chatMessages.filter(m => m.media_type === 'image' && m.media_url);
+  if (tab === 'videos') list = _chatMessages.filter(m => m.media_type === 'video' && m.media_url);
+  if (tab === 'files')  list = _chatMessages.filter(m => m.media_type === 'file' && m.media_url);
+  if (tab === 'audio')  list = _chatMessages.filter(m => m.media_type === 'audio' && m.media_url);
+  if (tab === 'links')  list = _chatMessages.filter(m => extractFirstUrl(m.message || ''));
+
+  if (!list.length) {
+    body.innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:70px 20px;color:rgba(255,255,255,.18);">
+        <i class="fas fa-folder-open" style="font-size:42px;color:rgba(201,168,76,.14);margin-bottom:14px;"></i>
+        <p>İçerik yok</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (tab === 'images') {
+    body.innerHTML = list.map(m => `
+      <div class="media-grid-item" onclick="openImgViewer('${m.media_url}')">
+        <img src="${m.media_url}" draggable="false"/>
+      </div>
+    `).join('');
+    return;
+  }
+
+  if (tab === 'videos') {
+    body.innerHTML = list.map(m => `
+      <div class="media-grid-item" onclick="openVideoFullscreen('${m.media_url}', '${escHtml(m.file_name || 'Video')}')">
+        <video src="${m.media_url}#t=0.1" muted preload="metadata"></video>
+        <i class="fas fa-play" style="position:absolute;inset:0;margin:auto;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;"></i>
+      </div>
+    `).join('');
+    return;
+  }
+
+  if (tab === 'files' || tab === 'audio') {
+    body.innerHTML = list.map(m => `
+      <div class="media-file-item" onclick="downloadFile('${m.media_url}', '${m.file_name || 'file'}')">
+        <div style="width:38px;height:38px;border-radius:10px;background:rgba(201,168,76,.1);display:flex;align-items:center;justify-content:center;color:#c9a84c;">
+          <i class="fas ${tab === 'audio' ? 'fa-microphone' : getFileIcon(m.file_name)}"></i>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:12px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${escHtml(m.file_name || (tab === 'audio' ? 'Ses mesajı' : 'Dosya'))}
+          </div>
+          <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:2px;">
+            ${fmtTime(m.created_at)}
+          </div>
+        </div>
+      </div>
+    `).join('');
+    return;
+  }
+
+  if (tab === 'links') {
+    body.innerHTML = list.map(m => {
+      const url = extractFirstUrl(m.message || '');
+      let host = url;
+      try { host = new URL(url).hostname; } catch(e) {}
+      return `
+        <div class="media-file-item" onclick="window.open('${url}', '_blank')">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(96,165,250,.1);display:flex;align-items:center;justify-content:center;color:#60a5fa;">
+            <i class="fas fa-link"></i>
+          </div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${escHtml(host)}
+            </div>
+            <div style="font-size:10px;color:rgba(255,255,255,.25);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">
+              ${escHtml(url)}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6) Upload Progress Bubble
+═══════════════════════════════════════════════════════════════ */
+
+function createUploadProgressBubble(fileName) {
+  const area = document.getElementById('chatMsgsArea');
+  if (!area) return null;
+
+  const id = 'upload_' + Date.now();
+  const div = document.createElement('div');
+  div.id = id;
+  div.className = 'upload-bubble';
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;gap:9px;">
+      <i class="fas fa-cloud-upload-alt" style="color:#c9a84c;"></i>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${escHtml(fileName)}
+        </div>
+        <div class="upload-progress-track">
+          <div class="upload-progress-fill"></div>
+        </div>
+      </div>
+      <span class="upload-pct" style="font-size:10px;color:#c9a84c;font-weight:900;">0%</span>
+    </div>
+  `;
+
+  area.appendChild(div);
+  scrollToBottom(true);
+
+  return {
+    id,
+    update(pct) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.querySelector('.upload-progress-fill').style.width = pct + '%';
+      el.querySelector('.upload-pct').textContent = pct + '%';
+    },
+    remove() {
+      document.getElementById(id)?.remove();
+    }
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7) Hooks buildMsgBubble: Stars / Mentions / Disappearing
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof buildMsgBubble === 'function') {
+  const _origBuildMsgBubble_pack3 = buildMsgBubble;
+
+  buildMsgBubble = function(msg, idx) {
+    let html = _origBuildMsgBubble_pack3(msg, idx);
+    if (!msg || msg.media_type === 'system') return html;
+
+    const isStarred = _messageStars[msg.id];
+    const isMentionedMe = (msg.message || '').includes('@' + currentUser);
+
+    if (isStarred) {
+      html = html.replace(/(<div class="cb-wrap [^"]*)"/, `$1 starred-bubble"`);
+      html = html.replace(/(<div class="cb-time">)/, `${buildStarHTML(msg.id)}$1`);
+    }
+
+    if (isMentionedMe) {
+      html = html.replace(/(<div class="cb-wrap [^"]*)"/, `$1 mentioned-me"`);
+    }
+
+    if (msg.expires_at) {
+      html = html.replace(
+        /(<div class="cb [^"]*[^>]*>)/,
+        `$1<div class="disappearing-badge"><i class="fas fa-clock"></i> Geçici mesaj</div>`
+      );
+    }
+
+    if (msg.message) {
+      const rendered = renderMentionsInText(escHtml(msg.message));
+      html = html.replace(escHtml(msg.message), rendered);
+    }
+
+    /* Multi select click logic */
+    html = html.replace(
+      /onclick="handleBubbleTap\(event, ([^)]+)\)"/,
+      `onclick="if(_multiSelectMode){toggleSelectMessage($1)}else{handleBubbleTap(event,$1)}"`
+    );
+
+    return html;
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8) Hooks إرسال الرسالة: mentions + disappearing + lock
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof sendTextMsg === 'function') {
+  const _origSendTextMsg_pack3 = sendTextMsg;
+
+  sendTextMsg = async function() {
+    if (_isSendingLocked) return;
+    _isSendingLocked = true;
+
+    const roomId = _activeRoomId;
+    const settings = _chatRoomSettingsCache[roomId] || {};
+    const expiresAt = settings.disappearing_enabled
+      ? calculateExpiresAt(settings.disappearing_mode)
+      : null;
+
+    const inp = document.getElementById('chatTextInput');
+    const beforeText = inp?.value?.trim() || '';
+
+    /* إذا كان هناك رسائل مؤقتة نحتاج تعديل Payload، لذلك نستبدل الدالة مؤقتًا */
+    if (expiresAt && beforeText && !_editingMsgId) {
+      const sb = await initSupabase();
+      if (!sb) {
+        _isSendingLocked = false;
+        return;
+      }
+
+      const payload = {
+        room_id: _activeRoomId,
+        from_user: currentUser,
+        message: beforeText,
+        media_type: 'text',
+        reply_to_id: _replyTarget?.id || null,
+        client_msg_id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+        delivery_status: 'sent',
+        expires_at: expiresAt
+      };
+
+      inp.value = '';
+      onChatInput(inp);
+      sendTypingStatus(false);
+      cancelReply();
+
+      const { data, error } = await sb.from(GRP_MSGS).insert([payload]).select().single();
+
+      if (!error && data) {
+        _chatMessages.push(data);
+        appendMsgBubble(data);
+        scrollToBottom(true);
+        updateRoomTimestamp(_activeRoomId);
+        await saveMentionsForMessage(data);
+      } else {
+        showInvToast('Mesaj gönderilemedi', 'error');
+      }
+
+      _isSendingLocked = false;
+      return;
+    }
+
+    await _origSendTextMsg_pack3();
+
+    const last = _chatMessages[_chatMessages.length - 1];
+    if (last && last.message === beforeText) {
+      await saveMentionsForMessage(last);
+    }
+
+    setTimeout(() => {
+      _isSendingLocked = false;
+    }, 350);
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   9) Hooks تحميل الغرفة
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof loadRoomMessages === 'function') {
+  const _origLoadRoomMessages_pack3 = loadRoomMessages;
+
+  loadRoomMessages = async function(roomId) {
+    await cleanupExpiredMessages();
+    await _origLoadRoomMessages_pack3(roomId);
+    await loadMessageStars();
+    renderRoomMessages();
+    scrollToBottom(false);
+  };
+}
+
+if (typeof openRoomWindow === 'function') {
+  const _origOpenRoomWindow_pack3 = openRoomWindow;
+
+  openRoomWindow = async function(roomId, roomType) {
+    await _origOpenRoomWindow_pack3(roomId, roomType);
+
+    setTimeout(() => {
+      addPack3HeaderButtons();
+    }, 400);
+  };
+}
+
+function addPack3HeaderButtons() {
+  const headerRow = document.querySelector('#chatWin > div:first-child > div:nth-child(2)');
+  if (!headerRow) return;
+
+  if (!document.getElementById('chatMediaHeaderBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'chatMediaHeaderBtn';
+    btn.innerHTML = `<i class="fas fa-images"></i>`;
+    btn.onclick = () => openMediaGallery('images');
+    btn.style.cssText = chatHeaderBtnStyle();
+    headerRow.appendChild(btn);
+  }
+
+  if (!document.getElementById('chatStarHeaderBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'chatStarHeaderBtn';
+    btn.innerHTML = `<i class="fas fa-star"></i>`;
+    btn.onclick = openStarredMessagesModal;
+    btn.style.cssText = chatHeaderBtnStyle();
+    headerRow.appendChild(btn);
+  }
+
+  if (!document.getElementById('chatTimerHeaderBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'chatTimerHeaderBtn';
+    btn.innerHTML = `<i class="fas fa-clock"></i>`;
+    btn.onclick = openDisappearingQuickMenu;
+    btn.style.cssText = chatHeaderBtnStyle();
+    headerRow.appendChild(btn);
+  }
+}
+
+function chatHeaderBtnStyle() {
+  return `
+    width:34px;
+    height:34px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:9px;
+    color:rgba(255,255,255,.45);
+    font-size:14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Montserrat',sans-serif;
+  `;
+}
+
+function openDisappearingQuickMenu() {
+  document.getElementById('chatTimerMenu')?.remove();
+
+  const m = document.createElement('div');
+  m.id = 'chatTimerMenu';
+  m.style.cssText = `
+    position:fixed;
+    right:12px;
+    top:62px;
+    z-index:100000;
+    background:rgba(18,18,18,.98);
+    border:1px solid rgba(201,168,76,.22);
+    border-radius:14px;
+    overflow:hidden;
+    min-width:190px;
+    box-shadow:0 16px 40px rgba(0,0,0,.65);
+    backdrop-filter:blur(18px);
+  `;
+
+  m.innerHTML = [
+    ['off','Kapalı'],
+    ['24h','24 Saat'],
+    ['7d','7 Gün'],
+    ['30d','30 Gün']
+  ].map(([mode,label]) => `
+    <div onclick="setDisappearingMode('${mode}');document.getElementById('chatTimerMenu').remove()" style="
+      padding:12px 14px;
+      cursor:pointer;
+      color:rgba(255,255,255,.65);
+      font-size:12px;
+      font-weight:800;
+      font-family:'Montserrat',sans-serif;
+      border-bottom:1px solid rgba(255,255,255,.04);
+    ">
+      <i class="fas fa-clock" style="color:#c9a84c;margin-right:8px;"></i>
+      ${label}
+    </div>
+  `).join('');
+
+  document.body.appendChild(m);
+
+  setTimeout(() => {
+    document.addEventListener('click', () => m.remove(), { once:true });
+  }, 80);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10) تحسين Context Menu: Multi / Star
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof showMsgCtx === 'function') {
+  const _origShowMsgCtx_pack3 = showMsgCtx;
+
+  showMsgCtx = function(e, msgId, isMine, type) {
+    _origShowMsgCtx_pack3(e, msgId, isMine, type);
+
+    setTimeout(() => {
+      const menu = document.getElementById('chatCtxMenu');
+      if (!menu) return;
+
+      const selectItem = document.createElement('div');
+      selectItem.className = 'ctx-i';
+      selectItem.innerHTML = `<i class="fas fa-check-square"></i> Seç`;
+      selectItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        enterMultiSelect(msgId);
+      };
+
+      const starItem = document.createElement('div');
+      starItem.className = 'ctx-i';
+      starItem.innerHTML = `<i class="fas fa-star"></i> ${_messageStars[msgId] ? 'Yıldızı Kaldır' : 'Yıldızla'}`;
+      starItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        toggleStarMessage(msgId);
+      };
+
+      menu.prepend(starItem);
+      menu.prepend(selectItem);
+    }, 60);
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11) Long press يدخل Multi Select مباشرة
+═══════════════════════════════════════════════════════════════ */
+
+let _longPressTimerPack3 = null;
+
+function pack3LongPressStart(msgId) {
+  clearTimeout(_longPressTimerPack3);
+  _longPressTimerPack3 = setTimeout(() => {
+    if (navigator.vibrate) navigator.vibrate(35);
+    enterMultiSelect(msgId);
+  }, 650);
+}
+
+function pack3LongPressEnd() {
+  clearTimeout(_longPressTimerPack3);
+}
+
+/* أضفها عبر Hook buildMsgBubble */
+if (typeof buildMsgBubble === 'function') {
+  const _origBuildMsgBubble_longpress = buildMsgBubble;
+
+  buildMsgBubble = function(msg, idx) {
+    let html = _origBuildMsgBubble_longpress(msg, idx);
+    if (!msg || msg.media_type === 'system') return html;
+
+    html = html.replace(
+      /(<div class="cb-wrap [^"]*" id="msg-([^"]+)"[^>]*)(>)/,
+      (full, start, id, end) => {
+        if (start.includes('pack3LongPressStart')) return full;
+        return `${start}
+          onmousedown="pack3LongPressStart(${id})"
+          onmouseup="pack3LongPressEnd()"
+          onmouseleave="pack3LongPressEnd()"
+        ${end}`;
+      }
+    );
+
+    return html;
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12) Pack3 جاهز
+═══════════════════════════════════════════════════════════════ */
+
+console.log('[WOW CHAT UPGRADE PACK 3] ✅ Loaded — Starred, Multi Select, Media, Mentions, Disappearing');
+
+
 </script>
 </body>
 </html>
