@@ -28485,7 +28485,7 @@ function getUserColor(username) {
 
 
 /* ══════════════════════════════════════════════════════════════
-   مشغّل الصوت — واتساب (نسخة كاملة مع السحب)
+   مشغّل الصوت — واتساب (نسخة كاملة مع السحب بدون تقطيع)
 ══════════════════════════════════════════════════════════════ */
 const _voiceSpeeds   = [1, 1.5, 2];
 const _voiceSpeedIdx = {};
@@ -28498,7 +28498,6 @@ function toggleVoiceWA(msgId) {
   const icon = document.getElementById('playIcon_' + msgId);
   if (!aud || !icon) return;
 
-  /* أوقف أي صوت آخر يعمل */
   document.querySelectorAll('audio').forEach(a => {
     if (a.id !== 'aud_' + msgId && !a.paused) {
       a.pause();
@@ -28545,6 +28544,15 @@ function startVoiceDrag(msgId, e) {
   e.preventDefault();
   _voiceDragging[msgId] = true;
 
+  const aud = document.getElementById('aud_' + msgId);
+
+  /* ① احفظ حالة التشغيل قبل السحب */
+  _voiceDragging[msgId + '_wasPlaying'] = aud && !aud.paused;
+
+  /* ② أوقف الصوت أثناء السحب — بدون تغيير الواجهة */
+  if (aud && !aud.paused) aud.pause();
+
+  /* ③ كبّر النقطة */
   const dot = document.getElementById('waDot_' + msgId);
   if (dot) {
     dot.style.transition = 'none';
@@ -28557,11 +28565,20 @@ function startVoiceDrag(msgId, e) {
   const onMove = ev => { if (_voiceDragging[msgId]) _applyVoiceSeek(msgId, ev); };
   const onUp   = () => {
     _voiceDragging[msgId] = false;
+
+    /* ④ أعد النقطة لحجمها */
     if (dot) {
       dot.style.transition = 'left .08s linear';
       dot.style.width      = '13px';
       dot.style.height     = '13px';
     }
+
+    /* ⑤ شغّل مرة واحدة فقط عند رفع الإصبع */
+    const aud2 = document.getElementById('aud_' + msgId);
+    if (aud2 && _voiceDragging[msgId + '_wasPlaying']) {
+      aud2.play().catch(() => {});
+    }
+
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup',   onUp);
     document.removeEventListener('touchmove', onMove);
@@ -28574,7 +28591,7 @@ function startVoiceDrag(msgId, e) {
   document.addEventListener('touchend',  onUp);
 }
 
-/* ── تطبيق موضع السحب على الصوت ── */
+/* ── تطبيق موضع السحب — بدون play أثناء الحركة ── */
 function _applyVoiceSeek(msgId, e) {
   const bar = document.getElementById('waProgressBar_' + msgId);
   const aud = document.getElementById('aud_'           + msgId);
@@ -28586,6 +28603,7 @@ function _applyVoiceSeek(msgId, e) {
 
   aud.currentTime = pct * aud.duration;
 
+  /* تحديث الواجهة فقط — بدون أي play() هنا */
   const dot    = document.getElementById('waDot_'    + msgId);
   const played = document.getElementById('waPlayed_' + msgId);
   const durEl  = document.getElementById('voiceDur_' + msgId);
@@ -28594,14 +28612,6 @@ function _applyVoiceSeek(msgId, e) {
   if (durEl) {
     const rem = aud.duration - aud.currentTime;
     durEl.textContent = fmtDuration(Math.ceil(rem));
-  }
-
-  if (aud.paused) {
-    aud.play().catch(() => {});
-    const icon = document.getElementById('playIcon_' + msgId);
-    if (icon) { icon.className = 'fas fa-pause'; icon.style.left = '0px'; }
-    _hideVoiceAvatar(msgId);
-    _voicePlaying[msgId] = true;
   }
 }
 
