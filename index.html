@@ -28021,6 +28021,45 @@ function buildMsgBubble(msg, idx) {
       onerror="this.style.display='none'"/>
       ${msg.message?`<div style="margin-top:5px;">${escHtml(msg.message)}</div>`:''}`;
 
+
+
+
+} else if(msg.media_type==='video'&&msg.media_url) {
+  content = `
+    <div style="position:relative;border-radius:12px;overflow:hidden;
+      max-width:260px;background:#000;">
+      <video
+        src="${msg.media_url}"
+        controls
+        playsinline
+        preload="metadata"
+        style="
+          width:100%;max-width:260px;
+          max-height:200px;
+          display:block;
+          border-radius:12px;
+          object-fit:cover;
+        "
+        onloadedmetadata="this.style.display='block'"
+        onerror="this.parentElement.innerHTML='<div style=padding:12px;font-size:11px;color:rgba(255,255,255,.4)>Video yüklenemedi</div>'"
+      ></video>
+      <div style="
+        position:absolute;top:7px;right:7px;
+        background:rgba(0,0,0,.55);
+        border-radius:6px;padding:2px 8px;
+        font-size:9px;font-weight:700;
+        color:#fff;letter-spacing:.5px;
+        font-family:'Montserrat',sans-serif;
+        pointer-events:none;
+      ">VIDEO</div>
+    </div>
+    ${msg.message ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>` : ''}
+  `;
+
+
+
+
+    
   } else if(msg.media_type==='file'&&msg.media_url) {
     const ext=(msg.file_name||'').split('.').pop().toUpperCase()||'FILE';
     const sz=msg.file_size?(msg.file_size>1048576
@@ -28339,28 +28378,34 @@ async function handleFileSelect(input) {
 
   if(file.size>20*1024*1024){showInvToast('Dosya 20MB\'dan küçük olmalı!','error');return;}
 
-  const isImage=file.type.startsWith('image/');
-  const isAudio=file.type.startsWith('audio/');
-  const mediaType=isImage?'image':isAudio?'audio':'file';
+  const isImage = file.type.startsWith('image/');
+const isAudio = file.type.startsWith('audio/');
+const isVideo = file.type.startsWith('video/');
+const mediaType = isImage ? 'image' : isAudio ? 'audio' : isVideo ? 'video' : 'file';
 
-  /* معاينة فورية للصور */
-  let previewId=null;
-  if(isImage) {
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      const prev={
-        id:'prev_'+Date.now(),room_id:_activeRoomId,
-        from_user:currentUser,message:'',
-        media_url:ev.target.result,media_type:'image',
-        file_name:file.name,file_size:file.size,
-        created_at:new Date().toISOString()
-      };
-      previewId=prev.id;
-      appendMsgBubble(prev);
-      scrollToBottom(true);
+  /* معاينة فورية للصور والفيديو */
+let previewId = null;
+if (isImage || isVideo) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const prev = {
+      id         : 'prev_' + Date.now(),
+      room_id    : _activeRoomId,
+      from_user  : currentUser,
+      message    : '',
+      media_url  : ev.target.result,
+      media_type : isImage ? 'image' : 'video',
+      file_name  : file.name,
+      file_size  : file.size,
+      created_at : new Date().toISOString()
     };
-    reader.readAsDataURL(file);
-  }
+    previewId = prev.id;
+    appendMsgBubble(prev);
+    scrollToBottom(true);
+  };
+  reader.readAsDataURL(file);
+}
+
 
   const sb=await initSupabase(); if(!sb) return;
   const ext=file.name.split('.').pop()||'bin';
