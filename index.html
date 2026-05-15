@@ -28024,36 +28024,81 @@ function buildMsgBubble(msg, idx) {
 
 
 
-} else if(msg.media_type==='video'&&msg.media_url) {
+} else if(msg.media_type==='video' && msg.media_url) {
+  const vidId = 'vid_' + msg.id;
+  const dur   = msg.duration_sec ? fmtDuration(msg.duration_sec) : '';
   content = `
-    <div style="position:relative;border-radius:12px;overflow:hidden;
-      max-width:260px;background:#000;">
+    <div
+      onclick="openVideoFullscreen('${msg.media_url}', '${escHtml(msg.file_name||'')}')"
+      style="
+        position:relative;
+        width:220px;
+        border-radius:14px;
+        overflow:hidden;
+        background:#000;
+        cursor:pointer;
+        flex-shrink:0;
+      ">
+
+      <!-- مصغّر الفيديو -->
       <video
-        src="${msg.media_url}"
-        controls
-        playsinline
+        id="${vidId}"
+        src="${msg.media_url}#t=0.1"
         preload="metadata"
+        playsinline
+        muted
         style="
-          width:100%;max-width:260px;
-          max-height:200px;
-          display:block;
-          border-radius:12px;
+          width:220px;
+          height:160px;
           object-fit:cover;
+          display:block;
+          pointer-events:none;
         "
-        onloadedmetadata="this.style.display='block'"
-        onerror="this.parentElement.innerHTML='<div style=padding:12px;font-size:11px;color:rgba(255,255,255,.4)>Video yüklenemedi</div>'"
       ></video>
+
+      <!-- طبقة التشغيل -->
       <div style="
-        position:absolute;top:7px;right:7px;
-        background:rgba(0,0,0,.55);
-        border-radius:6px;padding:2px 8px;
-        font-size:9px;font-weight:700;
-        color:#fff;letter-spacing:.5px;
+        position:absolute;inset:0;
+        background:rgba(0,0,0,.28);
+        display:flex;align-items:center;justify-content:center;
+      ">
+        <div style="
+          width:52px;height:52px;border-radius:50%;
+          background:rgba(0,0,0,.55);
+          border:2.5px solid rgba(255,255,255,.85);
+          display:flex;align-items:center;justify-content:center;
+        ">
+          <i class="fas fa-play"
+             style="color:#fff;font-size:18px;margin-left:3px;"></i>
+        </div>
+      </div>
+
+      <!-- شارة المدة -->
+      ${dur ? `
+      <div style="
+        position:absolute;bottom:7px;right:8px;
+        background:rgba(0,0,0,.62);
+        border-radius:5px;padding:2px 7px;
+        font-size:11px;font-weight:700;
+        color:#fff;letter-spacing:.3px;
         font-family:'Montserrat',sans-serif;
-        pointer-events:none;
-      ">VIDEO</div>
+      ">${dur}</div>` : ''}
+
+      <!-- أيقونة الفيديو -->
+      <div style="
+        position:absolute;top:7px;left:8px;
+        background:rgba(0,0,0,.5);
+        border-radius:5px;padding:2px 7px;
+        display:flex;align-items:center;gap:4px;
+      ">
+        <i class="fas fa-video"
+           style="color:#fff;font-size:10px;"></i>
+      </div>
+
     </div>
-    ${msg.message ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>` : ''}
+    ${msg.message
+      ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>`
+      : ''}
   `;
 
 
@@ -29261,6 +29306,108 @@ function openImgViewer(url) {
 }
 
 
+
+
+
+
+
+
+/* ══ عارض الفيديو بملء الشاشة — واتساب ══ */
+function openVideoFullscreen(url, name) {
+  document.getElementById('chatVideoViewer')?.remove();
+
+  const v = document.createElement('div');
+  v.id = 'chatVideoViewer';
+  v.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
+    background:#000;
+    display:flex;flex-direction:column;
+    animation:updBgIn .22s ease forwards;
+  `;
+
+  v.innerHTML = `
+    <!-- شريط علوي -->
+    <div style="
+      flex-shrink:0;
+      padding:12px 14px;
+      display:flex;align-items:center;gap:12px;
+      background:linear-gradient(to bottom,rgba(0,0,0,.7),transparent);
+      position:absolute;top:0;left:0;right:0;z-index:2;
+    ">
+      <button onclick="closeVideoFullscreen()" style="
+        width:38px;height:38px;border-radius:50%;
+        background:rgba(255,255,255,.15);
+        border:none;color:#fff;font-size:16px;
+        cursor:pointer;display:flex;align-items:center;
+        justify-content:center;
+        font-family:'Montserrat',sans-serif;
+        -webkit-tap-highlight-color:transparent;
+      ">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <div style="
+        font-size:13px;font-weight:700;
+        color:#fff;flex:1;
+        white-space:nowrap;overflow:hidden;
+        text-overflow:ellipsis;
+        font-family:'Montserrat',sans-serif;
+      ">${name || 'Video'}</div>
+      <a href="${url}" download="${name||'video'}" style="
+        width:38px;height:38px;border-radius:50%;
+        background:rgba(255,255,255,.15);
+        display:flex;align-items:center;justify-content:center;
+        color:#fff;font-size:15px;text-decoration:none;
+        -webkit-tap-highlight-color:transparent;
+      ">
+        <i class="fas fa-download"></i>
+      </a>
+    </div>
+
+    <!-- الفيديو -->
+    <video
+      id="fullscreenVideo"
+      src="${url}"
+      controls
+      autoplay
+      playsinline
+      style="
+        width:100%;height:100%;
+        object-fit:contain;
+        display:block;
+      "
+    ></video>
+  `;
+
+  document.body.appendChild(v);
+  document.body.style.overflow = 'hidden';
+
+  /* زر الرجوع من المتصفح */
+  history.pushState({ videoViewer: true }, '');
+  window._videoViewerPopState = () => closeVideoFullscreen();
+  window.addEventListener('popstate', window._videoViewerPopState, { once: true });
+}
+
+function closeVideoFullscreen() {
+  const v = document.getElementById('chatVideoViewer');
+  if (!v) return;
+
+  /* إيقاف الفيديو قبل الإغلاق */
+  const vid = document.getElementById('fullscreenVideo');
+  if (vid) { vid.pause(); vid.src = ''; }
+
+  v.style.animation = 'cpOut .25s ease forwards';
+  setTimeout(() => {
+    v.remove();
+    document.body.style.overflow = '';
+  }, 240);
+
+  window.removeEventListener('popstate', window._videoViewerPopState);
+}
+
+  
+  
+
+  
 /* ══════════════════════════════════════════════════════════════
    الملف الشخصي
 ══════════════════════════════════════════════════════════════ */
