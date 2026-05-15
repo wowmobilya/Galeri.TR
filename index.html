@@ -4550,26 +4550,55 @@ document.addEventListener('keydown',e=>{
 /* ============================================================
    History API
 ============================================================ */
-let appState='login',backPressedOnce=false,backToastTimer=null;
+let appState='login', backPressedOnce=false, backToastTimer=null;
 function pushState(s,d={}){history.pushState({appState:s,...d},'');}
 function replaceState(s,d={}){history.replaceState({appState:s,...d},'');}
 
-window.addEventListener('popstate',()=>{
-  if(appState==='dims'){closeDimsModalSilent();return;}
-  if(appState==='lightbox'){closeLightbox();return;}
-/* ✅ أضف هذا السطر */
+window.addEventListener('popstate', () => {
+  // 1. نوافذ المحادثة والفيديو (تعديلات الشات)
+  if (document.getElementById('chatVideoViewer')) { closeVideoFullscreen(); return; }
+  if (document.getElementById('chatImgViewer'))   { document.getElementById('chatImgViewer').remove(); return; }
+  if (document.getElementById('grpSettingsModal')){ closeGrpSettings(); return; }
+  if (document.getElementById('chatWin'))         { closeRoomWindow(); return; }
+  if (document.getElementById('chatListPage'))    { closeChatListPage(); return; }
+
+  // 2. النوافذ المنبثقة الأخرى
+  if (appState === 'dims') { closeDimsModalSilent(); return; }
+  if (appState === 'lightbox') { closeLightbox(); return; }
   if (appState === 'orderConfirm') {
     document.getElementById('orderConfirmModal').classList.remove('active');
     document.body.style.overflow = '';
     appState = 'section';
     return;
   }
-  if(appState==='section'){goHomeFromBack();return;}
-  if(appState==='home'){
-    if(backPressedOnce){clearTimeout(backToastTimer);backPressedOnce=false;hideBackToast();doLogoutFromBack();}
-    else{backPressedOnce=true;showBackToast();pushState('home');backToastTimer=setTimeout(()=>{backPressedOnce=false;hideBackToast();},2500);}
+
+  // 3. الرجوع من الأقسام إلى الشاشة الرئيسية
+  if (appState === 'section') { 
+    goHomeFromBack(); 
+    return; 
+  }
+
+  // 4. الشاشة الرئيسية (الضغط مرتين للخروج من التطبيق)
+  if (appState === 'home') {
+    if (backPressedOnce) {
+      // الضغطة الثانية: إخفاء التنبيه والسماح للتطبيق بالإغلاق طبيعياً
+      clearTimeout(backToastTimer);
+      backPressedOnce = false;
+      hideBackToast();
+      // تم إزالة doLogoutFromBack() لكي لا يسجل خروج
+    } else {
+      // الضغطة الأولى: إظهار التنبيه ومنع الخروج الفوري
+      backPressedOnce = true;
+      showBackToast();
+      pushState('home'); // إضافة حالة وهمية لمنع الخروج من أول ضغطة
+      backToastTimer = setTimeout(() => {
+        backPressedOnce = false;
+        hideBackToast();
+      }, 2500);
+    }
   }
 });
+
 
 function showBackToast(){
   let t=document.getElementById('backToast');
