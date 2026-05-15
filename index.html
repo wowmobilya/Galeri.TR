@@ -31792,6 +31792,1075 @@ console.log('[WOW CHAT UPGRADE] ✅ Combined addon loaded — No pin messages');
 
 
 
+  /* ═══════════════════════════════════════════════════════════════
+   ★ WOW CHAT UPGRADE PACK 2
+   ميزات:
+   - Draft حفظ المسودة
+   - Mute / Archive
+   - Message Info
+   - Forward
+   - تحميل رسائل أقدم
+   - زر النزول للأسفل
+   - Online / Last Seen
+   - Link Preview
+   - Clear chat for me
+   - Share message
+   - بدون تثبيت رسائل
+═══════════════════════════════════════════════════════════════ */
+
+(function injectWowChatPack2CSS() {
+  if (document.getElementById('wowChatPack2CSS')) return;
+
+  const st = document.createElement('style');
+  st.id = 'wowChatPack2CSS';
+  st.textContent = `
+    #chatScrollDownBtn {
+      position: fixed;
+      right: 15px;
+      bottom: 78px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(20,20,20,0.96);
+      border: 1px solid rgba(201,168,76,0.28);
+      color: #c9a84c;
+      z-index: 8700;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,.5);
+      backdrop-filter: blur(16px);
+    }
+
+    .link-preview-card {
+      margin-top: 7px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(0,0,0,.18);
+      border: 1px solid rgba(255,255,255,.08);
+      max-width: 240px;
+      cursor: pointer;
+    }
+
+    .link-preview-card img {
+      width: 100%;
+      height: 90px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .link-preview-body {
+      padding: 8px 10px;
+    }
+
+    .link-preview-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: inherit;
+      margin-bottom: 3px;
+      line-height: 1.35;
+    }
+
+    .link-preview-desc {
+      font-size: 9.5px;
+      opacity: .55;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    #msgInfoModal,
+    #forwardModal,
+    #chatSettingsMiniModal {
+      position: fixed;
+      inset: 0;
+      z-index: 100000;
+      background: rgba(0,0,0,.88);
+      backdrop-filter: blur(18px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .chat-modal-box {
+      width: 100%;
+      max-width: 420px;
+      max-height: 88vh;
+      overflow-y: auto;
+      background: linear-gradient(145deg,#0f0f0f,#161616);
+      border: 1px solid rgba(201,168,76,.25);
+      border-radius: 22px;
+      box-shadow: 0 40px 100px rgba(0,0,0,.85);
+      animation: devModalIn .35s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+
+    .chat-modal-head {
+      padding: 17px 19px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .chat-modal-title {
+      font-size: 15px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .chat-modal-sub {
+      font-size: 8px;
+      letter-spacing: 3px;
+      color: rgba(201,168,76,.55);
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+
+    .chat-setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(255,255,255,.05);
+    }
+
+    .chat-setting-row:last-child {
+      border-bottom: none;
+    }
+
+    .forward-room-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 13px;
+      border-radius: 11px;
+      background: rgba(255,255,255,.035);
+      border: 1px solid rgba(255,255,255,.06);
+      cursor: pointer;
+      transition: all .2s;
+      margin-bottom: 7px;
+    }
+
+    .forward-room-item:hover {
+      background: rgba(201,168,76,.08);
+      border-color: rgba(201,168,76,.22);
+    }
+
+    .draft-badge {
+      color: #c9a84c;
+      font-weight: 900;
+    }
+
+    .failed-msg-mark {
+      color: #ef4444 !important;
+      font-size: 10px;
+      margin-left: 4px;
+    }
+  `;
+
+  document.head.appendChild(st);
+})();
+
+let _olderMessagesLoading = false;
+let _oldestMessageId = null;
+let _chatDraftTimer = null;
+let _chatRoomSettingsCache = {};
+
+/* ═══════════════════════════════════════════════════════════════
+   1) Draft — حفظ المسودة
+═══════════════════════════════════════════════════════════════ */
+
+async function saveChatDraftNow() {
+  if (!_activeRoomId) return;
+
+  const inp = document.getElementById('chatTextInput');
+  if (!inp) return;
+
+  const text = inp.value || '';
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  await sb.from('chat_drafts').upsert([{
+    scope: 'group',
+    room_id: _activeRoomId,
+    pair_key: null,
+    username: currentUser,
+    draft_text: text,
+    updated_at: new Date().toISOString()
+  }], {
+    onConflict: 'scope,username,room_id,pair_key'
+  });
+}
+
+async function loadChatDraft(roomId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data } = await sb
+    .from('chat_drafts')
+    .select('draft_text')
+    .eq('scope', 'group')
+    .eq('room_id', roomId)
+    .eq('username', currentUser)
+    .maybeSingle();
+
+  if (data?.draft_text) {
+    const inp = document.getElementById('chatTextInput');
+    if (inp) {
+      inp.value = data.draft_text;
+      onChatInput(inp);
+    }
+  }
+}
+
+async function clearChatDraft(roomId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  await sb.from('chat_drafts')
+    .update({
+      draft_text: '',
+      updated_at: new Date().toISOString()
+    })
+    .eq('scope', 'group')
+    .eq('room_id', roomId)
+    .eq('username', currentUser);
+}
+
+/* Hook onChatInput لحفظ المسودة */
+if (typeof onChatInput === 'function') {
+  const _origOnChatInput_pack2 = onChatInput;
+
+  onChatInput = function(el) {
+    _origOnChatInput_pack2(el);
+
+    clearTimeout(_chatDraftTimer);
+    _chatDraftTimer = setTimeout(() => {
+      saveChatDraftNow();
+    }, 500);
+  };
+}
+
+/* Hook sendTextMsg لمسح المسودة بعد الإرسال */
+if (typeof sendTextMsg === 'function') {
+  const _origSendTextMsg_pack2 = sendTextMsg;
+
+  sendTextMsg = async function() {
+    const roomId = _activeRoomId;
+    await _origSendTextMsg_pack2();
+    if (roomId) clearChatDraft(roomId);
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2) إعدادات الغرفة: Mute / Archive / Wallpaper
+═══════════════════════════════════════════════════════════════ */
+
+async function loadChatRoomSettings(roomId) {
+  const sb = await initSupabase();
+  if (!sb) return {};
+
+  const { data } = await sb
+    .from('chat_user_settings')
+    .select('*')
+    .eq('scope', 'group')
+    .eq('room_id', roomId)
+    .eq('username', currentUser)
+    .maybeSingle();
+
+  _chatRoomSettingsCache[roomId] = data || {};
+  return data || {};
+}
+
+async function saveChatRoomSetting(roomId, patch) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  await sb.from('chat_user_settings').upsert([{
+    scope: 'group',
+    room_id: roomId,
+    pair_key: null,
+    username: currentUser,
+    ...patch,
+    updated_at: new Date().toISOString()
+  }], {
+    onConflict: 'scope,username,room_id,pair_key'
+  });
+
+  _chatRoomSettingsCache[roomId] = {
+    ...(_chatRoomSettingsCache[roomId] || {}),
+    ...patch
+  };
+}
+
+function openChatSettingsMini() {
+  if (!_activeRoomId) return;
+
+  const settings = _chatRoomSettingsCache[_activeRoomId] || {};
+
+  document.getElementById('chatSettingsMiniModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'chatSettingsMiniModal';
+  modal.innerHTML = `
+    <div class="chat-modal-box">
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+
+      <div class="chat-modal-head">
+        <div>
+          <div class="chat-modal-sub">SOHBET AYARLARI</div>
+          <div class="chat-modal-title">Konuşma Ayarları</div>
+        </div>
+        <button onclick="document.getElementById('chatSettingsMiniModal').remove()" style="
+          width:32px;height:32px;border-radius:8px;
+          background:rgba(255,255,255,.05);
+          border:1px solid rgba(255,255,255,.08);
+          color:rgba(255,255,255,.45);
+          cursor:pointer;
+        ">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div>
+        <div class="chat-setting-row">
+          <div>
+            <div style="font-size:13px;font-weight:900;color:#fff;">Bildirimleri Sessize Al</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:2px;">Bu sohbetten sesli bildirim gelmez</div>
+          </div>
+          <input type="checkbox" ${settings.is_muted ? 'checked' : ''}
+            onchange="toggleChatMute(this.checked)" style="width:20px;height:20px;">
+        </div>
+
+        <div class="chat-setting-row">
+          <div>
+            <div style="font-size:13px;font-weight:900;color:#fff;">Arşivle</div>
+            <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:2px;">Sohbet listede gizlenir</div>
+          </div>
+          <input type="checkbox" ${settings.is_archived ? 'checked' : ''}
+            onchange="toggleChatArchive(this.checked)" style="width:20px;height:20px;">
+        </div>
+
+        <div class="chat-setting-row">
+          <div style="flex:1;">
+            <div style="font-size:13px;font-weight:900;color:#fff;margin-bottom:8px;">Duvar Kağıdı</div>
+            <input type="text" id="wallpaperInput" value="${settings.wallpaper_url || ''}"
+              placeholder="Renk veya görsel URL"
+              style="
+                width:100%;
+                padding:9px 11px;
+                background:rgba(255,255,255,.05);
+                border:1px solid rgba(201,168,76,.2);
+                border-radius:9px;
+                color:#fff;
+                outline:none;
+                user-select:text;
+              ">
+          </div>
+          <button onclick="saveWallpaperSetting()" style="
+            padding:9px 12px;
+            border-radius:9px;
+            border:none;
+            background:linear-gradient(135deg,#c9a84c,#f0d080);
+            color:#0a0a0a;
+            font-weight:900;
+            cursor:pointer;
+          ">
+            <i class="fas fa-check"></i>
+          </button>
+        </div>
+
+        <div style="padding:14px;">
+          <button onclick="clearChatForMe()" style="
+            width:100%;
+            padding:12px;
+            border-radius:11px;
+            background:rgba(239,68,68,.08);
+            border:1px solid rgba(239,68,68,.25);
+            color:#ef4444;
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;
+            font-weight:900;
+            cursor:pointer;
+          ">
+            <i class="fas fa-trash-alt"></i> Sohbeti Benden Temizle
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.onclick = e => {
+    if (e.target === modal) modal.remove();
+  };
+}
+
+async function toggleChatMute(checked) {
+  if (!_activeRoomId) return;
+  await saveChatRoomSetting(_activeRoomId, { is_muted: checked });
+  showInvToast(checked ? 'Sohbet sessize alındı' : 'Ses açıldı', 'success');
+}
+
+async function toggleChatArchive(checked) {
+  if (!_activeRoomId) return;
+  await saveChatRoomSetting(_activeRoomId, { is_archived: checked });
+  showInvToast(checked ? 'Sohbet arşivlendi' : 'Arşivden çıkarıldı', 'success');
+}
+
+async function saveWallpaperSetting() {
+  if (!_activeRoomId) return;
+
+  const val = document.getElementById('wallpaperInput')?.value.trim() || '';
+  await saveChatRoomSetting(_activeRoomId, { wallpaper_url: val });
+  applyChatWallpaper(val);
+  showInvToast('Duvar kağıdı güncellendi ✓', 'success');
+}
+
+function applyChatWallpaper(val) {
+  const area = document.getElementById('chatMsgsArea');
+  if (!area) return;
+
+  if (!val) {
+    area.style.background = '';
+    return;
+  }
+
+  if (val.startsWith('http')) {
+    area.style.background = `linear-gradient(rgba(10,10,10,.75),rgba(10,10,10,.75)), url("${val}") center/cover`;
+  } else {
+    area.style.background = val;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3) معلومات الرسالة Message Info
+═══════════════════════════════════════════════════════════════ */
+
+async function openMessageInfo(msgId) {
+  const msg = _chatMessages.find(m => String(m.id) === String(msgId));
+  if (!msg) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: seenRows } = await sb
+    .from('message_seen_by')
+    .select('*')
+    .eq('scope', 'group')
+    .eq('message_id', msgId);
+
+  const reacts = _messageReactions[msgId] || [];
+
+  document.getElementById('msgInfoModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'msgInfoModal';
+  modal.innerHTML = `
+    <div class="chat-modal-box">
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+
+      <div class="chat-modal-head">
+        <div>
+          <div class="chat-modal-sub">MESAJ BİLGİSİ</div>
+          <div class="chat-modal-title">Detaylar</div>
+        </div>
+        <button onclick="document.getElementById('msgInfoModal').remove()" style="
+          width:32px;height:32px;border-radius:8px;
+          background:rgba(255,255,255,.05);
+          border:1px solid rgba(255,255,255,.08);
+          color:rgba(255,255,255,.45);
+          cursor:pointer;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div style="padding:16px;">
+        <div style="
+          background:rgba(255,255,255,.035);
+          border:1px solid rgba(255,255,255,.07);
+          border-radius:12px;
+          padding:13px;
+          margin-bottom:12px;
+        ">
+          <div style="font-size:10px;color:rgba(255,255,255,.25);margin-bottom:5px;">Gönderen</div>
+          <div style="font-size:14px;font-weight:900;color:#fff;">${escHtml(getDisplayName(msg.from_user))}</div>
+        </div>
+
+        <div style="
+          display:grid;
+          grid-template-columns:1fr 1fr;
+          gap:8px;
+          margin-bottom:12px;
+        ">
+          <div style="background:rgba(255,255,255,.035);border-radius:10px;padding:11px;">
+            <div style="font-size:9px;color:rgba(255,255,255,.25);margin-bottom:4px;">Tarih</div>
+            <div style="font-size:11px;color:#fff;font-weight:700;">${new Date(msg.created_at).toLocaleDateString('tr-TR')}</div>
+          </div>
+          <div style="background:rgba(255,255,255,.035);border-radius:10px;padding:11px;">
+            <div style="font-size:9px;color:rgba(255,255,255,.25);margin-bottom:4px;">Saat</div>
+            <div style="font-size:11px;color:#fff;font-weight:700;">${fmtTime(msg.created_at)}</div>
+          </div>
+          <div style="background:rgba(255,255,255,.035);border-radius:10px;padding:11px;">
+            <div style="font-size:9px;color:rgba(255,255,255,.25);margin-bottom:4px;">Tür</div>
+            <div style="font-size:11px;color:#fff;font-weight:700;">${msg.media_type}</div>
+          </div>
+          <div style="background:rgba(255,255,255,.035);border-radius:10px;padding:11px;">
+            <div style="font-size:9px;color:rgba(255,255,255,.25);margin-bottom:4px;">Tepki</div>
+            <div style="font-size:11px;color:#fff;font-weight:700;">${reacts.length}</div>
+          </div>
+        </div>
+
+        <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,.55);font-weight:900;margin-bottom:8px;">
+          GÖRENLER
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          ${(seenRows || []).length ? (seenRows || []).map(r => `
+            <div style="
+              display:flex;
+              align-items:center;
+              justify-content:space-between;
+              gap:10px;
+              padding:9px 11px;
+              background:rgba(255,255,255,.035);
+              border-radius:10px;
+            ">
+              <span style="font-size:12px;color:#fff;font-weight:700;">${escHtml(getDisplayName(r.username))}</span>
+              <span style="font-size:10px;color:rgba(255,255,255,.35);">${fmtTime(r.seen_at)}</span>
+            </div>
+          `).join('') : `
+            <div style="font-size:11px;color:rgba(255,255,255,.25);padding:12px;text-align:center;">
+              Henüz görüntüleme yok
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.onclick = e => {
+    if (e.target === modal) modal.remove();
+  };
+}
+
+async function markMessagesAsSeen() {
+  if (!_activeRoomId || !_chatMessages.length) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const rows = _chatMessages
+    .filter(m => m.from_user !== currentUser && m.media_type !== 'system')
+    .map(m => ({
+      scope: 'group',
+      message_id: m.id,
+      username: currentUser,
+      seen_at: new Date().toISOString()
+    }));
+
+  if (!rows.length) return;
+
+  await sb.from('message_seen_by').upsert(rows, {
+    onConflict: 'scope,message_id,username'
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4) Forward — إعادة توجيه
+═══════════════════════════════════════════════════════════════ */
+
+async function openForwardModal(msgId) {
+  const msg = _chatMessages.find(m => String(m.id) === String(msgId));
+  if (!msg) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: memberRows } = await sb
+    .from(GRP_MEMBERS)
+    .select('room_id')
+    .eq('username', currentUser)
+    .eq('is_banned', false);
+
+  const roomIds = (memberRows || []).map(r => r.room_id);
+
+  let rooms = [];
+  if (roomIds.length) {
+    const { data } = await sb
+      .from(GRP_ROOMS)
+      .select('*')
+      .in('id', roomIds)
+      .eq('is_active', true);
+
+    rooms = data || [];
+  }
+
+  document.getElementById('forwardModal')?.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'forwardModal';
+  modal.innerHTML = `
+    <div class="chat-modal-box">
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#c9a84c,#f0d080,#c9a84c,transparent);"></div>
+
+      <div class="chat-modal-head">
+        <div>
+          <div class="chat-modal-sub">İLET</div>
+          <div class="chat-modal-title">Mesajı İlet</div>
+        </div>
+        <button onclick="document.getElementById('forwardModal').remove()" style="
+          width:32px;height:32px;border-radius:8px;
+          background:rgba(255,255,255,.05);
+          border:1px solid rgba(255,255,255,.08);
+          color:rgba(255,255,255,.45);
+          cursor:pointer;">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div style="padding:15px;">
+        ${rooms.map(r => `
+          <div class="forward-room-item" onclick="forwardMessageToRoom(${msgId}, ${r.id})">
+            <div style="
+              width:40px;
+              height:40px;
+              border-radius:50%;
+              background:rgba(201,168,76,.1);
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              font-size:18px;
+              flex-shrink:0;
+            ">
+              ${r.icon_emoji || '💬'}
+            </div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${escHtml(r.name)}
+              </div>
+              <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:2px;">
+                ${r.room_type === 'group' ? 'Grup' : 'Özel sohbet'}
+              </div>
+            </div>
+            <i class="fas fa-share" style="color:#c9a84c;font-size:12px;"></i>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  modal.onclick = e => {
+    if (e.target === modal) modal.remove();
+  };
+}
+
+async function forwardMessageToRoom(msgId, targetRoomId) {
+  const original = _chatMessages.find(m => String(m.id) === String(msgId));
+  if (!original) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const payload = {
+    room_id: targetRoomId,
+    from_user: currentUser,
+    message: original.message || '',
+    media_url: original.media_url || null,
+    media_type: original.media_type || 'text',
+    file_name: original.file_name || null,
+    file_size: original.file_size || 0,
+    duration_sec: original.duration_sec || 0,
+    forwarded_from_id: original.id,
+    delivery_status: 'sent',
+    metadata: {
+      forwarded: true,
+      original_from: original.from_user
+    }
+  };
+
+  const { data, error } = await sb
+    .from(GRP_MSGS)
+    .insert([payload])
+    .select()
+    .single();
+
+  if (!error && data) {
+    await sb.from('message_forwards').insert([{
+      scope: 'group',
+      original_message_id: original.id,
+      target_room_id: targetRoomId,
+      forwarded_by: currentUser
+    }]);
+
+    showInvToast('Mesaj iletildi ✓', 'success');
+    document.getElementById('forwardModal')?.remove();
+  } else {
+    showInvToast('İletme hatası', 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   5) Link Preview بسيط
+═══════════════════════════════════════════════════════════════ */
+
+function extractFirstUrl(text) {
+  if (!text) return null;
+  const m = text.match(/https?:\/\/[^\s]+/i);
+  return m ? m[0] : null;
+}
+
+function buildLinkPreviewHTML(text) {
+  const url = extractFirstUrl(text);
+  if (!url) return '';
+
+  let host = '';
+  try {
+    host = new URL(url).hostname.replace('www.', '');
+  } catch(e) {
+    host = url;
+  }
+
+  return `
+    <div class="link-preview-card" onclick="event.stopPropagation(); window.open('${url}', '_blank')">
+      <div class="link-preview-body">
+        <div class="link-preview-title">${escHtml(host)}</div>
+        <div class="link-preview-desc">${escHtml(url)}</div>
+      </div>
+    </div>
+  `;
+}
+
+/* Hook buildMsgBubble لإضافة Link Preview و Forward Badge */
+if (typeof buildMsgBubble === 'function') {
+  const _origBuildMsgBubble_pack2 = buildMsgBubble;
+
+  buildMsgBubble = function(msg, idx) {
+    let html = _origBuildMsgBubble_pack2(msg, idx);
+
+    if (!msg || msg.media_type !== 'text' || !msg.message) return html;
+
+    const linkPreview = buildLinkPreviewHTML(msg.message);
+    const forwardBadge = msg.metadata?.forwarded || msg.forwarded_from_id
+      ? `<div style="font-size:9px;opacity:.55;margin-bottom:4px;"><i class="fas fa-share"></i> İletildi</div>`
+      : '';
+
+    if (forwardBadge) {
+      html = html.replace(/(<div class="cb [^"]*[^>]*>)/, `$1${forwardBadge}`);
+    }
+
+    if (linkPreview) {
+      html = html.replace(/(<div class="cb-time">)/, `${linkPreview}$1`);
+    }
+
+    return html;
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   6) تحميل رسائل أقدم عند السحب للأعلى
+═══════════════════════════════════════════════════════════════ */
+
+async function loadOlderMessages() {
+  if (_olderMessagesLoading || !_activeRoomId || !_chatMessages.length) return;
+
+  _olderMessagesLoading = true;
+
+  const area = document.getElementById('chatMsgsArea');
+  const oldScrollHeight = area?.scrollHeight || 0;
+
+  const first = _chatMessages[0];
+  if (!first) {
+    _olderMessagesLoading = false;
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    _olderMessagesLoading = false;
+    return;
+  }
+
+  const { data } = await sb
+    .from(GRP_MSGS)
+    .select('*')
+    .eq('room_id', _activeRoomId)
+    .eq('is_deleted', false)
+    .lt('id', first.id)
+    .order('id', { ascending: false })
+    .limit(50);
+
+  const older = (data || []).reverse();
+
+  if (older.length) {
+    _chatMessages = [...older, ..._chatMessages];
+    await loadMessageReactions(_activeRoomId);
+    renderRoomMessages();
+
+    if (area) {
+      const newScrollHeight = area.scrollHeight;
+      area.scrollTop = newScrollHeight - oldScrollHeight;
+    }
+  } else {
+    showInvToast('Daha eski mesaj yok', 'info');
+  }
+
+  _olderMessagesLoading = false;
+}
+
+function attachChatScrollEnhancements() {
+  const area = document.getElementById('chatMsgsArea');
+  if (!area || area.dataset.pack2ScrollAttached) return;
+
+  area.dataset.pack2ScrollAttached = '1';
+
+  area.addEventListener('scroll', () => {
+    if (area.scrollTop < 80) {
+      loadOlderMessages();
+    }
+
+    ensureScrollDownButton();
+
+    const btn = document.getElementById('chatScrollDownBtn');
+    if (!btn) return;
+
+    const nearBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 180;
+    btn.style.display = nearBottom ? 'none' : 'flex';
+  });
+}
+
+function ensureScrollDownButton() {
+  if (document.getElementById('chatScrollDownBtn')) return;
+
+  const btn = document.createElement('div');
+  btn.id = 'chatScrollDownBtn';
+  btn.innerHTML = `<i class="fas fa-chevron-down"></i>`;
+  btn.onclick = () => {
+    scrollToBottom(true);
+    btn.style.display = 'none';
+  };
+
+  document.body.appendChild(btn);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7) Clear chat for me
+═══════════════════════════════════════════════════════════════ */
+
+async function clearChatForMe() {
+  if (!_activeRoomId) return;
+
+  const ok = await showChatConfirm('Bu sohbet sizden temizlensin mi?');
+  if (!ok) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const rows = _chatMessages.map(m => ({
+    scope: 'group',
+    message_id: m.id,
+    username: currentUser
+  }));
+
+  if (rows.length) {
+    await sb.from('message_hidden_by').upsert(rows, {
+      onConflict: 'scope,message_id,username'
+    });
+  }
+
+  _chatMessages = [];
+  renderRoomMessages();
+
+  document.getElementById('chatSettingsMiniModal')?.remove();
+  showInvToast('Sohbet temizlendi ✓', 'success');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   8) Share رسالة أو ملف
+═══════════════════════════════════════════════════════════════ */
+
+async function shareMessage(msgId) {
+  const msg = _chatMessages.find(m => String(m.id) === String(msgId));
+  if (!msg) return;
+
+  const text = msg.message || msg.media_url || msg.file_name || 'WOW MOBİLYA mesajı';
+
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'WOW MOBİLYA',
+        text,
+        url: msg.media_url || undefined
+      });
+    } catch(e) {}
+  } else {
+    navigator.clipboard?.writeText(text);
+    showInvToast('Paylaşım metni kopyalandı ✓', 'success');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   9) تحسين قائمة السياق بإضافة Forward / Info / Share
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof showMsgCtx === 'function') {
+  const _origShowMsgCtx_pack2 = showMsgCtx;
+
+  showMsgCtx = function(e, msgId, isMine, type) {
+    _origShowMsgCtx_pack2(e, msgId, isMine, type);
+
+    setTimeout(() => {
+      const menu = document.getElementById('chatCtxMenu');
+      if (!menu) return;
+
+      const infoItem = document.createElement('div');
+      infoItem.className = 'ctx-i';
+      infoItem.innerHTML = `<i class="fas fa-info-circle"></i> Bilgi`;
+      infoItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        openMessageInfo(msgId);
+      };
+
+      const forwardItem = document.createElement('div');
+      forwardItem.className = 'ctx-i';
+      forwardItem.innerHTML = `<i class="fas fa-share"></i> İlet`;
+      forwardItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        openForwardModal(msgId);
+      };
+
+      const shareItem = document.createElement('div');
+      shareItem.className = 'ctx-i';
+      shareItem.innerHTML = `<i class="fas fa-external-link-alt"></i> Paylaş`;
+      shareItem.onclick = () => {
+        document.getElementById('chatCtxMenu')?.remove();
+        shareMessage(msgId);
+      };
+
+      menu.appendChild(infoItem);
+      menu.appendChild(forwardItem);
+      menu.appendChild(shareItem);
+    }, 50);
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   10) إضافة زر الإعدادات للهيدر + تحميل Draft + Seen
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof openRoomWindow === 'function') {
+  const _origOpenRoomWindow_pack2 = openRoomWindow;
+
+  openRoomWindow = async function(roomId, roomType) {
+    await _origOpenRoomWindow_pack2(roomId, roomType);
+
+    setTimeout(async () => {
+      await loadChatRoomSettings(roomId);
+      await loadChatDraft(roomId);
+
+      const settings = _chatRoomSettingsCache[roomId] || {};
+      if (settings.wallpaper_url) applyChatWallpaper(settings.wallpaper_url);
+
+      addChatSettingsButtonToHeader();
+      attachChatScrollEnhancements();
+      markMessagesAsSeen();
+    }, 350);
+  };
+}
+
+function addChatSettingsButtonToHeader() {
+  const headerRow = document.querySelector('#chatWin > div:first-child > div:nth-child(2)');
+  if (!headerRow || document.getElementById('chatSettingsHeaderBtn')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'chatSettingsHeaderBtn';
+  btn.innerHTML = `<i class="fas fa-ellipsis-v"></i>`;
+  btn.onclick = openChatSettingsMini;
+  btn.style.cssText = `
+    width:34px;
+    height:34px;
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:9px;
+    color:rgba(255,255,255,.45);
+    font-size:14px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'Montserrat',sans-serif;
+  `;
+
+  headerRow.appendChild(btn);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   11) منع صوت الإشعار عند Mute
+═══════════════════════════════════════════════════════════════ */
+
+if (typeof playChatNotif === 'function') {
+  const _origPlayChatNotif_pack2 = playChatNotif;
+
+  playChatNotif = function() {
+    const settings = _activeRoomId
+      ? (_chatRoomSettingsCache[_activeRoomId] || {})
+      : {};
+
+    if (settings.is_muted) return;
+    _origPlayChatNotif_pack2();
+  };
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   12) فلترة المؤرشف من قائمة المحادثات
+═══════════════════════════════════════════════════════════════ */
+
+async function isRoomArchived(roomId) {
+  const settings = _chatRoomSettingsCache[roomId] || await loadChatRoomSettings(roomId);
+  return !!settings.is_archived;
+}
+
+/* ملاحظة:
+   renderChatList الأصلي عندك يرسم الغرف.
+   لتفادي كسر كودك، الأرشفة هنا تخفي الغرفة بعد الرسم.
+*/
+if (typeof renderChatList === 'function') {
+  const _origRenderChatList_pack2 = renderChatList;
+
+  renderChatList = async function() {
+    await _origRenderChatList_pack2();
+
+    const body = document.getElementById('chatListBody');
+    if (!body) return;
+
+    const items = [...body.querySelectorAll('.cl-item')];
+    for (const item of items) {
+      const onclick = item.getAttribute('onclick') || '';
+      const m = onclick.match(/openRoomWindow\((\d+)/);
+      if (!m) continue;
+
+      const roomId = Number(m[1]);
+      const settings = await loadChatRoomSettings(roomId);
+      if (settings.is_archived) {
+        item.style.display = 'none';
+      }
+    }
+  };
+}
+
+console.log('[WOW CHAT UPGRADE PACK 2] ✅ Loaded');
+
+
+
+
 </script>
 </body>
 </html>
