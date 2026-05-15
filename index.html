@@ -28364,20 +28364,21 @@ function buildVoicePlayer(msg, isMine) {
       </div>
 
       <!-- ② زر التشغيل ▶ -->
-      <button onclick="toggleVoiceWA('${msgId}')" style="
-        width:34px;height:34px;min-width:44px;
-        border-radius:50%;border:none;cursor:pointer;
-        background:${playBg};
-        color:${playColor};
-        display:flex;align-items:center;justify-content:center;
-        font-size:12px;flex-shrink:0;
-        transition:transform .18s;
-        -webkit-tap-highlight-color:transparent;"
-        onmouseover="this.style.transform='scale(1.1)'"
-        onmouseout="this.style.transform='scale(1)'">
-        <i class="fas fa-play" id="playIcon_${msgId}"
-           style="margin-left:2px;"></i>
-      </button>
+    <button onclick="toggleVoiceWA('${msgId}')" style="
+  width:32px;height:32px;min-width:32px;   /* ← كان 40px */
+  border-radius:50%;border:none;cursor:pointer;
+  background:${playBg};
+  color:${playColor};
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;   /* ← كان 15px */
+  flex-shrink:0;
+  transition:transform .18s;
+  -webkit-tap-highlight-color:transparent;"
+  onmouseover="this.style.transform='scale(1.1)'"
+  onmouseout="this.style.transform='scale(1)'">
+  <i class="fas fa-play" id="playIcon_${msgId}"
+     style="margin-left:2px;"></i>
+</button>
 
       <!-- ③ الخط المتقطع — ممتد في منتصف ▶ عمودياً -->
       <div id="waProgressBar_${msgId}"
