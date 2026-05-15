@@ -4557,7 +4557,7 @@ function replaceState(s,d={}){history.replaceState({appState:s,...d},'');}
 window.addEventListener('popstate', () => {
   // 1. نوافذ المحادثة والفيديو (تعديلات الشات)
   if (document.getElementById('chatVideoViewer')) { closeVideoFullscreen(); return; }
-  if (document.getElementById('chatImgViewer'))   { document.getElementById('chatImgViewer').remove(); return; }
+  if (document.getElementById('chatImgViewer'))   { closeImgViewer(); return; }
   if (document.getElementById('grpSettingsModal')){ closeGrpSettings(); return; }
   if (document.getElementById('chatWin'))         { closeRoomWindow(); return; }
   if (document.getElementById('chatListPage'))    { closeChatListPage(); return; }
@@ -29300,24 +29300,29 @@ async function sendSystemMsg(roomId, text) {
 
 
 /* ══════════════════════════════════════════════════════════════
-   عارض الصور
+   عارض الصور (مع دعم زر الرجوع وتأثير الإغلاق السلس)
 ══════════════════════════════════════════════════════════════ */
 function openImgViewer(url) {
   document.getElementById('chatImgViewer')?.remove();
-  const v=document.createElement('div');
-  v.id='chatImgViewer';
-  v.style.cssText=`position:fixed;inset:0;z-index:99999;
+  
+  const v = document.createElement('div');
+  v.id = 'chatImgViewer';
+  v.style.cssText = `
+    position:fixed;inset:0;z-index:99999;
     background:rgba(0,0,0,.96);
     display:flex;align-items:center;justify-content:center;
     flex-direction:column;gap:12px;
-    animation:updBgIn .22s ease forwards;`;
-  v.innerHTML=`
-    <button onclick="document.getElementById('chatImgViewer').remove()"
+    opacity:0;transition:opacity 0.22s ease;
+  `;
+
+  v.innerHTML = `
+    <button id="imgViewerCloseBtn"
       style="position:absolute;top:14px;right:14px;
       background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
       border-radius:50%;width:38px;height:38px;color:#fff;font-size:17px;
       cursor:pointer;display:flex;align-items:center;justify-content:center;
-      font-family:'Montserrat',sans-serif;">
+      font-family:'Montserrat',sans-serif;
+      -webkit-tap-highlight-color:transparent;">
       <i class="fas fa-times"></i>
     </button>
     <img src="${url}" style="max-width:92vw;max-height:82vh;
@@ -29327,11 +29332,42 @@ function openImgViewer(url) {
       background:linear-gradient(135deg,#c9a84c,#f0d080);
       color:#0a0a0a;font-family:'Montserrat',sans-serif;
       font-size:11px;font-weight:900;letter-spacing:2px;
-      text-decoration:none;display:flex;align-items:center;gap:6px;">
+      text-decoration:none;display:flex;align-items:center;gap:6px;
+      -webkit-tap-highlight-color:transparent;">
       <i class="fas fa-download"></i> İNDİR
     </a>`;
+    
   document.body.appendChild(v);
-  v.onclick=e=>{if(e.target===v)v.remove();};
+
+  /* ظهور تدريجي سلس */
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { v.style.opacity = '1'; });
+  });
+
+  /* ★ إضافة حالة في سجل المتصفح لزر الرجوع ★ */
+  history.pushState({ imgViewer: true }, '');
+
+  /* إغلاق عند الضغط على زر الإغلاق (نستخدم history.back لتشغيل popstate) */
+  v.querySelector('#imgViewerCloseBtn').onclick = () => {
+    history.back();
+  };
+
+  /* إغلاق عند الضغط على الخلفية السوداء */
+  v.onclick = e => {
+    if (e.target === v) history.back();
+  };
+}
+
+/* ── دالة الإغلاق الفعلي (تُستدعى من زر الرجوع) ── */
+function closeImgViewer() {
+  const v = document.getElementById('chatImgViewer');
+  if (!v) return;
+  
+  /* إخفاء تدريجي ثم حذف */
+  v.style.opacity = '0';
+  setTimeout(() => {
+    v.remove();
+  }, 220);
 }
 
 
@@ -29341,9 +29377,7 @@ function openImgViewer(url) {
 
 
 
-/* ══════════════════════════════════════════════
-   عارض الفيديو — واتساب (نسخة مُصلحة)
-══════════════════════════════════════════════ */
+
 /* ══════════════════════════════════════════════
    عارض الفيديو — واتساب (النسخة المصلحة)
 ══════════════════════════════════════════════ */
