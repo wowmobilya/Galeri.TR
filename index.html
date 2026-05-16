@@ -30387,7 +30387,7 @@ function openMediaGallery(tab = 'images') {
   
   // دعم زر الرجوع في الهاتف
   history.pushState({ mediaGallery: true }, '');
-  modal.querySelector('#mediaGalleryCloseBtn').onclick = () => history.back();
+modal.querySelector('#mediaGalleryCloseBtn').onclick = () => closeMediaGalleryUI();
 
   renderMediaGalleryTab(tab);
 }
@@ -31706,62 +31706,105 @@ function updateChatHomeBadge() {
    popstate — إصلاح التنقل
 ══════════════════════════════════════════════════════════════ */
 window.addEventListener('popstate', e => {
-  /* 1. عارض الصور */
-  if (document.getElementById('chatImgViewer')) {
-    closeImgViewer();
-    return;
+  // 1. إغلاق عارض الصور (إن وجد)
+  const imgViewer = document.getElementById('chatImgViewer');
+  if (imgViewer) {
+    imgViewer.style.opacity = '0';
+    setTimeout(() => imgViewer.remove(), 250);
+    return; // 💡 إيقاف التنفيذ هنا للبقاء في المحادثة
   }
-  /* 2. عارض الفيديو */
-  if (document.getElementById('chatVideoViewer')) {
-    closeVideoFullscreen();
-    return;
+  
+  // 2. إغلاق عارض الفيديو (إن وجد)
+  const vidViewer = document.getElementById('chatVideoViewer');
+  if (vidViewer) {
+    vidViewer.style.opacity = '0';
+    setTimeout(() => vidViewer.remove(), 250);
+    return; // 💡 إيقاف التنفيذ
   }
-  /* 3. معرض الوسائط */
-  if (document.getElementById('mediaGalleryModal')) {
-    closeMediaGallery();
-    return;
+  
+  // 3. إغلاق معرض الوسائط (إن وجد)
+  const mediaGallery = document.getElementById('mediaGalleryModal');
+  if (mediaGallery) {
+    mediaGallery.style.opacity = '0';
+    setTimeout(() => mediaGallery.remove(), 250);
+    return; // 💡 إيقاف التنفيذ للبقاء داخل الكروب
   }
-  /* 4. نافذة الغرفة */
-  if (document.getElementById('chatWin')) {
+
+  // 4. إغلاق إعدادات الكروب (إن وجدت)
+  const grpSettings = document.getElementById('grpSettingsModal');
+  if (grpSettings) {
+    grpSettings.remove();
+    return; // 💡 إيقاف التنفيذ
+  }
+
+  // 5. إغلاق المحادثة والعودة للقائمة الرئيسية
+  const chatWin = document.getElementById('chatWin');
+  if (chatWin) {
     closeRoomWindow();
     return;
   }
-  /* 5. قائمة المحادثات */
+
+  // 6. إغلاق قائمة المحادثات (للعودة للرئيسية)
   if (document.getElementById('chatListPage')) {
     closeChatListPage();
     return;
   }
   
-  // ... بقية الـ popstate الخاصة بالتطبيق الرئيسي
-  if (appState === 'dims') { closeDimsModalSilent(); return; }
-  if (appState === 'lightbox') { closeLightbox(); return; }
-  if (appState === 'orderConfirm') {
-    document.getElementById('orderConfirmModal').classList.remove('active');
-    document.body.style.overflow = '';
-    appState = 'section';
-    return;
-  }
-  if (appState === 'section') { 
-    goHomeFromBack(); 
-    return; 
-  }
-  if (appState === 'home') {
-    if (backPressedOnce) {
-      clearTimeout(backToastTimer);
-      backPressedOnce = false;
-      hideBackToast();
-    } else {
-      backPressedOnce = true;
-      showBackToast();
-      pushState('home');
-      backToastTimer = setTimeout(() => {
+  // -- بقية أوامر التطبيق الرئيسية --
+  if (typeof appState !== 'undefined') {
+    if (appState === 'dims') { closeDimsModalSilent(); return; }
+    if (appState === 'lightbox') { closeLightbox(); return; }
+    if (appState === 'orderConfirm') {
+      document.getElementById('orderConfirmModal').classList.remove('active');
+      document.body.style.overflow = '';
+      appState = 'section';
+      return;
+    }
+    if (appState === 'section') { 
+      goHomeFromBack(); 
+      return; 
+    }
+    if (appState === 'home') {
+      if (typeof backPressedOnce !== 'undefined' && backPressedOnce) {
+        clearTimeout(backToastTimer);
         backPressedOnce = false;
         hideBackToast();
-      }, 2500);
+      } else if (typeof backPressedOnce !== 'undefined') {
+        backPressedOnce = true;
+        showBackToast();
+        history.pushState('home', '');
+        backToastTimer = setTimeout(() => {
+          backPressedOnce = false;
+          hideBackToast();
+        }, 2500);
+      }
     }
   }
 });
 
+
+
+/* ══════════════════════════════════════════════════════════════
+   closeMediaGalleryUI — اغلاق مغرض
+══════════════════════════════════════════════════════════════ */
+
+function closeMediaGalleryUI() {
+  const modal = document.getElementById('mediaGalleryModal');
+  if (modal) {
+    modal.style.opacity = '0';
+    setTimeout(() => modal.remove(), 250);
+  }
+  // التراجع في سجل الهاتف خطوة واحدة للحفاظ على الترتيب
+  if (history.state && history.state.mediaGallery) {
+    history.back();
+  }
+}
+
+
+
+
+
+  
 
 /* ══════════════════════════════════════════════════════════════
    MutationObserver — حقن زر الدردشة (نسخة مصلحة)
