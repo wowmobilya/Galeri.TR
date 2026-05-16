@@ -28286,13 +28286,15 @@ async function openRoomWindow(roomId, roomType) {
   if (!room) return;
 
   const isGroup = room.room_type === 'group';
-const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', roomId).eq('username', currentUser).maybeSingle();
+  const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', roomId).eq('username', currentUser).maybeSingle();
   const myRole = myMem ? myMem.role : 'member';
   const canManage = isGroup && (myRole === 'owner' || myRole === 'admin' || currentUser === 'WOW');
   
   const win = document.createElement('div');
   win.id = 'chatWin';
   win.className = 'chat-window';
+  
+  // 💡 تم إصلاح الخطأ هنا: استبدال isOwner بـ canManage
   win.innerHTML = `
     <div style="flex-shrink:0;background:rgba(10,10,10,.97);border-bottom:1px solid rgba(255,255,255,.07);">
       <div style="height:2px;background:linear-gradient(90deg,transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
@@ -28305,7 +28307,7 @@ const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', 
           <i class="fas fa-arrow-left"></i>
         </button>
          <div onclick="${canManage ? `openGrpSettings(${roomId})` : 'void(0)'}"
-          style="flex-shrink:0;cursor:${isGroup && isOwner ? 'pointer' : 'default'};">
+          style="flex-shrink:0;cursor:${canManage ? 'pointer' : 'default'};">
           ${room.icon_url
             ? `<img src="${room.icon_url}" style="width:38px;height:38px;border-radius:50%;
                 object-fit:cover;border:2px solid rgba(201,168,76,.25);" draggable="false"/>`
@@ -28326,6 +28328,7 @@ const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', 
             ${isGroup ? 'Grup sohbeti' : 'WOW ile özel sohbet'}
           </div>
         </div>
+        <!-- بقية أزرار الهيدر كما هي في كودك... -->
         <button id="chatSearchHeaderBtn" onclick="openChatSearch()" style="width:34px;height:34px;
           background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
           border-radius:9px;color:rgba(255,255,255,.45);font-size:14px;cursor:pointer;
@@ -28355,16 +28358,16 @@ const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', 
           <i class="fas fa-ellipsis-v"></i>
         </button>
        ${canManage ? `
-<button onclick="openGrpSettings(${roomId})" style="width:34px;height:34px;
-  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
-  border-radius:9px;color:rgba(255,255,255,.45);font-size:14px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  font-family:'Montserrat',sans-serif;">
-  <i class="fas fa-cog"></i>
-</button>` : ''}
+        <button onclick="openGrpSettings(${roomId})" style="width:34px;height:34px;
+          background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+          border-radius:9px;color:rgba(255,255,255,.45);font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;
+          font-family:'Montserrat',sans-serif;">
+          <i class="fas fa-cog"></i>
+        </button>` : ''}
       </div>
     </div>
-
+    <!-- بقية الكود الخاص بالـ chatMsgsArea و chatInputBar كما هو في كودك -->
     <div id="chatMsgsArea" style="flex:1;overflow-y:auto;
       padding:12px 0 6px;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;">
       <div style="display:flex;align-items:center;justify-content:center;
@@ -28372,7 +28375,7 @@ const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', 
         <i class="fas fa-spinner fa-spin" style="font-size:22px;"></i>
       </div>
     </div>
-
+    
     <div id="chatEditBar">
       <i class="fas fa-pen" style="color:#c9a84c;font-size:12px;flex-shrink:0;"></i>
       <div style="flex:1;min-width:0;">
@@ -28439,6 +28442,7 @@ const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', 
   const settings = _chatRoomSettings[roomId] || {};
   if (settings.wallpaper_url) applyChatWallpaper(settings.wallpaper_url);
 }
+
 
 function closeRoomWindow() {
   /* إيقاف الكتابة */
@@ -30796,6 +30800,13 @@ async function createNewGroup() {
   const checkboxes = document.querySelectorAll('.new-grp-member-cb:checked');
   if (checkboxes.length === 0) { showInvToast('En az bir üye seçin', 'error'); return; }
   
+  // 💡 تم إصلاح الخطأ هنا: تعطيل الزر أثناء المعالجة لمنع التكرار
+  const btn = document.querySelector('#createGroupModal button:last-child');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> OLUŞTURULUYOR...';
+  }
+  
   const sb = await initSupabase(); if (!sb) return;
   const roomKey = 'grp_' + Date.now() + '_' + Math.random().toString(36).substring(2,6);
   
@@ -30804,7 +30815,11 @@ async function createNewGroup() {
     icon_emoji: '👥', created_by: currentUser, is_active: true
   }]).select('id').single();
   
-  if (roomErr || !newRoom) { showInvToast('Grup oluşturulamadı', 'error'); return; }
+  if (roomErr || !newRoom) { 
+    showInvToast('Grup oluşturulamadı', 'error'); 
+    if (btn) { btn.disabled = false; btn.innerHTML = 'GRUBU OLUŞTUR'; }
+    return; 
+  }
   
   const membersToInsert = [{ room_id: newRoom.id, username: currentUser, role: 'owner' }];
   
@@ -30825,6 +30840,7 @@ async function createNewGroup() {
   document.getElementById('createGroupModal').remove();
   renderChatList();
 }
+
 
 
 
