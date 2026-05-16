@@ -28096,6 +28096,15 @@ function openChatListPage() {
             text-transform:uppercase;margin-bottom:1px;">WOW MOBİLYA</div>
           <div style="font-size:17px;font-weight:900;color:#fff;">Mesajlar</div>
         </div>
+        
+        <!-- ★ زر إنشاء مجموعة للإدارة فقط ★ -->
+        ${currentUser === 'WOW' || (_currentUserData && _currentUserData._isAdmin) ? `
+        <button onclick="openCreateGroupModal()" style="width:36px;height:36px;border-radius:10px;
+          background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:#818cf8;
+          display:flex;align-items:center;justify-content:center;cursor:pointer;margin-right:4px;" title="Yeni Grup Oluştur">
+          <i class="fas fa-users"></i>
+        </button>` : ''}
+
         <button onclick="openChatProfileModal('${currentUser}')" style="
           width:36px;height:36px;border-radius:50%;
           background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.18);
@@ -28119,6 +28128,7 @@ function openChatListPage() {
   _loadChatListData();
   subscribeChatRealtime();
 }
+
 
 async function _loadChatListData() {
   await loadChatProfiles();
@@ -28276,8 +28286,10 @@ async function openRoomWindow(roomId, roomType) {
   if (!room) return;
 
   const isGroup = room.room_type === 'group';
-  const isOwner = currentUser === ADMIN_USER;
-
+const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', roomId).eq('username', currentUser).maybeSingle();
+  const myRole = myMem ? myMem.role : 'member';
+  const canManage = isGroup && (myRole === 'owner' || myRole === 'admin' || currentUser === 'WOW');
+  
   const win = document.createElement('div');
   win.id = 'chatWin';
   win.className = 'chat-window';
@@ -28292,7 +28304,7 @@ async function openRoomWindow(roomId, roomType) {
           font-family:'Montserrat',sans-serif;">
           <i class="fas fa-arrow-left"></i>
         </button>
-        <div onclick="${isGroup && isOwner ? `openGrpSettings(${roomId})` : 'void(0)'}"
+         <div onclick="${canManage ? `openGrpSettings(${roomId})` : 'void(0)'}"
           style="flex-shrink:0;cursor:${isGroup && isOwner ? 'pointer' : 'default'};">
           ${room.icon_url
             ? `<img src="${room.icon_url}" style="width:38px;height:38px;border-radius:50%;
@@ -28342,14 +28354,14 @@ async function openRoomWindow(roomId, roomType) {
           font-family:'Montserrat',sans-serif;">
           <i class="fas fa-ellipsis-v"></i>
         </button>
-        ${isGroup && isOwner ? `
-        <button onclick="openGrpSettings(${roomId})" style="width:34px;height:34px;
-          background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
-          border-radius:9px;color:rgba(255,255,255,.45);font-size:14px;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;
-          font-family:'Montserrat',sans-serif;">
-          <i class="fas fa-cog"></i>
-        </button>` : ''}
+       ${canManage ? `
+<button onclick="openGrpSettings(${roomId})" style="width:34px;height:34px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  border-radius:9px;color:rgba(255,255,255,.45);font-size:14px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Montserrat',sans-serif;">
+  <i class="fas fa-cog"></i>
+</button>` : ''}
       </div>
     </div>
 
@@ -30712,8 +30724,114 @@ function unsubscribeRoomRealtime() {
   }
 }
 
+
+
+
+
+
+
+/* ─── إنشاء مجموعة جديدة ─── */
+async function openCreateGroupModal() {
+  const sb = await initSupabase(); if (!sb) return;
+  
+  // جلب كل المستخدمين والأدمن
+  const { data: users } = await sb.from('users').select('username, company_name').eq('is_active', true);
+  const { data: admins } = await sb.from('admin_accounts').select('username, name').eq('is_active', true);
+  
+  const allUsers = [...(admins||[]).map(a=>({u:a.username, n:a.name, t:'admin'})), ...(users||[]).map(u=>({u:u.username, n:u.company_name, t:'user'}))]
+    .filter(x => x.u !== currentUser);
+
+  const modal = document.createElement('div');
+  modal.id = 'createGroupModal';
+  modal.style.cssText = `position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);
+    backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;padding:16px;`;
+  
+  modal.innerHTML = `
+    <div style="background:#111;border:1px solid rgba(99,102,241,.3);border-radius:18px;
+      padding:20px;max-width:400px;width:100%;animation:devModalIn .3s ease forwards;max-height:90vh;display:flex;flex-direction:column;">
+      <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:14px;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:8px;">
+        <i class="fas fa-users" style="color:#818cf8;"></i> Yeni Grup Oluştur
+      </div>
+      
+      <div style="margin-bottom:12px;">
+        <input type="text" id="newGrpName" placeholder="Grup Adı" maxlength="40"
+          style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+          border-radius:9px;padding:10px 13px;color:#fff;font-family:'Montserrat',sans-serif;
+          font-size:13px;outline:none;-webkit-user-select:text;user-select:text;box-sizing:border-box;" />
+      </div>
+      
+      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:6px;font-family:'Montserrat',sans-serif;">ÜYELER VE YETKİLER</div>
+      <div style="flex:1;overflow-y:auto;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;">
+        ${allUsers.map(user => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">
+            <input type="checkbox" class="new-grp-member-cb" value="${user.u}" style="width:18px;height:18px;cursor:pointer;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Montserrat',sans-serif;">${escHtml(user.n || user.u)}</div>
+              <div style="font-size:9px;color:rgba(255,255,255,.3);font-family:'Montserrat',sans-serif;">@${user.u}</div>
+            </div>
+            <select class="new-grp-role-sel" id="role_${user.u}" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:10px;padding:4px;outline:none;cursor:pointer;font-family:'Montserrat',sans-serif;">
+              <option value="member">Üye</option>
+              <option value="admin">Admin (Yönetici)</option>
+            </select>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div style="display:flex;gap:8px;margin-top:16px;">
+        <button onclick="document.getElementById('createGroupModal').remove()" style="flex:1;padding:11px;border-radius:10px;
+          border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);
+          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">İPTAL</button>
+        <button onclick="createNewGroup()" style="flex:2;padding:11px;border-radius:10px;
+          border:none;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;
+          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:900;cursor:pointer;">GRUBU OLUŞTUR</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function createNewGroup() {
+  const name = document.getElementById('newGrpName').value.trim();
+  if (!name) { showInvToast('Lütfen grup adı girin', 'error'); return; }
+  
+  const checkboxes = document.querySelectorAll('.new-grp-member-cb:checked');
+  if (checkboxes.length === 0) { showInvToast('En az bir üye seçin', 'error'); return; }
+  
+  const sb = await initSupabase(); if (!sb) return;
+  const roomKey = 'grp_' + Date.now() + '_' + Math.random().toString(36).substring(2,6);
+  
+  const { data: newRoom, error: roomErr } = await sb.from(GRP_ROOMS).insert([{
+    room_key: roomKey, room_type: 'group', name: name,
+    icon_emoji: '👥', created_by: currentUser, is_active: true
+  }]).select('id').single();
+  
+  if (roomErr || !newRoom) { showInvToast('Grup oluşturulamadı', 'error'); return; }
+  
+  const membersToInsert = [{ room_id: newRoom.id, username: currentUser, role: 'owner' }];
+  
+  checkboxes.forEach(cb => {
+    const u = cb.value;
+    const role = document.getElementById('role_' + u).value;
+    membersToInsert.push({ room_id: newRoom.id, username: u, role: role });
+  });
+  
+  await sb.from(GRP_MEMBERS).insert(membersToInsert);
+  await sb.from(GRP_MSGS).insert([{
+    room_id: newRoom.id, from_user: 'system',
+    message: `${getDisplayName(currentUser)} "${name}" grubunu oluşturdu`,
+    media_type: 'system'
+  }]);
+  
+  showInvToast('Grup başarıyla oluşturuldu ✓', 'success');
+  document.getElementById('createGroupModal').remove();
+  renderChatList();
+}
+
+
+
+
+  
 /* ══════════════════════════════════════════════════════════════
-   إعدادات الكروب
+   إعدادات الكروب (محدثة لتدعم المشرفين)
 ══════════════════════════════════════════════════════════════ */
 async function openGrpSettings(roomId) {
   document.getElementById('grpSettingsModal')?.remove();
@@ -30722,6 +30840,10 @@ async function openGrpSettings(roomId) {
   const { data: members } = await sb.from(GRP_MEMBERS)
     .select('username,role,is_banned,joined_at')
     .eq('room_id', roomId).order('joined_at', { ascending:true });
+
+  // تحديد صلاحية المستخدم الحالي
+  const myRole = (members.find(m => m.username === currentUser) || {}).role;
+  const canManage = myRole === 'owner' || myRole === 'admin' || currentUser === 'WOW';
 
   const modal = document.createElement('div');
   modal.id    = 'grpSettingsModal';
@@ -30819,16 +30941,21 @@ async function openGrpSettings(roomId) {
             text-transform:uppercase;margin-bottom:10px;font-weight:700;font-family:'Montserrat',sans-serif;
             display:flex;align-items:center;justify-content:space-between;">
             <span>ÜYELER (${(members||[]).length})</span>
+            ${canManage ? `
             <button onclick="openAddMemberModal(${roomId})" style="padding:4px 10px;border-radius:7px;
               border:none;background:rgba(201,168,76,.1);color:#c9a84c;
               font-family:'Montserrat',sans-serif;font-size:9px;font-weight:900;cursor:pointer;">
               + EKLE
-            </button>
+            </button>` : ''}
           </div>
           <div style="display:flex;flex-direction:column;gap:8px;">
             ${(members||[]).map(m => {
               const isOwner2 = m.role === 'owner';
+              const isAdmin2 = m.role === 'admin';
               const isSelf   = m.username === currentUser;
+              // المشرف يمكنه إدارة الأعضاء العاديين فقط، المالك يمكنه إدارة الجميع
+              const canManageThisUser = canManage && !isSelf && !isOwner2 && (myRole === 'owner' || currentUser === 'WOW' || !isAdmin2);
+              
               return `
               <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;
                 border-radius:10px;
@@ -30844,11 +30971,11 @@ async function openGrpSettings(roomId) {
                     ${isSelf?'<span style="font-size:9px;color:rgba(201,168,76,.5);margin-left:4px;">(Sen)</span>':''}
                   </div>
                   <div style="font-size:9px;margin-top:1px;font-family:'Montserrat',sans-serif;
-                    color:${isOwner2?'#c9a84c':m.is_banned?'#ef4444':'rgba(255,255,255,.3)'};">
-                    ${isOwner2?'👑 Sahip':m.is_banned?'🚫 Yasaklı':m.role==='admin'?'⚡ Admin':'Üye'}
+                    color:${isOwner2?'#c9a84c':isAdmin2?'#818cf8':m.is_banned?'#ef4444':'rgba(255,255,255,.3)'};">
+                    ${isOwner2?'👑 Sahip':isAdmin2?'🛡️ Admin':m.is_banned?'🚫 Yasaklı':'Üye'}
                   </div>
                 </div>
-                ${!isSelf&&!isOwner2?`
+                ${canManageThisUser ? `
                 <div style="display:flex;gap:5px;">
                   ${!m.is_banned?`
                   <button onclick="banMember(${roomId},'${m.username}',true)" style="
@@ -30883,6 +31010,7 @@ async function openGrpSettings(roomId) {
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) closeGrpSettings(); });
 }
+
 
 function closeGrpSettings() {
   const m = document.getElementById('grpSettingsModal');
@@ -30962,10 +31090,15 @@ async function openAddMemberModal(roomId) {
   const sb = await initSupabase(); if (!sb) return;
   const { data: current } = await sb.from(GRP_MEMBERS).select('username').eq('room_id', roomId);
   const currentUsernames  = (current || []).map(m => m.username);
-  const { data: admins }  = await sb.from('admin_accounts')
-    .select('username,name').eq('is_active', true);
-  const available = (admins || []).filter(a => !currentUsernames.includes(a.username));
-  if (!available.length) { showInvToast('Eklenecek admin yok', 'info'); return; }
+  
+  // جلب المستخدمين العاديين والأدمن
+  const { data: users } = await sb.from('users').select('username, company_name').eq('is_active', true);
+  const { data: admins }  = await sb.from('admin_accounts').select('username,name').eq('is_active', true);
+  
+  const available = [...(admins||[]).map(a=>({u:a.username, n:a.name})), ...(users||[]).map(u=>({u:u.username, n:u.company_name}))]
+    .filter(x => !currentUsernames.includes(x.u));
+    
+  if (!available.length) { showInvToast('Eklenecek kullanıcı yok', 'info'); return; }
 
   const modal = document.createElement('div');
   modal.id    = 'addMemberModal';
@@ -30980,21 +31113,23 @@ async function openAddMemberModal(roomId) {
       </div>
       <div style="display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto;">
         ${available.map(a => `
-          <div onclick="addMemberToGroup(${roomId},'${a.username}',this)"
-            style="display:flex;align-items:center;gap:10px;padding:9px 11px;
+          <div style="display:flex;align-items:center;gap:10px;padding:9px 11px;
               border-radius:10px;background:rgba(255,255,255,.04);
-              border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:all .2s;"
-            onmouseover="this.style.background='rgba(201,168,76,.07)'"
-            onmouseout="this.style.background='rgba(255,255,255,.04)'">
-            ${buildAvatar(a.username, 34)}
-            <div>
-              <div style="font-size:13px;font-weight:700;color:#fff;font-family:'Montserrat',sans-serif;">
-                ${escHtml(a.name || a.username)}
+              border:1px solid rgba(255,255,255,.06);">
+            ${buildAvatar(a.u, 34)}
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;font-weight:700;color:#fff;font-family:'Montserrat',sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${escHtml(a.n || a.u)}
               </div>
               <div style="font-size:10px;color:rgba(255,255,255,.3);font-family:'Montserrat',sans-serif;">
-                @${a.username}
+                @${a.u}
               </div>
             </div>
+            <select id="add_role_${a.u}" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:10px;padding:4px;outline:none;cursor:pointer;font-family:'Montserrat',sans-serif;">
+              <option value="member">Üye</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button onclick="addMemberToGroup(${roomId},'${a.u}',this)" style="background:linear-gradient(135deg,#c9a84c,#f0d080);border:none;border-radius:6px;color:#000;font-weight:bold;padding:5px 8px;cursor:pointer;font-size:10px;">Ekle</button>
           </div>`).join('')}
       </div>
       <button onclick="document.getElementById('addMemberModal').remove()"
@@ -31004,18 +31139,21 @@ async function openAddMemberModal(roomId) {
           font-size:11px;font-weight:700;cursor:pointer;">İPTAL</button>
     </div>`;
   document.body.appendChild(modal);
-  modal.onclick = e => { if (e.target === modal) modal.remove(); };
 }
 
-async function addMemberToGroup(roomId, username, el) {
-  el.style.opacity = '.5'; el.style.pointerEvents = 'none';
+async function addMemberToGroup(roomId, username, btnEl) {
+  btnEl.disabled = true; btnEl.style.opacity = '.5';
+  const role = document.getElementById('add_role_' + username).value;
   const sb = await initSupabase(); if (!sb) return;
-  await sb.from(GRP_MEMBERS).insert([{ room_id:roomId, username, role:'member' }]);
-  await sendSystemMsg(roomId, `${getDisplayName(username)} gruba eklendi`);
+  
+  await sb.from(GRP_MEMBERS).insert([{ room_id:roomId, username, role: role }]);
+  await sendSystemMsg(roomId, `${getDisplayName(currentUser)}, ${getDisplayName(username)} kullanıcısını gruba ekledi`);
+  
   showInvToast(`${getDisplayName(username)} eklendi ✓`, 'success');
   document.getElementById('addMemberModal')?.remove();
   openGrpSettings(roomId);
 }
+
 
 async function sendSystemMsg(roomId, text) {
   const sb = await initSupabase(); if (!sb) return;
