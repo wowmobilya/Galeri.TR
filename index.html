@@ -28563,15 +28563,17 @@ function buildMsgBubble(msg, idx) {
   /* محتوى */
   let content = '';
   if (msg.media_type === 'image' && msg.media_url) {
+    // 💡 تم إضافة msg.id هنا
     content = `<img class="cb-img" src="${msg.media_url}"
-      onclick="openImgViewer('${msg.media_url}')" draggable="false"
+      onclick="openImgViewer('${msg.media_url}', ${msg.id})" draggable="false"
       onerror="this.style.display='none'"/>
       ${msg.message ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>` : ''}`;
 
   } else if (msg.media_type === 'video' && msg.media_url) {
     const dur = msg.duration_sec ? fmtDuration(msg.duration_sec) : '';
+    // 💡 تم إضافة msg.id هنا
     content = `
-      <div onclick="openVideoFullscreen('${msg.media_url}','${escHtml(msg.file_name||'')}')"
+      <div onclick="openVideoFullscreen('${msg.media_url}','${escHtml(msg.file_name||'')}', ${msg.id})"
         style="position:relative;width:220px;border-radius:14px;overflow:hidden;
           background:#000;cursor:pointer;flex-shrink:0;">
         <video src="${msg.media_url}#t=0.1" preload="metadata" playsinline muted
@@ -28595,6 +28597,7 @@ function buildMsgBubble(msg, idx) {
       ${msg.message ? `<div style="margin-top:5px;">${escHtml(msg.message)}</div>` : ''}`;
 
   } else if (msg.media_type === 'file' && msg.media_url) {
+
     const ext = (msg.file_name || '').split('.').pop().toUpperCase() || 'FILE';
     const sz  = msg.file_size
       ? (msg.file_size > 1048576
