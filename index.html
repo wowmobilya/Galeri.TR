@@ -30860,6 +30860,7 @@ async function openGrpSettings(roomId) {
   // تحديد صلاحية المستخدم الحالي
   const myRole = (members.find(m => m.username === currentUser) || {}).role;
   const canManage = myRole === 'owner' || myRole === 'admin' || currentUser === 'WOW';
+  const isSuperAdmin = currentUser === 'WOW'; // 💡 صلاحية الحذف لـ WOW فقط
 
   const modal = document.createElement('div');
   modal.id    = 'grpSettingsModal';
@@ -30969,7 +30970,6 @@ async function openGrpSettings(roomId) {
               const isOwner2 = m.role === 'owner';
               const isAdmin2 = m.role === 'admin';
               const isSelf   = m.username === currentUser;
-              // المشرف يمكنه إدارة الأعضاء العاديين فقط، المالك يمكنه إدارة الجميع
               const canManageThisUser = canManage && !isSelf && !isOwner2 && (myRole === 'owner' || currentUser === 'WOW' || !isAdmin2);
               
               return `
@@ -31015,6 +31015,20 @@ async function openGrpSettings(roomId) {
             }).join('')}
           </div>
         </div>
+        
+        <!-- 💡 زر الحذف يظهر لـ WOW فقط -->
+        ${isSuperAdmin ? `
+        <button onclick="deleteGroup(${roomId}, '${escHtml(room.name).replace(/'/g, "\\'")}')" style="
+          width:100%;padding:13px;border-radius:12px;
+          border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.1);
+          color:#ef4444;font-family:'Montserrat',sans-serif;margin-bottom:-4px;
+          font-size:11px;font-weight:900;letter-spacing:1.5px;cursor:pointer;transition:all 0.2s;"
+          onmouseover="this.style.background='rgba(239,68,68,.2)'"
+          onmouseout="this.style.background='rgba(239,68,68,.1)'">
+          <i class="fas fa-trash-alt"></i> GRUBU SİL
+        </button>
+        ` : ''}
+
         <button onclick="closeGrpSettings()" style="width:100%;padding:13px;border-radius:12px;
           border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);
           color:rgba(255,255,255,.45);font-family:'Montserrat',sans-serif;
@@ -31035,6 +31049,34 @@ function closeGrpSettings() {
   setTimeout(() => m.remove(), 280);
 }
 
+
+/* ─── حذف الكروب نهائياً (WOW فقط) ─── */
+async function deleteGroup(roomId, roomName) {
+  // 1. إظهار نافذة التأكيد
+  const confirmed = await showChatConfirm(`"${roomName}" grubunu kalıcı olarak silmek istediğinize emin misiniz? Tüm mesajlar silinecektir.`);
+  if (!confirmed) return;
+
+  const sb = await initSupabase(); 
+  if (!sb) return;
+
+  showInvToast('Grup siliniyor...', 'info');
+
+  // 2. حذف الكروب من قاعدة البيانات (الحذف المتتالي سيحذف الأعضاء والرسائل تلقائياً إذا كانت الجداول مرتبطة بـ CASCADE)
+  const { error } = await sb.from(GRP_ROOMS).delete().eq('id', roomId);
+
+  if (error) {
+    showInvToast('Hata: ' + error.message, 'error');
+    return;
+  }
+
+  showInvToast('Grup başarıyla silindi ✓', 'success');
+  
+  // 3. إغلاق النوافذ وتحديث القائمة
+  closeGrpSettings();
+  closeRoomWindow(); // هذه الدالة تغلق المحادثة وتستدعي renderChatList() لتحديث القائمة
+}
+
+  
 async function saveGrpName(roomId) {
   const name = document.getElementById('grpNameInput')?.value.trim();
   if (!name) return;
