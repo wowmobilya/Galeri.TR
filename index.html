@@ -28479,6 +28479,8 @@ async function updateRoomSubtitle(roomId, roomType) {
    تحميل ورسم الرسائل
 ══════════════════════════════════════════════════════════════ */
 async function loadRoomMessages(roomId) {
+  window._allMsgsLoaded = false; /* 👈 أضف هذا السطر هنا لتصفير المؤشر */
+  
   const area = document.getElementById('chatMsgsArea');
   if (!area) return;
   const sb = await initSupabase(); if (!sb) return;
@@ -28500,6 +28502,7 @@ async function loadRoomMessages(roomId) {
   renderRoomMessages();
   scrollToBottom(false);
 }
+
 
 function renderRoomMessages() {
   const area = document.getElementById('chatMsgsArea');
@@ -30438,17 +30441,25 @@ function ensureScrollDownButton() {
 }
 
 async function loadOlderMessages() {
-  if (_olderMsgsLoading || !_activeRoomId || !_chatMessages.length) return;
+  /* أضفنا التحقق من window._allMsgsLoaded لمنع التكرار */
+  if (_olderMsgsLoading || !_activeRoomId || !_chatMessages.length || window._allMsgsLoaded) return;
+  
   _olderMsgsLoading = true;
   const area = document.getElementById('chatMsgsArea');
   const oldH = area?.scrollHeight || 0;
   const first = _chatMessages[0];
+  
   if (!first) { _olderMsgsLoading = false; return; }
-  const sb = await initSupabase(); if (!sb) { _olderMsgsLoading = false; return; }
+  
+  const sb = await initSupabase(); 
+  if (!sb) { _olderMsgsLoading = false; return; }
+  
   const { data } = await sb.from(GRP_MSGS).select('*')
     .eq('room_id', _activeRoomId).eq('is_deleted', false)
     .lt('id', first.id).order('id', { ascending:false }).limit(50);
+    
   const older = (data || []).reverse();
+  
   if (older.length) {
     _chatMessages = [...older, ..._chatMessages];
     await loadMessageReactions(_activeRoomId);
@@ -30456,10 +30467,13 @@ async function loadOlderMessages() {
     renderRoomMessages();
     if (area) area.scrollTop = area.scrollHeight - oldH;
   } else {
-    showInvToast('Daha eski mesaj yok', 'info');
+    /* وصلنا للبداية: نوقف المحاولات المستقبلية ونخفي الإشعار المزعج */
+    window._allMsgsLoaded = true; 
   }
+  
   _olderMsgsLoading = false;
 }
+
 
 /* ══════════════════════════════════════════════════════════════
    عارض الصور
