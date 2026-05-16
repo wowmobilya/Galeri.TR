@@ -30387,7 +30387,7 @@ function openMediaGallery(tab = 'images') {
   
   // دعم زر الرجوع في الهاتف
   history.pushState({ mediaGallery: true }, '');
-modal.querySelector('#mediaGalleryCloseBtn').onclick = () => closeMediaGalleryUI();
+modal.querySelector('#mediaGalleryCloseBtn').onclick = () => history.back();
 
   renderMediaGalleryTab(tab);
 }
@@ -31707,19 +31707,15 @@ function updateChatHomeBadge() {
 ══════════════════════════════════════════════════════════════ */
 window.addEventListener('popstate', e => {
   // 1. إغلاق عارض الصور (إن وجد)
-  const imgViewer = document.getElementById('chatImgViewer');
-  if (imgViewer) {
-    imgViewer.style.opacity = '0';
-    setTimeout(() => imgViewer.remove(), 250);
-    return; // 💡 إيقاف التنفيذ هنا للبقاء في المحادثة
+  if (document.getElementById('chatImgViewer')) {
+    closeImgViewer();
+    return;
   }
   
   // 2. إغلاق عارض الفيديو (إن وجد)
-  const vidViewer = document.getElementById('chatVideoViewer');
-  if (vidViewer) {
-    vidViewer.style.opacity = '0';
-    setTimeout(() => vidViewer.remove(), 250);
-    return; // 💡 إيقاف التنفيذ
+  if (document.getElementById('chatVideoViewer')) {
+    closeVideoFullscreen();
+    return;
   }
   
   // 3. إغلاق معرض الوسائط (إن وجد)
@@ -31727,30 +31723,34 @@ window.addEventListener('popstate', e => {
   if (mediaGallery) {
     mediaGallery.style.opacity = '0';
     setTimeout(() => mediaGallery.remove(), 250);
-    return; // 💡 إيقاف التنفيذ للبقاء داخل الكروب
+    return;
   }
 
   // 4. إغلاق إعدادات الكروب (إن وجدت)
   const grpSettings = document.getElementById('grpSettingsModal');
   if (grpSettings) {
     grpSettings.remove();
-    return; // 💡 إيقاف التنفيذ
+    return;
   }
 
-  // 5. إغلاق المحادثة والعودة للقائمة الرئيسية
-  const chatWin = document.getElementById('chatWin');
-  if (chatWin) {
+  // 💡 الحماية القصوى: إذا كان سجل الهاتف يخبرنا أننا الآن "داخل المحادثة"، توقف فوراً ولا تغلقها!
+  if (e.state && e.state.chatWin) {
+    return; 
+  }
+
+  // 5. إغلاق المحادثة والعودة للقائمة الرئيسية (تُنفذ فقط إذا كنا نخرج من المحادثة نفسها)
+  if (document.getElementById('chatWin')) {
     closeRoomWindow();
     return;
   }
 
-  // 6. إغلاق قائمة المحادثات (للعودة للرئيسية)
+  // 6. إغلاق قائمة المحادثات
   if (document.getElementById('chatListPage')) {
     closeChatListPage();
     return;
   }
   
-  // -- بقية أوامر التطبيق الرئيسية --
+  // ─── بقية أوامر التطبيق الرئيسية ───
   if (typeof appState !== 'undefined') {
     if (appState === 'dims') { closeDimsModalSilent(); return; }
     if (appState === 'lightbox') { closeLightbox(); return; }
@@ -31783,22 +31783,6 @@ window.addEventListener('popstate', e => {
 });
 
 
-
-/* ══════════════════════════════════════════════════════════════
-   closeMediaGalleryUI — اغلاق مغرض
-══════════════════════════════════════════════════════════════ */
-
-function closeMediaGalleryUI() {
-  const modal = document.getElementById('mediaGalleryModal');
-  if (modal) {
-    modal.style.opacity = '0';
-    setTimeout(() => modal.remove(), 250);
-  }
-  // التراجع في سجل الهاتف خطوة واحدة للحفاظ على الترتيب
-  if (history.state && history.state.mediaGallery) {
-    history.back();
-  }
-}
 
 
 
