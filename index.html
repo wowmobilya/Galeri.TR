@@ -4558,6 +4558,14 @@ window.addEventListener('popstate', () => {
   // 1. نوافذ المحادثة والفيديو (تعديلات الشات)
   if (document.getElementById('chatVideoViewer')) { closeVideoFullscreen(); return; }
   if (document.getElementById('chatImgViewer'))   { closeImgViewer(); return; }
+  
+  // EKLENEN KONTROLLER: Medya, Yıldızlı Mesajlar, İletme ve Bilgi pencereleri açıksa sadece onları kapat
+  if (document.getElementById('mediaGalleryModal')) { closeMediaGallery(); return; }
+  if (document.getElementById('starredMessagesModal')) { document.getElementById('starredMessagesModal').remove(); return; }
+  if (document.getElementById('forwardModal')) { document.getElementById('forwardModal').remove(); return; }
+  if (document.getElementById('msgInfoModal')) { document.getElementById('msgInfoModal').remove(); return; }
+  if (document.getElementById('chatSettingsMiniModal')) { document.getElementById('chatSettingsMiniModal').remove(); return; }
+  
   if (document.getElementById('grpSettingsModal')){ closeGrpSettings(); return; }
   if (document.getElementById('chatWin'))         { closeRoomWindow(); return; }
   if (document.getElementById('chatListPage'))    { closeChatListPage(); return; }
@@ -4581,16 +4589,13 @@ window.addEventListener('popstate', () => {
   // 4. الشاشة الرئيسية (الضغط مرتين للخروج من التطبيق)
   if (appState === 'home') {
     if (backPressedOnce) {
-      // الضغطة الثانية: إخفاء التنبيه والسماح للتطبيق بالإغلاق طبيعياً
       clearTimeout(backToastTimer);
       backPressedOnce = false;
       hideBackToast();
-      // تم إزالة doLogoutFromBack() لكي لا يسجل خروج
     } else {
-      // الضغطة الأولى: إظهار التنبيه ومنع الخروج الفوري
       backPressedOnce = true;
       showBackToast();
-      pushState('home'); // إضافة حالة وهمية لمنع الخروج من أول ضغطة
+      pushState('home');
       backToastTimer = setTimeout(() => {
         backPressedOnce = false;
         hideBackToast();
