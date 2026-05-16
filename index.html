@@ -30735,73 +30735,224 @@ function unsubscribeRoomRealtime() {
 
 
 /* ─── إنشاء مجموعة جديدة ─── */
+/* ─── فتح نافذة إنشاء مجموعة جديدة (تصميم محسّن) ─── */
 async function openCreateGroupModal() {
+  document.getElementById('createGroupModal')?.remove();
+  
   const sb = await initSupabase(); if (!sb) return;
   
   // جلب كل المستخدمين والأدمن
   const { data: users } = await sb.from('users').select('username, company_name').eq('is_active', true);
   const { data: admins } = await sb.from('admin_accounts').select('username, name').eq('is_active', true);
   
-  const allUsers = [...(admins||[]).map(a=>({u:a.username, n:a.name, t:'admin'})), ...(users||[]).map(u=>({u:u.username, n:u.company_name, t:'user'}))]
-    .filter(x => x.u !== currentUser);
+  const allUsers = [
+    ...(admins||[]).map(a=>({u:a.username, n:a.name, t:'admin'})), 
+    ...(users||[]).map(u=>({u:u.username, n:u.company_name, t:'user'}))
+  ].filter(x => x.u !== currentUser);
+
+  // إضافة ستايل مخصص للنافذة (يتم حقنه مرة واحدة)
+  if (!document.getElementById('cgModalStyles')) {
+    const st = document.createElement('style');
+    st.id = 'cgModalStyles';
+    st.textContent = `
+      .cg-user-row {
+        display:flex;align-items:center;gap:12px;padding:10px 12px;
+        background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);
+        border-radius:12px;cursor:pointer;transition:all 0.25s ease;
+        -webkit-tap-highlight-color:transparent;
+      }
+      .cg-user-row:hover { background:rgba(255,255,255,0.05); }
+      .cg-user-row.selected {
+        background:rgba(99,102,241,0.08);
+        border-color:rgba(99,102,241,0.4);
+      }
+      .cg-cb {
+        width:22px;height:22px;border-radius:6px;
+        border:2px solid rgba(255,255,255,0.2);
+        display:flex;align-items:center;justify-content:center;
+        color:transparent;transition:all 0.2s;flex-shrink:0;
+      }
+      .cg-user-row.selected .cg-cb {
+        background:#6366f1;border-color:#6366f1;color:#fff;
+      }
+      .cg-role-sel {
+        background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);
+        border-radius:8px;color:#fff;font-size:10px;padding:6px 8px;
+        outline:none;cursor:pointer;font-family:'Montserrat',sans-serif;
+        transition:border-color 0.2s;
+      }
+      .cg-role-sel:focus { border-color:#6366f1; }
+    `;
+    document.head.appendChild(st);
+  }
 
   const modal = document.createElement('div');
   modal.id = 'createGroupModal';
-  modal.style.cssText = `position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);
-    backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;padding:16px;`;
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.88);
+    backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:16px;
+    animation:updBgIn 0.3s ease forwards;
+  `;
   
   modal.innerHTML = `
-    <div style="background:#111;border:1px solid rgba(99,102,241,.3);border-radius:18px;
-      padding:20px;max-width:400px;width:100%;animation:devModalIn .3s ease forwards;max-height:90vh;display:flex;flex-direction:column;">
-      <div style="font-size:16px;font-weight:900;color:#fff;margin-bottom:14px;font-family:'Montserrat',sans-serif;display:flex;align-items:center;gap:8px;">
-        <i class="fas fa-users" style="color:#818cf8;"></i> Yeni Grup Oluştur
-      </div>
+    <div style="
+      background:linear-gradient(145deg,#0a0a12,#12121f);
+      border:1px solid rgba(99,102,241,.3);border-radius:22px;
+      width:100%;max-width:440px;max-height:90vh;display:flex;flex-direction:column;
+      box-shadow:0 40px 100px rgba(0,0,0,.9), 0 0 40px rgba(99,102,241,.1);
+      animation:devModalIn .4s cubic-bezier(.34,1.56,.64,1) forwards;overflow:hidden;">
       
-      <div style="margin-bottom:12px;">
-        <input type="text" id="newGrpName" placeholder="Grup Adı" maxlength="40"
-          style="width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-          border-radius:9px;padding:10px 13px;color:#fff;font-family:'Montserrat',sans-serif;
-          font-size:13px;outline:none;-webkit-user-select:text;user-select:text;box-sizing:border-box;" />
-      </div>
-      
-      <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:6px;font-family:'Montserrat',sans-serif;">ÜYELER VE YETKİLER</div>
-      <div style="flex:1;overflow-y:auto;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.05);border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:6px;">
-        ${allUsers.map(user => `
-          <div style="display:flex;align-items:center;gap:10px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">
-            <input type="checkbox" class="new-grp-member-cb" value="${user.u}" style="width:18px;height:18px;cursor:pointer;">
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:12px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Montserrat',sans-serif;">${escHtml(user.n || user.u)}</div>
-              <div style="font-size:9px;color:rgba(255,255,255,.3);font-family:'Montserrat',sans-serif;">@${user.u}</div>
-            </div>
-            <select class="new-grp-role-sel" id="role_${user.u}" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#fff;font-size:10px;padding:4px;outline:none;cursor:pointer;font-family:'Montserrat',sans-serif;">
-              <option value="member">Üye</option>
-              <option value="admin">Admin (Yönetici)</option>
-            </select>
+      <!-- خط علوي -->
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#6366f1 30%,#818cf8 50%,#6366f1 70%,transparent);"></div>
+
+      <!-- الهيدر -->
+      <div style="padding:18px 20px 14px;border-bottom:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:42px;height:42px;border-radius:12px;background:rgba(99,102,241,.15);
+            border:1px solid rgba(99,102,241,.3);display:flex;align-items:center;justify-content:center;
+            color:#818cf8;font-size:18px;">
+            <i class="fas fa-users"></i>
           </div>
-        `).join('')}
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;color:rgba(99,102,241,.6);text-transform:uppercase;margin-bottom:3px;font-weight:700;">YENİ EKİP</div>
+            <div style="font-size:16px;font-weight:900;color:#fff;">Grup Oluştur</div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('createGroupModal').remove()" style="width:32px;height:32px;border-radius:8px;
+          background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);
+          cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;"
+          onmouseover="this.style.background='rgba(239,68,68,.15)';this.style.color='#ef4444';this.style.borderColor='rgba(239,68,68,.3)';"
+          onmouseout="this.style.background='rgba(255,255,255,.04)';this.style.color='rgba(255,255,255,.4)';this.style.borderColor='rgba(255,255,255,.08)';">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
       
-      <div style="display:flex;gap:8px;margin-top:16px;">
-        <button onclick="document.getElementById('createGroupModal').remove()" style="flex:1;padding:11px;border-radius:10px;
-          border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);
-          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">İPTAL</button>
-        <button onclick="createNewGroup()" style="flex:2;padding:11px;border-radius:10px;
-          border:none;background:linear-gradient(135deg,#6366f1,#818cf8);color:#fff;
-          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:900;cursor:pointer;">GRUBU OLUŞTUR</button>
+      <!-- محتوى النافذة -->
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:16px;flex:1;overflow:hidden;">
+        
+        <!-- اسم الكروب -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-tag" style="color:#818cf8;margin-right:4px;"></i> GRUP ADI
+          </label>
+          <input type="text" id="newGrpName" placeholder="Örn: VIP Müşteriler" maxlength="40"
+            style="width:100%;background:rgba(255,255,255,.04);border:1.5px solid rgba(99,102,241,.2);
+            border-radius:10px;padding:12px 14px;color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:13px;font-weight:700;outline:none;-webkit-user-select:text;user-select:text;box-sizing:border-box;transition:all 0.3s;" 
+            onfocus="this.style.borderColor='#6366f1';this.style.boxShadow='0 0 16px rgba(99,102,241,0.15)';"
+            onblur="this.style.borderColor='rgba(99,102,241,.2)';this.style.boxShadow='none';"/>
+        </div>
+        
+        <!-- شريط البحث -->
+        <div style="position:relative;">
+          <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.2);font-size:13px;"></i>
+          <input type="text" id="cgSearchInput" placeholder="Kullanıcı ara..." oninput="filterCgUsers(this.value)"
+            style="width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08);
+            border-radius:9px;padding:10px 12px 10px 36px;color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;-webkit-user-select:text;user-select:text;box-sizing:border-box;transition:border-color 0.3s;"
+            onfocus="this.style.borderColor='rgba(255,255,255,.2)'" onblur="this.style.borderColor='rgba(255,255,255,.08)'"/>
+        </div>
+        
+        <!-- قائمة المستخدمين -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:-6px;">
+          <span style="font-size:9px;color:rgba(255,255,255,.4);letter-spacing:1px;font-weight:700;">KİŞİLERİ SEÇİN</span>
+          <span id="cgSelectedCount" style="font-size:9px;color:#818cf8;font-weight:900;background:rgba(99,102,241,.15);padding:2px 8px;border-radius:50px;">0 Seçildi</span>
+        </div>
+
+        <div id="cgUserList" style="flex:1;overflow-y:auto;background:rgba(0,0,0,.15);border:1px solid rgba(255,255,255,.04);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;scrollbar-width:thin;scrollbar-color:rgba(99,102,241,.3) transparent;">
+          ${allUsers.map(user => `
+            <div class="cg-user-row" data-search="${(user.n||'').toLowerCase()} ${user.u.toLowerCase()}" onclick="toggleCgUser('${user.u}')" id="cgrow_${user.u}">
+              <div class="cg-cb" id="cgcb_${user.u}"><i class="fas fa-check" style="font-size:11px;"></i></div>
+              ${buildAvatar(user.u, 36)}
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Montserrat',sans-serif;">
+                  ${escHtml(user.n || user.u)}
+                </div>
+                <div style="font-size:10px;color:rgba(255,255,255,.3);font-family:'Montserrat',sans-serif;margin-top:2px;">
+                  @${user.u} ${user.t==='admin' ? '<span style="color:#c9a84c;margin-left:4px;"><i class="fas fa-shield-alt"></i> Admin</span>' : ''}
+                </div>
+              </div>
+              <select class="cg-role-sel" id="cgrole_${user.u}" onclick="event.stopPropagation()">
+                <option value="member">Üye</option>
+                <option value="admin">Yönetici</option>
+              </select>
+            </div>
+          `).join('')}
+          ${allUsers.length === 0 ? `<div style="text-align:center;padding:30px 10px;color:rgba(255,255,255,.2);font-size:11px;">Eklenecek kullanıcı bulunamadı</div>` : ''}
+        </div>
+      </div>
+      
+      <!-- الأزرار السفلية -->
+      <div style="padding:14px 20px 20px;background:rgba(0,0,0,.2);border-top:1px solid rgba(255,255,255,.04);display:flex;gap:10px;">
+        <button onclick="document.getElementById('createGroupModal').remove()" style="flex:1;padding:13px;border-radius:11px;
+          border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:rgba(255,255,255,.5);
+          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:all 0.2s;"
+          onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
+          İPTAL
+        </button>
+        <button id="cgCreateBtn" onclick="createNewGroup()" style="flex:2;padding:13px;border-radius:11px;
+          border:none;background:linear-gradient(135deg,#4f46e5,#818cf8);color:#fff;
+          font-family:'Montserrat',sans-serif;font-size:11px;font-weight:900;letter-spacing:1.5px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 15px rgba(99,102,241,.3);transition:all 0.2s;"
+          onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 20px rgba(99,102,241,.4)';"
+          onmouseout="this.style.transform='';this.style.boxShadow='0 4px 15px rgba(99,102,241,.3)';">
+          <i class="fas fa-plus-circle"></i> GRUBU OLUŞTUR
+        </button>
       </div>
     </div>`;
+    
   document.body.appendChild(modal);
+  setTimeout(() => document.getElementById('newGrpName')?.focus(), 300);
+
+  // إغلاق عند الضغط خارج النافذة
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.remove();
+  });
 }
 
+/* ─── دالة فلترة المستخدمين في نافذة الإنشاء ─── */
+window.filterCgUsers = function(val) {
+  const q = val.toLowerCase().trim();
+  const rows = document.querySelectorAll('.cg-user-row');
+  rows.forEach(row => {
+    const text = row.getAttribute('data-search');
+    row.style.display = text.includes(q) ? 'flex' : 'none';
+  });
+};
+
+/* ─── دالة تحديد/إلغاء تحديد مستخدم ─── */
+window.toggleCgUser = function(username) {
+  const row = document.getElementById('cgrow_' + username);
+  if (!row) return;
+  
+  row.classList.toggle('selected');
+  
+  // تحديث العداد
+  const selectedCount = document.querySelectorAll('.cg-user-row.selected').length;
+  const countEl = document.getElementById('cgSelectedCount');
+  if (countEl) {
+    countEl.textContent = `${selectedCount} Seçildi`;
+    countEl.style.background = selectedCount > 0 ? 'rgba(99,102,241,.25)' : 'rgba(99,102,241,.15)';
+    countEl.style.color = selectedCount > 0 ? '#fff' : '#818cf8';
+  }
+};
+
+/* ─── تنفيذ إنشاء المجموعة ─── */
 async function createNewGroup() {
   const name = document.getElementById('newGrpName').value.trim();
-  if (!name) { showInvToast('Lütfen grup adı girin', 'error'); return; }
+  if (!name) { 
+    showInvToast('Lütfen grup adı girin', 'error'); 
+    document.getElementById('newGrpName').focus();
+    return; 
+  }
   
-  const checkboxes = document.querySelectorAll('.new-grp-member-cb:checked');
-  if (checkboxes.length === 0) { showInvToast('En az bir üye seçin', 'error'); return; }
+  const selectedRows = document.querySelectorAll('.cg-user-row.selected');
+  if (selectedRows.length === 0) { 
+    showInvToast('En az bir üye seçin', 'error'); 
+    return; 
+  }
   
-  // 💡 تم إصلاح الخطأ هنا: تعطيل الزر أثناء المعالجة لمنع التكرار
-  const btn = document.querySelector('#createGroupModal button:last-child');
+  const btn = document.getElementById('cgCreateBtn');
   if (btn) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> OLUŞTURULUYOR...';
@@ -30817,15 +30968,15 @@ async function createNewGroup() {
   
   if (roomErr || !newRoom) { 
     showInvToast('Grup oluşturulamadı', 'error'); 
-    if (btn) { btn.disabled = false; btn.innerHTML = 'GRUBU OLUŞTUR'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-plus-circle"></i> GRUBU OLUŞTUR'; }
     return; 
   }
   
   const membersToInsert = [{ room_id: newRoom.id, username: currentUser, role: 'owner' }];
   
-  checkboxes.forEach(cb => {
-    const u = cb.value;
-    const role = document.getElementById('role_' + u).value;
+  selectedRows.forEach(row => {
+    const u = row.id.replace('cgrow_', '');
+    const role = document.getElementById('cgrole_' + u).value;
     membersToInsert.push({ room_id: newRoom.id, username: u, role: role });
   });
   
