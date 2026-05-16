@@ -4623,6 +4623,70 @@ function hideBackToast(){
 /* ============================================================
    أدوات مساعدة
 ============================================================ */
+
+
+
+
+// ============================================================
+// محرك الحفظ المحلي الضخم (IndexedDB)
+// ============================================================
+const WOW_DB_NAME = 'wow_chat_db';
+const WOW_STORE_NAME = 'large_settings';
+
+function openWowDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(WOW_DB_NAME, 1);
+    request.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(WOW_STORE_NAME)) {
+        db.createObjectStore(WOW_STORE_NAME);
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+async function setLargeData(key, value) {
+  try {
+    const db = await openWowDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(WOW_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(WOW_STORE_NAME);
+      const req = store.put(value, key);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(false);
+    });
+  } catch (e) {
+    console.error("IndexedDB Save Error:", e);
+  }
+}
+
+async function getLargeData(key) {
+  try {
+    const db = await openWowDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(WOW_STORE_NAME, 'readonly');
+      const store = tx.objectStore(WOW_STORE_NAME);
+      const req = store.get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(null);
+    });
+  } catch (e) {
+    console.error("IndexedDB Load Error:", e);
+    return null;
+  }
+}
+
+
+
+
+
+
+
+
+
+  
 // دالة تسريع البحث (تمنع التقطيع أثناء الكتابة)
 function debounce(func, wait) {
   let timeout;
@@ -28444,8 +28508,17 @@ async function openRoomWindow(roomId, roomType) {
   subscribeReactionsRealtime(roomId);
   attachChatScrollEnhancements();
 
+   // جلب الخلفية من IndexedDB (المساحة الكبيرة)
+  const cachedWp = await getLargeData('chat_wp_' + roomId);
   const settings = _chatRoomSettings[roomId] || {};
-  if (settings.wallpaper_url) applyChatWallpaper(settings.wallpaper_url);
+  
+  if (cachedWp) {
+    applyChatWallpaper(cachedWp);
+  } else if (settings.wallpaper_url) {
+    applyChatWallpaper(settings.wallpaper_url);
+    // حفظها محلياً للمرات القادمة
+    await setLargeData('chat_wp_' + roomId, settings.wallpaper_url);
+  }
 }
 
 
@@ -30014,17 +30087,23 @@ async function saveChatRoomSetting(roomId, patch) {
   _chatRoomSettings[roomId] = { ...(_chatRoomSettings[roomId] || {}), ...patch };
 }
 
-function openChatSettingsMini() {
+async function openChatSettingsMini() {
   if (!_activeRoomId) return;
   const settings = _chatRoomSettings[_activeRoomId] || {};
+  
+  // جلب الخلفية من قاعدة البيانات المحلية الضخمة
+  const cachedWp = await getLargeData('chat_wp_' + _activeRoomId);
+  const currentWp = cachedWp || settings.wallpaper_url || '';
+
   document.getElementById('chatSettingsMiniModal')?.remove();
   const modal = document.createElement('div');
   modal.id    = 'chatSettingsMiniModal';
   
-  // روابط الخلفيات الجاهزة (واتساب، ذهبي، خشبي)
-  const wp1 = 'https://i.pinimg.com/originals/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg';
-  const wp2 = 'https://www.transparenttextures.com/patterns/stardust.png';
-  const wp3 = 'https://www.transparenttextures.com/patterns/wood-pattern.png';
+  // خلفيات واتساب الأصلية
+  const wpDark = 'https://i.pinimg.com/originals/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg'; 
+  const wpLight = 'https://i.pinimg.com/originals/ab/ab/60/abab60f06ab52fa7846593e6ae0c9a0b.png'; 
+  const wpSolidDark = '#0b141a'; 
+  const wpSolidLight = '#efeae2'; 
   
   modal.innerHTML = `
     <div class="chat-modal-box">
@@ -30061,45 +30140,32 @@ function openChatSettingsMini() {
             style="width:20px;height:20px;cursor:pointer;">
         </div>
         
-        <!-- قسم اختيار الخلفية -->
+        <!-- قسم اختيار خلفية واتساب -->
         <div class="chat-setting-row" style="flex-direction:column;align-items:flex-start;">
           <div style="font-size:13px;font-weight:900;color:#fff;margin-bottom:8px;font-family:'Montserrat',sans-serif;">Sohbet Duvar Kağıdı</div>
           
           <div style="display:flex;gap:8px;width:100%;overflow-x:auto;padding-bottom:5px;scrollbar-width:none;">
-            <!-- الخيار 1: واتساب داكن -->
-            <div onclick="setPredefinedWallpaper('${wp1}')" style="width:60px;height:80px;border-radius:8px;background:url('${wp1}') center/cover;cursor:pointer;border:2px solid transparent;flex-shrink:0;box-shadow:inset 0 0 10px rgba(0,0,0,0.8);"></div>
-            <!-- الخيار 2: غبار الذهب -->
-            <div onclick="setPredefinedWallpaper('${wp2}')" style="width:60px;height:80px;border-radius:8px;background:#1a1a1a url('${wp2}');cursor:pointer;border:2px solid transparent;flex-shrink:0;"></div>
-            <!-- الخيار 3: خشب -->
-            <div onclick="setPredefinedWallpaper('${wp3}')" style="width:60px;height:80px;border-radius:8px;background:#0a0a0a url('${wp3}');cursor:pointer;border:2px solid transparent;flex-shrink:0;"></div>
+            <div onclick="setPredefinedWallpaper('${wpDark}')" style="width:60px;height:80px;border-radius:8px;background:url('${wpDark}') center/cover;cursor:pointer;border:2px solid transparent;flex-shrink:0;"></div>
+            <div onclick="setPredefinedWallpaper('${wpLight}')" style="width:60px;height:80px;border-radius:8px;background:url('${wpLight}') center/cover;cursor:pointer;border:2px solid transparent;flex-shrink:0;"></div>
+            <div onclick="setPredefinedWallpaper('${wpSolidDark}')" style="width:60px;height:80px;border-radius:8px;background:${wpSolidDark};cursor:pointer;border:1px solid rgba(255,255,255,.1);flex-shrink:0;"></div>
+            <div onclick="setPredefinedWallpaper('${wpSolidLight}')" style="width:60px;height:80px;border-radius:8px;background:${wpSolidLight};cursor:pointer;border:1px solid rgba(255,255,255,.1);flex-shrink:0;"></div>
             
-            <!-- زر الرفع من المعرض -->
+            <!-- رفع من المعرض -->
             <label style="width:60px;height:80px;border-radius:8px;background:rgba(255,255,255,.05);border:1px dashed rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;flex-direction:column;gap:5px;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,.1)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
               <i class="fas fa-image" style="color:rgba(255,255,255,.5);font-size:18px;"></i>
               <span style="font-size:8px;color:rgba(255,255,255,.4);font-family:'Montserrat',sans-serif;">Galeri</span>
               <input type="file" accept="image/*" style="display:none;" onchange="uploadChatWallpaper(this)">
             </label>
             
-            <!-- زر العودة للافتراضي -->
+            <!-- إزالة الخلفية -->
             <div onclick="setPredefinedWallpaper('')" style="width:60px;height:80px;border-radius:8px;background:#0a0a0a;border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;flex-direction:column;gap:5px;">
               <i class="fas fa-eraser" style="color:rgba(255,255,255,.3);font-size:18px;"></i>
               <span style="font-size:8px;color:rgba(255,255,255,.3);font-family:'Montserrat',sans-serif;">Varsayılan</span>
             </div>
           </div>
           
-          <!-- حقل إدخال الرابط اليدوي (مخفي جزئياً أو يمكن استخدامه للمطورين) -->
-          <div style="display:flex;gap:5px;width:100%;margin-top:5px;">
-            <input type="text" id="wallpaperInput" value="${settings.wallpaper_url || ''}"
-              placeholder="Renk veya görsel URL"
-              style="flex:1;padding:9px 11px;background:rgba(255,255,255,.05);
-                border:1px solid rgba(201,168,76,.2);border-radius:9px;color:#fff;
-                outline:none;user-select:text;font-family:'Montserrat',sans-serif;font-size:12px;
-                box-sizing:border-box;">
-            <button onclick="saveWallpaperSetting()" style="padding:9px 12px;border-radius:9px;
-              border:none;background:linear-gradient(135deg,#c9a84c,#f0d080);
-              color:#0a0a0a;font-weight:900;cursor:pointer;flex-shrink:0;">
-              <i class="fas fa-check"></i>
-            </button>
+          <div style="display:none;">
+            <input type="text" id="wallpaperInput" value="${currentWp}">
           </div>
         </div>
 
@@ -30132,24 +30198,77 @@ function openChatSettingsMini() {
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
 }
 
-async function saveWallpaperSetting() {
+
+  
+
+window.saveWallpaperSetting = async function() {
   if (!_activeRoomId) return;
   const val = document.getElementById('wallpaperInput')?.value.trim() || '';
-  await saveChatRoomSetting(_activeRoomId, { wallpaper_url:val });
+  
+  // 1. الحفظ في IndexedDB (مساحة ضخمة وآمنة)
+  await setLargeData('chat_wp_' + _activeRoomId, val);
+  
+  // 2. تطبيق فوري على الشاشة
   applyChatWallpaper(val);
-  showInvToast('Duvar kağıdı güncellendi ✓', 'success');
-}
+  
+  // 3. حفظ سحابي في Supabase
+  await saveChatRoomSetting(_activeRoomId, { wallpaper_url: val });
+  
+  showInvToast('Duvar kağıdı kaydedildi ✓', 'success');
+};
 
-function applyChatWallpaper(val) {
+window.applyChatWallpaper = function(val) {
   const area = document.getElementById('chatMsgsArea');
   if (!area) return;
-  if (!val) { area.style.background = ''; return; }
   
-  // إضافة طبقة تعتيم سوداء شفافة فوق الصورة لتسهيل القراءة
-  area.style.background = val.startsWith('http') || val.startsWith('data:image')
-    ? `linear-gradient(rgba(10,10,10,.75),rgba(10,10,10,.75)),url("${val}") center/cover`
-    : val;
-}
+  if (!val) { 
+    area.style.background = ''; 
+    return; 
+  }
+  
+  if (val.startsWith('http') || val.startsWith('data:image')) {
+    // تعتيم خفيف جداً (10%) مثل واتساب لضمان وضوح الرسائل
+    area.style.background = `linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.1)), url("${val}") center/cover`;
+  } else {
+    // للألوان السادة
+    area.style.background = val;
+  }
+};
+
+window.setPredefinedWallpaper = function(url) {
+  const inp = document.getElementById('wallpaperInput');
+  if (inp) inp.value = url;
+  saveWallpaperSetting(); // حفظ وتطبيق تلقائي
+};
+
+window.uploadChatWallpaper = async function(input) {
+  const file = input.files?.[0];
+  if (!file || !file.type.startsWith('image/')) return;
+  
+  showInvToast('Duvar kağıdı yükleniyor...', 'info');
+  const sb = await initSupabase(); 
+  if (!sb) return;
+  
+  const ext = file.name.split('.').pop() || 'jpg';
+  const path = `wallpapers/${currentUser}_${Date.now()}.${ext}`;
+  
+  const { error } = await sb.storage.from(CHAT_BUCKET)
+    .upload(path, file, { cacheControl:'3600', upsert:true, contentType:file.type });
+    
+  if (error) { 
+    showInvToast('Yükleme hatası!', 'error'); 
+    return; 
+  }
+  
+  const { data: urlData } = sb.storage.from(CHAT_BUCKET).getPublicUrl(path);
+  
+  const inp = document.getElementById('wallpaperInput');
+  if (inp) inp.value = urlData?.publicUrl;
+  
+  saveWallpaperSetting();
+  input.value = ''; 
+};
+
 
 
 
