@@ -32210,19 +32210,22 @@ window.updateChatHomeBadge    = updateChatHomeBadge;
 ══════════════════════════════════════════════════════════════ */
 const fixStyle = document.createElement('style');
 fixStyle.innerHTML = `
-  /* 1. إجبار السطر الخارجي على أن يكون شفافاً لتظهر الخلفية */
+  /* 1. جعل السطر الخارجي شفافاً لتظهر الخلفية (ورق الحائط) */
   #chatMsgsArea > div {
-    background-color: transparent !important; 
+    background-color: transparent !important;
+    background: transparent !important;
   }
 
-  /* 2. تلوين فقاعة الرسالة نفسها فقط (التي تحتوي على النص) */
-  /* ملاحظة: استبدل .msg-bubble باسم الكلاس الموجود في كودك إذا كان مختلفاً */
-  #chatMsgsArea .msg-bubble,
-  #chatMsgsArea .message-box,
-  #chatMsgsArea .chat-text {
-    background-color: #202c33 !important; /* لون الرسالة الداكن */
-    backdrop-filter: none !important; /* إزالة الشفافية */
+  /* 2. إزالة أي تأثير زجاجي (شفافية) من جميع العناصر داخل المحادثة */
+  #chatMsgsArea * {
+    backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+
+  /* 3. تلوين فقاعات الرسائل (المرسلة والمستلمة) */
+  /* استهداف العناصر الداخلية التي تمثل المربع الفعلي للرسالة */
+  #chatMsgsArea > div > div {
+    background-color: #202c33 !important; /* لون واتساب الداكن الافتراضي */
     opacity: 1 !important;
   }
 `;
