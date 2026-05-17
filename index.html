@@ -32208,17 +32208,25 @@ window.updateChatHomeBadge    = updateChatHomeBadge;
 /* ══════════════════════════════════════════════════════════════
    ★ WOW CHAT SYSTEM v3.1 — اكتمل بنجاح ✓
 ══════════════════════════════════════════════════════════════ */
-// أضف هذا الكود لفرض لون صلب على الرسائل ومنع الشفافية
-const style = document.createElement('style');
-style.innerHTML = `
+const fixStyle = document.createElement('style');
+fixStyle.innerHTML = `
+  /* 1. إجبار السطر الخارجي على أن يكون شفافاً لتظهر الخلفية */
   #chatMsgsArea > div {
-    /* تطبيق لون صلب على حاوية الرسالة لمنع الشفافية */
-    background-color: #202c33 !important; 
-    border-radius: 10px;
+    background-color: transparent !important; 
+  }
+
+  /* 2. تلوين فقاعة الرسالة نفسها فقط (التي تحتوي على النص) */
+  /* ملاحظة: استبدل .msg-bubble باسم الكلاس الموجود في كودك إذا كان مختلفاً */
+  #chatMsgsArea .msg-bubble,
+  #chatMsgsArea .message-box,
+  #chatMsgsArea .chat-text {
+    background-color: #202c33 !important; /* لون الرسالة الداكن */
+    backdrop-filter: none !important; /* إزالة الشفافية */
+    -webkit-backdrop-filter: none !important;
+    opacity: 1 !important;
   }
 `;
-document.head.appendChild(style);
-
+document.head.appendChild(fixStyle);
 
 
 
