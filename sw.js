@@ -49,12 +49,15 @@ self.addEventListener('push', event => {
     title : 'WOW MOBİLYA',
     body  : 'Yeni mesajınız var 💬',
     icon  : 'https://up6.cc/2026/04/177712738518231.png',
-    badge : 'https://up6.cc/2026/04/177712738518231.png'
+    badge : 'https://up6.cc/2026/04/177712738518231.png',
+    count : 1
   };
 
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch(e) {}
+
+  const count = data.count || 1;
 
   const options = {
     body    : data.body,
@@ -69,13 +72,21 @@ self.addEventListener('push', event => {
       roomId : data.roomId || null
     },
     actions : [
-      { action: 'open',    title: '📩 Mesajı Aç' },
-      { action: 'dismiss', title: '✖ Kapat'       }
+      { action: 'open',    title: `📩 ${count} Mesaj` },
+      { action: 'dismiss', title: '✖ Kapat'            }
     ]
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    Promise.all([
+      /* عرض الإشعار */
+      self.registration.showNotification(data.title, options),
+
+      /* عداد على أيقونة التطبيق */
+      self.navigator?.setAppBadge
+        ? self.navigator.setAppBadge(count)
+        : Promise.resolve()
+    ])
   );
 });
 
