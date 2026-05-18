@@ -10769,6 +10769,9 @@ let _currentSessionId = null;  // id الجلسة الحالية
     emailjs.init(EMAILJS_PUBLIC_KEY);
   } else {
     window.addEventListener('load', () => {
+       if ('clearAppBadge' in navigator) {
+    navigator.clearAppBadge();
+  }
       if (typeof emailjs !== 'undefined')
         emailjs.init(EMAILJS_PUBLIC_KEY);
     });
