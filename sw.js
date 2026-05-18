@@ -78,15 +78,7 @@ self.addEventListener('push', event => {
   };
 
   event.waitUntil(
-    Promise.all([
-      /* عرض الإشعار */
-      self.registration.showNotification(data.title, options),
-
-      /* عداد على أيقونة التطبيق */
-      self.navigator?.setAppBadge
-        ? self.navigator.setAppBadge(count)
-        : Promise.resolve()
-    ])
+    self.registration.showNotification(data.title, options)
   );
 });
 
@@ -112,3 +104,4 @@ self.addEventListener('notificationclick', event => {
       })
   );
 });
+
