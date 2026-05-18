@@ -1,55 +1,5 @@
 <!DOCTYPE html>
 <html lang="tr" dir="ltr" translate="no">
-
-
-
-
-
-
-<!-- =====================================================
-     نظام إشعارات OneSignal
-===================================================== -->
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-<script>
-  window.OneSignalDeferred = window.OneSignalDeferred || [];
-  OneSignalDeferred.push(async function(OneSignal) {
-    await OneSignal.init({
-      appId: "6dd2b32f-91a3-486d-8c83-16551b75cfab",
-      safari_web_id: "web.onesignal.auto.668b47bc-14aa-4b15-bbce-a605ba29fca6",
-      notifyButton: {
-        enable: true, // يظهر زر الجرس الصغير للمستخدم للاشتراك
-      },
-    });
-    // طلب إذن الإشعارات من المستخدم تلقائياً
-    OneSignal.Slidedown.promptPush();
-  });
-
-  // هذه الدالة ستقوم بحفظ معرّف هاتف المستخدم في Supabase
-  async function saveOneSignalId() {
-    if (typeof currentUser === 'undefined' || !currentUser) return;
-    try {
-      const osId = await OneSignal.User.PushSubscription.id;
-      if (!osId) return; // إذا لم يوافق المستخدم على الإشعارات بعد
-
-      const sb = await initSupabase();
-      if (!sb) return;
-
-      // حفظ المعرّف في جدول الأدمن أو المستخدمين حسب نوع الحساب
-      if (currentUser === 'WOW' || (typeof _currentUserData !== 'undefined' && _currentUserData && _currentUserData._isAdmin)) {
-        await sb.from('admin_accounts').update({ onesignal_id: osId }).eq('username', currentUser);
-      } else {
-        await sb.from('users').update({ onesignal_id: osId }).eq('username', currentUser);
-      }
-      console.log("✅ OneSignal ID Kaydedildi:", osId);
-    } catch (e) {
-      console.error("OneSignal ID hatası:", e);
-    }
-  }
-</script>
-
-  
-
-  
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
@@ -26926,17 +26876,12 @@ saveProductToDB = async function() {
 /* ============================================================
    13. تحميل الحقول عند تسجيل الدخول
 ============================================================ */
-/* 13. تحميل الحقول عند تسجيل الدخول */
 const _masterFinishLogin_df = finishLogin;
 finishLogin = function() {
   _masterFinishLogin_df();
   setTimeout(async () => {
     await loadDimFields();
     subscribeDimFields();
-    
-    // 👇 السطر الجديد الذي أضفناه لتفعيل الإشعارات
-    if (typeof saveOneSignalId === 'function') saveOneSignalId();
-    
   }, 1200);
 };
 
@@ -26947,13 +26892,8 @@ finishAdminAccountLogin = function(admin) {
   setTimeout(async () => {
     await loadDimFields();
     subscribeDimFields();
-    
-    // 👇 السطر الجديد الذي أضفناه لتفعيل الإشعارات للأدمن
-    if (typeof saveOneSignalId === 'function') saveOneSignalId();
-    
   }, 1200);
 };
-
 
 /* ============================================================
    14. CSS إضافي للصفحة
@@ -32294,32 +32234,6 @@ document.head.appendChild(fixStyle);
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 </script>
 </body>
-</html>
+</html>                          
