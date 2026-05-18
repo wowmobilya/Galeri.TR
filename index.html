@@ -7018,7 +7018,124 @@ function showOrderSuccessToast(orderNum) {
 /* ── ضع مفاتيحك هنا بدقة — بدون مسافات ── */
 const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc'; // ← غيّر هذا
-const INV_TABLE    = 'inventory';   /* اسم الجدول بالضبط */
+
+  /* ════════════════════════════════════════
+   ★ PUSH NOTIFICATIONS SYSTEM ★
+════════════════════════════════════════ */
+
+const VAPID_PUBLIC_KEY = 'BIiLk-5DMaLFmeMRgZ_NK6KcMu2gSIfIF6SGwx_UdeHNq1pqFvvSR75S9slTE27v8mqi0m9bjLd_X_PPhObhDOI';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64  = (base64String + padding)
+    .replace(/-/g, '+').replace(/_/g, '/');
+  const raw = window.atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function subscribeToPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') return false;
+
+  const reg = await navigator.serviceWorker.ready;
+
+  let subscription = await reg.pushManager.getSubscription();
+  if (!subscription) {
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly     : true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+  }
+
+  const sb = await initSupabase();
+  if (!sb || !currentUser) return false;
+
+  const sub = subscription.toJSON();
+  const { error } = await sb.from('push_subscriptions').upsert([{
+    username : currentUser,
+    endpoint : sub.endpoint,
+    p256dh   : sub.keys.p256dh,
+    auth     : sub.keys.auth
+  }], { onConflict: 'endpoint' });
+
+  if (error) { console.error('[Push] خطأ:', error.message); return false; }
+  console.log('[Push] ✅ اشتراك ناجح لـ', currentUser);
+  return true;
+}
+
+async function initPushAfterLogin() {
+  setTimeout(async () => {
+    if (!currentUser) return;
+    try { await subscribeToPush(); }
+    catch(e) { console.warn('[Push]', e); }
+  }, 2500);
+}
+
+async function sendPushToUser(username, title, body, roomId) {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      method : 'POST',
+      headers: {
+        'Content-Type' : 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({ username, title, body, roomId, url: './' })
+    });
+  } catch(e) {}
+}
+
+async function notifyRoomMembers(msg, roomId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data: members } = await sb.from('group_members')
+    .select('username').eq('room_id', roomId).eq('is_banned', false);
+
+  if (!members?.length) return;
+
+  const senderName = getDisplayName(currentUser);
+  const bodyText   = msg.message
+    || (msg.media_type === 'image' ? '📷 Fotoğraf'
+      : msg.media_type === 'audio' ? '🎤 Ses mesajı'
+      : msg.media_type === 'video' ? '🎥 Video'
+      : '📎 Dosya');
+
+  for (const member of members) {
+    if (member.username === currentUser) continue;
+    await sendPushToUser(
+      member.username,
+      `💬 ${senderName}`,
+      bodyText,
+      roomId
+    );
+  }
+}
+
+/* استقبال النقر على الإشعار */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'NOTIFICATION_CLICK') {
+      const roomId = event.data.roomId;
+      if (roomId) {
+        setTimeout(() => {
+          if (typeof openRoomWindow === 'function') {
+            /* افتح التطبيق على المحادثة مباشرة */
+            const hs = document.getElementById('homeScreen');
+            const ms = document.getElementById('mainSite');
+            if (hs) hs.style.display = 'none';
+            if (ms) ms.style.display = 'block';
+            openRoomWindow(Number(roomId), 'group');
+          }
+        }, 800);
+      }
+    }
+  });
+}
+
+  
+  const INV_TABLE    = 'inventory';   /* اسم الجدول بالضبط */
 
 let _sb                = null;
 let inventoryData      = {};
@@ -8137,6 +8254,15 @@ async function saveOrderToSupabase(orderNum, items, note) {
 
     console.log('[Orders] ✅ تم الحفظ بنجاح:', data.id, data.order_number);
     updateMyOrderBtn();
+
+// ← ★ أضف هذا الجزء هنا فقط ★
+    await sendPushToUser(
+      'WOW',
+      '📦 Yeni Sipariş!',
+      `${currentUser} yeni bir sipariş verdi — ${orderNum}`,
+      null
+    );
+    
     return data;
 
   } catch(e) {
@@ -11351,6 +11477,9 @@ function finishLogin() {
     setTimeout(tryPlayAudio, 600);
     startSessionHeartbeat();
     setTimeout(() => { _loginInProgress = false; }, 1000);
+
+   initPushAfterLogin(); // ← ★ أضف هذا السطر هنا فقط ★
+
   }, 700);
 }
 
@@ -28937,6 +29066,9 @@ async function sendTextMsg() {
       updateRoomTimestamp(_activeRoomId);
       saveMentionsForMessage(data);
       clearChatDraft(_activeRoomId);
+      
+      notifyRoomMembers(data, _activeRoomId); // ← ★ أضف هذا السطر هنا فقط ★
+
     } else {
       showInvToast('Mesaj gönderilemedi', 'error');
     }
