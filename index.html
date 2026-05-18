@@ -32500,6 +32500,85 @@ async function forceSubscribePush() {
   showTestResults(`نتيجة الاشتراك: ${ok ? '✅ نجح' : '❌ فشل'}`);
 }
 
+async function forceSavePushSubscription() {
+  showTestResults('جاري الحفظ...');
+
+  /* 1. تحقق من المستخدم */
+  if (!currentUser) {
+    showTestResults('❌ currentUser فارغ — سجّل دخول أولاً');
+    return;
+  }
+
+  /* 2. احصل على الاشتراك الموجود */
+  const reg = await navigator.serviceWorker.ready;
+  let subscription = await reg.pushManager.getSubscription();
+
+  /* 3. إذا لم يوجد — أنشئ واحداً جديداً */
+  if (!subscription) {
+    subscription = await reg.pushManager.subscribe({
+      userVisibleOnly     : true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+  }
+
+  /* 4. احفظ في Supabase */
+  const sb  = await initSupabase();
+  const sub = subscription.toJSON();
+
+  const { data, error } = await sb.from('push_subscriptions').upsert([{
+    username : currentUser,
+    endpoint : sub.endpoint,
+    p256dh   : sub.keys.p256dh,
+    auth     : sub.keys.auth
+  }], { onConflict: 'endpoint' });
+
+  if (error) {
+    showTestResults(`❌ فشل الحفظ:\n${error.message}\n\nHint: ${error.hint || ''}`);
+    return;
+  }
+
+  /* 5. تحقق من الحفظ */
+  const { data: check } = await sb
+    .from('push_subscriptions')
+    .select('*')
+    .eq('username', currentUser);
+
+  showTestResults(
+    `✅ تم الحفظ بنجاح!\n` +
+    `المستخدم: ${currentUser}\n` +
+    `عدد السجلات: ${check?.length || 0}\n\n` +
+    `الآن اختبر إرسال إشعار 👇`
+  );
+}
+
+  async function testSendPush() {
+  showTestResults('جاري الإرسال...');
+  try {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      method : 'POST',
+      headers: {
+        'Content-Type' : 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({
+        username: currentUser,
+        title   : '✅ اختبار ناجح!',
+        body    : 'الإشعارات تعمل بشكل صحيح 🎉',
+        roomId  : null,
+        url     : './'
+      })
+    });
+    const json = await res.json();
+    showTestResults(
+      `نتيجة الإرسال:\n` +
+      `Status: ${res.status}\n` +
+      `Sent: ${json.sent ?? 0}\n` +
+      `Response: ${JSON.stringify(json)}`
+    );
+  } catch(e) {
+    showTestResults(`❌ خطأ في الإرسال:\n${e.message}`);
+  }
+}
 
 
   
@@ -32514,6 +32593,22 @@ async function forceSubscribePush() {
   font-family:'Montserrat',sans-serif;
   font-size:12px;font-weight:900;cursor:pointer;">
   🔔 TEST PUSH
+</button>
+<button onclick="forceSavePushSubscription()" style="
+  position:fixed;bottom:20px;left:160px;z-index:99999;
+  background:#27ae60;color:#fff;border:none;
+  border-radius:10px;padding:12px 18px;
+  font-family:'Montserrat',sans-serif;
+  font-size:12px;font-weight:900;cursor:pointer;">
+  💾 احفظ الاشتراك
+</button>
+<button onclick="testSendPush()" style="
+  position:fixed;bottom:70px;left:20px;z-index:99999;
+  background:#8e44ad;color:#fff;border:none;
+  border-radius:10px;padding:12px 18px;
+  font-family:'Montserrat',sans-serif;
+  font-size:12px;font-weight:900;cursor:pointer;">
+  📤 اختبر الإرسال
 </button>
 
   
