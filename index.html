@@ -1,5 +1,24 @@
 <!DOCTYPE html>
 <html lang="tr" dir="ltr" translate="no">
+
+
+<!-- OneSignal SDK -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "6dd2b32f-91a3-486d-8c83-16551b75cfab",
+      safari_web_id: "web.onesignal.auto.668b47bc-14aa-4b15-bbce-a605ba29fca6", // سيعطيك إياه الموقع لدعم أجهزة آبل
+      notifyButton: {
+        enable: true, // يظهر زر صغير للمستخدم ليوافق على الإشعارات
+      },
+    });
+  });
+</script>
+
+
+  
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
@@ -5015,7 +5034,13 @@ function doLogoutFromBack(){
 async function doLogout() {
   // 1. إيقاف جميع مؤقتات الجلسة (النبضات)
   if (typeof _adminHeartbeatTimer !== 'undefined') clearInterval(_adminHeartbeatTimer);
-  if (typeof _heartbeatTimer !== 'undefined') clearInterval(_heartbeatTimer);
+
+  /* ★ إيقاف إشعارات OneSignal عند تسجيل الخروج ★ */
+  if (typeof OneSignalDeferred !== 'undefined') {
+    OneSignalDeferred.push(function(OneSignal) {
+      OneSignal.logout(); 
+    });
+  }
 
   const sb = await initSupabase();
 
@@ -19238,10 +19263,17 @@ finishLogin = function() {
     await loadOgSettings();
 
 
-    if (currentUser === ADMIN_USER) updateMsgBadge();
+          if (currentUser === ADMIN_USER) updateMsgBadge();
 
-  }, 700);   /* ← 700ms بدل 1000ms، بعد انتهاء opacity animation */
-};
+        /* ★ إخبار OneSignal باسم المستخدم الحالي لكي نرسل له الإشعارات ★ */
+        if (typeof OneSignalDeferred !== 'undefined') {
+          OneSignalDeferred.push(function(OneSignal) {
+            OneSignal.login(currentUser); 
+          });
+        }
+
+      }, 700);   /* ← 700ms بدل 1000ms، بعد انتهاء opacity animation */
+    };
 
 
 
@@ -21872,9 +21904,18 @@ function finishAdminAccountLogin(admin) {
     await loadLogoFromDB();         /* ← اللوجو */
 
     /* الآن اعرض الهوم */
+    /* الآن اعرض الهوم */
     showAdminAccountHome(admin);
 
     setTimeout(tryPlayAudio, 600);
+
+    /* ★ تفعيل إشعارات OneSignal لحسابات الأدمن الفرعية ★ */
+    if (typeof OneSignalDeferred !== 'undefined') {
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.login(currentUser); 
+      });
+    }
+
   }, 700);
 }
 
