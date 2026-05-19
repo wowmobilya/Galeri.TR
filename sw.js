@@ -1,22 +1,11 @@
-/* ★ غيّر الرقم عند كل تعديل ★ */
-const VERSION    = 'v19';
+const VERSION    = 'v20';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 
-self.addEventListener('install', event => {
-  console.log('[SW] Installing version:', VERSION);
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', event => {
-  console.log('[SW] Activating version:', VERSION);
-  event.waitUntil(
+self.addEventListener('install',  () => self.skipWaiting());
+self.addEventListener('activate', e  => {
+  e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => {
-          console.log('[SW] Deleting old cache:', k);
-          return caches.delete(k);
-        })
-      ))
+      .then(ks => Promise.all(ks.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -24,33 +13,26 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request, { cache: 'no-cache' })
-      .then(res => {
-        if (res.ok) {
-          caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, res.clone()));
-        }
-        return res;
+    fetch(event.request, { cache:'no-cache' })
+      .then(r => {
+        if (r.ok) caches.open(CACHE_NAME).then(c=>c.put(event.request,r.clone()));
+        return r;
       })
       .catch(() => caches.match(event.request))
   );
 });
 
-self.addEventListener('message', event => {
-  if (event.data === 'SKIP_WAITING') {
-    console.log('[SW] Skip waiting triggered');
-    self.skipWaiting();
-  }
+self.addEventListener('message', e => {
+  if (e.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
-/* ══════════════════════════════════════════
-   ★ PUSH — الاستقبال والعرض
-══════════════════════════════════════════ */
+/* ════════════════════════════════════════
+   ★ PUSH — يعمل على الكمبيوتر والهاتف
+════════════════════════════════════════ */
 self.addEventListener('push', event => {
-  console.log('[SW] Push received:', event);
 
-  /* ★ القيم الافتراضية الآمنة ★ */
-  let payload = {
+  /* ★ القيم الافتراضية ★ */
+  let d = {
     title      : 'WOW MOBİLYA',
     body       : 'Yeni mesajınız var 💬',
     sender     : '',
@@ -64,58 +46,41 @@ self.addEventListener('push', event => {
     tag        : 'wow-msg'
   };
 
-  /* ★ محاولة قراءة البيانات بأمان ★ */
+  /* ★ قراءة الـ payload ★ */
   if (event.data) {
-    try {
-      const parsed = event.data.json();
-      console.log('[SW] Payload parsed:', parsed);
-      payload = { ...payload, ...parsed };
-    } catch(e) {
-      /* إذا فشل JSON — جرّب text */
-      try {
-        const text = event.data.text();
-        console.log('[SW] Payload text:', text);
-        payload.body = text || payload.body;
-      } catch(e2) {
-        console.warn('[SW] Cannot parse push data:', e2);
-      }
-    }
-  } else {
-    console.warn('[SW] Push event has NO data!');
+    try { d = { ...d, ...event.data.json() }; }
+    catch(e) { console.warn('[SW] parse error:', e); }
   }
 
-  /* ★ بناء العنوان = اسم المرسل ★ */
-  const notifTitle = payload.sender
-    ? payload.sender
-    : payload.title || 'WOW MOBİLYA';
+  /* ★ العنوان = اسم المرسل ★ */
+  const title = d.sender || d.title || 'WOW MOBİLYA';
 
-  /* ★ بناء نص الرسالة ★ */
-  let notifBody = payload.body || 'Yeni mesaj';
-  if (payload.msgType === 'image') notifBody = '📷 Fotoğraf gönderdi';
-  if (payload.msgType === 'audio') notifBody = '🎤 Ses mesajı gönderdi';
-  if (payload.msgType === 'video') notifBody = '🎥 Video gönderdi';
-  if (payload.msgType === 'file')  notifBody = '📎 Dosya gönderdi';
+  /* ★ النص = محتوى الرسالة ★ */
+  let body = d.body || 'Yeni mesaj';
+  if (d.msgType==='image') body = '📷 Fotoğraf gönderdi';
+  if (d.msgType==='audio') body = '🎤 Ses mesajı gönderdi';
+  if (d.msgType==='video') body = '🎥 Video gönderdi';
+  if (d.msgType==='file')  body = '📎 Dosya gönderdi';
 
-  /* ★ إضافة اسم الغرفة للنص إذا وُجد ★ */
-  if (payload.roomName) {
-    notifBody = `${notifBody}`;
-  }
+  /* ★ اسم الغرفة في النص ★ */
+  const fullBody = d.roomName ? `${body}` : body;
 
-  const count = payload.unreadCount || 1;
+  const count = d.unreadCount || 1;
 
+  /* ★ خيارات الإشعار ★ */
   const options = {
-    body    : notifBody,
-    icon    : payload.icon,
-    badge   : payload.badge,
-    tag     : payload.tag || `room-${payload.roomId || 'wow'}`,
+    body    : fullBody,
+    icon    : d.icon,
+    badge   : d.badge,
+    tag     : d.tag || `room-${d.roomId||'wow'}`,
     renotify: true,
     silent  : false,
     vibrate : [200, 100, 200],
     data    : {
-      url        : payload.url    || './',
-      roomId     : payload.roomId || null,
-      sender     : payload.sender || '',
-      roomName   : payload.roomName || '',
+      url        : d.url    || './',
+      roomId     : d.roomId || null,
+      sender     : d.sender || '',
+      roomName   : d.roomName || '',
       unreadCount: count
     },
     actions: [
@@ -123,58 +88,43 @@ self.addEventListener('push', event => {
         action: 'open',
         title : count > 1 ? `📩 ${count} Okunmamış` : '📩 Mesajı Gör'
       },
-      { action: 'dismiss', title: '✖ Kapat' }
+      { action:'dismiss', title:'✖ Kapat' }
     ]
   };
 
-  /* ★ تحديث badge الهاتف ★ */
+  /* ★ badge الهاتف ★ */
   if ('setAppBadge' in self.registration) {
-    self.registration.setAppBadge(count).catch(() => {});
+    self.registration.setAppBadge(count).catch(()=>{});
   }
 
-  console.log('[SW] Showing notification:', notifTitle, options);
-
-  /* ★ event.waitUntil ضروري جداً ★ */
   event.waitUntil(
-    self.registration.showNotification(notifTitle, options)
-      .then(() => console.log('[SW] Notification shown successfully'))
-      .catch(err => console.error('[SW] showNotification error:', err))
+    self.registration.showNotification(title, options)
   );
 });
 
-/* ══════════════════════════════════════════
-   ★ نقر على الإشعار
-══════════════════════════════════════════ */
+/* ════════════════════════════════════════
+   ★ نقر الإشعار
+════════════════════════════════════════ */
 self.addEventListener('notificationclick', event => {
-  console.log('[SW] Notification clicked:', event.action);
   event.notification.close();
 
   if (event.action === 'dismiss') {
-    if ('clearAppBadge' in self.registration) {
-      self.registration.clearAppBadge().catch(() => {});
-    }
+    if ('clearAppBadge' in self.registration)
+      self.registration.clearAppBadge().catch(()=>{});
     return;
   }
 
   const { url, roomId } = event.notification.data || {};
 
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clientList => {
-        /* التطبيق مفتوح — ركّز عليه */
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            if (roomId) {
-              client.postMessage({
-                type  : 'NOTIFICATION_CLICK',
-                roomId: roomId,
-                action: 'open_room'
-              });
-            }
-            return client.focus();
+    clients.matchAll({ type:'window', includeUncontrolled:true })
+      .then(list => {
+        for (const c of list) {
+          if (c.url.includes(self.location.origin) && 'focus' in c) {
+            if (roomId) c.postMessage({ type:'NOTIFICATION_CLICK', roomId });
+            return c.focus();
           }
         }
-        /* التطبيق مغلق — افتحه */
         return clients.openWindow(url || './');
       })
   );
