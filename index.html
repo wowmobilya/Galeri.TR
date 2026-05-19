@@ -32043,15 +32043,6 @@ function updateChatHomeBadge() {
     el.style.display = total > 0 ? 'flex' : 'none';
   });
   if (typeof updateNavBadge === 'function') updateNavBadge('chat', total);
-
-  // ★ تحديث أو تصفير الشارة الحمراء خارج التطبيق عند قراءة الرسائل ★
-  if ('setAppBadge' in navigator) {
-    if (total > 0) {
-      navigator.setAppBadge(total).catch(()=>{});
-    } else {
-      navigator.clearAppBadge().catch(()=>{});
-    }
-  }
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -32674,4 +32665,4 @@ function findCurrentUser() {
 
   
 </body>
-</html>                                       
+</html>                                                                               
