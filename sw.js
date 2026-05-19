@@ -1,21 +1,21 @@
-const VERSION    = 'v18';
+/* ★ غيّر الرقم عند كل تعديل ★ */
+const VERSION    = 'v19';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
-const CORE_ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', event => {
+  console.log('[SW] Installing version:', VERSION);
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.addAll(CORE_ASSETS).catch(() => {})
-    )
-  );
 });
 
 self.addEventListener('activate', event => {
+  console.log('[SW] Activating version:', VERSION);
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
+        keys.filter(k => k !== CACHE_NAME).map(k => {
+          console.log('[SW] Deleting old cache:', k);
+          return caches.delete(k);
+        })
       ))
       .then(() => self.clients.claim())
   );
@@ -25,94 +25,105 @@ self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
     fetch(event.request, { cache: 'no-cache' })
-      .then(response => {
-        if (response.ok) {
-          caches.open(CACHE_NAME).then(cache =>
-            cache.put(event.request, response.clone())
-          );
+      .then(res => {
+        if (res.ok) {
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, res.clone()));
         }
-        return response;
+        return res;
       })
       .catch(() => caches.match(event.request))
   );
 });
 
 self.addEventListener('message', event => {
-  if (event.data === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data === 'SKIP_WAITING') {
+    console.log('[SW] Skip waiting triggered');
+    self.skipWaiting();
+  }
 });
 
-/* ════════════════════════════════════════
-   ★ PUSH — عرض الإشعار مع بيانات كاملة
-════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   ★ PUSH — الاستقبال والعرض
+══════════════════════════════════════════ */
 self.addEventListener('push', event => {
+  console.log('[SW] Push received:', event);
 
-  /* قيم افتراضية */
-  let data = {
+  /* ★ القيم الافتراضية الآمنة ★ */
+  let payload = {
     title      : 'WOW MOBİLYA',
     body       : 'Yeni mesajınız var 💬',
-    icon       : 'https://up6.cc/2026/04/177712738518231.png',
-    badge      : 'https://up6.cc/2026/04/177712738518231.png',
     sender     : '',
     roomName   : '',
     roomId     : null,
     unreadCount: 1,
     msgType    : 'text',
     url        : './',
-    tag        : 'wow-msg',
-    timestamp  : Date.now()
+    icon       : 'https://up6.cc/2026/04/177712738518231.png',
+    badge      : 'https://up6.cc/2026/04/177712738518231.png',
+    tag        : 'wow-msg'
   };
 
-  /* ★ قراءة البيانات من الـ payload ★ */
-  try {
-    if (event.data) {
+  /* ★ محاولة قراءة البيانات بأمان ★ */
+  if (event.data) {
+    try {
       const parsed = event.data.json();
-      data = { ...data, ...parsed };
+      console.log('[SW] Payload parsed:', parsed);
+      payload = { ...payload, ...parsed };
+    } catch(e) {
+      /* إذا فشل JSON — جرّب text */
+      try {
+        const text = event.data.text();
+        console.log('[SW] Payload text:', text);
+        payload.body = text || payload.body;
+      } catch(e2) {
+        console.warn('[SW] Cannot parse push data:', e2);
+      }
     }
-  } catch(e) {
-    console.warn('[SW Push] parse error:', e);
+  } else {
+    console.warn('[SW] Push event has NO data!');
   }
 
-  const count = data.unreadCount || 1;
+  /* ★ بناء العنوان = اسم المرسل ★ */
+  const notifTitle = payload.sender
+    ? payload.sender
+    : payload.title || 'WOW MOBİLYA';
 
-  /* ══ بناء العنوان الذكي ══ */
-  let smartTitle = data.sender || 'WOW MOBİLYA';
+  /* ★ بناء نص الرسالة ★ */
+  let notifBody = payload.body || 'Yeni mesaj';
+  if (payload.msgType === 'image') notifBody = '📷 Fotoğraf gönderdi';
+  if (payload.msgType === 'audio') notifBody = '🎤 Ses mesajı gönderdi';
+  if (payload.msgType === 'video') notifBody = '🎥 Video gönderdi';
+  if (payload.msgType === 'file')  notifBody = '📎 Dosya gönderdi';
 
-  /* ══ بناء نص الرسالة الذكي ══ */
-  let smartBody = data.body || 'Yeni mesaj';
-  if (data.msgType === 'image')  smartBody = '📷 Fotoğraf gönderdi';
-  if (data.msgType === 'audio')  smartBody = '🎤 Ses mesajı gönderdi';
-  if (data.msgType === 'video')  smartBody = '🎥 Video gönderdi';
-  if (data.msgType === 'file')   smartBody = '📎 Dosya gönderdi';
+  /* ★ إضافة اسم الغرفة للنص إذا وُجد ★ */
+  if (payload.roomName) {
+    notifBody = `${notifBody}`;
+  }
 
-  /* ══ زر الإجراء الذكي ══ */
-  const actionLabel = count > 1
-    ? `📩 ${count} Okunmamış`
-    : `📩 Mesajı Gör`;
+  const count = payload.unreadCount || 1;
 
   const options = {
-    /* ★ العنوان = اسم المرسل ★ */
-    body             : smartBody,
-    icon             : data.icon,
-    badge            : data.badge,
-    tag              : data.tag || `room-${data.roomId || 'wow'}`,
-    renotify         : true,
-    requireInteraction: false,
-    silent           : false,
-    vibrate          : [200, 100, 200],
-    timestamp        : data.timestamp || Date.now(),
-
-    /* ★ بيانات إضافية للنقر ★ */
-    data: {
-      url        : data.url    || './',
-      roomId     : data.roomId || null,
-      sender     : data.sender || '',
-      roomName   : data.roomName || '',
+    body    : notifBody,
+    icon    : payload.icon,
+    badge   : payload.badge,
+    tag     : payload.tag || `room-${payload.roomId || 'wow'}`,
+    renotify: true,
+    silent  : false,
+    vibrate : [200, 100, 200],
+    data    : {
+      url        : payload.url    || './',
+      roomId     : payload.roomId || null,
+      sender     : payload.sender || '',
+      roomName   : payload.roomName || '',
       unreadCount: count
     },
-
     actions: [
-      { action: 'open',    title: actionLabel },
-      { action: 'dismiss', title: '✖ Kapat'  }
+      {
+        action: 'open',
+        title : count > 1 ? `📩 ${count} Okunmamış` : '📩 Mesajı Gör'
+      },
+      { action: 'dismiss', title: '✖ Kapat' }
     ]
   };
 
@@ -121,16 +132,21 @@ self.addEventListener('push', event => {
     self.registration.setAppBadge(count).catch(() => {});
   }
 
+  console.log('[SW] Showing notification:', notifTitle, options);
+
+  /* ★ event.waitUntil ضروري جداً ★ */
   event.waitUntil(
-    /* ★ العنوان = اسم المرسل + اسم الغرفة ★ */
-    self.registration.showNotification(smartTitle, options)
+    self.registration.showNotification(notifTitle, options)
+      .then(() => console.log('[SW] Notification shown successfully'))
+      .catch(err => console.error('[SW] showNotification error:', err))
   );
 });
 
-/* ════════════════════════════════════════
+/* ══════════════════════════════════════════
    ★ نقر على الإشعار
-════════════════════════════════════════ */
+══════════════════════════════════════════ */
 self.addEventListener('notificationclick', event => {
+  console.log('[SW] Notification clicked:', event.action);
   event.notification.close();
 
   if (event.action === 'dismiss') {
@@ -140,12 +156,12 @@ self.addEventListener('notificationclick', event => {
     return;
   }
 
-  const targetUrl = event.notification.data?.url || './';
-  const roomId    = event.notification.data?.roomId;
+  const { url, roomId } = event.notification.data || {};
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
+        /* التطبيق مفتوح — ركّز عليه */
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             if (roomId) {
@@ -158,13 +174,8 @@ self.addEventListener('notificationclick', event => {
             return client.focus();
           }
         }
-        if (clients.openWindow) {
-          return clients.openWindow(
-            roomId ? `${targetUrl}#room=${roomId}` : targetUrl
-          );
-        }
+        /* التطبيق مغلق — افتحه */
+        return clients.openWindow(url || './');
       })
   );
 });
-
-self.addEventListener('notificationclose', () => {});
