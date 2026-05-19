@@ -1,4 +1,4 @@
-const VERSION    = 'v10'; // تم التحديث لضمان عمل الـ Service Worker الجديد
+const VERSION    = 'v11';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -59,7 +59,7 @@ self.addEventListener('push', event => {
 
   const count = data.count || 1;
 
-  // ★ Uygulama dışındaki ikona (App Badge) sayıyı yazdır ★
+  // ★ تحديث الشارة الحمراء على أيقونة التطبيق ★
   if (navigator.setAppBadge) {
     navigator.setAppBadge(count).catch(() => {});
   } else if (self.navigator && self.navigator.setAppBadge) {
