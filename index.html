@@ -7089,25 +7089,41 @@ async function subscribeToPush() {
   
 
 async function initPushAfterLogin() {
-  // ننتظر قليلاً حتى يكتمل تسجيل الدخول
-  setTimeout(async () => {
-    const user = currentUser 
-      || localStorage.getItem('wow_saved_user');
-    if (!user) return;
+  /* ننتظر حتى يكون currentUser جاهزاً */
+  let attempts = 0;
+  
+  const trySubscribe = async () => {
+    attempts++;
+    
+    /* تحديد المستخدم من كل المصادر الممكنة */
+    const user = currentUser
+      || localStorage.getItem('wow_saved_user')
+      || localStorage.getItem('wow_auth_email');
 
-    // إذا كان الإذن ممنوحاً مسبقاً → اشترك مباشرة بدون popup
-    if (Notification.permission === 'granted') {
-      const ok = await subscribeToPush();
-      if (ok) console.log('[Push] ✅ اشتراك تلقائي ناجح');
+    /* إذا لم يُعثر على مستخدم وما زلنا في المحاولات الأولى → انتظر */
+    if (!user && attempts < 10) {
+      setTimeout(trySubscribe, 500);
       return;
     }
 
-    // إذا لم يُرفض الإذن → أظهر زر التفعيل
+    if (!user) return; /* استسلم بعد 5 ثواني */
+
+    /* إذا الإذن ممنوح → اشترك مباشرة بدون popup */
+    if (Notification.permission === 'granted') {
+      await subscribeToPush();
+      return;
+    }
+
+    /* إذا لم يُرفض → أظهر شريط التفعيل */
     if (Notification.permission !== 'denied') {
       showPushEnableButton();
     }
-  }, 1500);
+  };
+
+  /* ابدأ بعد ثانية واحدة */
+  setTimeout(trySubscribe, 1000);
 }
+
 
 
 async function sendPushToUser(username, title, body, roomId) {
@@ -32417,71 +32433,59 @@ document.head.appendChild(fixStyle);
 
 
 
-  function showPushEnableButton() {
-  // لا تظهره مرتين
+function showPushEnableButton() {
   if (document.getElementById('pushEnableBar')) return;
 
   const bar = document.createElement('div');
   bar.id = 'pushEnableBar';
   bar.style.cssText = `
     position: fixed;
-    bottom: 90px;
+    bottom: 88px;
     left: 50%;
     transform: translateX(-50%) translateY(20px);
     z-index: 9999;
     background: rgba(10,10,10,0.97);
     border: 1px solid rgba(201,168,76,0.45);
     border-radius: 16px;
-    padding: 14px 18px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     gap: 12px;
     box-shadow: 0 12px 40px rgba(0,0,0,0.6);
     backdrop-filter: blur(20px);
-    max-width: 90vw;
+    max-width: 88vw;
     opacity: 0;
     transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
     font-family: 'Montserrat', sans-serif;
   `;
 
   bar.innerHTML = `
-    <div style="
-      width: 38px; height: 38px; flex-shrink: 0;
-      border-radius: 10px;
-      background: linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
-      border: 1px solid rgba(201,168,76,0.35);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px; color: #c9a84c;">
-      🔔
-    </div>
+    <div style="font-size: 22px; flex-shrink: 0;">🔔</div>
     <div style="flex: 1; min-width: 0;">
       <div style="font-size: 12px; font-weight: 900; color: #fff;
         margin-bottom: 2px;">Bildirimleri Etkinleştir</div>
-      <div style="font-size: 10px; color: rgba(255,255,255,0.4);
-        letter-spacing: 0.3px; line-height: 1.4;">
-        Yeni sipariş ve mesaj bildirimleri alın
+      <div style="font-size: 10px; color: rgba(255,255,255,0.4);">
+        Sipariş ve mesaj bildirimleri alın
       </div>
     </div>
     <button id="pushEnableBtn" style="
-      padding: 9px 16px; border-radius: 10px; border: none;
+      padding: 9px 14px; border-radius: 9px; border: none;
       background: linear-gradient(135deg,#c9a84c,#f0d080);
-      color: #0a0a0a; font-family: 'Montserrat',sans-serif;
-      font-size: 11px; font-weight: 900; letter-spacing: 1px;
-      cursor: pointer; white-space: nowrap;
-      transition: all 0.25s;">
+      color: #000; font-family: 'Montserrat',sans-serif;
+      font-size: 11px; font-weight: 900; cursor: pointer;
+      white-space: nowrap; flex-shrink: 0;">
       AÇIK
     </button>
-    <button onclick="dismissPushBar()" style="
+    <button onclick="document.getElementById('pushEnableBar')?.remove()" style="
       background: none; border: none;
-      color: rgba(255,255,255,0.25); font-size: 16px;
-      cursor: pointer; padding: 4px; flex-shrink: 0;">
-      ✕
-    </button>
+      color: rgba(255,255,255,0.3); font-size: 18px;
+      cursor: pointer; padding: 2px; flex-shrink: 0;
+      line-height: 1;">✕</button>
   `;
 
   document.body.appendChild(bar);
 
-  // أنيميشن الظهور
+  /* أنيميشن الظهور */
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       bar.style.opacity = '1';
@@ -32489,212 +32493,32 @@ document.head.appendChild(fixStyle);
     });
   });
 
-  // ★ الزر يطلب الإذن عند الضغط (هذا هو التفاعل المطلوب من المتصفح)
+  /* الزر يطلب الإذن عند الضغط */
   document.getElementById('pushEnableBtn').addEventListener('click', async () => {
-    dismissPushBar();
+    document.getElementById('pushEnableBar')?.remove();
     const ok = await subscribeToPush();
     if (ok) {
       showInvToast('🔔 Bildirimler etkinleştirildi ✓', 'success');
-    } else {
-      showInvToast('Bildirim izni reddedildi', 'error');
     }
   });
 
-  // اختفاء تلقائي بعد 8 ثواني
-  setTimeout(dismissPushBar, 8000);
+  /* اختفاء تلقائي بعد 10 ثواني */
+  setTimeout(() => {
+    const b = document.getElementById('pushEnableBar');
+    if (!b) return;
+    b.style.opacity = '0';
+    b.style.transform = 'translateX(-50%) translateY(20px)';
+    setTimeout(() => b.remove(), 400);
+  }, 10000);
 }
 
-function dismissPushBar() {
-  const bar = document.getElementById('pushEnableBar');
-  if (!bar) return;
-  bar.style.opacity = '0';
-  bar.style.transform = 'translateX(-50%) translateY(20px)';
-  setTimeout(() => bar.remove(), 400);
-}
 
-
-
-
-
-
-
-
-
-
-/* ══════════════════════════════════════
-   ★ أداة تشخيص Push — تظهر على الشاشة
-══════════════════════════════════════ */
-async function diagnosePush() {
-  const lines = [];
-  const add = (icon, label, val) => 
-    lines.push(`${icon} ${label}: <b>${val}</b>`);
-
-  // 1. معلومات أساسية
-  add('👤', 'currentUser', currentUser || '❌ فارغ');
-  add('🔔', 'إذن الإشعارات', Notification?.permission || '❌ غير مدعوم');
-  add('⚙️', 'Service Worker', 'serviceWorker' in navigator ? '✅' : '❌');
-  add('📲', 'Push Manager', 'PushManager' in window ? '✅' : '❌');
-  add('🔒', 'HTTPS', location.protocol === 'https:' ? '✅' : '❌ ' + location.protocol);
-  add('🌐', 'المتصفح', navigator.userAgent.substring(0, 60));
-
-  // 2. حالة Service Worker
-  try {
-    const reg = await navigator.serviceWorker.getRegistration();
-    add('📦', 'SW مسجّل', reg ? '✅ ' + reg.scope : '❌ لا');
-    if (reg) {
-      add('🔄', 'SW حالة', reg.active ? '✅ نشط' : reg.installing ? '⏳ يُثبَّت' : '❌');
-    }
-  } catch(e) {
-    add('📦', 'SW خطأ', e.message);
-  }
-
-  // 3. اشتراك Push الحالي
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
-    add('🔗', 'Push اشتراك', sub ? '✅ موجود' : '❌ لا يوجد');
-    if (sub) add('🔗', 'Endpoint', sub.endpoint.substring(0, 50) + '...');
-  } catch(e) {
-    add('🔗', 'Push خطأ', e.message);
-  }
-
-  // 4. Supabase
-  try {
-    const sb = await initSupabase();
-    const user = currentUser || localStorage.getItem('wow_saved_user');
-    if (sb && user) {
-      const { data, error } = await sb
-        .from('push_subscriptions')
-        .select('*')
-        .eq('username', user);
-      add('💾', 'Supabase سجلات', error ? '❌ ' + error.message : (data?.length || 0) + ' سجل');
-    } else {
-      add('💾', 'Supabase', !sb ? '❌ لا اتصال' : '❌ لا مستخدم');
-    }
-  } catch(e) {
-    add('💾', 'Supabase خطأ', e.message);
-  }
-
-  // عرض النتائج
-  const box = document.createElement('div');
-  box.style.cssText = `
-    position: fixed; inset: 0; z-index: 999999;
-    background: rgba(0,0,0,0.95);
-    overflow-y: auto;
-    padding: 20px;
-    font-family: 'Montserrat', sans-serif;
-  `;
-  box.innerHTML = `
-    <div style="max-width:500px;margin:0 auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;
-        margin-bottom:16px;">
-        <div style="font-size:16px;font-weight:900;color:#c9a84c;">
-          🔍 تشخيص Push
-        </div>
-        <button onclick="this.closest('div[style]').remove()" style="
-          background:rgba(255,255,255,0.1);border:none;color:#fff;
-          border-radius:8px;padding:8px 14px;cursor:pointer;
-          font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;">
-          ✕ إغلاق
-        </button>
-      </div>
-
-      <div style="background:#111;border-radius:14px;padding:16px;
-        border:1px solid rgba(255,255,255,0.1);margin-bottom:14px;">
-        ${lines.map(l => `
-          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);
-            font-size:12px;color:rgba(255,255,255,0.7);line-height:1.6;">
-            ${l}
-          </div>`).join('')}
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:10px;">
-
-        <button onclick="manualRequestPermission()" style="
-          padding:14px;border-radius:12px;border:none;
-          background:linear-gradient(135deg,#c9a84c,#f0d080);
-          color:#000;font-family:'Montserrat',sans-serif;
-          font-size:13px;font-weight:900;cursor:pointer;">
-          🔔 اطلب إذن الإشعارات الآن
-        </button>
-
-        <button onclick="manualSubscribe()" style="
-          padding:14px;border-radius:12px;border:none;
-          background:rgba(74,222,128,0.15);
-          border:1px solid rgba(74,222,128,0.3);
-          color:#4ade80;font-family:'Montserrat',sans-serif;
-          font-size:13px;font-weight:900;cursor:pointer;">
-          📲 اشترك في Push يدوياً
-        </button>
-
-        <button onclick="manualTestSend()" style="
-          padding:14px;border-radius:12px;border:none;
-          background:rgba(139,92,246,0.15);
-          border:1px solid rgba(139,92,246,0.3);
-          color:#a78bfa;font-family:'Montserrat',sans-serif;
-          font-size:13px;font-weight:900;cursor:pointer;">
-          📤 اختبر إرسال إشعار
-        </button>
-
-      </div>
-    </div>`;
-
-  document.body.appendChild(box);
-}
-
-async function manualRequestPermission() {
-  const result = await Notification.requestPermission();
-  showInvToast('نتيجة الإذن: ' + result, result === 'granted' ? 'success' : 'error');
-  document.querySelector('div[style*="inset: 0"]')?.remove();
-  setTimeout(diagnosePush, 500);
-}
-
-async function manualSubscribe() {
-  const ok = await subscribeToPush();
-  showInvToast(ok ? '✅ اشتراك ناجح!' : '❌ فشل الاشتراك', ok ? 'success' : 'error');
-  document.querySelector('div[style*="inset: 0"]')?.remove();
-  setTimeout(diagnosePush, 500);
-}
-
-async function manualTestSend() {
-  const user = currentUser || localStorage.getItem('wow_saved_user');
-  if (!user) { showInvToast('❌ لا يوجد مستخدم', 'error'); return; }
-  try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${SUPABASE_KEY}`
-      },
-      body: JSON.stringify({
-        username: user,
-        title: '✅ اختبار',
-        body: 'الإشعارات تعمل! 🎉',
-        roomId: null,
-        url: './'
-      })
-    });
-    const json = await res.json();
-    showInvToast(`إرسال: ${json.sent || 0} / ${json.total || 0}`, 'success');
-  } catch(e) {
-    showInvToast('❌ خطأ: ' + e.message, 'error');
-  }
-}
 
 
 
   
 
 </script>
-  <button onclick="diagnosePush()" style="
-  position:fixed;bottom:20px;right:20px;z-index:99999;
-  background:#c9a84c;color:#000;border:none;
-  border-radius:12px;padding:12px 18px;
-  font-family:'Montserrat',sans-serif;
-  font-size:12px;font-weight:900;cursor:pointer;
-  box-shadow:0 4px 20px rgba(201,168,76,0.4);">
-  🔍 تشخيص
-</button>
 
 </body>
 </html>                                                                             
