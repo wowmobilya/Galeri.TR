@@ -32973,28 +32973,42 @@ function showNotifPermissionBar() {
    ★ إرسال Push مع معلومات كاملة
 ════════════════════════════════════════ */
 async function sendPushToUser(username, title, body, roomId, extra = {}) {
+  if (!username) return;
+
+  /* ★ تأكد أن البيانات مكتملة ★ */
+  const payload = {
+    username,
+    /* ★ العنوان = اسم المرسل مباشرة ★ */
+    title    : extra.sender   || title || 'WOW MOBİLYA',
+    body     : body           || 'Yeni mesaj',
+    roomId   : roomId         || null,
+    url      : './',
+    /* ★ الحقول الإضافية المهمة ★ */
+    sender   : extra.sender   || title || 'WOW MOBİLYA',
+    roomName : extra.roomName || '',
+    msgType  : extra.msgType  || 'text'
+  };
+
+  console.log('[Push] إرسال لـ', username, ':', payload.sender, '→', payload.body);
+
   try {
-    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
       method : 'POST',
       headers: {
         'Content-Type' : 'application/json',
         'Authorization': `Bearer ${SUPABASE_KEY}`
       },
-      body: JSON.stringify({
-        username,
-        title,
-        body,
-        roomId,
-        url      : './',
-        sender   : extra.sender   || title,
-        roomName : extra.roomName || '',
-        msgType  : extra.msgType  || 'text'
-      })
+      body: JSON.stringify(payload)
     });
+
+    if (!res.ok) {
+      console.warn('[Push] HTTP', res.status, await res.text());
+    }
   } catch(e) {
     console.warn('[Push] إرسال فشل:', e);
   }
 }
+
 
 /* ════════════════════════════════════════
    ★ إشعار أعضاء الغرفة (Push + Toast)
