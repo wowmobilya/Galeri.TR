@@ -32379,6 +32379,786 @@ document.head.appendChild(fixStyle);
 
 
 
+
+
+
+
+  /* ════════════════════════════════════════════════════════════
+   ★ نظام الإشعارات الكامل v2
+   - Push خارجي (حتى لو التطبيق مغلق)
+   - Toast داخلي جميل
+   - Badge عداد في الهيدر
+════════════════════════════════════════════════════════════ */
+
+/* ── CSS الإشعارات الداخلية ── */
+(function injectNotifCSS() {
+  if (document.getElementById('wowNotifCSS')) return;
+  const s = document.createElement('style');
+  s.id = 'wowNotifCSS';
+  s.textContent = `
+
+    /* ══ Toast الإشعار الداخلي ══ */
+    #wowNotifContainer {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: none;
+      max-width: min(360px, calc(100vw - 32px));
+    }
+
+    .wow-notif-toast {
+      background: rgba(12, 12, 16, 0.97);
+      border: 1px solid rgba(201, 168, 76, 0.28);
+      border-radius: 16px;
+      padding: 13px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      pointer-events: all;
+      cursor: pointer;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.65),
+        0 0 0 1px rgba(201, 168, 76, 0.08),
+        0 0 24px rgba(201, 168, 76, 0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      animation: notifSlideIn 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .wow-notif-toast:hover {
+      transform: translateY(-2px) scale(1.01);
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(201, 168, 76, 0.2),
+        0 0 30px rgba(201, 168, 76, 0.1);
+    }
+
+    .wow-notif-toast:active {
+      transform: scale(0.98);
+    }
+
+    /* خط ذهبي علوي */
+    .wow-notif-toast::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg,
+        transparent, #c9a84c 30%, #f0d080 50%, #c9a84c 70%, transparent);
+    }
+
+    /* شريط التقدم (للإغلاق التلقائي) */
+    .wow-notif-toast::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #c9a84c, #f0d080);
+      animation: notifProgress var(--notif-duration, 5s) linear forwards;
+      border-radius: 0 0 16px 16px;
+    }
+
+    @keyframes notifSlideIn {
+      from { opacity: 0; transform: translateX(120%) scale(0.85); }
+      to   { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    @keyframes notifSlideOut {
+      from { opacity: 1; transform: translateX(0) scale(1); max-height: 200px; margin-bottom: 0; }
+      to   { opacity: 0; transform: translateX(120%) scale(0.85); max-height: 0; margin-bottom: -10px; }
+    }
+
+    @keyframes notifProgress {
+      from { width: 100%; }
+      to   { width: 0%; }
+    }
+
+    /* الأفاتار */
+    .notif-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: linear-gradient(135deg,
+        rgba(201, 168, 76, 0.18), rgba(201, 168, 76, 0.04));
+      border: 1.5px solid rgba(201, 168, 76, 0.28);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: 900;
+      color: #c9a84c;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .notif-avatar img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    /* نقطة الحالة */
+    .notif-avatar-dot {
+      position: absolute;
+      bottom: 1px; right: 1px;
+      width: 11px; height: 11px;
+      border-radius: 50%;
+      background: #4ade80;
+      border: 2px solid rgba(12, 12, 16, 0.97);
+      animation: notifDotPulse 2s infinite;
+    }
+
+    @keyframes notifDotPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4); }
+      50%       { box-shadow: 0 0 0 5px rgba(74, 222, 128, 0); }
+    }
+
+    /* المحتوى */
+    .notif-content { flex: 1; min-width: 0; }
+
+    .notif-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 3px;
+    }
+
+    .notif-sender {
+      font-size: 13px;
+      font-weight: 900;
+      color: #fff;
+      font-family: 'Montserrat', sans-serif;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+
+    .notif-time {
+      font-size: 9px;
+      color: rgba(255, 255, 255, 0.3);
+      font-family: 'Montserrat', sans-serif;
+      flex-shrink: 0;
+      letter-spacing: 0.5px;
+    }
+
+    .notif-room {
+      font-size: 10px;
+      color: rgba(201, 168, 76, 0.65);
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .notif-body {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.55);
+      font-family: 'Montserrat', sans-serif;
+      line-height: 1.5;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* شارة العدد */
+    .notif-badge {
+      min-width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #c9a84c, #f0d080);
+      color: #0a0a0a;
+      font-size: 10px;
+      font-weight: 900;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(201, 168, 76, 0.4);
+    }
+
+    /* زر الإغلاق */
+    .notif-close {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      border: none;
+      color: rgba(255, 255, 255, 0.3);
+      font-size: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.2s;
+      font-family: 'Montserrat', sans-serif;
+      align-self: flex-start;
+      margin-top: 2px;
+    }
+
+    .notif-close:hover {
+      background: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+    }
+
+    /* ══ Badge الهيدر ══ */
+    .wow-header-notif-badge {
+      position: absolute;
+      top: -5px; right: -5px;
+      min-width: 17px; height: 17px;
+      border-radius: 50%;
+      background: #ef4444;
+      color: #fff;
+      font-size: 9px;
+      font-weight: 900;
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 3px;
+      border: 2px solid rgba(8, 8, 8, 0.96);
+      pointer-events: none;
+      line-height: 1;
+      animation: badgePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes badgePop {
+      from { transform: scale(0); }
+      to   { transform: scale(1); }
+    }
+
+    /* ══ نافذة طلب الإذن ══ */
+    #notifPermissionBar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 99998;
+      background: rgba(10, 10, 10, 0.98);
+      border-top: 1px solid rgba(201, 168, 76, 0.25);
+      padding: 14px 18px;
+      padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      backdrop-filter: blur(20px);
+      animation: notifBarIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      flex-wrap: wrap;
+    }
+
+    @keyframes notifBarIn {
+      from { transform: translateY(100%); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+
+    /* موبايل */
+    @media (max-width: 480px) {
+      #wowNotifContainer {
+        top: 8px;
+        right: 8px;
+        left: 8px;
+        max-width: 100%;
+      }
+      .wow-notif-toast {
+        border-radius: 14px;
+      }
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
+/* ════════════════════════════════════════
+   متغيرات النظام
+════════════════════════════════════════ */
+let _notifContainer    = null;
+let _notifQueue        = [];
+let _notifProcessing   = false;
+let _totalUnreadNotifs = 0;
+const _notifTimers     = {};
+const NOTIF_DURATION   = 5000; /* مدة ظهور الإشعار بالمللي ثانية */
+
+/* ════════════════════════════════════════
+   إنشاء حاوية الإشعارات
+════════════════════════════════════════ */
+function ensureNotifContainer() {
+  if (!_notifContainer || !document.body.contains(_notifContainer)) {
+    _notifContainer = document.createElement('div');
+    _notifContainer.id = 'wowNotifContainer';
+    document.body.appendChild(_notifContainer);
+  }
+  return _notifContainer;
+}
+
+/* ════════════════════════════════════════
+   ★ عرض Toast إشعار داخلي
+════════════════════════════════════════ */
+function showInAppNotification({
+  sender     = 'WOW MOBİLYA',
+  senderAvatar = null,
+  roomName   = '',
+  body       = 'Yeni mesaj',
+  msgType    = 'text',
+  unreadCount = 1,
+  roomId     = null,
+  onClickFn  = null,
+  duration   = NOTIF_DURATION
+}) {
+  /* لا تُظهر إشعاراً إذا كان المستخدم داخل نفس الغرفة */
+  if (roomId && String(roomId) === String(_activeRoomId)) return;
+
+  const container = ensureNotifContainer();
+  const id        = 'notif_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+
+  /* ── نص الرسالة الذكي ── */
+  let bodyText = body;
+  if (msgType === 'image')  bodyText = '📷 Fotoğraf gönderdi';
+  if (msgType === 'audio')  bodyText = '🎤 Ses mesajı gönderdi';
+  if (msgType === 'video')  bodyText = '🎥 Video gönderdi';
+  if (msgType === 'file')   bodyText = '📎 Dosya gönderdi';
+
+  /* ── الأفاتار ── */
+  const initials = (sender || '?').substring(0, 2).toUpperCase();
+  const avatarHTML = senderAvatar
+    ? `<img src="${senderAvatar}" alt="${sender}" onerror="this.style.display='none'"/>`
+    : `<span>${initials}</span>`;
+
+  /* ── الوقت ── */
+  const now  = new Date();
+  const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+  /* ── HTML الإشعار ── */
+  const toast = document.createElement('div');
+  toast.id    = id;
+  toast.className = 'wow-notif-toast';
+  toast.style.setProperty('--notif-duration', duration + 'ms');
+
+  toast.innerHTML = `
+    <div class="notif-avatar">
+      ${avatarHTML}
+      <div class="notif-avatar-dot"></div>
+    </div>
+
+    <div class="notif-content">
+      <div class="notif-header">
+        <div class="notif-sender">${escHtml ? escHtml(sender) : sender}</div>
+        <div class="notif-time">${timeStr}</div>
+      </div>
+      ${roomName ? `
+      <div class="notif-room">
+        <i class="fas fa-comments" style="font-size:8px;"></i>
+        ${escHtml ? escHtml(roomName) : roomName}
+      </div>` : ''}
+      <div class="notif-body">${escHtml ? escHtml(bodyText) : bodyText}</div>
+    </div>
+
+    ${unreadCount > 1 ? `
+    <div class="notif-badge">${unreadCount > 99 ? '99+' : unreadCount}</div>
+    ` : ''}
+
+    <button class="notif-close"
+      onclick="event.stopPropagation(); dismissNotif('${id}')">
+      <i class="fas fa-times"></i>
+    </button>
+  `;
+
+  /* ── النقر على الإشعار ── */
+  toast.addEventListener('click', () => {
+    dismissNotif(id);
+    if (onClickFn) {
+      onClickFn();
+    } else if (roomId) {
+      /* فتح الغرفة مباشرة */
+      if (typeof openRoomWindow === 'function') {
+        const win = document.getElementById('chatWin');
+        if (win) closeRoomWindow();
+        setTimeout(() => openRoomWindow(Number(roomId), 'group'), 100);
+      } else if (typeof openChatListPage === 'function') {
+        openChatListPage();
+      }
+    }
+  });
+
+  container.appendChild(toast);
+
+  /* ── إغلاق تلقائي ── */
+  _notifTimers[id] = setTimeout(() => dismissNotif(id), duration);
+
+  /* ── تحديث badge الهيدر ── */
+  _totalUnreadNotifs++;
+  updateHeaderNotifBadge(_totalUnreadNotifs);
+
+  /* ── صوت الإشعار ── */
+  playNotifSound();
+}
+
+/* ════════════════════════════════════════
+   إغلاق Toast
+════════════════════════════════════════ */
+function dismissNotif(id) {
+  clearTimeout(_notifTimers[id]);
+  delete _notifTimers[id];
+
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  el.style.animation = 'notifSlideOut 0.3s ease forwards';
+  setTimeout(() => el.remove(), 290);
+}
+
+window.dismissNotif = dismissNotif;
+
+/* ════════════════════════════════════════
+   صوت الإشعار
+════════════════════════════════════════ */
+function playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    /* نغمة واتساب مبسطة */
+    const freqs    = [880, 1100, 1320];
+    const duration = 0.08;
+
+    freqs.forEach((freq, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.frequency.value = freq;
+      o.type = 'sine';
+      const start = ctx.currentTime + i * 0.09;
+      g.gain.setValueAtTime(0, start);
+      g.gain.linearRampToValueAtTime(0.12, start + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      o.start(start);
+      o.stop(start + duration);
+    });
+  } catch(e) {}
+}
+
+/* ════════════════════════════════════════
+   Badge الهيدر
+════════════════════════════════════════ */
+function updateHeaderNotifBadge(count) {
+  /* تحديث كل أزرار الهيدر المرتبطة بالمحادثات */
+  const chatBtns = document.querySelectorAll(
+    '#chatHomeTriggerBtn, [onclick*="openChatListPage"]'
+  );
+
+  chatBtns.forEach(btn => {
+    btn.style.position = 'relative';
+
+    let badge = btn.querySelector('.wow-header-notif-badge');
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'wow-header-notif-badge';
+        btn.appendChild(badge);
+      }
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = 'flex';
+    } else {
+      badge?.remove();
+    }
+  });
+
+  /* تحديث badge PWA */
+  if ('setAppBadge' in navigator) {
+    count > 0
+      ? navigator.setAppBadge(count).catch(() => {})
+      : navigator.clearAppBadge().catch(() => {});
+  }
+}
+
+/* مسح badge عند فتح المحادثات */
+const _origOpenChatList = typeof openChatListPage !== 'undefined'
+  ? openChatListPage : null;
+
+if (_origOpenChatList) {
+  window.openChatListPage = function() {
+    _totalUnreadNotifs = 0;
+    updateHeaderNotifBadge(0);
+    _origOpenChatList();
+  };
+}
+
+/* ════════════════════════════════════════
+   ★ طلب إذن الإشعارات (شريط أنيق)
+════════════════════════════════════════ */
+function showNotifPermissionBar() {
+  if (
+    Notification.permission !== 'default' ||
+    document.getElementById('notifPermissionBar') ||
+    localStorage.getItem('wow_notif_dismissed') === '1'
+  ) return;
+
+  const bar = document.createElement('div');
+  bar.id = 'notifPermissionBar';
+  bar.innerHTML = `
+    <div style="
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.04));
+      border: 1px solid rgba(201,168,76,0.3);
+      display: flex; align-items: center; justify-content: center;
+      color: #c9a84c; font-size: 20px;">
+      🔔
+    </div>
+    <div style="flex: 1; min-width: 0;">
+      <div style="font-size: 13px; font-weight: 900; color: #fff;
+        font-family: 'Montserrat', sans-serif; margin-bottom: 3px;">
+        Bildirimlere İzin Ver
+      </div>
+      <div style="font-size: 10px; color: rgba(255,255,255,0.35);
+        font-family: 'Montserrat', sans-serif; line-height: 1.5;">
+        Yeni mesaj geldiğinde anında haberdar ol
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px; flex-shrink: 0;">
+      <button id="notifPermitBtn" style="
+        padding: 9px 18px; border-radius: 9px; border: none;
+        background: linear-gradient(135deg, #c9a84c, #f0d080);
+        color: #0a0a0a; font-family: 'Montserrat', sans-serif;
+        font-size: 11px; font-weight: 900; letter-spacing: 1px;
+        cursor: pointer; transition: all 0.25s;">
+        <i class="fas fa-bell"></i> İzin Ver
+      </button>
+      <button id="notifDismissBtn" style="
+        padding: 9px 14px; border-radius: 9px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.04);
+        color: rgba(255,255,255,0.35);
+        font-family: 'Montserrat', sans-serif;
+        font-size: 11px; font-weight: 700;
+        cursor: pointer; transition: all 0.25s;">
+        Daha Sonra
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(bar);
+
+  document.getElementById('notifPermitBtn').onclick = async () => {
+    bar.remove();
+    const result = await Notification.requestPermission();
+    if (result === 'granted') {
+      await subscribeToPush();
+      showInAppNotification({
+        sender     : 'WOW MOBİLYA',
+        body       : 'Bildirimler aktif! Artık mesajları kaçırmayacaksınız 🎉',
+        unreadCount: 0,
+        duration   : 4000
+      });
+    }
+  };
+
+  document.getElementById('notifDismissBtn').onclick = () => {
+    bar.remove();
+    localStorage.setItem('wow_notif_dismissed', '1');
+  };
+}
+
+/* ════════════════════════════════════════
+   ★ إرسال Push مع معلومات كاملة
+════════════════════════════════════════ */
+async function sendPushToUser(username, title, body, roomId, extra = {}) {
+  try {
+    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      method : 'POST',
+      headers: {
+        'Content-Type' : 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({
+        username,
+        title,
+        body,
+        roomId,
+        url      : './',
+        sender   : extra.sender   || title,
+        roomName : extra.roomName || '',
+        msgType  : extra.msgType  || 'text'
+      })
+    });
+  } catch(e) {
+    console.warn('[Push] إرسال فشل:', e);
+  }
+}
+
+/* ════════════════════════════════════════
+   ★ إشعار أعضاء الغرفة (Push + Toast)
+════════════════════════════════════════ */
+async function notifyRoomMembers(msg, roomId) {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  /* جلب الأعضاء */
+  const { data: members } = await sb.from('group_members')
+    .select('username')
+    .eq('room_id', roomId)
+    .eq('is_banned', false);
+
+  if (!members?.length) return;
+
+  /* اسم الغرفة */
+  const { data: room } = await sb.from('group_rooms')
+    .select('name, room_type')
+    .eq('id', roomId)
+    .single();
+
+  const senderDisplayName = getDisplayName(currentUser);
+  const senderProfile     = _chatProfiles?.[currentUser] || {};
+
+  /* نص الرسالة */
+  const bodyText = msg.message
+    || (msg.media_type === 'image' ? '📷 Fotoğraf'
+      : msg.media_type === 'audio' ? '🎤 Ses mesajı'
+      : msg.media_type === 'video' ? '🎥 Video'
+      : msg.media_type === 'file'  ? `📎 ${msg.file_name || 'Dosya'}`
+      : 'Yeni mesaj');
+
+  const me = currentUser
+    || localStorage.getItem('wow_saved_user')
+    || localStorage.getItem('wow_auth_email');
+
+  for (const member of members) {
+    if (member.username === me) continue;
+
+    /* ── Toast داخلي (للمستخدم الحالي إذا كان في نافذة أخرى) ── */
+    if (
+      member.username === currentUser &&
+      String(roomId) !== String(_activeRoomId)
+    ) {
+      showInAppNotification({
+        sender      : senderDisplayName,
+        senderAvatar: senderProfile.avatar_url || null,
+        roomName    : room?.name || '',
+        body        : bodyText,
+        msgType     : msg.media_type || 'text',
+        unreadCount : (_grpUnread?.[roomId] || 0) + 1,
+        roomId      : roomId
+      });
+      continue;
+    }
+
+    /* ── Push خارجي ── */
+    await sendPushToUser(
+      member.username,
+      senderDisplayName,
+      bodyText,
+      roomId,
+      {
+        sender  : senderDisplayName,
+        roomName: room?.name || '',
+        msgType : msg.media_type || 'text'
+      }
+    );
+  }
+}
+
+/* ════════════════════════════════════════
+   ★ استقبال نقر الإشعار من SW
+════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type !== 'NOTIFICATION_CLICK') return;
+
+    const roomId = event.data.roomId;
+    if (!roomId) return;
+
+    /* مسح badge */
+    _totalUnreadNotifs = 0;
+    updateHeaderNotifBadge(0);
+    if ('clearAppBadge' in navigator) navigator.clearAppBadge().catch(() => {});
+
+    setTimeout(() => {
+      /* إذا التطبيق في الخلفية — أظهره */
+      const hs = document.getElementById('homeScreen');
+      const ms = document.getElementById('mainSite');
+      const lo = document.getElementById('loginOverlay');
+
+      if (lo && lo.style.display !== 'none') return; /* لم يسجل دخول */
+
+      if (hs) hs.style.display = 'none';
+      if (ms) ms.style.display = 'block';
+
+      /* افتح الغرفة */
+      if (typeof openRoomWindow === 'function') {
+        const win = document.getElementById('chatWin');
+        if (win) closeRoomWindow();
+        setTimeout(() => openRoomWindow(Number(roomId), 'group'), 200);
+      } else if (typeof openChatListPage === 'function') {
+        openChatListPage();
+      }
+    }, 500);
+  });
+}
+
+/* ════════════════════════════════════════
+   ★ تهيئة النظام بعد تسجيل الدخول
+════════════════════════════════════════ */
+async function initPushAfterLogin() {
+  setTimeout(async () => {
+    if (!currentUser) return;
+
+    try {
+      /* طلب الإذن إذا لم يُمنح بعد */
+      if (Notification.permission === 'default') {
+        setTimeout(showNotifPermissionBar, 3000);
+      } else if (Notification.permission === 'granted') {
+        await subscribeToPush();
+      }
+    } catch(e) {
+      console.warn('[Push Init]', e);
+    }
+  }, 2500);
+}
+
+/* ════════════════════════════════════════
+   ★ إزالة أزرار الاختبار المؤقتة
+════════════════════════════════════════ */
+(function removeTestButtons() {
+  setTimeout(() => {
+    ['testPushBtn'].forEach(id => {
+      document.getElementById(id)?.remove();
+    });
+    /* إزالة الأزرار الثابتة في الأسفل */
+    document.querySelectorAll('button[onclick*="testPushSystem"]').forEach(b => b.remove());
+    document.querySelectorAll('button[onclick*="forceSavePushSubscription"]').forEach(b => b.remove());
+    document.querySelectorAll('button[onclick*="testSendPush"]').forEach(b => b.remove());
+    document.querySelectorAll('button[onclick*="findCurrentUser"]').forEach(b => b.remove());
+  }, 1000);
+})();
+
+/* ════════════════════════════════════════
+   ★ Hook: إشعار عند إرسال رسالة
+════════════════════════════════════════ */
+/* هذا يُستدعى تلقائياً من sendTextMsg() الموجودة في الكود */
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
 async function testPushSystem() {
   let results = '';
 
