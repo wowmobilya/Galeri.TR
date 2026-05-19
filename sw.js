@@ -1,4 +1,4 @@
-const VERSION    = 'v9';
+const VERSION    = 'v10'; // تم التحديث لضمان عمل الـ Service Worker الجديد
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -59,6 +59,13 @@ self.addEventListener('push', event => {
 
   const count = data.count || 1;
 
+  // ★ Uygulama dışındaki ikona (App Badge) sayıyı yazdır ★
+  if (navigator.setAppBadge) {
+    navigator.setAppBadge(count).catch(() => {});
+  } else if (self.navigator && self.navigator.setAppBadge) {
+    self.navigator.setAppBadge(count).catch(() => {});
+  }
+
   const options = {
     body    : data.body,
     icon    : data.icon,
@@ -104,4 +111,3 @@ self.addEventListener('notificationclick', event => {
       })
   );
 });
-      
