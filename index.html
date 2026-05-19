@@ -7034,40 +7034,65 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 async function subscribeToPush() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    console.warn('[Push] غير مدعوم في هذا المتصفح');
+    return false;
+  }
 
+  /* ★ طلب الإذن أولاً ★ */
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return false;
+  if (permission !== 'granted') {
+    console.warn('[Push] الإذن مرفوض:', permission);
+    return false;
+  }
 
-  const reg = await navigator.serviceWorker.ready;
+  try {
+    const reg = await navigator.serviceWorker.ready;
 
-  let subscription = await reg.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await reg.pushManager.subscribe({
+    /* ★ احذف الاشتراك القديم وأنشئ جديداً ★ */
+    const oldSub = await reg.pushManager.getSubscription();
+    if (oldSub) await oldSub.unsubscribe();
+
+    /* ★ اشتراك جديد ★ */
+    const subscription = await reg.pushManager.subscribe({
       userVisibleOnly     : true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
+
+    console.log('[Push] ✅ اشتراك جديد:', subscription.endpoint.substring(0,50));
+
+    /* ★ حفظ في Supabase ★ */
+    const sb = await initSupabase();
+    const user = currentUser
+      || localStorage.getItem('wow_saved_user')
+      || '';
+
+    if (!sb || !user) {
+      console.warn('[Push] لا يوجد مستخدم للحفظ');
+      return false;
+    }
+
+    const sub = subscription.toJSON();
+
+    const { error } = await sb.from('push_subscriptions').upsert([{
+      username : user,
+      endpoint : sub.endpoint,
+      p256dh   : sub.keys.p256dh,
+      auth     : sub.keys.auth
+    }], { onConflict: 'endpoint' });
+
+    if (error) {
+      console.error('[Push] حفظ فشل:', error.message);
+      return false;
+    }
+
+    console.log('[Push] ✅ محفوظ في Supabase للمستخدم:', user);
+    return true;
+
+  } catch(e) {
+    console.error('[Push] خطأ في الاشتراك:', e);
+    return false;
   }
-
-  const sb = await initSupabase();
-const user = currentUser 
-  || localStorage.getItem('wow_saved_user') 
-  || localStorage.getItem('wow_auth_email');
-if (!sb || !user) return false;
-
-
-  const sub = subscription.toJSON();
-  const { error } = await sb.from('push_subscriptions').upsert([{
-    username : user,
-
-    endpoint : sub.endpoint,
-    p256dh   : sub.keys.p256dh,
-    auth     : sub.keys.auth
-  }], { onConflict: 'endpoint' });
-
-  if (error) { console.error('[Push] خطأ:', error.message); return false; }
-  console.log('[Push] ✅ اشتراك ناجح لـ', currentUser);
-  return true;
 }
 
 async function initPushAfterLogin() {
