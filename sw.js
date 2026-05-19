@@ -1,4 +1,4 @@
-const VERSION    = 'v17';
+const VERSION    = 'v18';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -42,7 +42,7 @@ self.addEventListener('message', event => {
 });
 
 /* ════════════════════════════════════════
-   ★ PUSH — استقبال وعرض الإشعار
+   ★ PUSH — عرض الإشعار مع بيانات كاملة
 ════════════════════════════════════════ */
 self.addEventListener('push', event => {
 
@@ -52,57 +52,78 @@ self.addEventListener('push', event => {
     body       : 'Yeni mesajınız var 💬',
     icon       : 'https://up6.cc/2026/04/177712738518231.png',
     badge      : 'https://up6.cc/2026/04/177712738518231.png',
-    count      : 1,
-    unreadCount: 1,
     sender     : '',
     roomName   : '',
     roomId     : null,
+    unreadCount: 1,
+    msgType    : 'text',
     url        : './',
     tag        : 'wow-msg',
     timestamp  : Date.now()
   };
 
+  /* ★ قراءة البيانات من الـ payload ★ */
   try {
-    if (event.data) data = { ...data, ...event.data.json() };
-  } catch(e) {}
+    if (event.data) {
+      const parsed = event.data.json();
+      data = { ...data, ...parsed };
+    }
+  } catch(e) {
+    console.warn('[SW Push] parse error:', e);
+  }
 
-  const count = data.unreadCount || data.count || 1;
+  const count = data.unreadCount || 1;
 
-  /* ── نص الزر الذكي ── */
+  /* ══ بناء العنوان الذكي ══ */
+  let smartTitle = data.sender || 'WOW MOBİLYA';
+
+  /* ══ بناء نص الرسالة الذكي ══ */
+  let smartBody = data.body || 'Yeni mesaj';
+  if (data.msgType === 'image')  smartBody = '📷 Fotoğraf gönderdi';
+  if (data.msgType === 'audio')  smartBody = '🎤 Ses mesajı gönderdi';
+  if (data.msgType === 'video')  smartBody = '🎥 Video gönderdi';
+  if (data.msgType === 'file')   smartBody = '📎 Dosya gönderdi';
+
+  /* ══ زر الإجراء الذكي ══ */
   const actionLabel = count > 1
-    ? `📩 ${count} Okunmamış Mesaj`
+    ? `📩 ${count} Okunmamış`
     : `📩 Mesajı Gör`;
 
   const options = {
-    body             : data.body,
+    /* ★ العنوان = اسم المرسل ★ */
+    body             : smartBody,
     icon             : data.icon,
     badge            : data.badge,
-    tag              : data.tag || 'wow-msg',
+    tag              : data.tag || `room-${data.roomId || 'wow'}`,
     renotify         : true,
     requireInteraction: false,
     silent           : false,
-    vibrate          : [200, 100, 200, 100, 200],
+    vibrate          : [200, 100, 200],
     timestamp        : data.timestamp || Date.now(),
-    data             : {
+
+    /* ★ بيانات إضافية للنقر ★ */
+    data: {
       url        : data.url    || './',
       roomId     : data.roomId || null,
       sender     : data.sender || '',
       roomName   : data.roomName || '',
       unreadCount: count
     },
+
     actions: [
       { action: 'open',    title: actionLabel },
       { action: 'dismiss', title: '✖ Kapat'  }
     ]
   };
 
-  /* ── تحديث badge عدد الرسائل ── */
+  /* ★ تحديث badge الهاتف ★ */
   if ('setAppBadge' in self.registration) {
     self.registration.setAppBadge(count).catch(() => {});
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    /* ★ العنوان = اسم المرسل + اسم الغرفة ★ */
+    self.registration.showNotification(smartTitle, options)
   );
 });
 
@@ -113,7 +134,6 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
 
   if (event.action === 'dismiss') {
-    /* مسح badge عند الإغلاق */
     if ('clearAppBadge' in self.registration) {
       self.registration.clearAppBadge().catch(() => {});
     }
@@ -126,18 +146,18 @@ self.addEventListener('notificationclick', event => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
-        /* إذا التطبيق مفتوح — ركّز عليه وأرسل له الغرفة */
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
-            client.postMessage({
-              type  : 'NOTIFICATION_CLICK',
-              roomId: roomId,
-              action: 'open_room'
-            });
+            if (roomId) {
+              client.postMessage({
+                type  : 'NOTIFICATION_CLICK',
+                roomId: roomId,
+                action: 'open_room'
+              });
+            }
             return client.focus();
           }
         }
-        /* التطبيق مغلق — افتحه */
         if (clients.openWindow) {
           return clients.openWindow(
             roomId ? `${targetUrl}#room=${roomId}` : targetUrl
@@ -147,10 +167,4 @@ self.addEventListener('notificationclick', event => {
   );
 });
 
-/* ════════════════════════════════════════
-   ★ إغلاق الإشعار
-════════════════════════════════════════ */
-self.addEventListener('notificationclose', event => {
-  /* تتبع الإشعارات المغلقة (اختياري) */
-  console.log('[SW] إشعار أُغلق:', event.notification.tag);
-});
+self.addEventListener('notificationclose', () => {});
