@@ -7078,7 +7078,7 @@ async function initPushAfterLogin() {
   }, 2500);
 }
 
-async function sendPushToUser(username, title, body, roomId) {
+async function sendPushToUser(username, title, body, roomId, count = 1) {
   try {
     await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
       method : 'POST',
@@ -7086,10 +7086,18 @@ async function sendPushToUser(username, title, body, roomId) {
         'Content-Type' : 'application/json',
         'Authorization': `Bearer ${SUPABASE_KEY}`
       },
-      body: JSON.stringify({ username, title, body, roomId, url: './' })
+      body: JSON.stringify({
+        username,
+        title,
+        body,
+        roomId,
+        count,          /* ← أضف هذا */
+        url: './'
+      })
     });
   } catch(e) {}
 }
+
 
 async function notifyRoomMembers(msg, roomId) {
   const sb = await initSupabase();
@@ -7108,16 +7116,54 @@ async function notifyRoomMembers(msg, roomId) {
       : '📎 Dosya');
 
   for (const member of members) {
-  const me = currentUser || localStorage.getItem('wow_saved_user');
-  if (member.username === me) continue;
+    const me = currentUser || localStorage.getItem('wow_saved_user');
+    if (member.username === me) continue;
+
+    /* ── احسب العدد الحقيقي لهذا العضو ── */
+    let totalUnread = 0;
+    try {
+      const { data: memberRooms } = await sb
+        .from('group_members')
+        .select('room_id')
+        .eq('username', member.username)
+        .eq('is_banned', false);
+
+      const roomIds = (memberRooms || []).map(r => r.room_id);
+
+      for (const rid of roomIds) {
+        const { data: rs } = await sb
+          .from('group_read_status')
+          .select('last_read_id')
+          .eq('room_id', rid)
+          .eq('username', member.username)
+          .maybeSingle();
+
+        const lastReadId = rs?.last_read_id ?? 0;
+
+        const { count } = await sb
+          .from('group_messages')
+          .select('id', { count: 'exact', head: true })
+          .eq('room_id', rid)
+          .eq('is_deleted', false)
+          .neq('from_user', member.username)
+          .gt('id', lastReadId);
+
+        totalUnread += count ?? 0;
+      }
+    } catch(e) {
+      totalUnread = 1;
+    }
+
     await sendPushToUser(
       member.username,
       `💬 ${senderName}`,
       bodyText,
-      roomId
+      roomId,
+      Math.max(1, totalUnread)  /* ← العدد الحقيقي */
     );
   }
 }
+
 
 /* استقبال النقر على الإشعار */
 if ('serviceWorker' in navigator) {
