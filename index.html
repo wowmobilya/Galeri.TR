@@ -7036,47 +7036,79 @@ function urlBase64ToUint8Array(base64String) {
 async function subscribeToPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
 
+  // طلب الإذن (يجب أن يكون داخل حدث مستخدم)
   const permission = await Notification.requestPermission();
   if (permission !== 'granted') return false;
 
-  const reg = await navigator.serviceWorker.ready;
+  try {
+    const reg = await navigator.serviceWorker.ready;
 
-  let subscription = await reg.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await reg.pushManager.subscribe({
-      userVisibleOnly     : true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-    });
+    let subscription = await reg.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await reg.pushManager.subscribe({
+        userVisibleOnly     : true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    // ★ تحديد المستخدم بشكل موثوق
+    const user = currentUser 
+      || localStorage.getItem('wow_saved_user')
+      || localStorage.getItem('wow_auth_email');
+
+    if (!user) {
+      console.error('[Push] ❌ لا يوجد مستخدم مسجّل دخول');
+      return false;
+    }
+
+    const sb = await initSupabase();
+    if (!sb) return false;
+
+    const sub = subscription.toJSON();
+    const { error } = await sb.from('push_subscriptions').upsert([{
+      username : user,
+      endpoint : sub.endpoint,
+      p256dh   : sub.keys.p256dh,
+      auth     : sub.keys.auth
+    }], { onConflict: 'endpoint' });
+
+    if (error) {
+      console.error('[Push] خطأ في الحفظ:', error.message);
+      return false;
+    }
+
+    console.log('[Push] ✅ اشتراك ناجح لـ', user);
+    return true;
+
+  } catch(e) {
+    console.warn('[Push]', e);
+    return false;
   }
-
-  const sb = await initSupabase();
-const user = currentUser 
-  || localStorage.getItem('wow_saved_user') 
-  || localStorage.getItem('wow_auth_email');
-if (!sb || !user) return false;
-
-
-  const sub = subscription.toJSON();
-  const { error } = await sb.from('push_subscriptions').upsert([{
-    username : user,
-
-    endpoint : sub.endpoint,
-    p256dh   : sub.keys.p256dh,
-    auth     : sub.keys.auth
-  }], { onConflict: 'endpoint' });
-
-  if (error) { console.error('[Push] خطأ:', error.message); return false; }
-  console.log('[Push] ✅ اشتراك ناجح لـ', currentUser);
-  return true;
 }
+
+  
 
 async function initPushAfterLogin() {
+  // ننتظر قليلاً حتى يكتمل تسجيل الدخول
   setTimeout(async () => {
-    if (!currentUser) return;
-    try { await subscribeToPush(); }
-    catch(e) { console.warn('[Push]', e); }
-  }, 2500);
+    const user = currentUser 
+      || localStorage.getItem('wow_saved_user');
+    if (!user) return;
+
+    // إذا كان الإذن ممنوحاً مسبقاً → اشترك مباشرة بدون popup
+    if (Notification.permission === 'granted') {
+      const ok = await subscribeToPush();
+      if (ok) console.log('[Push] ✅ اشتراك تلقائي ناجح');
+      return;
+    }
+
+    // إذا لم يُرفض الإذن → أظهر زر التفعيل
+    if (Notification.permission !== 'denied') {
+      showPushEnableButton();
+    }
+  }, 1500);
 }
+
 
 async function sendPushToUser(username, title, body, roomId) {
   try {
@@ -32379,290 +32411,110 @@ document.head.appendChild(fixStyle);
 
 
 
-async function testPushSystem() {
-  let results = '';
 
-  // 1. هل المتصفح يدعم الإشعارات؟
-  const hasNotif = 'Notification' in window;
-  const hasSW    = 'serviceWorker' in navigator;
-  const hasPush  = 'PushManager' in window;
-  results += `متصفح: ${hasNotif?'✅':'❌'} | SW: ${hasSW?'✅':'❌'} | Push: ${hasPush?'✅':'❌'}\n`;
 
-  // 2. ما هو إذن الإشعارات؟
-  results += `إذن الإشعارات: ${Notification.permission}\n`;
 
-  // 3. هل Service Worker مسجّل؟
-  try {
-    const reg = await navigator.serviceWorker.getRegistration();
-    results += `SW مسجّل: ${reg ? '✅ نعم' : '❌ لا'}\n`;
-    if (reg) results += `SW scope: ${reg.scope}\n`;
-  } catch(e) {
-    results += `SW خطأ: ${e.message}\n`;
-  }
 
-  // 4. هل يوجد اشتراك Push؟
-  try {
-    const reg  = await navigator.serviceWorker.ready;
-    const sub  = await reg.pushManager.getSubscription();
-    results += `Push اشتراك: ${sub ? '✅ موجود' : '❌ غير موجود'}\n`;
-    if (sub) results += `Endpoint: ${sub.endpoint.substring(0,50)}...\n`;
-  } catch(e) {
-    results += `Push خطأ: ${e.message}\n`;
-  }
 
-  // 5. هل الاشتراك محفوظ في Supabase؟
-  try {
-    const sb = await initSupabase();
-    const { data, error } = await sb
-      .from('push_subscriptions')
-      .select('*')
-      .eq('username', currentUser);
-    results += `Supabase اشتراكات: ${data?.length || 0} سجل\n`;
-    if (error) results += `Supabase خطأ: ${error.message}\n`;
-  } catch(e) {
-    results += `Supabase خطأ: ${e.message}\n`;
-  }
 
-  // 6. اختبار إرسال إشعار محلي
-  try {
-    if (Notification.permission === 'granted') {
-      new Notification('✅ اختبار محلي', {
-        body: 'إذا رأيت هذا — الإشعارات تعمل محلياً',
-        icon: 'https://up6.cc/2026/04/177712738518231.png'
-      });
-      results += `إشعار محلي: ✅ تم الإرسال\n`;
-    } else {
-      results += `إشعار محلي: ❌ الإذن غير ممنوح\n`;
-    }
-  } catch(e) {
-    results += `إشعار محلي خطأ: ${e.message}\n`;
-  }
+  function showPushEnableButton() {
+  // لا تظهره مرتين
+  if (document.getElementById('pushEnableBar')) return;
 
-  // عرض النتائج
-  showTestResults(results);
-}
-
-function showTestResults(text) {
-  document.getElementById('testResultsBox')?.remove();
-
-  const box = document.createElement('div');
-  box.id = 'testResultsBox';
-  box.style.cssText = `
-    position:fixed;top:50%;left:50%;
-    transform:translate(-50%,-50%);
-    z-index:999999;
-    background:#0f0f0f;
-    border:2px solid #c9a84c;
-    border-radius:16px;
-    padding:20px;
-    max-width:90vw;
-    width:360px;
-    font-family:'Montserrat',sans-serif;
-    box-shadow:0 20px 60px rgba(0,0,0,0.8);
+  const bar = document.createElement('div');
+  bar.id = 'pushEnableBar';
+  bar.style.cssText = `
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    z-index: 9999;
+    background: rgba(10,10,10,0.97);
+    border: 1px solid rgba(201,168,76,0.45);
+    border-radius: 16px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+    backdrop-filter: blur(20px);
+    max-width: 90vw;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    font-family: 'Montserrat', sans-serif;
   `;
 
-  box.innerHTML = `
-    <div style="font-size:14px;font-weight:900;color:#c9a84c;
-      margin-bottom:14px;display:flex;justify-content:space-between;">
-      🔔 نتائج اختبار Push
-      <span onclick="document.getElementById('testResultsBox').remove()"
-        style="cursor:pointer;color:rgba(255,255,255,0.4);font-size:18px;">✕</span>
+  bar.innerHTML = `
+    <div style="
+      width: 38px; height: 38px; flex-shrink: 0;
+      border-radius: 10px;
+      background: linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
+      border: 1px solid rgba(201,168,76,0.35);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #c9a84c;">
+      🔔
     </div>
-    <pre style="
-      color:#fff;font-size:11px;line-height:1.8;
-      white-space:pre-wrap;word-break:break-all;
-      background:rgba(255,255,255,0.04);
-      border-radius:8px;padding:12px;
-      max-height:300px;overflow-y:auto;
-      font-family:'Montserrat',sans-serif;">${text}</pre>
-    <button onclick="requestPushPermission()" style="
-      width:100%;margin-top:12px;padding:11px;
-      background:linear-gradient(135deg,#c9a84c,#f0d080);
-      border:none;border-radius:10px;color:#000;
-      font-family:'Montserrat',sans-serif;
-      font-size:12px;font-weight:900;cursor:pointer;">
-      📲 اطلب إذن الإشعارات
+    <div style="flex: 1; min-width: 0;">
+      <div style="font-size: 12px; font-weight: 900; color: #fff;
+        margin-bottom: 2px;">Bildirimleri Etkinleştir</div>
+      <div style="font-size: 10px; color: rgba(255,255,255,0.4);
+        letter-spacing: 0.3px; line-height: 1.4;">
+        Yeni sipariş ve mesaj bildirimleri alın
+      </div>
+    </div>
+    <button id="pushEnableBtn" style="
+      padding: 9px 16px; border-radius: 10px; border: none;
+      background: linear-gradient(135deg,#c9a84c,#f0d080);
+      color: #0a0a0a; font-family: 'Montserrat',sans-serif;
+      font-size: 11px; font-weight: 900; letter-spacing: 1px;
+      cursor: pointer; white-space: nowrap;
+      transition: all 0.25s;">
+      AÇIK
     </button>
-    <button onclick="forceSubscribePush()" style="
-      width:100%;margin-top:8px;padding:11px;
-      background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.15);
-      border-radius:10px;color:#fff;
-      font-family:'Montserrat',sans-serif;
-      font-size:12px;font-weight:700;cursor:pointer;">
-      🔄 أعد الاشتراك
+    <button onclick="dismissPushBar()" style="
+      background: none; border: none;
+      color: rgba(255,255,255,0.25); font-size: 16px;
+      cursor: pointer; padding: 4px; flex-shrink: 0;">
+      ✕
     </button>
   `;
 
-  document.body.appendChild(box);
-}
+  document.body.appendChild(bar);
 
-async function requestPushPermission() {
-  const result = await Notification.requestPermission();
-  document.getElementById('testResultsBox')?.remove();
-  showTestResults(`نتيجة طلب الإذن: ${result}`);
-}
-
-async function forceSubscribePush() {
-  document.getElementById('testResultsBox')?.remove();
-  const ok = await subscribeToPush();
-  showTestResults(`نتيجة الاشتراك: ${ok ? '✅ نجح' : '❌ فشل'}`);
-}
-
-async function forceSavePushSubscription() {
-  showTestResults('جاري الحفظ...');
-
-  /* 1. تحقق من المستخدم */
-  const user = currentUser 
-    || localStorage.getItem('wow_saved_user') 
-    || localStorage.getItem('wow_auth_email');
-  if (!user) {
-    showTestResults('❌ لم يُعثر على المستخدم — سجّل دخول أولاً');
-    return;
-  }
-
-
-  /* 2. احصل على الاشتراك الموجود */
-  const reg = await navigator.serviceWorker.ready;
-  let subscription = await reg.pushManager.getSubscription();
-
-  /* 3. إذا لم يوجد — أنشئ واحداً جديداً */
-  if (!subscription) {
-    subscription = await reg.pushManager.subscribe({
-      userVisibleOnly     : true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+  // أنيميشن الظهور
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      bar.style.opacity = '1';
+      bar.style.transform = 'translateX(-50%) translateY(0)';
     });
-  }
+  });
 
-  /* 4. احفظ في Supabase */
-  const sb  = await initSupabase();
-  const sub = subscription.toJSON();
-
-  const { data, error } = await sb.from('push_subscriptions').upsert([{
-    username : user,
-
-    endpoint : sub.endpoint,
-    p256dh   : sub.keys.p256dh,
-    auth     : sub.keys.auth
-  }], { onConflict: 'endpoint' });
-
-  if (error) {
-    showTestResults(`❌ فشل الحفظ:\n${error.message}\n\nHint: ${error.hint || ''}`);
-    return;
-  }
-
-  /* 5. تحقق من الحفظ */
-  const { data: check } = await sb
-    .from('push_subscriptions')
-    .select('*')
-    .eq('username', user);
-
-  showTestResults(
-    `✅ تم الحفظ بنجاح!\n` +
-    `المستخدم: ${user}\n` +
-
-    `عدد السجلات: ${check?.length || 0}\n\n` +
-    `الآن اختبر إرسال إشعار 👇`
-  );
-}
-
-  async function testSendPush() {
-  showTestResults('جاري الإرسال...');
-  try {
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
-      method : 'POST',
-      headers: {
-        'Content-Type' : 'application/json',
-        'Authorization': `Bearer ${SUPABASE_KEY}`
-      },
-      body: JSON.stringify({
-        username: currentUser,
-        title   : '✅ اختبار ناجح!',
-        body    : 'الإشعارات تعمل بشكل صحيح 🎉',
-        roomId  : null,
-        url     : './'
-      })
-    });
-    const json = await res.json();
-    showTestResults(
-      `نتيجة الإرسال:\n` +
-      `Status: ${res.status}\n` +
-      `Sent: ${json.sent ?? 0}\n` +
-      `Response: ${JSON.stringify(json)}`
-    );
-  } catch(e) {
-    showTestResults(`❌ خطأ في الإرسال:\n${e.message}`);
-  }
-}
-function findCurrentUser() {
-  const candidates = [
-    'currentUser', 'username', 'userName', 'loggedUser',
-    'activeUser', 'userLogin', 'loginUser', 'myUsername',
-    'currentUsername', 'user', 'USER', 'CURRENT_USER'
-  ];
-
-  let found = '';
-  for (const name of candidates) {
-    try {
-      const val = window[name];
-      if (val && typeof val === 'string' && val.length > 0) {
-        found += `✅ ${name} = "${val}"\n`;
-      }
-    } catch(e) {}
-  }
-
-  /* ابحث في localStorage */
-  let storage = '\n--- localStorage ---\n';
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    const val = localStorage.getItem(key);
-    if (val && val.length < 50) {
-      storage += `${key} = "${val}"\n`;
+  // ★ الزر يطلب الإذن عند الضغط (هذا هو التفاعل المطلوب من المتصفح)
+  document.getElementById('pushEnableBtn').addEventListener('click', async () => {
+    dismissPushBar();
+    const ok = await subscribeToPush();
+    if (ok) {
+      showInvToast('🔔 Bildirimler etkinleştirildi ✓', 'success');
+    } else {
+      showInvToast('Bildirim izni reddedildi', 'error');
     }
-  }
+  });
 
-  showTestResults(found || '❌ لم يُعثر على متغير\n' + storage);
+  // اختفاء تلقائي بعد 8 ثواني
+  setTimeout(dismissPushBar, 8000);
+}
+
+function dismissPushBar() {
+  const bar = document.getElementById('pushEnableBar');
+  if (!bar) return;
+  bar.style.opacity = '0';
+  bar.style.transform = 'translateX(-50%) translateY(20px)';
+  setTimeout(() => bar.remove(), 400);
 }
 
 
   
 
 </script>
-
-  
-<button id="testPushBtn" onclick="testPushSystem()" style="
-  position:fixed;bottom:20px;left:20px;z-index:99999;
-  background:#c9a84c;color:#000;border:none;
-  border-radius:10px;padding:12px 18px;
-  font-family:'Montserrat',sans-serif;
-  font-size:12px;font-weight:900;cursor:pointer;">
-  🔔 TEST PUSH
-</button>
-<button onclick="forceSavePushSubscription()" style="
-  position:fixed;bottom:20px;left:160px;z-index:99999;
-  background:#27ae60;color:#fff;border:none;
-  border-radius:10px;padding:12px 18px;
-  font-family:'Montserrat',sans-serif;
-  font-size:12px;font-weight:900;cursor:pointer;">
-  💾 احفظ الاشتراك
-</button>
-<button onclick="testSendPush()" style="
-  position:fixed;bottom:70px;left:20px;z-index:99999;
-  background:#8e44ad;color:#fff;border:none;
-  border-radius:10px;padding:12px 18px;
-  font-family:'Montserrat',sans-serif;
-  font-size:12px;font-weight:900;cursor:pointer;">
-  📤 اختبر الإرسال
-</button>
-<button onclick="findCurrentUser()" style="
-  position:fixed;bottom:120px;left:20px;z-index:99999;
-  background:#e74c3c;color:#fff;border:none;
-  border-radius:10px;padding:12px 18px;
-  font-family:'Montserrat',sans-serif;
-  font-size:12px;font-weight:900;cursor:pointer;">
-  👤 من أنا؟
-</button>
-
-  
 </body>
 </html>                                                                             
