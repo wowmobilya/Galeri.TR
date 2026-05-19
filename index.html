@@ -7036,9 +7036,8 @@ function urlBase64ToUint8Array(base64String) {
 async function subscribeToPush() {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
 
-  // طلب الإذن (يجب أن يكون داخل حدث مستخدم)
-  const permission = await Notification.requestPermission();
-  if (permission !== 'granted') return false;
+  // ★ لا تطلب الإذن مجدداً — فقط تحقق منه
+  if (Notification.permission !== 'granted') return false;
 
   try {
     const reg = await navigator.serviceWorker.ready;
@@ -7051,15 +7050,11 @@ async function subscribeToPush() {
       });
     }
 
-    // ★ تحديد المستخدم بشكل موثوق
-    const user = currentUser 
+    const user = currentUser
       || localStorage.getItem('wow_saved_user')
       || localStorage.getItem('wow_auth_email');
 
-    if (!user) {
-      console.error('[Push] ❌ لا يوجد مستخدم مسجّل دخول');
-      return false;
-    }
+    if (!user) return false;
 
     const sb = await initSupabase();
     if (!sb) return false;
@@ -7072,16 +7067,11 @@ async function subscribeToPush() {
       auth     : sub.keys.auth
     }], { onConflict: 'endpoint' });
 
-    if (error) {
-      console.error('[Push] خطأ في الحفظ:', error.message);
-      return false;
-    }
+    if (error) return false;
 
-    console.log('[Push] ✅ اشتراك ناجح لـ', user);
     return true;
 
   } catch(e) {
-    console.warn('[Push]', e);
     return false;
   }
 }
