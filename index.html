@@ -32795,17 +32795,6 @@ function showPushEnableButton() {
 
 
 
-// امسح المفاتيح القديمة غير المرتبطة بمستخدم
-(function cleanOldPushKeys() {
-  const keys = Object.keys(localStorage);
-  keys.forEach(k => {
-    // احذف فقط المفتاح العام القديم بدون اسم مستخدم
-    if (k === 'push_subscribed') {
-      localStorage.removeItem(k);
-    }
-  });
-})();
-
   
 
 </script>
