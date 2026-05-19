@@ -33220,14 +33220,30 @@ async function initPushAfterLogin() {
     font-size: 10px;
     color: rgba(255,255,255,0.6);
     min-height: 80px;
-    max-height: 180px;
+    max-height: 200px;
     overflow-y: auto;
-    margin-bottom: 12px;
-    line-height: 1.8;
+    margin-bottom: 10px;
+    line-height: 1.9;
     direction: ltr;
+    white-space: pre-wrap;
+    word-break: break-all;
   ">جاهز للاختبار...</div>
 
-  <!-- أزرار -->
+  <!-- زر النسخ -->
+  <button onclick="copyPushLog()" id="copyLogBtn" style="
+    width:100%;
+    padding:9px;border-radius:10px;border:none;
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.12);
+    color:rgba(255,255,255,0.6);
+    font-family:'Montserrat',sans-serif;
+    font-size:10px;font-weight:700;
+    cursor:pointer;margin-bottom:10px;
+    transition: all 0.2s;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  ">📋 نسخ النتائج</button>
+
+  <!-- أزرار الاختبار -->
   <div style="display:flex;flex-direction:column;gap:8px;">
 
     <button onclick="runPushDiagnostic()" style="
@@ -33273,11 +33289,18 @@ async function initPushAfterLogin() {
 </div>
 
 <script>
-/* ══ دوال الاختبار ══ */
+/* ══════════════════════════════════════
+   متغير لتجميع كل النصوص للنسخ
+══════════════════════════════════════ */
+let _pushLogText = '';
 
 function pushLog(msg, color) {
   const el = document.getElementById('pushTestLog');
   if (!el) return;
+
+  /* حفظ النص للنسخ */
+  _pushLogText += msg + '\n';
+
   const line = document.createElement('div');
   line.style.color = color || 'rgba(255,255,255,0.6)';
   line.textContent = msg;
@@ -33288,63 +33311,175 @@ function pushLog(msg, color) {
 function pushLogClear() {
   const el = document.getElementById('pushTestLog');
   if (el) el.innerHTML = '';
+  _pushLogText = '';
 }
 
-/* ══ 1. فحص النظام ══ */
+/* ══════════════════════════════════════
+   ★ نسخ النتائج
+══════════════════════════════════════ */
+async function copyPushLog() {
+  const btn = document.getElementById('copyLogBtn');
+
+  if (!_pushLogText.trim()) {
+    /* لا يوجد نص — نسخ محتوى الـ div */
+    const el = document.getElementById('pushTestLog');
+    _pushLogText = el ? el.innerText : 'لا يوجد نتائج';
+  }
+
+  try {
+    /* ★ طريقة 1: Clipboard API الحديثة ★ */
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(_pushLogText);
+      showCopySuccess(btn);
+      return;
+    }
+
+    /* ★ طريقة 2: execCommand للمتصفحات القديمة ★ */
+    const ta = document.createElement('textarea');
+    ta.value = _pushLogText;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+
+    if (ok) {
+      showCopySuccess(btn);
+    } else {
+      showCopyFallback();
+    }
+
+  } catch(e) {
+    /* ★ طريقة 3: عرض النص في نافذة للنسخ اليدوي ★ */
+    showCopyFallback();
+  }
+}
+
+function showCopySuccess(btn) {
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.innerHTML     = '✅ تم النسخ!';
+  btn.style.color   = '#4ade80';
+  btn.style.borderColor = 'rgba(74,222,128,0.4)';
+  setTimeout(() => {
+    btn.innerHTML   = orig;
+    btn.style.color = 'rgba(255,255,255,0.6)';
+    btn.style.borderColor = 'rgba(255,255,255,0.12)';
+  }, 2500);
+}
+
+function showCopyFallback() {
+  /* عرض نافذة بالنص لنسخه يدوياً */
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:9999999;
+    background:rgba(0,0,0,0.85);
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;
+  `;
+  overlay.innerHTML = `
+    <div style="
+      background:#0f0f0f;border:1px solid rgba(201,168,76,0.3);
+      border-radius:16px;padding:20px;
+      width:min(360px,calc(100vw - 40px));
+      font-family:'Montserrat',sans-serif;
+    ">
+      <div style="color:#c9a84c;font-weight:900;font-size:12px;margin-bottom:10px;">
+        📋 انسخ النص يدوياً (اضغط مطولاً ← تحديد الكل)
+      </div>
+      <textarea readonly style="
+        width:100%;height:160px;
+        background:rgba(255,255,255,0.05);
+        border:1px solid rgba(255,255,255,0.1);
+        border-radius:10px;padding:10px;
+        color:#fff;font-size:10px;
+        font-family:monospace;resize:none;
+        direction:ltr;line-height:1.7;
+        box-sizing:border-box;
+      ">${_pushLogText}</textarea>
+      <button onclick="this.closest('div').parentElement.remove()" style="
+        margin-top:10px;width:100%;padding:10px;
+        border-radius:10px;border:none;
+        background:rgba(201,168,76,0.15);
+        border:1px solid rgba(201,168,76,0.3);
+        color:#c9a84c;font-family:'Montserrat',sans-serif;
+        font-size:11px;font-weight:900;cursor:pointer;
+      ">✖ إغلاق</button>
+    </div>
+  `;
+
+  /* تحديد النص تلقائياً */
+  document.body.appendChild(overlay);
+  const ta = overlay.querySelector('textarea');
+  setTimeout(() => { ta.focus(); ta.select(); }, 100);
+}
+
+/* ══════════════════════════════════════
+   1. فحص النظام
+══════════════════════════════════════ */
 async function runPushDiagnostic() {
   pushLogClear();
   pushLog('═══ فحص النظام ═══');
+  pushLog(`🕐 ${new Date().toLocaleTimeString()}`);
 
-  // Service Worker
   if (!('serviceWorker' in navigator)) {
     pushLog('❌ SW غير مدعوم', '#ef4444'); return;
   }
   pushLog('✅ SW مدعوم', '#4ade80');
 
-  // Push Manager
   if (!('PushManager' in window)) {
     pushLog('❌ PushManager غير مدعوم', '#ef4444'); return;
   }
   pushLog('✅ PushManager مدعوم', '#4ade80');
 
-  // إذن
   pushLog(`🔔 إذن: ${Notification.permission}`,
-    Notification.permission === 'granted' ? '#4ade80' : '#ef4444');
+    Notification.permission==='granted' ? '#4ade80' : '#ef4444');
 
-  // SW مسجّل
   const reg = await navigator.serviceWorker.getRegistration().catch(()=>null);
   if (!reg) {
     pushLog('❌ لا يوجد SW مسجّل!', '#ef4444'); return;
   }
-  pushLog(`✅ SW: ${reg.active?.state || 'unknown'}`, '#4ade80');
+  pushLog(`✅ SW: ${reg.active?.state||'unknown'}`, '#4ade80');
+  pushLog(`📌 scope: ${reg.scope}`, '#94a3b8');
 
-  // Subscription
   const sub = await reg.pushManager.getSubscription().catch(()=>null);
   if (!sub) {
     pushLog('❌ لا يوجد Subscription!', '#ef4444');
     pushLog('💡 اضغط: إعادة الاشتراك', '#fb923c');
   } else {
     pushLog('✅ Subscription موجود', '#4ade80');
-    pushLog(`📌 ${sub.endpoint.substring(0,35)}...`, '#94a3b8');
+    pushLog(`🔗 ${sub.endpoint.substring(0,50)}...`, '#94a3b8');
+    const j = sub.toJSON();
+    pushLog(`🔑 p256dh: ${j.keys?.p256dh?.substring(0,20)}...`, '#94a3b8');
+    pushLog(`🔑 auth: ${j.keys?.auth?.substring(0,10)}...`, '#94a3b8');
   }
 
-  // currentUser
-  const user = (typeof currentUser !== 'undefined' && currentUser)
+  const user = (typeof currentUser!=='undefined' && currentUser)
     || localStorage.getItem('wow_saved_user')
     || localStorage.getItem('wow_auth_email')
     || null;
   pushLog(user ? `✅ مستخدم: ${user}` : '❌ لا يوجد مستخدم!',
     user ? '#4ade80' : '#ef4444');
 
-  // SUPABASE_URL
-  const sbUrl = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : null;
-  pushLog(sbUrl ? `✅ Supabase: موجود` : '❌ SUPABASE_URL غير معرّف!',
+  const sbUrl = typeof SUPABASE_URL!=='undefined' ? SUPABASE_URL : null;
+  pushLog(sbUrl
+    ? `✅ Supabase: ${sbUrl.substring(0,35)}...`
+    : '❌ SUPABASE_URL غير معرّف!',
     sbUrl ? '#4ade80' : '#ef4444');
+
+  const vapid = typeof VAPID_PUBLIC_KEY!=='undefined' ? VAPID_PUBLIC_KEY : null;
+  pushLog(vapid
+    ? `✅ VAPID: ${vapid.substring(0,20)}...`
+    : '⚠️ VAPID_PUBLIC_KEY غير معرّف',
+    vapid ? '#4ade80' : '#fb923c');
 
   pushLog('═══ انتهى الفحص ═══');
 }
 
-/* ══ 2. إشعار محلي ══ */
+/* ══════════════════════════════════════
+   2. إشعار محلي
+══════════════════════════════════════ */
 async function runLocalNotifTest() {
   pushLogClear();
   pushLog('🧪 اختبار إشعار محلي...');
@@ -33359,36 +33494,37 @@ async function runLocalNotifTest() {
   try {
     const reg = await navigator.serviceWorker.ready;
     await reg.showNotification('✅ WOW MOBİLYA', {
-      body   : 'الإشعار يعمل بشكل صحيح! 🎉',
+      body   : 'الإشعار المحلي يعمل! 🎉',
       icon   : 'https://up6.cc/2026/04/177712738518231.png',
       badge  : 'https://up6.cc/2026/04/177712738518231.png',
       vibrate: [200,100,200],
       data   : { url: './' }
     });
-    pushLog('✅ الإشعار ظهر بنجاح!', '#4ade80');
+    pushLog('✅ الإشعار المحلي ظهر!', '#4ade80');
   } catch(e) {
     pushLog(`❌ فشل: ${e.message}`, '#ef4444');
   }
 }
 
-/* ══ 3. اختبار إرسال Push ══ */
+/* ══════════════════════════════════════
+   3. اختبار إرسال Push
+══════════════════════════════════════ */
 async function runPushSendTest() {
   pushLogClear();
   pushLog('📡 اختبار إرسال Push...');
 
-  const user = (typeof currentUser !== 'undefined' && currentUser)
+  const user = (typeof currentUser!=='undefined' && currentUser)
     || localStorage.getItem('wow_saved_user')
     || localStorage.getItem('wow_auth_email');
 
   if (!user) {
-    pushLog('❌ لا يوجد مستخدم مسجّل!', '#ef4444'); return;
+    pushLog('❌ لا يوجد مستخدم!', '#ef4444'); return;
   }
   pushLog(`👤 إرسال لـ: ${user}`, '#94a3b8');
 
-  const sbUrl = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : null;
-  const sbKey = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY
-              : typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY
-              : null;
+  const sbUrl = typeof SUPABASE_URL!=='undefined' ? SUPABASE_URL : null;
+  const sbKey = typeof SUPABASE_KEY!=='undefined' ? SUPABASE_KEY
+              : typeof SUPABASE_ANON_KEY!=='undefined' ? SUPABASE_ANON_KEY : null;
 
   if (!sbUrl || !sbKey) {
     pushLog('❌ Supabase غير معرّف!', '#ef4444'); return;
@@ -33396,6 +33532,7 @@ async function runPushSendTest() {
 
   try {
     pushLog('⏳ جاري الإرسال...', '#fb923c');
+
     const res = await fetch(`${sbUrl}/functions/v1/send-push`, {
       method : 'POST',
       headers: {
@@ -33418,8 +33555,10 @@ async function runPushSendTest() {
     pushLog(`📊 HTTP: ${res.status}`, res.ok?'#4ade80':'#ef4444');
     pushLog(`📤 أُرسل: ${result.sent}/${result.total}`,
       result.sent>0?'#4ade80':'#ef4444');
+    pushLog(`📬 unread: ${result.unreadCount??'-'}`, '#94a3b8');
 
     if (result.logs?.length) {
+      pushLog('── logs ──', '#64748b');
       result.logs.forEach(l => pushLog(`  ${l}`, '#94a3b8'));
     }
 
@@ -33429,7 +33568,7 @@ async function runPushSendTest() {
       pushLog('❌ لا يوجد subscription!', '#ef4444');
       pushLog('💡 اضغط: إعادة الاشتراك', '#fb923c');
     } else {
-      pushLog(`❌ فشل: ${JSON.stringify(result)}`, '#ef4444');
+      pushLog(`❌ ${JSON.stringify(result)}`, '#ef4444');
     }
 
   } catch(e) {
@@ -33437,13 +33576,14 @@ async function runPushSendTest() {
   }
 }
 
-/* ══ 4. إعادة الاشتراك ══ */
+/* ══════════════════════════════════════
+   4. إعادة الاشتراك
+══════════════════════════════════════ */
 async function runResubscribe() {
   pushLogClear();
   pushLog('🔄 إعادة الاشتراك...');
 
   try {
-    // طلب الإذن
     const perm = await Notification.requestPermission();
     pushLog(`🔔 إذن: ${perm}`, perm==='granted'?'#4ade80':'#ef4444');
     if (perm !== 'granted') return;
@@ -33451,54 +33591,63 @@ async function runResubscribe() {
     const reg = await navigator.serviceWorker.ready;
     pushLog('✅ SW جاهز', '#4ade80');
 
-    // حذف القديم
     const old = await reg.pushManager.getSubscription();
     if (old) {
       await old.unsubscribe();
-      pushLog('🗑 حُذف الاشتراك القديم', '#fb923c');
+      pushLog('🗑 حُذف القديم', '#fb923c');
     }
 
-    // VAPID key
-    const vapidKey = typeof VAPID_PUBLIC_KEY !== 'undefined'
+    const vapidKey = typeof VAPID_PUBLIC_KEY!=='undefined'
       ? VAPID_PUBLIC_KEY
       : 'BIiLk-5DMaLFmeMRgZ_NK6KcMu2gSIfIF6SGwx_UdeHNq1pqFvvSR75S9slTE27v8mqi0m9bjLd_X_PPhObhDOI';
 
-    // اشتراك جديد
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly     : true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey)
+      applicationServerKey: _urlB64ToUint8(vapidKey)
     });
     pushLog('✅ اشتراك جديد', '#4ade80');
-    pushLog(`📌 ${sub.endpoint.substring(0,35)}...`, '#94a3b8');
+    pushLog(`🔗 ${sub.endpoint.substring(0,50)}...`, '#94a3b8');
 
-    // حفظ في Supabase
-    const user = (typeof currentUser !== 'undefined' && currentUser)
+    const user = (typeof currentUser!=='undefined' && currentUser)
       || localStorage.getItem('wow_saved_user')
       || localStorage.getItem('wow_auth_email');
 
-    const sbUrl = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : null;
-    const sbKey = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY
-                : typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : null;
+    const sbUrl = typeof SUPABASE_URL!=='undefined' ? SUPABASE_URL : null;
+    const sbKey = typeof SUPABASE_KEY!=='undefined' ? SUPABASE_KEY
+                : typeof SUPABASE_ANON_KEY!=='undefined' ? SUPABASE_ANON_KEY : null;
 
     if (!user || !sbUrl || !sbKey) {
-      pushLog('⚠️ لا يمكن الحفظ — تأكد من تسجيل الدخول', '#fb923c');
-      return;
+      pushLog('⚠️ تأكد من تسجيل الدخول', '#fb923c'); return;
     }
 
-    const subJSON = sub.toJSON();
-    const sbClient = supabase.createClient(sbUrl, sbKey);
-    const { error } = await sbClient.from('push_subscriptions').upsert([{
-      username : user,
-      endpoint : subJSON.endpoint,
-      p256dh   : subJSON.keys.p256dh,
-      auth     : subJSON.keys.auth
-    }], { onConflict: 'endpoint' });
+    const j = sub.toJSON();
 
-    if (error) {
-      pushLog(`❌ حفظ فشل: ${error.message}`, '#ef4444');
-    } else {
+    /* حفظ في Supabase */
+    const saveRes = await fetch(`${sbUrl}/rest/v1/push_subscriptions`, {
+      method : 'POST',
+      headers: {
+        'Content-Type' : 'application/json',
+        'Authorization': `Bearer ${sbKey}`,
+        'apikey'       : sbKey,
+        'Prefer'       : 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({
+        username : user,
+        endpoint : j.endpoint,
+        p256dh   : j.keys.p256dh,
+        auth     : j.keys.auth
+      })
+    });
+
+    pushLog(`💾 حفظ: HTTP ${saveRes.status}`,
+      saveRes.ok ? '#4ade80' : '#ef4444');
+
+    if (saveRes.ok) {
       pushLog(`✅ محفوظ للمستخدم: ${user}`, '#4ade80');
       pushLog('🎉 جرّب الآن: اختبار إرسال Push', '#c9a84c');
+    } else {
+      const errText = await saveRes.text();
+      pushLog(`❌ خطأ الحفظ: ${errText.substring(0,80)}`, '#ef4444');
     }
 
   } catch(e) {
@@ -33506,14 +33655,14 @@ async function runResubscribe() {
   }
 }
 
-/* ══ urlBase64ToUint8Array ══ */
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const raw     = window.atob(base64);
-  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+/* ══ helper ══ */
+function _urlB64ToUint8(b64) {
+  const pad = '='.repeat((4 - b64.length%4)%4);
+  const raw = atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
 }
 </script>
+
 
 </body>
 </html>                         
