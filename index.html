@@ -32975,21 +32975,24 @@ function showNotifPermissionBar() {
 async function sendPushToUser(username, title, body, roomId, extra = {}) {
   if (!username) return;
 
-  /* ★ تأكد أن البيانات مكتملة ★ */
+  /* ★ تأكد أن sender موجود دائماً ★ */
+  const senderName = extra.sender
+    || (typeof getDisplayName === 'function' ? getDisplayName(currentUser) : currentUser)
+    || title
+    || 'WOW MOBİLYA';
+
   const payload = {
     username,
-    /* ★ العنوان = اسم المرسل مباشرة ★ */
-    title    : extra.sender   || title || 'WOW MOBİLYA',
-    body     : body           || 'Yeni mesaj',
-    roomId   : roomId         || null,
+    title    : senderName,   /* ★ العنوان = اسم المرسل ★ */
+    body     : body || 'Yeni mesaj',
+    roomId   : roomId || null,
     url      : './',
-    /* ★ الحقول الإضافية المهمة ★ */
-    sender   : extra.sender   || title || 'WOW MOBİLYA',
+    sender   : senderName,   /* ★ مكرر للتأكيد ★ */
     roomName : extra.roomName || '',
     msgType  : extra.msgType  || 'text'
   };
 
-  console.log('[Push] إرسال لـ', username, ':', payload.sender, '→', payload.body);
+  console.log('[Push] ➤ إرسال لـ:', username, '| من:', senderName, '| نص:', payload.body);
 
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
@@ -33001,11 +33004,11 @@ async function sendPushToUser(username, title, body, roomId, extra = {}) {
       body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      console.warn('[Push] HTTP', res.status, await res.text());
-    }
+    const result = await res.json();
+    console.log('[Push] ✅ نتيجة:', result);
+
   } catch(e) {
-    console.warn('[Push] إرسال فشل:', e);
+    console.warn('[Push] ❌ فشل:', e);
   }
 }
 
@@ -33017,24 +33020,27 @@ async function notifyRoomMembers(msg, roomId) {
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* جلب الأعضاء */
-  const { data: members } = await sb.from('group_members')
+  const { data: members } = await sb
+    .from('group_members')
     .select('username')
     .eq('room_id', roomId)
     .eq('is_banned', false);
 
   if (!members?.length) return;
 
-  /* اسم الغرفة */
-  const { data: room } = await sb.from('group_rooms')
-    .select('name, room_type')
+  /* ★ جلب اسم الغرفة ★ */
+  const { data: room } = await sb
+    .from('group_rooms')
+    .select('name')
     .eq('id', roomId)
     .single();
 
-  const senderDisplayName = getDisplayName(currentUser);
-  const senderProfile     = _chatProfiles?.[currentUser] || {};
+  /* ★ اسم المرسل الحقيقي ★ */
+  const senderName = (typeof getDisplayName === 'function')
+    ? getDisplayName(currentUser)
+    : currentUser;
 
-  /* نص الرسالة */
+  /* ★ نص الرسالة ★ */
   const bodyText = msg.message
     || (msg.media_type === 'image' ? '📷 Fotoğraf'
       : msg.media_type === 'audio' ? '🎤 Ses mesajı'
@@ -33042,44 +33048,29 @@ async function notifyRoomMembers(msg, roomId) {
       : msg.media_type === 'file'  ? `📎 ${msg.file_name || 'Dosya'}`
       : 'Yeni mesaj');
 
-  const me = currentUser
-    || localStorage.getItem('wow_saved_user')
-    || localStorage.getItem('wow_auth_email');
+  const me = currentUser || '';
 
   for (const member of members) {
     if (member.username === me) continue;
 
-    /* ── Toast داخلي (للمستخدم الحالي إذا كان في نافذة أخرى) ── */
-    if (
-      member.username === currentUser &&
-      String(roomId) !== String(_activeRoomId)
-    ) {
-      showInAppNotification({
-        sender      : senderDisplayName,
-        senderAvatar: senderProfile.avatar_url || null,
-        roomName    : room?.name || '',
-        body        : bodyText,
-        msgType     : msg.media_type || 'text',
-        unreadCount : (_grpUnread?.[roomId] || 0) + 1,
-        roomId      : roomId
-      });
-      continue;
-    }
+    console.log('[Notify] ➤ إشعار لـ:', member.username,
+                '| من:', senderName, '| نص:', bodyText);
 
-    /* ── Push خارجي ── */
+    /* ★ إرسال Push مع كل البيانات ★ */
     await sendPushToUser(
       member.username,
-      senderDisplayName,
-      bodyText,
+      senderName,           /* title = اسم المرسل */
+      bodyText,             /* body  = نص الرسالة */
       roomId,
       {
-        sender  : senderDisplayName,
+        sender  : senderName,
         roomName: room?.name || '',
         msgType : msg.media_type || 'text'
       }
     );
   }
 }
+
 
 /* ════════════════════════════════════════
    ★ استقبال نقر الإشعار من SW
