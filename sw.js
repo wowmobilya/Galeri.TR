@@ -1,4 +1,4 @@
- const VERSION    = 'v24';
+const VERSION    = 'v25'; // تم رفع الإصدار لضمان تحديث الكاش لدى المستخدمين
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -59,11 +59,22 @@ self.addEventListener('push', event => {
 
   const count = data.count || 1;
 
+  // 🌟 1. تحديث رقم الـ Badge على أيقونة التطبيق الخارجي (للهواتف المدعومة)
+  if (navigator.setAppBadge) {
+    navigator.setAppBadge(count).catch(console.error);
+  }
+
+  // 🌟 2. إضافة عدد الرسائل غير المقروءة للنص إذا كان أكثر من 1
+  let finalBody = data.body;
+  if (count > 1) {
+    finalBody += `\n\n📥 Toplam ${count} okunmamış mesajınız var.`;
+  }
+
   const options = {
-    body    : data.body,
+    body    : finalBody,
     icon    : data.icon,
     badge   : data.badge,
-    tag     : data.tag || 'wow-msg',
+    tag     : data.roomId ? `room-${data.roomId}` : 'wow-msg', // تجميع الإشعارات حسب الغرفة
     renotify: true,
     requireInteraction: false,
     vibrate : [200, 100, 200],
@@ -72,8 +83,8 @@ self.addEventListener('push', event => {
       roomId : data.roomId || null
     },
     actions : [
-      { action: 'open',    title: `📩 ${count} Mesaj` },
-      { action: 'dismiss', title: '✖ Kapat'            }
+      { action: 'open',    title: `Sohbeti Aç` },
+      { action: 'dismiss', title: 'Kapat' }
     ]
   };
 
@@ -84,6 +95,12 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  
+  // 🌟 3. تصفير الـ Badge عند فتح الإشعار
+  if (navigator.clearAppBadge) {
+    navigator.clearAppBadge().catch(console.error);
+  }
+
   if (event.action === 'dismiss') return;
 
   const targetUrl = event.notification.data?.url || './';
