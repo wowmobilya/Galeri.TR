@@ -7083,7 +7083,6 @@ async function subscribeToPush() {
 ═══════════════════════════════════════════════ */
 
 async function initPushAfterLogin() {
-  // انتظر حتى يكون المستخدم جاهزاً
   let attempts = 0;
   const wait = setInterval(async () => {
     attempts++;
@@ -7091,22 +7090,33 @@ async function initPushAfterLogin() {
       || localStorage.getItem('wow_saved_user')
       || localStorage.getItem('wow_auth_email');
 
-    if (!user && attempts < 12) return; // انتظر أكثر
+    if (!user && attempts < 12) return;
     clearInterval(wait);
     if (!user) return;
 
-    // إذا سبق وأشترك → لا تزعجه
-    const alreadySubscribed = localStorage.getItem('push_subscribed_' + user);
+    // ★ التحقق مرتبط بالمستخدم الحالي فقط
+    const subscribedKey = 'push_subscribed_' + user;
+    const alreadySubscribed = localStorage.getItem(subscribedKey);
+
     if (alreadySubscribed) {
-      // فقط تأكد أن الاشتراك لا يزال في Supabase
+      // مشترك مسبقاً → فقط تأكد صامت
       await silentResubscribe(user);
       return;
     }
 
-    // أظهر نافذة الإشعارات الذكية
+    // إذا الإذن ممنوح مسبقاً → اشترك مباشرة بدون نافذة
+    if (Notification.permission === 'granted') {
+      const ok = await doSubscribePush();
+      if (ok) return;
+      // فشل الاشتراك الصامت → أظهر النافذة
+    }
+
+    // أظهر النافذة
     showPushModal();
+
   }, 500);
 }
+
 
 /* ── اشتراك صامت بدون نوافذ (للمستخدمين القدامى) ── */
 async function silentResubscribe(user) {
@@ -7357,13 +7367,14 @@ async function doSubscribePush() {
   try {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
 
-    // طلب الإذن (داخل حدث click ← هذا مهم جداً)
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') return false;
+    // طلب الإذن فقط إذا لم يكن ممنوحاً
+    if (Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return false;
+    }
 
     const reg = await navigator.serviceWorker.ready;
 
-    // إلغاء القديم وإنشاء جديد
     const oldSub = await reg.pushManager.getSubscription();
     if (oldSub) await oldSub.unsubscribe();
 
@@ -7372,6 +7383,7 @@ async function doSubscribePush() {
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
     });
 
+    // ★ تحديد المستخدم الحالي بدقة
     const user = currentUser
       || localStorage.getItem('wow_saved_user')
       || localStorage.getItem('wow_auth_email');
@@ -7385,13 +7397,13 @@ async function doSubscribePush() {
     const { error } = await sb.from('push_subscriptions').upsert([{
       username: user,
       endpoint: s.endpoint,
-      p256dh: s.keys.p256dh,
-      auth: s.keys.auth
+      p256dh  : s.keys.p256dh,
+      auth    : s.keys.auth
     }], { onConflict: 'endpoint' });
 
     if (error) return false;
 
-    // حفظ أن المستخدم اشترك
+    // ★ المفتاح مرتبط بالمستخدم — ليس عاماً
     localStorage.setItem('push_subscribed_' + user, '1');
     return true;
 
@@ -7399,6 +7411,7 @@ async function doSubscribePush() {
     return false;
   }
 }
+
 
 /* ── للتوافق مع الكود القديم ── */
 async function subscribeToPush() {
@@ -32782,6 +32795,16 @@ function showPushEnableButton() {
 
 
 
+// امسح المفاتيح القديمة غير المرتبطة بمستخدم
+(function cleanOldPushKeys() {
+  const keys = Object.keys(localStorage);
+  keys.forEach(k => {
+    // احذف فقط المفتاح العام القديم بدون اسم مستخدم
+    if (k === 'push_subscribed') {
+      localStorage.removeItem(k);
+    }
+  });
+})();
 
   
 
