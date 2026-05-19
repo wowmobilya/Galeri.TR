@@ -1,4 +1,4 @@
- const VERSION    = 'v27';
+const VERSION    = 'v1';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -104,3 +104,4 @@ self.addEventListener('notificationclick', event => {
       })
   );
 });
+      
