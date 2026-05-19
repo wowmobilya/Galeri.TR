@@ -7078,56 +7078,333 @@ async function subscribeToPush() {
 
   
 
+/* ═══════════════════════════════════════════════
+   🔔 نظام الإشعارات الذكي — النسخة النهائية
+═══════════════════════════════════════════════ */
+
 async function initPushAfterLogin() {
-  /* ننتظر حتى يكون currentUser جاهزاً */
+  // انتظر حتى يكون المستخدم جاهزاً
   let attempts = 0;
-  
-  const trySubscribe = async () => {
+  const wait = setInterval(async () => {
     attempts++;
-    
-    /* تحديد المستخدم من كل المصادر الممكنة */
     const user = currentUser
       || localStorage.getItem('wow_saved_user')
       || localStorage.getItem('wow_auth_email');
 
-    /* إذا لم يُعثر على مستخدم وما زلنا في المحاولات الأولى → انتظر */
-    if (!user && attempts < 10) {
-      setTimeout(trySubscribe, 500);
+    if (!user && attempts < 12) return; // انتظر أكثر
+    clearInterval(wait);
+    if (!user) return;
+
+    // إذا سبق وأشترك → لا تزعجه
+    const alreadySubscribed = localStorage.getItem('push_subscribed_' + user);
+    if (alreadySubscribed) {
+      // فقط تأكد أن الاشتراك لا يزال في Supabase
+      await silentResubscribe(user);
       return;
     }
 
-    if (!user) return; /* استسلم بعد 5 ثواني */
-
-    /* إذا الإذن ممنوح → اشترك مباشرة بدون popup */
-    if (Notification.permission === 'granted') {
-      await subscribeToPush();
-      return;
-    }
-
-    /* إذا لم يُرفض → أظهر شريط التفعيل */
-    if (Notification.permission !== 'denied') {
-      showPushEnableButton();
-    }
-  };
-
-  /* ابدأ بعد ثانية واحدة */
-  setTimeout(trySubscribe, 1000);
+    // أظهر نافذة الإشعارات الذكية
+    showPushModal();
+  }, 500);
 }
 
-
-
-async function sendPushToUser(username, title, body, roomId) {
+/* ── اشتراك صامت بدون نوافذ (للمستخدمين القدامى) ── */
+async function silentResubscribe(user) {
+  if (Notification.permission !== 'granted') return;
   try {
-    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
-      method : 'POST',
-      headers: {
-        'Content-Type' : 'application/json',
-        'Authorization': `Bearer ${SUPABASE_KEY}`
-      },
-      body: JSON.stringify({ username, title, body, roomId, url: './' })
-    });
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const sb = await initSupabase();
+    if (!sb) return;
+    const s = sub.toJSON();
+    await sb.from('push_subscriptions').upsert([{
+      username: user,
+      endpoint: s.endpoint,
+      p256dh: s.keys.p256dh,
+      auth: s.keys.auth
+    }], { onConflict: 'endpoint' });
   } catch(e) {}
 }
+
+/* ── النافذة الذكية ── */
+function showPushModal() {
+  if (document.getElementById('pushModal')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'pushModal';
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    font-family: 'Montserrat', sans-serif;
+  `;
+
+  overlay.innerHTML = `
+    <div id="pushModalCard" style="
+      width: 100%;
+      max-width: 480px;
+      background: linear-gradient(180deg, #161616 0%, #0f0f0f 100%);
+      border-radius: 28px 28px 0 0;
+      border-top: 1px solid rgba(201,168,76,0.3);
+      border-left: 1px solid rgba(255,255,255,0.06);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 32px 24px 48px;
+      transform: translateY(100%);
+      transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1);
+      box-shadow: 0 -20px 60px rgba(0,0,0,0.8);
+    ">
+      <!-- مقبض السحب -->
+      <div style="
+        width: 40px; height: 4px;
+        background: rgba(255,255,255,0.15);
+        border-radius: 99px;
+        margin: 0 auto 28px;
+      "></div>
+
+      <!-- أيقونة الإشعار -->
+      <div style="
+        width: 72px; height: 72px;
+        background: linear-gradient(135deg,rgba(201,168,76,0.2),rgba(201,168,76,0.05));
+        border: 1px solid rgba(201,168,76,0.4);
+        border-radius: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin: 0 auto 20px;
+        box-shadow: 0 8px 32px rgba(201,168,76,0.15);
+      ">🔔</div>
+
+      <!-- العنوان -->
+      <div style="
+        text-align: center;
+        font-size: 20px;
+        font-weight: 900;
+        color: #fff;
+        letter-spacing: 0.5px;
+        margin-bottom: 10px;
+      ">Bildirimleri Etkinleştir</div>
+
+      <!-- الوصف -->
+      <div style="
+        text-align: center;
+        font-size: 13px;
+        color: rgba(255,255,255,0.45);
+        line-height: 1.7;
+        margin-bottom: 28px;
+        padding: 0 8px;
+      ">
+        Yeni sipariş, mesaj ve güncellemelerden<br>
+        anında haberdar olun
+      </div>
+
+      <!-- مزايا -->
+      <div style="
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      ">
+        ${[
+          ['📦','Yeni sipariş bildirimleri'],
+          ['💬','Mesaj ve yanıt uyarıları'],
+          ['⚡','Anlık güncellemeler']
+        ].map(([icon, text]) => `
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="
+              width:34px;height:34px;flex-shrink:0;
+              background:rgba(201,168,76,0.1);
+              border-radius:10px;
+              display:flex;align-items:center;justify-content:center;
+              font-size:16px;">${icon}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.6);
+              font-weight:600;">${text}</div>
+            <div style="margin-left:auto;font-size:16px;">✅</div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- زر التفعيل الرئيسي -->
+      <button id="pushAllowBtn" style="
+        width: 100%;
+        padding: 17px;
+        border-radius: 16px;
+        border: none;
+        background: linear-gradient(135deg, #c9a84c 0%, #f0d080 50%, #c9a84c 100%);
+        background-size: 200% auto;
+        color: #0a0a0a;
+        font-family: 'Montserrat', sans-serif;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 1.5px;
+        cursor: pointer;
+        margin-bottom: 12px;
+        box-shadow: 0 8px 32px rgba(201,168,76,0.35);
+        transition: all 0.3s ease;
+        animation: shimmer 2.5s infinite;
+      ">
+        🔔 &nbsp; BİLDİRİMLERİ AÇ
+      </button>
+
+      <!-- زر التخطي -->
+      <button id="pushSkipBtn" style="
+        width: 100%;
+        padding: 14px;
+        border-radius: 16px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background: transparent;
+        color: rgba(255,255,255,0.3);
+        font-family: 'Montserrat', sans-serif;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+      ">
+        Şimdi değil
+      </button>
+    </div>
+
+    <style>
+      @keyframes shimmer {
+        0%   { background-position: 0% center; }
+        50%  { background-position: 100% center; }
+        100% { background-position: 0% center; }
+      }
+      #pushAllowBtn:active {
+        transform: scale(0.97);
+        box-shadow: 0 4px 16px rgba(201,168,76,0.2);
+      }
+      #pushSkipBtn:active {
+        background: rgba(255,255,255,0.05);
+      }
+    </style>
+  `;
+
+  document.body.appendChild(overlay);
+
+  // أنيميشن الظهور
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      overlay.style.opacity = '1';
+      document.getElementById('pushModalCard').style.transform = 'translateY(0)';
+    });
+  });
+
+  // دالة الإغلاق
+  const closeModal = () => {
+    overlay.style.opacity = '0';
+    document.getElementById('pushModalCard').style.transform = 'translateY(100%)';
+    setTimeout(() => overlay.remove(), 400);
+  };
+
+  // إغلاق عند الضغط على الخلفية
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeModal();
+  });
+
+  // زر التخطي
+  document.getElementById('pushSkipBtn').addEventListener('click', () => {
+    closeModal();
+    // اذكّره بعد 24 ساعة
+    localStorage.setItem('push_remind_later', Date.now() + 86400000);
+  });
+
+  // ★ زر التفعيل — هنا يحدث كل شيء
+  document.getElementById('pushAllowBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('pushAllowBtn');
+    btn.textContent = '⏳  Lütfen bekleyin...';
+    btn.style.opacity = '0.7';
+    btn.disabled = true;
+
+    const ok = await doSubscribePush();
+
+    if (ok) {
+      btn.textContent = '✅  Bildirimler Açık!';
+      btn.style.background = 'linear-gradient(135deg,#4ade80,#22c55e)';
+      btn.style.opacity = '1';
+      setTimeout(closeModal, 1200);
+    } else {
+      btn.textContent = '❌  Tekrar Dene';
+      btn.style.background = 'rgba(239,68,68,0.2)';
+      btn.style.color = '#ef4444';
+      btn.style.border = '1px solid rgba(239,68,68,0.3)';
+      btn.style.opacity = '1';
+      btn.disabled = false;
+    }
+  });
+}
+
+/* ── دالة الاشتراك الفعلية ── */
+async function doSubscribePush() {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+
+    // طلب الإذن (داخل حدث click ← هذا مهم جداً)
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return false;
+
+    const reg = await navigator.serviceWorker.ready;
+
+    // إلغاء القديم وإنشاء جديد
+    const oldSub = await reg.pushManager.getSubscription();
+    if (oldSub) await oldSub.unsubscribe();
+
+    const subscription = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+    });
+
+    const user = currentUser
+      || localStorage.getItem('wow_saved_user')
+      || localStorage.getItem('wow_auth_email');
+
+    if (!user) return false;
+
+    const sb = await initSupabase();
+    if (!sb) return false;
+
+    const s = subscription.toJSON();
+    const { error } = await sb.from('push_subscriptions').upsert([{
+      username: user,
+      endpoint: s.endpoint,
+      p256dh: s.keys.p256dh,
+      auth: s.keys.auth
+    }], { onConflict: 'endpoint' });
+
+    if (error) return false;
+
+    // حفظ أن المستخدم اشترك
+    localStorage.setItem('push_subscribed_' + user, '1');
+    return true;
+
+  } catch(e) {
+    return false;
+  }
+}
+
+/* ── للتوافق مع الكود القديم ── */
+async function subscribeToPush() {
+  return await doSubscribePush();
+}
+
 
 async function notifyRoomMembers(msg, roomId) {
   const sb = await initSupabase();
