@@ -1,4 +1,4 @@
- const VERSION    = 'v12';
+ const VERSION    = 'v13';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -63,24 +63,28 @@ self.addEventListener('push', event => {
     body    : data.body,
     icon    : data.icon,
     badge   : data.badge,
-    tag     : data.tag || 'wow-msg',
+    tag     : 'wow-msg',
     renotify: true,
     requireInteraction: false,
     vibrate : [200, 100, 200],
-    data    : {
-      url    : data.url    || './',
-      roomId : data.roomId || null
-    },
+    data    : { url: data.url || './', roomId: data.roomId || null },
     actions : [
-      { action: 'open',    title: `📩 ${count} Mesaj` },
-      { action: 'dismiss', title: '✖ Kapat'            }
+      { action: 'open',    title: `📩 ${count} Mesaj` },  /* ← العدد هنا */
+      { action: 'dismiss', title: '✖ Kapat' }
     ]
   };
 
+  /* ★ تحديث Badge على أيقونة التطبيق (Android Chrome) ★ */
   event.waitUntil(
-    self.registration.showNotification(data.title, options)
+    Promise.all([
+      self.registration.showNotification(data.title, options),
+      navigator.setAppBadge
+        ? navigator.setAppBadge(count).catch(() => {})
+        : Promise.resolve()
+    ])
   );
 });
+
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
