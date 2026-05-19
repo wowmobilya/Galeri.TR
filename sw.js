@@ -1,4 +1,4 @@
-const VERSION    = 'v11';
+ const VERSION    = 'v12';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -59,13 +59,6 @@ self.addEventListener('push', event => {
 
   const count = data.count || 1;
 
-  // ★ تحديث الشارة الحمراء على أيقونة التطبيق ★
-  if (navigator.setAppBadge) {
-    navigator.setAppBadge(count).catch(() => {});
-  } else if (self.navigator && self.navigator.setAppBadge) {
-    self.navigator.setAppBadge(count).catch(() => {});
-  }
-
   const options = {
     body    : data.body,
     icon    : data.icon,
@@ -111,3 +104,4 @@ self.addEventListener('notificationclick', event => {
       })
   );
 });
+   
