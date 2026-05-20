@@ -1,4 +1,4 @@
-const VERSION    = 'v18';
+const VERSION    = 'v19'; // تم التحديث لكسر الكاش إجبارياً
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -42,44 +42,52 @@ self.addEventListener('message', event => {
 });
 
 /* ════════════════════════════════════════
-   ★ PUSH NOTIFICATIONS
+   ★ PUSH NOTIFICATIONS (النسخة المنيعة للهواتف)
 ════════════════════════════════════════ */
 self.addEventListener('push', event => {
   let data = {};
   try {
     if (event.data) data = event.data.json();
-  } catch(e) {}
+  } catch(e) {
+    console.error("Push parse error:", e);
+  }
 
-  const count = data.count || 1;
+  const count = Number(data.count) || 1;
   const title = data.title || 'WOW MOBİLYA';
   const body  = data.body || 'Yeni mesajınız var 💬';
-
-  // ★ تحديث الرقم الأحمر على أيقونة التطبيق من الخارج ★
-  if (navigator.setAppBadge) {
-    navigator.setAppBadge(count).catch(console.error);
-  }
 
   const options = {
     body    : body,
     icon    : data.icon || 'https://up6.cc/2026/04/177712738518231.png',
     badge   : data.badge || 'https://up6.cc/2026/04/177712738518231.png',
-    tag     : 'wow-chat', // ★ توحيد الـ tag يضمن تحديث الإشعار بدلاً من تكراره
-    renotify: true,
-    vibrate : [200, 100, 200],
+    tag     : 'wow-chat', // تجميع الإشعارات
+    renotify: true,       // إصدار صوت مع كل رسالة
+    vibrate : [300, 100, 300],
     data    : {
       url    : data.url || './',
       roomId : data.roomId || null
     }
   };
 
-  event.waitUntil(self.registration.showNotification(title, options));
+  const promises = [];
+
+  // 1. أمر إظهار الإشعار المرئي
+  promises.push(self.registration.showNotification(title, options));
+
+  // 2. أمر تحديث الرقم الأحمر على الأيقونة
+  if ('setAppBadge' in navigator) {
+    promises.push(navigator.setAppBadge(count));
+  }
+
+  // ★ السر هنا: إجبار الهاتف على الانتظار حتى تنتهي العمليتان معاً ★
+  event.waitUntil(Promise.all(promises).catch(console.error));
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
-  // ★ تصفير الرقم عند النقر على الإشعار وفتح التطبيق ★
-  if (navigator.clearAppBadge) {
+  // ★ تصفير الرقم عند النقر على الإشعار ★
+  if ('clearAppBadge' in navigator) {
     navigator.clearAppBadge().catch(() => {});
   }
 
