@@ -4781,260 +4781,6 @@ let _loginInProgress = false;
 const ADMIN_USER = 'WOW'; /* الحساب الذي يرى لوحة الإدارة */
 
 
-
-
-
-/* ============================================================
-   ★ نظام الجلسة الدائمة — IndexedDB + localStorage ★
-   - لا انتهاء للجلسة (دائمة حتى الخروج/الحظر/الحذف)
-   - IndexedDB للبيانات الكبيرة (صور، كاش، إلخ)
-   - localStorage للبيانات الخفيفة (username, flags)
-============================================================ */
-
-const LS_SESSION_USER  = 'wow_session_user';
-const LS_SESSION_VALID = 'wow_session_valid';
-const IDB_DB_NAME      = 'wow_session_db';
-const IDB_STORE        = 'session_store';
-
-/* ── فتح قاعدة IndexedDB ── */
-function openSessionDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_DB_NAME, 1);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(IDB_STORE)) {
-        db.createObjectStore(IDB_STORE);
-      }
-    };
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror   = e => reject(e.target.error);
-  });
-}
-
-/* ── حفظ قيمة في IndexedDB ── */
-async function idbSet(key, value) {
-  try {
-    const db = await openSessionDB();
-    return new Promise((resolve, reject) => {
-      const tx    = db.transaction(IDB_STORE, 'readwrite');
-      const store = tx.objectStore(IDB_STORE);
-      const req   = store.put(value, key);
-      req.onsuccess = () => resolve(true);
-      req.onerror   = () => reject(false);
-    });
-  } catch(e) {
-    console.warn('[IDB] set error:', e);
-    return false;
-  }
-}
-
-/* ── قراءة قيمة من IndexedDB ── */
-async function idbGet(key) {
-  try {
-    const db = await openSessionDB();
-    return new Promise((resolve) => {
-      const tx    = db.transaction(IDB_STORE, 'readonly');
-      const store = tx.objectStore(IDB_STORE);
-      const req   = store.get(key);
-      req.onsuccess = () => resolve(req.result ?? null);
-      req.onerror   = () => resolve(null);
-    });
-  } catch(e) {
-    console.warn('[IDB] get error:', e);
-    return null;
-  }
-}
-
-/* ── حذف قيمة من IndexedDB ── */
-async function idbDelete(key) {
-  try {
-    const db = await openSessionDB();
-    return new Promise((resolve) => {
-      const tx    = db.transaction(IDB_STORE, 'readwrite');
-      const store = tx.objectStore(IDB_STORE);
-      store.delete(key);
-      tx.oncomplete = () => resolve(true);
-      tx.onerror    = () => resolve(false);
-    });
-  } catch(e) { return false; }
-}
-
-/* ── حفظ الجلسة (دائمة بدون انتهاء) ── */
-async function saveSession(username, userData) {
-  try {
-    /* localStorage للمفتاح الخفيف */
-    localStorage.setItem(LS_SESSION_USER,  username);
-    localStorage.setItem(LS_SESSION_VALID, '1');
-
-    /* IndexedDB للبيانات الكاملة */
-    await idbSet('session_username', username);
-    await idbSet('session_userdata', userData || {});
-    await idbSet('session_saved_at', new Date().toISOString());
-
-    console.log('[Session] ✅ جلسة محفوظة لـ:', username);
-  } catch(e) {
-    console.warn('[Session] حفظ فشل:', e);
-  }
-}
-
-/* ── قراءة الجلسة المحفوظة ── */
-async function loadSession() {
-  try {
-    /* فحص سريع من localStorage */
-    const quickUser  = localStorage.getItem(LS_SESSION_USER);
-    const quickValid = localStorage.getItem(LS_SESSION_VALID);
-    if (!quickUser || quickValid !== '1') return null;
-
-    /* جلب البيانات الكاملة من IndexedDB */
-    const username = await idbGet('session_username');
-    const userData = await idbGet('session_userdata');
-
-    if (!username) return null;
-
-    return { username, data: userData || {} };
-  } catch(e) {
-    console.warn('[Session] قراءة فشلت:', e);
-    return null;
-  }
-}
-
-/* ── مسح الجلسة نهائياً ── */
-async function clearSession() {
-  try {
-    localStorage.removeItem(LS_SESSION_USER);
-    localStorage.removeItem(LS_SESSION_VALID);
-    await idbDelete('session_username');
-    await idbDelete('session_userdata');
-    await idbDelete('session_saved_at');
-    console.log('[Session] 🗑️ جلسة ممسوحة');
-  } catch(e) {
-    console.warn('[Session] مسح فشل:', e);
-  }
-}
-
-/* ── استعادة الجلسة عند تحميل الصفحة ── */
-async function tryRestoreSession() {
-  const session = await loadSession();
-  if (!session) return false;
-
-  const { username, data } = session;
-
-  /* ── 1. حساب WOW المدمج — لا يحتاج Supabase ── */
-  if (USERS[username]) {
-    currentUser      = username;
-    _currentUserData = data && data.username
-      ? data
-      : { username, company_name: 'WOW MOBİLYA', is_active: true };
-    console.log('[Session] ✅ WOW مستعاد');
-    return true;
-  }
-
-  /* ── 2. تحقق من Supabase ── */
-  const sb = await initSupabase();
-  if (!sb) {
-    /* إذا فشل الاتصال — استخدم البيانات المحفوظة مؤقتاً */
-    if (data && data.username) {
-      currentUser      = data.username;
-      _currentUserData = data;
-      console.warn('[Session] ⚠️ Supabase غير متاح — استخدام كاش');
-      return true;
-    }
-    return false;
-  }
-
-  try {
-    /* ── فحص admin_accounts ── */
-    const { data: adminRow } = await sb
-      .from('admin_accounts')
-      .select('id,username,name,is_active,is_blocked,perm_orders,perm_inventory,perm_users,perm_messages,perm_settings,perm_cards')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (adminRow) {
-      if (!adminRow.is_active || adminRow.is_blocked) {
-        await clearSession();
-        console.log('[Session] ❌ أدمن محظور/غير نشط');
-        return false;
-      }
-      _currentAdminData = adminRow;
-      currentUser       = adminRow.username;
-      _currentUserData  = {
-        id           : adminRow.id,
-        username     : adminRow.username,
-        company_name : adminRow.name,
-        is_active    : true,
-        _isAdmin     : true,
-        _adminPerms  : {
-          perm_orders    : adminRow.perm_orders,
-          perm_inventory : adminRow.perm_inventory,
-          perm_users     : adminRow.perm_users,
-          perm_messages  : adminRow.perm_messages,
-          perm_settings  : adminRow.perm_settings,
-          perm_cards     : adminRow.perm_cards,
-        },
-      };
-      /* تحديث البيانات المحفوظة */
-      await saveSession(adminRow.username, _currentUserData);
-      console.log('[Session] ✅ أدمن مستعاد:', adminRow.username);
-      return true;
-    }
-
-    /* ── فحص users ── */
-    const { data: userRow } = await sb
-      .from('users')
-      .select('id,username,company_name,email,phone,is_active,is_blocked')
-      .eq('username', username)
-      .maybeSingle();
-
-    if (!userRow) {
-      /* الحساب محذوف */
-      await clearSession();
-      console.log('[Session] ❌ حساب محذوف:', username);
-      return false;
-    }
-
-    if (userRow.is_blocked || !userRow.is_active) {
-      /* محظور أو معطّل */
-      await clearSession();
-      console.log('[Session] ❌ حساب محظور/معطّل:', username);
-      return false;
-    }
-
-    /* ✅ جلسة صالحة */
-    currentUser      = userRow.username;
-    _currentUserData = userRow;
-
-    /* تحديث البيانات المحفوظة */
-    await saveSession(userRow.username, userRow);
-
-    /* تحديث last_seen */
-    sb.from('users')
-      .update({ last_seen: new Date().toISOString() })
-      .eq('id', userRow.id)
-      .then(() => {})
-      .catch(() => {});
-
-    console.log('[Session] ✅ مستخدم مستعاد:', userRow.username);
-    return true;
-
-  } catch(e) {
-    console.warn('[Session] استعادة فشلت:', e);
-    /* استخدام الكاش كحل احتياطي */
-    if (data && data.username) {
-      currentUser      = data.username;
-      _currentUserData = data;
-      return true;
-    }
-    return false;
-  }
-}
-
-
-
-
-
-  
-
 let currentPage='orta',currentView='grid-3',selectedIds=new Set(),currentLbIdx=0,filteredImages=[],audioPlaying=false,selectMode=false;
 const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRESUAR',orders:'WOW MOBILYA SIPARIS'};
 
@@ -5046,92 +4792,9 @@ const catFolderName={orta:'WOW ORTA SEHPA',tv:'WOW TV UNITESI',dresuar:'WOW DRES
     p.style.cssText=`left:${Math.random()*100}%;width:${Math.random()*4+1}px;height:${Math.random()*4+1}px;animation-duration:${Math.random()*8+5}s;animation-delay:${Math.random()*6}s;`;
     c.appendChild(p);
   }
-  
 replaceState('login');
 loadSavedCredentials();
-
-/* ══════════════════════════════════════════
-   ★ استعادة الجلسة عند تحميل الصفحة ★
-══════════════════════════════════════════ */
-(async function initSessionRestore() {
-  const ov = document.getElementById('loginOverlay');
-
-  /* إظهار مؤشر تحميل خفيف */
-  const loadingDot = document.createElement('div');
-  loadingDot.style.cssText = `
-    position:fixed;bottom:20px;left:50%;
-    transform:translateX(-50%);
-    z-index:99999;
-    display:flex;align-items:center;gap:8px;
-    background:rgba(10,10,10,0.9);
-    border:1px solid rgba(201,168,76,0.3);
-    border-radius:50px;padding:8px 18px;
-    font-family:'Montserrat',sans-serif;
-    font-size:11px;color:rgba(255,255,255,0.5);
-    letter-spacing:1px;
-    animation:iconPulse 1.5s infinite;
-  `;
-  loadingDot.innerHTML = `
-    <div style="width:7px;height:7px;border-radius:50%;
-      background:#c9a84c;animation:iconPulse 1s infinite;"></div>
-    Oturum kontrol ediliyor...
-  `;
-  document.body.appendChild(loadingDot);
-
-  let restored = false;
-  try {
-    restored = await tryRestoreSession();
-  } catch(e) {
-    console.warn('[Init] استعادة الجلسة فشلت:', e);
-    restored = false;
-  }
-
-  /* إزالة مؤشر التحميل */
-  loadingDot.remove();
-
-  if (restored) {
-    /* ✅ جلسة صالحة — أخفِ نافذة تسجيل الدخول نهائياً */
-    if (ov) {
-      ov.style.transition = 'opacity 0.6s ease';
-      ov.style.opacity    = '0';
-      setTimeout(() => {
-        ov.style.display = 'none';
-      }, 600);
-    }
-
-    /* تحميل البيانات الأساسية */
-    loadCartFromStorage();
-    updateCartReminder(
-      Object.values(orderCart).reduce((a, b) => a + b, 0)
-    );
-
-    /* تحميل Supabase */
-    const ok = await testSupabaseConnection().catch(() => false);
-    if (ok) {
-      await loadInventory().catch(() => {});
-      subscribeInventory();
-    }
-
-    await loadHomeCards().catch(() => {});
-    subscribeHomeCards();
-    await loadLogoFromDB().catch(() => {});
-    await loadOgSettings().catch(() => {});
-
-    /* إظهار الشاشة الرئيسية */
-    showHomeScreen();
-    setTimeout(tryPlayAudio, 800);
-    startSessionHeartbeat();
-    setTimeout(initPushAfterLogin, 3000);
-
-  } else {
-    /* ❌ لا جلسة — أظهر نافذة تسجيل الدخول */
-    if (ov) {
-      ov.style.display = 'flex';
-      ov.style.opacity = '1';
-    }
-  }
 })();
-
   
 (function applyLogoEarly() {
   try {
@@ -5378,8 +5041,6 @@ async function doLogout() {
       console.error('[Logout Error]', error);
     }
   }
-  
-await clearSession();
 
   // 4. تصفير المتغيرات المحلية في الذاكرة
   currentUser       = null;
@@ -11543,7 +11204,6 @@ async function doLogin() {
       company_name : 'WOW MOBİLYA',
       is_active    : true,
     };
-await saveSession(user, _currentUserData);
 
     hideError('loginError');
     finishLogin();
@@ -11624,8 +11284,6 @@ await saveSession(user, _currentUserData);
       _currentAdminData = adminRow;
       currentUser       = adminRow.username;
       _currentUserData  = {
-        await saveSession(adminRow.username, _currentUserData);
-
         id           : adminRow.id,
         username     : adminRow.username,
         company_name : adminRow.name,
@@ -11692,7 +11350,6 @@ await saveSession(user, _currentUserData);
     /* ✅ تسجيل دخول ناجح كمستخدم عادي */
     currentUser      = userRow.username;
     _currentUserData = userRow;
-    await saveSession(userRow.username, userRow);
 
     const remember = document.getElementById('rememberMe').checked;
     if (remember) saveCredentials(user, pass);
@@ -13916,29 +13573,6 @@ async function toggleUserBlock(userId, isCurrentlyBlocked) {
   animateCounter('statOnline',  onlineCount);
   animateCounter('statBlocked', blockedCount);
 
-
-/* مسح جلسة المستخدم المحظور */
-if (newBlocked) {
-  const blockedUser = _allUsers.find(u => u.id === userId);
-  if (blockedUser) {
-    /* مسح من IndexedDB إذا كان هو المستخدم الحالي */
-    if (blockedUser.username === currentUser) {
-      await clearSession();
-    }
-    /* مسح جلسة أي مستخدم آخر بنفس الاسم */
-    try {
-      const sb2 = await initSupabase();
-      if (sb2) {
-        await sb2.from('user_sessions')
-          .update({ is_active: false })
-          .eq('username', blockedUser.username);
-      }
-    } catch(e) {}
-  }
-}
-
-
-  
   showInvToast(
     newBlocked ? 'Kullanıcı engellendi ✓' : 'Engel kaldırıldı ✓',
     newBlocked ? 'error' : 'success'
@@ -14487,16 +14121,6 @@ async function forceLogoutUser(userId, username) {
     /* 3. حذف طلبياته */
     await sb.from('orders').delete().eq('username', username);
 
-
-/* مسح جلسة المستخدم المحذوف */
-const deletedUser = _allUsers.find(u => u.id === userId);
-if (deletedUser && deletedUser.username === currentUser) {
-  await clearSession();
-}
-
-
-
-    
     /* 4. حذف الحساب نهائياً */
     const { error } = await sb.from('users').delete().eq('id', userId);
 
