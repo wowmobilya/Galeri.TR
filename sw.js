@@ -45,52 +45,40 @@ self.addEventListener('message', event => {
    ★ PUSH NOTIFICATIONS
 ════════════════════════════════════════ */
 self.addEventListener('push', event => {
-  let data = {
-    title : 'WOW MOBİLYA',
-    body  : 'Yeni mesajınız var 💬',
-    icon  : 'https://up6.cc/2026/04/177712738518231.png',
-    badge : 'https://up6.cc/2026/04/177712738518231.png',
-    count : 1
-  };
-
+  let data = {};
   try {
-    if (event.data) data = { ...data, ...event.data.json() };
+    if (event.data) data = event.data.json();
   } catch(e) {}
 
   const count = data.count || 1;
+  const title = data.title || 'WOW MOBİLYA';
+  const body  = data.body || 'Yeni mesajınız var 💬';
 
-  // ★ السر هنا: تحديث العداد على أيقونة التطبيق من الخارج ★
+  // ★ تحديث الرقم الأحمر على أيقونة التطبيق من الخارج ★
   if (navigator.setAppBadge) {
-    navigator.setAppBadge(count).catch(() => {});
+    navigator.setAppBadge(count).catch(console.error);
   }
 
   const options = {
-    body    : data.body,
-    icon    : data.icon,
-    badge   : data.badge,
-    tag     : data.tag || 'wow-msg',
+    body    : body,
+    icon    : data.icon || 'https://up6.cc/2026/04/177712738518231.png',
+    badge   : data.badge || 'https://up6.cc/2026/04/177712738518231.png',
+    tag     : 'wow-chat', // ★ توحيد الـ tag يضمن تحديث الإشعار بدلاً من تكراره
     renotify: true,
-    requireInteraction: false,
     vibrate : [200, 100, 200],
     data    : {
-      url    : data.url    || './',
+      url    : data.url || './',
       roomId : data.roomId || null
-    },
-    actions : [
-      { action: 'open',    title: `📩 ${count} Mesaj` },
-      { action: 'dismiss', title: '✖ Kapat'            }
-    ]
+    }
   };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
-  // ★ تصفير العداد من الأيقونة الخارجية عند النقر على الإشعار ★
+  // ★ تصفير الرقم عند النقر على الإشعار وفتح التطبيق ★
   if (navigator.clearAppBadge) {
     navigator.clearAppBadge().catch(() => {});
   }
