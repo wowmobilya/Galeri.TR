@@ -32043,7 +32043,17 @@ function updateChatHomeBadge() {
     el.style.display = total > 0 ? 'flex' : 'none';
   });
   if (typeof updateNavBadge === 'function') updateNavBadge('chat', total);
+
+  // ★ مزامنة العداد الخارجي للتطبيق (PWA Badge) ★
+  if ('setAppBadge' in navigator) {
+    if (total > 0) {
+      navigator.setAppBadge(total).catch(()=>{});
+    } else {
+      navigator.clearAppBadge().catch(()=>{});
+    }
+  }
 }
+
 
 /* ══════════════════════════════════════════════════════════════
    popstate — إصلاح التنقل
