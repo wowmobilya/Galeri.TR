@@ -1,4 +1,4 @@
-const VERSION    = 'v28';
+const VERSION    = 'v29';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -174,35 +174,46 @@ self.addEventListener('notificationclick', event => {
 async function sendReplyInBackground(roomId, text) {
   // استبدل هذه بالقيم الخاصة بك
  /* ── مفاتيح الاتصال المباشر بقاعدة البيانات ── */
+/* ── مفاتيح الاتصال المباشر بقاعدة البيانات ── */
 const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
 
+/* ══════════════════════════════════════════
+   ★ معالجة النقر والرد من الإشعار
+══════════════════════════════════════════ */
 self.addEventListener('notificationclick', event => {
   const notification = event.notification;
   const action       = event.action;
   const replyText    = event.reply; 
   const data         = notification.data || {};
 
+  // 1. إغلاق الإشعار فوراً لمنع تعليق الواجهة
   notification.close();
 
-  /* ── تصفير الرقم عند التفاعل ── */
+  // 2. تصفير العداد
   _pendingCount = 0;
   if ('clearAppBadge' in self.navigator) {
     self.navigator.clearAppBadge().catch(() => {});
   }
 
-  // 1. إذا قام المستخدم بكتابة رد والضغط على إرسال
+  // 3. حالة الرد المباشر (Quick Reply)
   if (action === 'reply' && replyText) {
-    // نستخدم receiverUsername الذي أرسلناه من Deno
-    const fromUser = data.receiverUsername || 'WOW'; 
-    event.waitUntil(sendReplyInBackground(data.roomId, replyText, fromUser));
+    // جلب اسم المستخدم الذي استلم الإشعار (ليرد باسمه)
+    // إذا لم يكن موجوداً، نستخدم 'WOW' كاحتياط
+    const fromUser = data.receiverUsername || 'WOW';
+    
+    // استخدام waitUntil مع Promise مضمون النجاح لإيقاف الدوران
+    event.waitUntil(
+      sendReplyInBackground(data.roomId, replyText, fromUser)
+        .catch(err => console.error('[SW] Reply Error:', err))
+    );
   } 
-  // 2. إذا ضغط على "تحديد كمقروء"
+  // 4. حالة "تحديد كمقروء"
   else if (action === 'mark_read') {
-    // تم إغلاق الإشعار وتصفير العداد بالفعل
+    // تم الإغلاق والتصفير بالفعل
     return;
   } 
-  // 3. إذا نقر على الإشعار بشكل عادي (فتح التطبيق)
+  // 5. حالة النقر العادي لفتح التطبيق
   else if (action !== 'dismiss') {
     event.waitUntil(
       self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
@@ -222,38 +233,58 @@ self.addEventListener('notificationclick', event => {
   }
 });
 
-/* ── دالة إرسال الرد في الخلفية ── */
+/* ══════════════════════════════════════════
+   ★ دالة إرسال الرد في الخلفية (مضادة للتعليق)
+══════════════════════════════════════════ */
 async function sendReplyInBackground(roomId, text, fromUser) {
   if (!roomId || !text) return;
-  
+
   try {
+    // إرسال الرسالة إلى Supabase مباشرة عبر REST API
     const response = await fetch(`${SUPABASE_URL}/rest/v1/group_messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': 'return=representation' // لضمان تنفيذ الطلب وإرجاع النتيجة
+        'Prefer': 'return=minimal' // تسريع الاستجابة
       },
       body: JSON.stringify({
-        room_id: roomId,
+        room_id: Number(roomId),
         from_user: fromUser,
         message: text,
         media_type: 'text',
-        delivery_status: 'sent'
+        delivery_status: 'sent',
+        client_msg_id: 'reply_' + Date.now()
       })
     });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error('[SW] Reply failed:', errText);
+    if (response.ok) {
+      console.log('[SW] Reply Saved to DB!');
+      
+      // إظهار إشعار نجاح صامت لإجبار الأندرويد على إيقاف الدوران
+      await self.registration.showNotification('Mesaj Gönderildi ✓', {
+        body: text,
+        icon: 'https://up6.cc/2026/04/177712738518231.png',
+        tag: 'reply-success',
+        silent: true
+      });
+      
+      // إخفاء إشعار النجاح تلقائياً بعد ثانيتين
+      setTimeout(() => {
+        self.registration.getNotifications({ tag: 'reply-success' }).then(ns => {
+          ns.forEach(n => n.close());
+        });
+      }, 2000);
+      
     } else {
-      console.log('[SW] Reply sent successfully!');
+      console.error('[SW] DB Insert Failed:', await response.text());
     }
   } catch (error) {
-    console.error('[SW] Network error during reply:', error);
+    console.error('[SW] Network Error:', error);
   }
 }
+
 
 
 /* ══════════════════════════════════════════
