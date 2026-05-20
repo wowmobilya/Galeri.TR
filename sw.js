@@ -1,4 +1,4 @@
-const VERSION    = 'v31';
+const VERSION    = 'v32';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -65,8 +65,8 @@ self.addEventListener('push', event => {
     senderUsername   = '',
     fileName         = '',
     receiverUsername = '', // ← استخراج اسم المستلم
-    icon             = 'https://up6.cc/2026/04/177712738518231.png',
-    badge            = 'https://up6.cc/2026/04/177712738518231.png',
+   icon             = 'https://up6.cc/2026/04/177712738518231.png', // ← ستكون صورة المرسل الآن
+    badge            = 'https://up6.cc/2026/04/177712738518231.png', // ← لوجو التطبيق الصغير
   } = data;
 
   const mediaInfo = getMediaInfo(mediaType, fileName);
@@ -82,8 +82,8 @@ self.addEventListener('push', event => {
 
   const options = {
     body    : finalBody,
-    icon,
-    badge,
+   icon    : icon,  // ← ★ سيتم عرض صورة المرسل هنا
+    badge   : badge, // ← ★ سيتم عرض لوجو التطبيق في شريط الهاتف العلوي
     image   : mediaType === 'image' ? mediaUrl : undefined,
     tag     : notifTag,
     renotify: true,
