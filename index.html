@@ -7111,9 +7111,26 @@ async function notifyRoomMembers(msg, roomId) {
   const senderName     = getDisplayName(me);
   const senderUsername = me;
   
-  // ★ جلب صورة المرسل (إذا كان لديك دالة مخصصة للصورة مثل getDisplayName استخدمها هنا)
-  // وضعنا لوجو التطبيق كصورة احتياطية في حال لم يكن لديه صورة
-  const senderAvatar   = localStorage.getItem('wow_user_avatar') || 'https://up6.cc/2026/04/177712738518231.png';
+  // ---------------------------------------------------------
+  // ★ التعديل الجديد: جلب صورة المرسل الحقيقية وتحويلها لرابط كامل
+  // ---------------------------------------------------------
+  let rawAvatar = '';
+  // محاولة جلب الصورة من كائن المستخدم الحالي إذا كان موجوداً
+  if (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.avatar) {
+    rawAvatar = _currentUser.avatar;
+  } else {
+    rawAvatar = localStorage.getItem('wow_user_avatar') || '';
+  }
+
+  // إذا كانت الصورة مساراً محلياً، نحولها إلى رابط كامل (مهم جداً للأندرويد)
+  if (rawAvatar && !rawAvatar.startsWith('http')) {
+    const baseUrl = window.location.origin;
+    rawAvatar = baseUrl + (rawAvatar.startsWith('/') ? '' : '/') + rawAvatar;
+  }
+
+  // الصورة النهائية (إذا لم توجد، نستخدم اللوجو)
+  const senderAvatar = rawAvatar || 'https://up6.cc/2026/04/177712738518231.png';
+  // ---------------------------------------------------------
 
   const mediaType = msg.media_type || 'text';
   const fileName  = msg.file_name  || '';
@@ -7151,10 +7168,10 @@ async function notifyRoomMembers(msg, roomId) {
           roomId,
           url            : './',
           mediaType,
-          mediaUrl,      // ← إرسال الرابط
+          mediaUrl,      
           senderUsername,
           fileName,
-          senderAvatar   // ← ★ إرسال صورة المرسل هنا
+          senderAvatar   // ← ★ يتم إرسال الرابط الكامل للصورة هنا
         })
       });
 
@@ -7166,6 +7183,7 @@ async function notifyRoomMembers(msg, roomId) {
     }
   }
 }
+
 
 
 
