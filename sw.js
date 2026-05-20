@@ -1,4 +1,4 @@
-const VERSION    = 'v19'; // تم التحديث لكسر الكاش إجبارياً
+const VERSION    = 'v20'; // تم التحديث لكسر الكاش إجبارياً
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -53,15 +53,25 @@ self.addEventListener('push', event => {
   }
 
   const count = Number(data.count) || 1;
-  const title = data.title || 'WOW MOBİLYA';
+  let title = data.title || 'WOW MOBİLYA';
   const body  = data.body || 'Yeni mesajınız var 💬';
+
+  // ★ 1. تحويل اسم المرسل إلى رئيس الغرفة بالتركي إذا كان wow ★
+  if (title.toLowerCase().includes('wow')) {
+    title = 'Oda Başkanı';
+  }
+
+  // ★ 2. دمج العدد مع العنوان لضمان ظهوره في الإشعار المرئي ★
+  if (count > 1) {
+    title = `${title} 💬 (${count} Yeni Mesaj)`;
+  }
 
   const options = {
     body    : body,
     icon    : data.icon || 'https://up6.cc/2026/04/177712738518231.png',
     badge   : data.badge || 'https://up6.cc/2026/04/177712738518231.png',
-    tag     : 'wow-chat', // تجميع الإشعارات
-    renotify: true,       // إصدار صوت مع كل رسالة
+    tag     : 'wow-chat', 
+    renotify: true,       
     vibrate : [300, 100, 300],
     data    : {
       url    : data.url || './',
@@ -71,17 +81,26 @@ self.addEventListener('push', event => {
 
   const promises = [];
 
-  // 1. أمر إظهار الإشعار المرئي
+  // إظهار الإشعار المرئي
   promises.push(self.registration.showNotification(title, options));
 
-  // 2. أمر تحديث الرقم الأحمر على الأيقونة
+  // تحديث الرقم الأحمر على أيقونة التطبيق (للتطبيقات المثبتة PWA)
   if ('setAppBadge' in navigator) {
     promises.push(navigator.setAppBadge(count));
   }
 
-  // ★ السر هنا: إجبار الهاتف على الانتظار حتى تنتهي العمليتان معاً ★
+  // ★ 3. إرسال أمر فوري للتطبيق المفتوح لتحديث العداد الداخلي ★
+  promises.push(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      clients.forEach(client => {
+        client.postMessage({ type: 'UPDATE_UI_COUNTER', count: count });
+      });
+    })
+  );
+
   event.waitUntil(Promise.all(promises).catch(console.error));
 });
+
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
