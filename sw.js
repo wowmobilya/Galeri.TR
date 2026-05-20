@@ -1,4 +1,4 @@
-const VERSION    = 'v20'; // تم التحديث لكسر الكاش إجبارياً
+const VERSION    = 'v21'; // تم التحديث لكسر الكاش إجبارياً
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
