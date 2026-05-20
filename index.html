@@ -7100,22 +7100,44 @@ async function notifyRoomMembers(msg, roomId) {
 
   if (!members?.length) return;
 
-  const senderName = getDisplayName(currentUser);
-  const bodyText   = msg.message
-    || (msg.media_type === 'image' ? '📷 Fotoğraf'
-      : msg.media_type === 'audio' ? '🎤 Ses mesajı'
-      : msg.media_type === 'video' ? '🎥 Video'
-      : '📎 Dosya');
+  const senderName     = getDisplayName(currentUser);
+  const senderUsername = currentUser;
+
+  // ── تحديد نص الجسم حسب نوع الرسالة ──
+  let bodyText = msg.message || '';
+  let mediaType = msg.media_type || 'text';
+
+  if (!bodyText) {
+    switch (mediaType) {
+      case 'image': bodyText = 'Fotoğraf gönderdi'; break;
+      case 'audio': bodyText = 'Ses mesajı gönderdi'; break;
+      case 'video': bodyText = 'Video gönderdi'; break;
+      case 'file':  bodyText = msg.file_name || 'Dosya gönderdi'; break;
+      default:      bodyText = 'Yeni mesaj'; mediaType = 'text';
+    }
+  }
 
   for (const member of members) {
-  const me = currentUser || localStorage.getItem('wow_saved_user');
-  if (member.username === me) continue;
-    await sendPushToUser(
-      member.username,
-      `💬 ${senderName}`,
-      bodyText,
-      roomId
-    );
+    const me = currentUser || localStorage.getItem('wow_saved_user');
+    if (member.username === me) continue;
+
+    // ── إرسال مع البيانات الإضافية ──
+    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      method : 'POST',
+      headers: {
+        'Content-Type' : 'application/json',
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({
+        username       : member.username,
+        title          : `💬 ${senderName}`,
+        body           : bodyText,
+        roomId,
+        url            : './',
+        mediaType,           // ← جديد
+        senderUsername       // ← جديد
+      })
+    });
   }
 }
 
