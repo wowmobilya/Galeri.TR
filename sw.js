@@ -1,5 +1,6 @@
-const VERSION    = 'v21'; // تم التحديث لكسر الكاش إجبارياً
+const VERSION = 'v21'; 
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
+
 const CORE_ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', event => {
@@ -42,7 +43,7 @@ self.addEventListener('message', event => {
 });
 
 /* ════════════════════════════════════════
-   ★ PUSH NOTIFICATIONS (النسخة المنيعة للهواتف)
+   ★ PUSH NOTIFICATIONS (النسخة النظيفة والنهائية)
 ════════════════════════════════════════ */
 self.addEventListener('push', event => {
   let data = {};
@@ -53,25 +54,17 @@ self.addEventListener('push', event => {
   }
 
   const count = Number(data.count) || 1;
-  let title = data.title || 'WOW MOBİLYA';
+  
+  // ★ نأخذ العنوان من الخادم مباشرة كما هو لمنع التكرار ★
+  const title = data.title || 'WOW MOBİLYA';
   const body  = data.body || 'Yeni mesajınız var 💬';
-
-  // ★ 1. تحويل اسم المرسل إلى رئيس الغرفة بالتركي إذا كان wow ★
-  if (title.toLowerCase().includes('wow')) {
-    title = 'Oda Başkanı';
-  }
-
-  // ★ 2. دمج العدد مع العنوان لضمان ظهوره في الإشعار المرئي ★
-  if (count > 1) {
-    title = `${title} 💬 (${count} Yeni Mesaj)`;
-  }
 
   const options = {
     body    : body,
     icon    : data.icon || 'https://up6.cc/2026/04/177712738518231.png',
-    badge   : data.badge || 'https://up6.cc/2026/04/177712738518231.png',
-    tag     : 'wow-chat', 
-    renotify: true,       
+    badge   : data.badge || 'https://up6.cc/2026/04/177712738518231.png', // أيقونة شريط الإشعارات
+    tag     : 'wow-chat', // تجميع الإشعارات في إشعار واحد
+    renotify: true,       // التنبيه الصوتي مع كل رسالة
     vibrate : [300, 100, 300],
     data    : {
       url    : data.url || './',
@@ -81,13 +74,17 @@ self.addEventListener('push', event => {
 
   const promises = [];
 
-  // إظهار الإشعار المرئي
+  // 1. إظهار الإشعار المرئي
   promises.push(self.registration.showNotification(title, options));
 
-  // تحديث الرقم الأحمر على أيقونة التطبيق (للتطبيقات المثبتة PWA)
+  // 2. تحديث الرقم الأحمر على أيقونة التطبيق (App Badge)
   if ('setAppBadge' in navigator) {
-    promises.push(navigator.setAppBadge(count));
+    promises.push(navigator.setAppBadge(count).catch(console.error));
   }
+
+  event.waitUntil(Promise.all(promises));
+});
+
 
   // ★ 3. إرسال أمر فوري للتطبيق المفتوح لتحديث العداد الداخلي ★
   promises.push(
