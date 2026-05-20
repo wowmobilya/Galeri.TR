@@ -9424,6 +9424,23 @@ async function saveAdminNote(orderId) {
   if (idx !== -1) allAdminOrders[idx].admin_note = note;
 
   showInvToast('Not başarıyla kaydedildi ✓', 'success');
+
+  // ---------------------------------------------------------
+  // ★ إرسال إشعار للمشتري بوجود ملاحظة جديدة
+  // ---------------------------------------------------------
+  if (idx !== -1 && note !== '') {
+    const order = allAdminOrders[idx];
+    
+    // نأخذ أول 40 حرف من الملاحظة لعرضها في الإشعار
+    const shortNote = note.length > 40 ? note.substring(0, 40) + '...' : note;
+
+    await sendPushToUser(
+      order.username,
+      `💬 Siparişinize Not Eklendi`,
+      `${order.order_number}: ${shortNote}`,
+      null
+    );
+  }
 }
 
 
@@ -9473,7 +9490,33 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
     newStatus === 'cancelled' ? 'error' :
     newStatus === 'ready'     ? 'success' : 'info'
   );
+
+  // ---------------------------------------------------------
+  // ★ إرسال إشعار للمشتري بتغيير حالة الطلب
+  // ---------------------------------------------------------
+  if (idx !== -1) {
+    const order = allAdminOrders[idx];
+    
+    // تحديد نص الإشعار بناءً على الحالة
+    let notifBody = `${order.order_number} numaralı siparişinizin durumu güncellendi.`;
+    if (newStatus === 'ready') notifBody = `${order.order_number} numaralı siparişiniz teslime hazır! 🎉`;
+    if (newStatus === 'manufacturing') notifBody = `${order.order_number} numaralı siparişiniz üretime alındı. 🛠️`;
+    if (newStatus === 'cancelled') notifBody = `${order.order_number} numaralı siparişiniz iptal edildi. ❌`;
+
+    await sendPushToUser(
+      order.username,
+      `📦 Sipariş Durumu: ${st.label}`,
+      notifBody,
+      null
+    );
+  }
 }
+
+
+
+
+
+  
 
 /* ── فلترة الطلبيات ── */
 function filterAdminOrders(filter, btn) {
