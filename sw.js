@@ -1,4 +1,4 @@
-const VERSION    = 'v30';
+const VERSION    = 'v31';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -161,11 +161,27 @@ self.addEventListener('notificationclick', event => {
 });
 
 /* ══════════════════════════════════════════
-   ★ إرسال الرد في الخلفية (مضاد للتعليق)
+   ★ دالة إرسال الرد في الخلفية (سريعة ولحظية)
 ══════════════════════════════════════════ */
 async function sendReplyInBackground(roomId, text, fromUser, notifTag) {
   if (!roomId || !text) return;
 
+  // 1. إيقاف الدوران فوراً! (تحديث الإشعار قبل بدء الإرسال)
+  await self.registration.showNotification('Mesaj Gönderildi ✓', {
+    body: text,
+    icon: 'https://up6.cc/2026/04/177712738518231.png',
+    tag: notifTag, // نفس الـ tag يوقف الدوران فوراً
+    silent: true
+  });
+
+  // 2. إخفاء إشعار النجاح تلقائياً بعد ثانيتين
+  setTimeout(() => {
+    self.registration.getNotifications({ tag: notifTag }).then(ns => {
+      ns.forEach(n => n.close());
+    });
+  }, 2000);
+
+  // 3. إرسال الرسالة إلى قاعدة البيانات بهدوء في الخلفية
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/group_messages`, {
       method: 'POST',
@@ -185,30 +201,14 @@ async function sendReplyInBackground(roomId, text, fromUser, notifTag) {
       })
     });
 
-    if (response.ok) {
-      // ✅ تحديث الإشعار بنفس الـ tag يوقف الدوران فوراً في أندرويد
-      await self.registration.showNotification('Mesaj Gönderildi ✓', {
-        body: text,
-        icon: 'https://up6.cc/2026/04/177712738518231.png',
-        tag: notifTag, 
-        silent: true
-      });
-
-      // إغلاق إشعار النجاح بعد ثانيتين
-      setTimeout(() => {
-        self.registration.getNotifications({ tag: notifTag }).then(ns => {
-          ns.forEach(n => n.close());
-        });
-      }, 2000);
-
-    } else {
-      throw new Error(await response.text());
+    if (!response.ok) {
+      throw new Error('DB Insert Failed');
     }
   } catch (error) {
-    console.error('[SW] Reply Error:', error);
-    // إظهار رسالة خطأ لإيقاف الدوران
+    console.error('[SW] Network Error:', error);
+    // في حال فشل الإرسال (لا يوجد إنترنت مثلاً)، نظهر إشعار خطأ
     await self.registration.showNotification('Gönderilemedi ❌', {
-      body: 'Bağlantı hatası',
+      body: 'Bağlantı hatası, tekrar deneyin.',
       icon: 'https://up6.cc/2026/04/177712738518231.png',
       tag: notifTag,
       silent: true
