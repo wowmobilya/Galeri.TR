@@ -7110,6 +7110,10 @@ async function notifyRoomMembers(msg, roomId) {
   const me             = currentUser || localStorage.getItem('wow_saved_user') || '';
   const senderName     = getDisplayName(me);
   const senderUsername = me;
+  
+  // ★ جلب صورة المرسل (إذا كان لديك دالة مخصصة للصورة مثل getDisplayName استخدمها هنا)
+  // وضعنا لوجو التطبيق كصورة احتياطية في حال لم يكن لديه صورة
+  const senderAvatar   = localStorage.getItem('wow_user_avatar') || 'https://up6.cc/2026/04/177712738518231.png';
 
   const mediaType = msg.media_type || 'text';
   const fileName  = msg.file_name  || '';
@@ -7150,6 +7154,7 @@ async function notifyRoomMembers(msg, roomId) {
           mediaUrl,      // ← إرسال الرابط
           senderUsername,
           fileName,
+          senderAvatar   // ← ★ إرسال صورة المرسل هنا
         })
       });
 
@@ -7161,6 +7166,7 @@ async function notifyRoomMembers(msg, roomId) {
     }
   }
 }
+
 
 
 
