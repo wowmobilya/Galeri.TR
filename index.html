@@ -29167,9 +29167,7 @@ async function sendTextMsg() {
       updateRoomTimestamp(_activeRoomId);
       saveMentionsForMessage(data);
       clearChatDraft(_activeRoomId);
-      
       notifyRoomMembers(data, _activeRoomId); // ← ★ أضف هذا السطر هنا فقط ★
-
     } else {
       showInvToast('Mesaj gönderilemedi', 'error');
     }
@@ -29249,6 +29247,7 @@ async function handleFileSelect(input) {
     }
     _chatMessages.push(data);
     updateRoomTimestamp(_activeRoomId);
+    notifyRoomMembers(data, _activeRoomId); // ← ★ أضف هذا السطر هنا
   }
 }
 
@@ -29344,6 +29343,7 @@ function stopVoiceRecord(e) {
       _chatMessages.push(data);
       appendMsgBubble(data);
       updateRoomTimestamp(_activeRoomId);
+     notifyRoomMembers(data, _activeRoomId); // ← ★ أضف هذا السطر هنا
     }
   };
   _mediaRecorder.stop();
