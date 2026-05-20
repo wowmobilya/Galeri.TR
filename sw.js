@@ -1,4 +1,4 @@
-const VERSION    = 'v14';
+const VERSION    = 'v15';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -59,6 +59,11 @@ self.addEventListener('push', event => {
 
   const count = data.count || 1;
 
+  // ★ السر هنا: تحديث العداد على أيقونة التطبيق من الخارج ★
+  if (navigator.setAppBadge) {
+    navigator.setAppBadge(count).catch(() => {});
+  }
+
   const options = {
     body    : data.body,
     icon    : data.icon,
@@ -84,6 +89,12 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+
+  // ★ تصفير العداد من الأيقونة الخارجية عند النقر على الإشعار ★
+  if (navigator.clearAppBadge) {
+    navigator.clearAppBadge().catch(() => {});
+  }
+
   if (event.action === 'dismiss') return;
 
   const targetUrl = event.notification.data?.url || './';
