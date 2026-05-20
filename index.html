@@ -32038,14 +32038,16 @@ async function savePStatus() {
 ══════════════════════════════════════════════════════════════ */
 function updateChatHomeBadge() {
   const total = Object.values(_grpUnread).reduce((a, b) => a + (b || 0), 0);
+  
   document.querySelectorAll('.chat-home-unread-badge').forEach(el => {
     el.textContent  = total > 99 ? '99+' : total;
     el.style.display = total > 0 ? 'flex' : 'none';
   });
+  
   if (typeof updateNavBadge === 'function') updateNavBadge('chat', total);
 
-  // ★ مزامنة العداد الخارجي للتطبيق (PWA Badge) ★
-  if ('setAppBadge' in navigator) {
+  // ★ تصفير أو تحديث الرقم على أيقونة الهاتف الخارجية ★
+  if ('setAppBadge' in navigator && 'clearAppBadge' in navigator) {
     if (total > 0) {
       navigator.setAppBadge(total).catch(()=>{});
     } else {
