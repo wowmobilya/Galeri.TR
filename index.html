@@ -4743,18 +4743,35 @@ function downloadDimsTxt(img){
 }
 
 /* ============================================================
-   تذكّرني
+   تذكّرني والدخول التلقائي
 ============================================================ */
 const LS_REMEMBER='wow_remember',LS_USER='wow_saved_user',LS_PASS='wow_saved_pass';
 function loadSavedCredentials(){
   try{
-    if(localStorage.getItem(LS_REMEMBER)==='1'){
-      document.getElementById('loginUser').value=localStorage.getItem(LS_USER)||'';
-      document.getElementById('loginPass').value=localStorage.getItem(LS_PASS)||'';
-      document.getElementById('rememberMe').checked=true;
+    const savedUser = localStorage.getItem(LS_USER);
+    const savedPass = localStorage.getItem(LS_PASS);
+    
+    if(savedUser && savedPass){
+      // تعبئة الحقول
+      document.getElementById('loginUser').value = savedUser;
+      document.getElementById('loginPass').value = savedPass;
+      document.getElementById('rememberMe').checked = true;
+      
+      // إظهار حالة التحميل على الزر لكي لا يلاحظ المستخدم وجود النافذة
+      const btn = document.querySelector('#loginBox .login-btn');
+      if(btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Oturum açılıyor...';
+      }
+      
+      // تنفيذ الدخول التلقائي فوراً
+      setTimeout(() => {
+        doLogin();
+      }, 100);
     }
   }catch(e){}
 }
+
 function saveCredentials(u,p){try{localStorage.setItem(LS_REMEMBER,'1');localStorage.setItem(LS_USER,u);localStorage.setItem(LS_PASS,p);}catch(e){}}
 function clearSavedCredentials(){try{localStorage.removeItem(LS_REMEMBER);localStorage.removeItem(LS_USER);localStorage.removeItem(LS_PASS);}catch(e){}}
 
@@ -4819,10 +4836,12 @@ function handleLoginKey(e,field){
 function doLogin(){
   const user=document.getElementById('loginUser').value.trim();
   const pass=document.getElementById('loginPass').value.trim();
-  const remember=document.getElementById('rememberMe').checked;
+// حفظ بيانات الدخول دائماً ليبقى الحساب مفتوحاً
+saveCredentials(user, pass);
   const err=document.getElementById('loginError');
   if(USERS[user]&&USERS[user]===pass){
-    if(remember)saveCredentials(user,pass);else clearSavedCredentials();
+// حفظ بيانات الدخول دائماً ليبقى الحساب مفتوحاً
+saveCredentials(user, pass);
     
     /* ★ حفظ المستخدم الحالي */
     currentUser = user;
@@ -5070,8 +5089,11 @@ async function doLogout() {
     ov.style.transition = '';
   }
 
-  // 7. إعادة تهيئة المتغيرات العامة
+   // 7. إعادة تهيئة المتغيرات العامة
+  clearSavedCredentials(); // ← مسح بيانات الدخول من الذاكرة
   loadSavedCredentials();
+
+  
   if (typeof selectedIds !== 'undefined') selectedIds.clear();
   selectMode = false;
   document.body.classList.remove('select-mode');
