@@ -1,4 +1,4 @@
-const VERSION    = 'v37';
+const VERSION    = 'v38';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -78,7 +78,7 @@ self.addEventListener('push', event => {
   if (finalBody.length > 100) finalBody = finalBody.substring(0, 100) + '…';
 
   _pendingCount = Math.max(_pendingCount, Number(count) || 1);
-  let notifTag = senderUsername ? `wow-sender-${senderUsername}` : (roomId ? `wow-room-${roomId}` : 'wow-chat');
+let notifTag = (senderUsername ? `wow-sender-${senderUsername}` : (roomId ? `wow-room-${roomId}` : 'wow-chat')) + `-${Date.now()}`;
 
   const options = {
     body    : finalBody,
