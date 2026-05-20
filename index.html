@@ -4743,41 +4743,18 @@ function downloadDimsTxt(img){
 }
 
 /* ============================================================
-   تذكّرني والدخول التلقائي المخفي
+   تذكّرني
 ============================================================ */
 const LS_REMEMBER='wow_remember',LS_USER='wow_saved_user',LS_PASS='wow_saved_pass';
-
 function loadSavedCredentials(){
   try{
-    const savedUser = localStorage.getItem(LS_USER);
-    const savedPass = localStorage.getItem(LS_PASS);
-    
-    if(savedUser && savedPass){
-      // 1. إخفاء صندوق تسجيل الدخول بالكامل حتى لا يراه المستخدم
-      const loginBox = document.getElementById('loginBox');
-      if(loginBox) loginBox.style.display = 'none';
-      
-      // 2. إظهار أيقونة تحميل ذهبية في منتصف الشاشة السوداء
-      const overlay = document.getElementById('loginOverlay');
-      let loader = document.getElementById('autoLoginLoader');
-      if(!loader) {
-        loader = document.createElement('div');
-        loader.id = 'autoLoginLoader';
-        loader.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:44px;color:#c9a84c;"></i>';
-        overlay.appendChild(loader);
-      }
-      loader.style.display = 'block';
-
-      // 3. تعبئة الحقول وتنفيذ الدخول
-      document.getElementById('loginUser').value = savedUser;
-      document.getElementById('loginPass').value = savedPass;
-      doLogin();
+    if(localStorage.getItem(LS_REMEMBER)==='1'){
+      document.getElementById('loginUser').value=localStorage.getItem(LS_USER)||'';
+      document.getElementById('loginPass').value=localStorage.getItem(LS_PASS)||'';
+      document.getElementById('rememberMe').checked=true;
     }
   }catch(e){}
 }
-
-
-
 function saveCredentials(u,p){try{localStorage.setItem(LS_REMEMBER,'1');localStorage.setItem(LS_USER,u);localStorage.setItem(LS_PASS,p);}catch(e){}}
 function clearSavedCredentials(){try{localStorage.removeItem(LS_REMEMBER);localStorage.removeItem(LS_USER);localStorage.removeItem(LS_PASS);}catch(e){}}
 
@@ -4842,12 +4819,10 @@ function handleLoginKey(e,field){
 function doLogin(){
   const user=document.getElementById('loginUser').value.trim();
   const pass=document.getElementById('loginPass').value.trim();
-// حفظ بيانات الدخول دائماً ليبقى الحساب مفتوحاً
-saveCredentials(user, pass);
+  const remember=document.getElementById('rememberMe').checked;
   const err=document.getElementById('loginError');
   if(USERS[user]&&USERS[user]===pass){
-// حفظ بيانات الدخول دائماً ليبقى الحساب مفتوحاً
-saveCredentials(user, pass);
+    if(remember)saveCredentials(user,pass);else clearSavedCredentials();
     
     /* ★ حفظ المستخدم الحالي */
     currentUser = user;
@@ -5096,10 +5071,7 @@ async function doLogout() {
   }
 
   // 7. إعادة تهيئة المتغيرات العامة
-  clearSavedCredentials(); // ← مسح بيانات الدخول من الذاكرة
   loadSavedCredentials();
-
-  
   if (typeof selectedIds !== 'undefined') selectedIds.clear();
   selectMode = false;
   document.body.classList.remove('select-mode');
@@ -11180,12 +11152,7 @@ function showLoginBox() {
   const lb = document.getElementById('loginBox');
   if (lb) lb.style.display = 'block';
   clearOtpTimer();
-  
-  // إخفاء أيقونة التحميل إن وجدت
-  const loader = document.getElementById('autoLoginLoader');
-  if(loader) loader.style.display = 'none';
 }
-
 
 function showRegisterBox() {
   document.getElementById('loginBox').style.display    = 'none';
@@ -11198,15 +11165,6 @@ function showForgotBox() {
 }
 
 function showError(elId, msg) {
-  // إظهار صندوق الدخول مجدداً إذا فشل الدخول التلقائي
-  const loader = document.getElementById('autoLoginLoader');
-  if(loader) loader.style.display = 'none';
-  const loginBox = document.getElementById('loginBox');
-  if(loginBox && loginBox.style.display === 'none') {
-    loginBox.style.display = 'block';
-    clearSavedCredentials(); // مسح البيانات الخاطئة
-  }
-
   const el = document.getElementById(elId);
   if (!el) return;
   const msgEl = el.querySelector('span') || el;
@@ -11216,7 +11174,6 @@ function showError(elId, msg) {
   void el.offsetWidth;
   el.style.animation = 'shake 0.4s ease';
 }
-
 
 function hideError(elId) {
   const el = document.getElementById(elId);
@@ -11237,9 +11194,10 @@ async function doLogin() {
 
   /* ── 1. حساب WOW المدمج ── */
   if (USERS[user] && USERS[user] === pass) {
-// حفظ بيانات الدخول دائماً ليبقى الحساب مفتوحاً
-saveCredentials(user, pass);
-    
+    const remember = document.getElementById('rememberMe').checked;
+    if (remember) saveCredentials(user, pass);
+    else clearSavedCredentials();
+
     currentUser      = user;
     _currentUserData = {
       username     : user,
@@ -11341,7 +11299,9 @@ saveCredentials(user, pass);
         },
       };
 
-      saveCredentials(user, pass);
+      const remember = document.getElementById('rememberMe').checked;
+      if (remember) saveCredentials(user, pass);
+      else clearSavedCredentials();
 
       hideError('loginError');
 
