@@ -7120,25 +7120,25 @@ async function notifyRoomMembers(msg, roomId) {
 }
 
 /* استقبال النقر على الإشعار */
+// الاستماع للرسائل القادمة من الإشعارات
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data?.type === 'NOTIFICATION_CLICK') {
-      const roomId = event.data.roomId;
-      if (roomId) {
-        setTimeout(() => {
-          if (typeof openRoomWindow === 'function') {
-            /* افتح التطبيق على المحادثة مباشرة */
-            const hs = document.getElementById('homeScreen');
-            const ms = document.getElementById('mainSite');
-            if (hs) hs.style.display = 'none';
-            if (ms) ms.style.display = 'block';
-            openRoomWindow(Number(roomId), 'group');
-          }
-        }, 800);
+    if (event.data && event.data.type === 'UPDATE_UI_COUNTER') {
+      const newCount = event.data.count;
+      
+      // قم بتحديث عنصر الـ HTML الخاص بالعداد هنا
+      // مثال:
+      const badgeElement = document.getElementById('unread-badge');
+      if (badgeElement) {
+        badgeElement.innerText = newCount;
+        badgeElement.style.display = newCount > 0 ? 'block' : 'none';
       }
+      
+      console.log("تم تحديث العداد الداخلي إلى:", newCount);
     }
   });
 }
+
 
   
   const INV_TABLE    = 'inventory';   /* اسم الجدول بالضبط */
