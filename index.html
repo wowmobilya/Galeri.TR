@@ -7112,29 +7112,30 @@ async function notifyRoomMembers(msg, roomId) {
   const senderUsername = me;
   
   // ---------------------------------------------------------
-  // ★ التعديل الجديد: جلب صورة المرسل الحقيقية وتحويلها لرابط كامل
+  // ★ التعديل الجديد: جلب صورة المرسل الحقيقية من _chatProfiles
   // ---------------------------------------------------------
   let rawAvatar = '';
-  // محاولة جلب الصورة من كائن المستخدم الحالي إذا كان موجوداً
-  if (typeof _currentUser !== 'undefined' && _currentUser && _currentUser.avatar) {
-    rawAvatar = _currentUser.avatar;
+  
+  // جلب الصورة من كائن البروفايلات الخاص بنظام المحادثة
+  if (typeof _chatProfiles !== 'undefined' && _chatProfiles[me] && _chatProfiles[me].avatar_url) {
+    rawAvatar = _chatProfiles[me].avatar_url;
   } else {
     rawAvatar = localStorage.getItem('wow_user_avatar') || '';
   }
 
-  // إذا كانت الصورة مساراً محلياً، نحولها إلى رابط كامل (مهم جداً للأندرويد)
+  // إذا كانت الصورة مساراً محلياً، نحولها إلى رابط كامل
   if (rawAvatar && !rawAvatar.startsWith('http')) {
     const baseUrl = window.location.origin;
     rawAvatar = baseUrl + (rawAvatar.startsWith('/') ? '' : '/') + rawAvatar;
   }
 
-  // الصورة النهائية (إذا لم توجد، نستخدم اللوجو)
+  // الصورة النهائية (إذا لم توجد، نستخدم اللوجو الافتراضي)
   const senderAvatar = rawAvatar || 'https://up6.cc/2026/04/177712738518231.png';
   // ---------------------------------------------------------
 
   const mediaType = msg.media_type || 'text';
   const fileName  = msg.file_name  || '';
-  const mediaUrl  = msg.media_url  || null; // ← جلب الرابط
+  const mediaUrl  = msg.media_url  || null; 
 
   let bodyText = '';
   switch (mediaType) {
