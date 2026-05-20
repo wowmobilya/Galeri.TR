@@ -1,4 +1,4 @@
-const VERSION    = 'v36';
+const VERSION    = 'v37';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
@@ -150,7 +150,7 @@ self.addEventListener('notificationclick', event => {
       self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
-            client.postMessage({ type: 'NOTIFICATION_CLICK', roomId: data.roomId, senderUsername: data.senderUsername });
+client.postMessage({ type: 'NOTIFICATION_CLICK', roomId: data.roomId, senderUsername: data.senderUsername, url: data.url });
             return client.focus();
           }
         }
