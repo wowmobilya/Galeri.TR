@@ -7637,30 +7637,24 @@ async function saveAllInventory() {
   }
 
   try {
-   const rows = changes.map(([id, stock]) => {
-  const img = images.find(i => i.id === Number(id));
-  return {
-    id         : Number(id),
-    title      : img ? img.title : String(id),
-    stock      : Number(stock),
-    updated_at : new Date().toISOString(),
-  };
-});
-
+    const rows = changes.map(([id, stock]) => {
+      const img = images.find(i => i.id === Number(id));
+      return {
+        id         : Number(id),
+        title      : img ? img.title : String(id),
+        stock      : Number(stock),
+        updated_at : new Date().toISOString(),
+      };
+    });
 
     console.log('[Supabase] upsert rows:', rows);
 
     const { data, error } = await sb
       .from(INV_TABLE)
       .upsert(rows, { onConflict: 'id' })
-      .select();   /* ← select() يُعيد البيانات المحدَّثة */
+      .select();
 
     if (error) {
-      console.error('[Supabase] upsert error:', error);
-      console.error('message:', error.message);
-      console.error('hint:',    error.hint);
-      console.error('details:', error.details);
-      console.error('code:',    error.code);
       throw new Error(error.message || JSON.stringify(error));
     }
 
@@ -7676,6 +7670,47 @@ async function saveAllInventory() {
     showInvToast('Stok başarıyla güncellendi ✓', 'success');
     if (dot) dot.className = 'inv-sync-dot';
     if (txt) txt.textContent = 'Canlı bağlantı';
+
+    // ---------------------------------------------------------
+    // ★ إرسال إشعارات للمشترين بتحديث المخزون
+    // ---------------------------------------------------------
+    try {
+      let notifTitle = '📦 Stok Güncellemesi';
+      let notifBody = '';
+
+      // إذا تم تعديل منتج واحد
+      if (changes.length === 1) {
+        const [id, stock] = changes[0];
+        const img = images.find(i => i.id === Number(id));
+        const modelName = img ? img.title : `Model #${id}`;
+        notifBody = `${modelName} stokları güncellendi! Mevcut stok: ${stock} adet.`;
+      } 
+      // إذا تم تعديل عدة منتجات معاً
+      else {
+        const names = changes.slice(0, 3).map(([id, stock]) => {
+          const img = images.find(i => i.id === Number(id));
+          return `${img ? img.title : '#' + id} (${stock} adet)`;
+        }).join(', ');
+        notifBody = `${changes.length} modelin stoğu güncellendi:\n${names}${changes.length > 3 ? '...' : ''}`;
+      }
+
+      // جلب جميع المشترين (المستخدمين النشطين)
+      const { data: allUsers } = await sb.from('users').select('username').eq('is_active', true);
+      
+      if (allUsers && allUsers.length > 0) {
+        // استثناء حساب الإدارة من الإشعارات لتجنب الإزعاج
+        const targets = allUsers.filter(u => u.username !== currentUser && u.username !== 'WOW');
+        
+        // إرسال الإشعارات في الخلفية لجميع المشترين
+        targets.forEach(u => {
+          sendPushToUser(u.username, notifTitle, notifBody, null).catch(console.error);
+        });
+      }
+    } catch (err) {
+      console.error('[Stock Notif] İletim Hatası:', err);
+    }
+    // ---------------------------------------------------------
+
     setTimeout(() => closeInventoryModal(), 700);
 
   } catch(e) {
@@ -7684,6 +7719,7 @@ async function saveAllInventory() {
     resetInvBtn(btn, dot, txt);
   }
 }
+
 
 function resetInvBtn(btn, dot, txt) {
   if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> KAYDET'; }
