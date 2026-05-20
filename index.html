@@ -7106,48 +7106,56 @@ async function notifyRoomMembers(msg, roomId) {
 
   if (!members?.length) return;
 
-  const senderName     = getDisplayName(currentUser);
-  const senderUsername = currentUser;
+  // ★ احفظ اسم المرسل الحالي في متغير ثابت
+  const me             = currentUser || localStorage.getItem('wow_saved_user') || '';
+  const senderName     = getDisplayName(me);
+  const senderUsername = me;
 
-  // ★ تحديد نوع الرسالة بدقة
   const mediaType = msg.media_type || 'text';
   const fileName  = msg.file_name  || '';
 
-  // ★ بناء نص الجسم حسب النوع
   let bodyText = '';
   switch (mediaType) {
-    case 'image': bodyText = 'Fotoğraf gönderdi';           break;
-    case 'video': bodyText = 'Video gönderdi';              break;
-    case 'audio': bodyText = 'Ses mesajı gönderdi';         break;
-    case 'file':  bodyText = fileName || 'Dosya gönderdi';  break;
+    case 'image': bodyText = 'Fotoğraf gönderdi';          break;
+    case 'video': bodyText = 'Video gönderdi';             break;
+    case 'audio': bodyText = 'Ses mesajı gönderdi';        break;
+    case 'file':  bodyText = fileName || 'Dosya gönderdi'; break;
     default:
       bodyText = (msg.message || '').substring(0, 80) || 'Yeni mesaj';
   }
 
-  for (const member of members) {
-    // لا ترسل لنفسك
-    if (member.username === currentUser) continue;
+  // ★ أرسل لكل الأعضاء ما عدا المرسل نفسه
+  const targets = members.filter(m =>
+    m.username.trim().toLowerCase() !== me.trim().toLowerCase()
+  );
 
+  console.log(`[Push] إرسال لـ ${targets.length} عضو من أصل ${members.length}`);
+
+  for (const member of targets) {
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
         method : 'POST',
         headers: {
           'Content-Type' : 'application/json',
           'Authorization': `Bearer ${SUPABASE_KEY}`
         },
         body: JSON.stringify({
-          username,                              // المستقبِل
-          title          : senderName,           // اسم المرسل فقط
-          body           : bodyText,             // النص الذكي
+          username       : member.username,
+          title          : senderName,
+          body           : bodyText,
           roomId,
           url            : './',
-          mediaType,     // ★ هذا كان مفقوداً!
-          senderUsername,// ★ هذا كان مفقوداً!
-          fileName,      // ★ هذا كان مفقوداً!
+          mediaType,
+          senderUsername,
+          fileName,
         })
       });
+
+      const result = await res.json();
+      console.log(`[Push] ${member.username} →`, result.sent ? '✅' : '❌', result);
+
     } catch(e) {
-      console.warn('[Push] فشل الإرسال لـ', member.username, e);
+      console.warn('[Push] فشل:', member.username, e);
     }
   }
 }
