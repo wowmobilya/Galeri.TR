@@ -1,61 +1,43 @@
-const VERSION    = 'v29';
+const VERSION    = 'v30';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
+/* ── مفاتيح الاتصال المباشر بقاعدة البيانات ── */
+const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
+
 /* ══════════════════════════════════════════
-   INSTALL
+   INSTALL & ACTIVATE
 ══════════════════════════════════════════ */
 self.addEventListener('install', event => {
   self.skipWaiting();
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(CORE_ASSETS).catch(() => {}))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS).catch(() => {})));
 });
 
-/* ══════════════════════════════════════════
-   ACTIVATE
-══════════════════════════════════════════ */
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys()
-      .then(keys => Promise.all(
-        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-      ))
-      .then(() => self.clients.claim())
+    caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+    .then(() => self.clients.claim())
   );
 });
 
-/* ══════════════════════════════════════════
-   FETCH
-══════════════════════════════════════════ */
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request, { cache: 'no-cache' })
-      .then(response => {
-        if (response.ok) {
-          caches.open(CACHE_NAME)
-            .then(cache => cache.put(event.request, response.clone()));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
+    fetch(event.request, { cache: 'no-cache' }).then(response => {
+      if (response.ok) caches.open(CACHE_NAME).then(cache => cache.put(event.request, response.clone()));
+      return response;
+    }).catch(() => caches.match(event.request))
   );
 });
 
-/* ══════════════════════════════════════════
-   MESSAGE
-══════════════════════════════════════════ */
 self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
 /* ══════════════════════════════════════════
-   ★ PUSH — النسخة الذكية الكاملة
+   ★ PUSH NOTIFICATIONS
 ══════════════════════════════════════════ */
-
-/* ── تحديد أيقونة + نص حسب النوع ── */
 function getMediaInfo(mediaType, fileName) {
   switch (mediaType) {
     case 'image': return { emoji: '📷', text: 'Fotoğraf gönderdi' };
@@ -66,7 +48,6 @@ function getMediaInfo(mediaType, fileName) {
   }
 }
 
-/* ── مخزن عدد الإشعارات المعلقة ── */
 let _pendingCount = 0;
 
 self.addEventListener('push', event => {
@@ -74,17 +55,18 @@ self.addEventListener('push', event => {
   try { if (event.data) data = event.data.json(); } catch(e) {}
 
   const {
-    title          = 'WOW MOBİLYA',
-    body           = '',
-    url            = './',
-    roomId         = null,
-    count          = 1,
-    mediaType      = 'text',
-    mediaUrl       = null, // ← رابط الصورة لعرضها في الإشعار
-    senderUsername = '',
-    fileName       = '',
-    icon           = 'https://up6.cc/2026/04/177712738518231.png',
-    badge          = 'https://up6.cc/2026/04/177712738518231.png',
+    title            = 'WOW MOBİLYA',
+    body             = '',
+    url              = './',
+    roomId           = null,
+    count            = 1,
+    mediaType        = 'text',
+    mediaUrl         = null,
+    senderUsername   = '',
+    fileName         = '',
+    receiverUsername = '', // ← استخراج اسم المستلم
+    icon             = 'https://up6.cc/2026/04/177712738518231.png',
+    badge            = 'https://up6.cc/2026/04/177712738518231.png',
   } = data;
 
   const mediaInfo = getMediaInfo(mediaType, fileName);
@@ -102,21 +84,21 @@ self.addEventListener('push', event => {
     body    : finalBody,
     icon,
     badge,
-    image   : mediaType === 'image' ? mediaUrl : undefined, // ← عرض الصورة الكبيرة
+    image   : mediaType === 'image' ? mediaUrl : undefined,
     tag     : notifTag,
     renotify: true,
     vibrate : [200, 100, 200, 100, 200],
-    data: { url, roomId, senderUsername, mediaType, count: _pendingCount },
-    
-    // ★ أزرار تفاعلية مثل واتساب
+    data: { 
+      url, 
+      roomId, 
+      senderUsername, 
+      mediaType, 
+      count: _pendingCount,
+      receiverUsername // ← تمريره للبيانات
+    },
     actions: [
-      { 
-        action: 'reply', 
-        title: '💬 Yanıtla (الرد)', 
-        type: 'text', // ← هذا يظهر حقل إدخال نصي داخل الإشعار
-        placeholder: 'Mesaj yaz...' 
-      },
-      { action: 'mark_read', title: '✓ Okundu (مقروء)' }
+      { action: 'reply', title: '💬 Yanıtla', type: 'text', placeholder: 'Mesaj yaz...' },
+      { action: 'mark_read', title: '✓ Okundu' }
     ]
   };
 
@@ -133,26 +115,34 @@ self.addEventListener('push', event => {
   );
 });
 
-/* ── معالجة أزرار الإشعار ── */
+/* ══════════════════════════════════════════
+   ★ NOTIFICATION CLICK & REPLY
+══════════════════════════════════════════ */
 self.addEventListener('notificationclick', event => {
   const notification = event.notification;
   const action       = event.action;
-  const replyText    = event.reply; // النص الذي كتبه المستخدم في الإشعار
-  const data         = notification.data;
+  const replyText    = event.reply; 
+  const data         = notification.data || {};
 
-  notification.close();
-
+  // 1. حالة الرد المباشر (Quick Reply)
   if (action === 'reply' && replyText) {
-    // 1. إرسال الرد مباشرة للخلفية دون فتح التطبيق
-    event.waitUntil(sendReplyInBackground(data.roomId, replyText));
+    // ⚠️ لا تغلق الإشعار هنا! دعه مفتوحاً حتى ينتهي الإرسال
+    const fromUser = data.receiverUsername || 'WOW';
+    
+    // إرسال الرسالة وتحديث الإشعار لإيقاف الدوران
+    event.waitUntil(
+      sendReplyInBackground(data.roomId, replyText, fromUser, notification.tag)
+    );
   } 
+  // 2. حالة "تحديد كمقروء"
   else if (action === 'mark_read') {
-    // 2. تصفير العداد وتحديد كمقروء
+    notification.close();
     _pendingCount = 0;
     if ('clearAppBadge' in self.navigator) self.navigator.clearAppBadge().catch(()=>{});
   } 
-  else {
-    // 3. فتح التطبيق عند النقر العادي
+  // 3. النقر العادي لفتح التطبيق
+  else if (action !== 'dismiss') {
+    notification.close();
     _pendingCount = 0;
     if ('clearAppBadge' in self.navigator) self.navigator.clearAppBadge().catch(()=>{});
     
@@ -164,69 +154,6 @@ self.addEventListener('notificationclick', event => {
             return client.focus();
           }
         }
-        if (self.clients.openWindow) return self.clients.openWindow(data.url);
-      })
-    );
-  }
-});
-
-/* ── دالة إرسال الرد من الـ Service Worker عبر REST API ── */
-async function sendReplyInBackground(roomId, text) {
-  // استبدل هذه بالقيم الخاصة بك
- /* ── مفاتيح الاتصال المباشر بقاعدة البيانات ── */
-/* ── مفاتيح الاتصال المباشر بقاعدة البيانات ── */
-const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
-
-/* ══════════════════════════════════════════
-   ★ معالجة النقر والرد من الإشعار
-══════════════════════════════════════════ */
-self.addEventListener('notificationclick', event => {
-  const notification = event.notification;
-  const action       = event.action;
-  const replyText    = event.reply; 
-  const data         = notification.data || {};
-
-  // 1. إغلاق الإشعار فوراً لمنع تعليق الواجهة
-  notification.close();
-
-  // 2. تصفير العداد
-  _pendingCount = 0;
-  if ('clearAppBadge' in self.navigator) {
-    self.navigator.clearAppBadge().catch(() => {});
-  }
-
-  // 3. حالة الرد المباشر (Quick Reply)
-  if (action === 'reply' && replyText) {
-    // جلب اسم المستخدم الذي استلم الإشعار (ليرد باسمه)
-    // إذا لم يكن موجوداً، نستخدم 'WOW' كاحتياط
-    const fromUser = data.receiverUsername || 'WOW';
-    
-    // استخدام waitUntil مع Promise مضمون النجاح لإيقاف الدوران
-    event.waitUntil(
-      sendReplyInBackground(data.roomId, replyText, fromUser)
-        .catch(err => console.error('[SW] Reply Error:', err))
-    );
-  } 
-  // 4. حالة "تحديد كمقروء"
-  else if (action === 'mark_read') {
-    // تم الإغلاق والتصفير بالفعل
-    return;
-  } 
-  // 5. حالة النقر العادي لفتح التطبيق
-  else if (action !== 'dismiss') {
-    event.waitUntil(
-      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            client.postMessage({
-              type          : 'NOTIFICATION_CLICK',
-              roomId        : data.roomId,
-              senderUsername: data.senderUsername
-            });
-            return client.focus();
-          }
-        }
         if (self.clients.openWindow) return self.clients.openWindow(data.url || './');
       })
     );
@@ -234,20 +161,19 @@ self.addEventListener('notificationclick', event => {
 });
 
 /* ══════════════════════════════════════════
-   ★ دالة إرسال الرد في الخلفية (مضادة للتعليق)
+   ★ إرسال الرد في الخلفية (مضاد للتعليق)
 ══════════════════════════════════════════ */
-async function sendReplyInBackground(roomId, text, fromUser) {
+async function sendReplyInBackground(roomId, text, fromUser, notifTag) {
   if (!roomId || !text) return;
 
   try {
-    // إرسال الرسالة إلى Supabase مباشرة عبر REST API
     const response = await fetch(`${SUPABASE_URL}/rest/v1/group_messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
         'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Prefer': 'return=minimal' // تسريع الاستجابة
+        'Prefer': 'return=minimal'
       },
       body: JSON.stringify({
         room_id: Number(roomId),
@@ -260,84 +186,32 @@ async function sendReplyInBackground(roomId, text, fromUser) {
     });
 
     if (response.ok) {
-      console.log('[SW] Reply Saved to DB!');
-      
-      // إظهار إشعار نجاح صامت لإجبار الأندرويد على إيقاف الدوران
+      // ✅ تحديث الإشعار بنفس الـ tag يوقف الدوران فوراً في أندرويد
       await self.registration.showNotification('Mesaj Gönderildi ✓', {
         body: text,
         icon: 'https://up6.cc/2026/04/177712738518231.png',
-        tag: 'reply-success',
+        tag: notifTag, 
         silent: true
       });
-      
-      // إخفاء إشعار النجاح تلقائياً بعد ثانيتين
+
+      // إغلاق إشعار النجاح بعد ثانيتين
       setTimeout(() => {
-        self.registration.getNotifications({ tag: 'reply-success' }).then(ns => {
+        self.registration.getNotifications({ tag: notifTag }).then(ns => {
           ns.forEach(n => n.close());
         });
       }, 2000);
-      
+
     } else {
-      console.error('[SW] DB Insert Failed:', await response.text());
+      throw new Error(await response.text());
     }
   } catch (error) {
-    console.error('[SW] Network Error:', error);
+    console.error('[SW] Reply Error:', error);
+    // إظهار رسالة خطأ لإيقاف الدوران
+    await self.registration.showNotification('Gönderilemedi ❌', {
+      body: 'Bağlantı hatası',
+      icon: 'https://up6.cc/2026/04/177712738518231.png',
+      tag: notifTag,
+      silent: true
+    });
   }
 }
-
-
-
-/* ══════════════════════════════════════════
-   ★ NOTIFICATION CLICK
-══════════════════════════════════════════ */
-self.addEventListener('notificationclick', event => {
-  event.notification.close();
-
-  /* ── تصفير الرقم عند فتح الإشعار ── */
-  _pendingCount = 0;
-  if ('clearAppBadge' in self.navigator) {
-    self.navigator.clearAppBadge().catch(() => {});
-  }
-
-  if (event.action === 'dismiss') return;
-
-  const { url = './', roomId, senderUsername } = event.notification.data || {};
-
-  event.waitUntil(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clientList => {
-        /* إذا التطبيق مفتوح → ركّز عليه وأرسل له الغرفة */
-        for (const client of clientList) {
-          if (client.url.includes(self.location.origin) && 'focus' in client) {
-            client.postMessage({
-              type          : 'NOTIFICATION_CLICK',
-              roomId,
-              senderUsername
-            });
-            return client.focus();
-          }
-        }
-        /* إذا مغلق → افتح التطبيق */
-        if (self.clients.openWindow) {
-          return self.clients.openWindow(url);
-        }
-      })
-  );
-});
-
-/* ══════════════════════════════════════════
-   ★ NOTIFICATION CLOSE — تقليل العداد
-══════════════════════════════════════════ */
-self.addEventListener('notificationclose', event => {
-  if (_pendingCount > 0) {
-    _pendingCount = Math.max(0, _pendingCount - 1);
-    if ('setAppBadge' in self.navigator) {
-      if (_pendingCount === 0) {
-        self.navigator.clearAppBadge().catch(() => {});
-      } else {
-        self.navigator.setAppBadge(_pendingCount).catch(() => {});
-      }
-    }
-  }
-});
