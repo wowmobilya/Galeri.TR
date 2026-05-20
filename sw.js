@@ -1,16 +1,21 @@
-const VERSION = 'v23';
+const VERSION    = 'v24';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
+/* ══════════════════════════════════════════
+   INSTALL
+══════════════════════════════════════════ */
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache =>
-      cache.addAll(CORE_ASSETS).catch(() => {})
-    )
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(CORE_ASSETS).catch(() => {}))
   );
 });
 
+/* ══════════════════════════════════════════
+   ACTIVATE
+══════════════════════════════════════════ */
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -21,15 +26,17 @@ self.addEventListener('activate', event => {
   );
 });
 
+/* ══════════════════════════════════════════
+   FETCH
+══════════════════════════════════════════ */
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   event.respondWith(
     fetch(event.request, { cache: 'no-cache' })
       .then(response => {
         if (response.ok) {
-          caches.open(CACHE_NAME).then(cache =>
-            cache.put(event.request, response.clone())
-          );
+          caches.open(CACHE_NAME)
+            .then(cache => cache.put(event.request, response.clone()));
         }
         return response;
       })
@@ -37,147 +44,189 @@ self.addEventListener('fetch', event => {
   );
 });
 
+/* ══════════════════════════════════════════
+   MESSAGE
+══════════════════════════════════════════ */
 self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') self.skipWaiting();
 });
 
-/* ════════════════════════════════════════
-   ★ PUSH NOTIFICATIONS — النسخة الذكية النهائية
-════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   ★ PUSH — النسخة الذكية الكاملة
+══════════════════════════════════════════ */
 
-/* ── تحديد أيقونة الرسالة حسب النوع ── */
-function getMediaEmoji(mediaType) {
+/* ── تحديد أيقونة + نص حسب النوع ── */
+function getMediaInfo(mediaType, fileName) {
   switch (mediaType) {
-    case 'image':  return '📷 ';
-    case 'video':  return '🎥 ';
-    case 'audio':  return '🎤 ';
-    case 'file':   return '📎 ';
-    default:       return '';
+    case 'image': return { emoji: '📷', text: 'Fotoğraf gönderdi' };
+    case 'video': return { emoji: '🎥', text: 'Video gönderdi' };
+    case 'audio': return { emoji: '🎤', text: 'Ses mesajı gönderdi' };
+    case 'file':  return { emoji: '📎', text: fileName ? `📎 ${fileName}` : 'Dosya gönderdi' };
+    default:      return { emoji: '💬', text: '' };
   }
 }
 
-/* ── تحديد tag الإشعار ── */
-function getNotifTag(data) {
-  // إشعار منفصل لكل مرسل (إذا كان senderUsername موجوداً)
-  if (data.senderUsername) {
-    return `wow-chat-${data.senderUsername}`;
-  }
-  if (data.roomId) {
-    return `wow-room-${data.roomId}`;
-  }
-  return 'wow-chat';
-}
+/* ── مخزن عدد الإشعارات المعلقة ── */
+let _pendingCount = 0;
 
 self.addEventListener('push', event => {
+  /* ── 1. قراءة البيانات ── */
   let data = {};
   try {
     if (event.data) data = event.data.json();
   } catch(e) {
-    console.error('[SW] Push parse error:', e);
+    console.error('[SW Push] parse error:', e);
   }
 
-  const count          = Number(data.count) || 1;
-  const mediaType      = data.mediaType || 'text';
-  const senderUsername = data.senderUsername || '';
-  const mediaEmoji     = getMediaEmoji(mediaType);
+  const {
+    title          = 'WOW MOBİLYA',
+    body           = '',
+    url            = './',
+    roomId         = null,
+    count          = 1,
+    mediaType      = 'text',
+    senderUsername = '',
+    fileName       = '',
+    icon           = 'https://up6.cc/2026/04/177712738518231.png',
+    badge          = 'https://up6.cc/2026/04/177712738518231.png',
+  } = data;
 
-  /* ── بناء العنوان ── */
-  let title = data.title || 'WOW MOBİLYA';
+  /* ── 2. بناء نص الجسم الذكي ── */
+  const mediaInfo = getMediaInfo(mediaType, fileName);
+  let finalBody   = body;
 
-  /* ── بناء نص الجسم ── */
-  let body = data.body || 'Yeni mesajınız var';
-
-  // إضافة إيموجي النوع إذا لم يكن نصاً عادياً
-  if (mediaType !== 'text' && !body.startsWith(mediaEmoji)) {
-    body = mediaEmoji + body;
+  // إذا لم يكن نصاً عادياً → استخدم النص الذكي
+  if (mediaType !== 'text' || !finalBody.trim()) {
+    finalBody = mediaInfo.text || 'Yeni mesajınız var';
   }
 
-  /* ── تحديد الـ tag ──
-     كل مرسل يحصل على إشعار منفصل إذا أُرسل senderUsername */
-  const notifTag = getNotifTag(data);
+  // اقتطاع النص الطويل
+  if (finalBody.length > 100) {
+    finalBody = finalBody.substring(0, 100) + '…';
+  }
 
+  /* ── 3. تحديث العداد المحلي ── */
+  _pendingCount = Math.max(_pendingCount, Number(count) || 1);
+
+  /* ── 4. tag ديناميكي — إشعار منفصل لكل مرسل ── */
+  let notifTag = 'wow-chat';
+  if (senderUsername) notifTag = `wow-sender-${senderUsername}`;
+  else if (roomId)    notifTag = `wow-room-${roomId}`;
+
+  /* ── 5. خيارات الإشعار ── */
   const options = {
-    body    : body,
-    icon    : data.icon  || 'https://up6.cc/2026/04/177712738518231.png',
-    badge   : data.badge || 'https://up6.cc/2026/04/177712738518231.png',
+    body    : finalBody,
+    icon,
+    badge,
     tag     : notifTag,
-    renotify: true,
-    vibrate : [300, 100, 300],
+    renotify: true,          // ← صوت + اهتزاز مع كل رسالة جديدة
+    vibrate : [200, 100, 200, 100, 200],
     silent  : false,
-    data    : {
-      url          : data.url    || './',
-      roomId       : data.roomId || null,
+    requireInteraction: false,
+    data: {
+      url,
+      roomId,
       senderUsername,
       mediaType,
-      count
-    }
+      count: _pendingCount
+    },
+    // ★ actions تظهر على Android فقط
+    actions: [
+      { action: 'open',    title: '💬 Aç'     },
+      { action: 'dismiss', title: '✕ Kapat'   }
+    ]
   };
 
-  const promises = [];
+  /* ── 6. تنفيذ كل العمليات معاً ── */
+  event.waitUntil(
+    Promise.all([
 
-  // 1. إظهار الإشعار
-  promises.push(
-    self.registration.showNotification(title, options)
-  );
+      /* أ. إظهار الإشعار */
+      self.registration.showNotification(title, options),
 
-  // 2. تحديث الرقم الأحمر على أيقونة التطبيق
-  if ('setAppBadge' in self.navigator) {
-    promises.push(
-      self.navigator.setAppBadge(count).catch(() => {})
-    );
-  }
+      /* ب. ★ تحديث الرقم على الأيقونة
+            - self.navigator (وليس navigator) داخل SW
+            - هذا هو السبب الرئيسي لعدم تغيّر الرقم! */
+      (async () => {
+        try {
+          if ('setAppBadge' in self.navigator) {
+            await self.navigator.setAppBadge(_pendingCount);
+          }
+        } catch(e) {
+          console.warn('[SW Badge]', e);
+        }
+      })(),
 
-  // 3. إبلاغ التطبيق المفتوح لتحديث العداد الداخلي
-  promises.push(
-    self.clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then(clients => {
-        clients.forEach(client => {
-          client.postMessage({
-            type  : 'UPDATE_UI_COUNTER',
-            count,
-            roomId: data.roomId || null,
-            mediaType,
-            senderUsername
+      /* ج. إبلاغ التطبيق المفتوح */
+      self.clients
+        .matchAll({ type: 'window', includeUncontrolled: true })
+        .then(clients => {
+          clients.forEach(client => {
+            client.postMessage({
+              type          : 'UPDATE_UI_COUNTER',
+              count         : _pendingCount,
+              roomId,
+              mediaType,
+              senderUsername
+            });
           });
-        });
-      })
-  );
+        })
 
-  event.waitUntil(Promise.all(promises).catch(console.error));
+    ]).catch(err => console.error('[SW Push] error:', err))
+  );
 });
 
-/* ── النقر على الإشعار ── */
+/* ══════════════════════════════════════════
+   ★ NOTIFICATION CLICK
+══════════════════════════════════════════ */
 self.addEventListener('notificationclick', event => {
   event.notification.close();
 
+  /* ── تصفير الرقم عند فتح الإشعار ── */
+  _pendingCount = 0;
   if ('clearAppBadge' in self.navigator) {
     self.navigator.clearAppBadge().catch(() => {});
   }
 
   if (event.action === 'dismiss') return;
 
-  const targetUrl      = event.notification.data?.url || './';
-  const roomId         = event.notification.data?.roomId;
-  const senderUsername = event.notification.data?.senderUsername;
+  const { url = './', roomId, senderUsername } = event.notification.data || {};
 
   event.waitUntil(
     self.clients
       .matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
+        /* إذا التطبيق مفتوح → ركّز عليه وأرسل له الغرفة */
         for (const client of clientList) {
           if (client.url.includes(self.location.origin) && 'focus' in client) {
             client.postMessage({
-              type: 'NOTIFICATION_CLICK',
+              type          : 'NOTIFICATION_CLICK',
               roomId,
               senderUsername
             });
             return client.focus();
           }
         }
+        /* إذا مغلق → افتح التطبيق */
         if (self.clients.openWindow) {
-          return self.clients.openWindow(targetUrl);
+          return self.clients.openWindow(url);
         }
       })
   );
+});
+
+/* ══════════════════════════════════════════
+   ★ NOTIFICATION CLOSE — تقليل العداد
+══════════════════════════════════════════ */
+self.addEventListener('notificationclose', event => {
+  if (_pendingCount > 0) {
+    _pendingCount = Math.max(0, _pendingCount - 1);
+    if ('setAppBadge' in self.navigator) {
+      if (_pendingCount === 0) {
+        self.navigator.clearAppBadge().catch(() => {});
+      } else {
+        self.navigator.setAppBadge(_pendingCount).catch(() => {});
+      }
+    }
+  }
 });
