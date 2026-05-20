@@ -7091,75 +7091,68 @@ async function sendPushToUser(username, title, body, roomId) {
   } catch(e) {}
 }
 
+// ★ هذه هي الدالة التي يجب تعديلها
+// السبب الجذري: mediaType و fileName لم يكونا يُرسَلان أبداً!
+
 async function notifyRoomMembers(msg, roomId) {
   const sb = await initSupabase();
   if (!sb) return;
 
-  const { data: members } = await sb.from('group_members')
-    .select('username').eq('room_id', roomId).eq('is_banned', false);
+  const { data: members } = await sb
+    .from('group_members')
+    .select('username')
+    .eq('room_id', roomId)
+    .eq('is_banned', false);
 
   if (!members?.length) return;
 
   const senderName     = getDisplayName(currentUser);
   const senderUsername = currentUser;
 
-  // ── تحديد نص الجسم حسب نوع الرسالة ──
-  let bodyText = msg.message || '';
-  let mediaType = msg.media_type || 'text';
+  // ★ تحديد نوع الرسالة بدقة
+  const mediaType = msg.media_type || 'text';
+  const fileName  = msg.file_name  || '';
 
-  if (!bodyText) {
-    switch (mediaType) {
-      case 'image': bodyText = 'Fotoğraf gönderdi'; break;
-      case 'audio': bodyText = 'Ses mesajı gönderdi'; break;
-      case 'video': bodyText = 'Video gönderdi'; break;
-      case 'file':  bodyText = msg.file_name || 'Dosya gönderdi'; break;
-      default:      bodyText = 'Yeni mesaj'; mediaType = 'text';
-    }
+  // ★ بناء نص الجسم حسب النوع
+  let bodyText = '';
+  switch (mediaType) {
+    case 'image': bodyText = 'Fotoğraf gönderdi';           break;
+    case 'video': bodyText = 'Video gönderdi';              break;
+    case 'audio': bodyText = 'Ses mesajı gönderdi';         break;
+    case 'file':  bodyText = fileName || 'Dosya gönderdi';  break;
+    default:
+      bodyText = (msg.message || '').substring(0, 80) || 'Yeni mesaj';
   }
 
   for (const member of members) {
-    const me = currentUser || localStorage.getItem('wow_saved_user');
-    if (member.username === me) continue;
+    // لا ترسل لنفسك
+    if (member.username === currentUser) continue;
 
-    // ── إرسال مع البيانات الإضافية ──
-    await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
-      method : 'POST',
-      headers: {
-        'Content-Type' : 'application/json',
-        'Authorization': `Bearer ${SUPABASE_KEY}`
-      },
-      body: JSON.stringify({
-        username       : member.username,
-        title          : `💬 ${senderName}`,
-        body           : bodyText,
-        roomId,
-        url            : './',
-        mediaType,           // ← جديد
-        senderUsername       // ← جديد
-      })
-    });
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
+        method : 'POST',
+        headers: {
+          'Content-Type' : 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        },
+        body: JSON.stringify({
+          username,                              // المستقبِل
+          title          : senderName,           // اسم المرسل فقط
+          body           : bodyText,             // النص الذكي
+          roomId,
+          url            : './',
+          mediaType,     // ★ هذا كان مفقوداً!
+          senderUsername,// ★ هذا كان مفقوداً!
+          fileName,      // ★ هذا كان مفقوداً!
+        })
+      });
+    } catch(e) {
+      console.warn('[Push] فشل الإرسال لـ', member.username, e);
+    }
   }
 }
 
-/* استقبال النقر على الإشعار */
-// الاستماع للرسائل القادمة من الإشعارات
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.addEventListener('message', event => {
-    if (event.data && event.data.type === 'UPDATE_UI_COUNTER') {
-      const newCount = event.data.count;
-      
-      // قم بتحديث عنصر الـ HTML الخاص بالعداد هنا
-      // مثال:
-      const badgeElement = document.getElementById('unread-badge');
-      if (badgeElement) {
-        badgeElement.innerText = newCount;
-        badgeElement.style.display = newCount > 0 ? 'block' : 'none';
-      }
-      
-      console.log("تم تحديث العداد الداخلي إلى:", newCount);
-    }
-  });
-}
+
 
 
   
@@ -9808,8 +9801,12 @@ let swRegistration  = null;
 let updateAvailable = false;
 
 /* ── تسجيل SW ──────────────────────────────────────────── */
+// ✅ كود موحد واحد فقط — يحتوي على كل شيء
 if ('serviceWorker' in navigator) {
 
+  /* ══════════════════════════════════════════
+     1. تسجيل SW + تحديثات PWA
+  ══════════════════════════════════════════ */
   window.addEventListener('load', async () => {
     try {
       const regs = await navigator.serviceWorker.getRegistrations();
@@ -9838,14 +9835,77 @@ if ('serviceWorker' in navigator) {
     }
   });
 
+  /* ══════════════════════════════════════════
+     2. إعادة تحميل عند تحديث SW
+  ══════════════════════════════════════════ */
   let refreshing = false;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (refreshing) return;
     refreshing = true;
     window.location.reload();
   });
+
+  /* ══════════════════════════════════════════
+     3. ★ استقبال رسائل SW — العداد + الإشعارات
+        هذا هو المكان الصحيح الوحيد
+  ══════════════════════════════════════════ */
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (!event.data) return;
+    const { type, count, roomId, mediaType, senderUsername } = event.data;
+
+    /* ── تحديث العداد ── */
+    if (type === 'UPDATE_UI_COUNTER') {
+      const newCount = Number(count) || 0;
+      console.log('[Push] عداد:', newCount, '| نوع:', mediaType, '| من:', senderUsername);
+
+      /* تحديث badge زر المحادثة في الهوم */
+      document.querySelectorAll('.chat-home-unread-badge').forEach(el => {
+        el.textContent   = newCount > 99 ? '99+' : newCount;
+        el.style.display = newCount > 0 ? 'flex' : 'none';
+      });
+
+      /* تحديث setAppBadge — الرقم على أيقونة التطبيق */
+      if ('setAppBadge' in navigator) {
+        if (newCount > 0) {
+          navigator.setAppBadge(newCount).catch(() => {});
+        } else {
+          navigator.clearAppBadge().catch(() => {});
+        }
+      }
+
+      /* تحديث updateChatHomeBadge إذا كانت الدالة موجودة */
+      if (typeof updateChatHomeBadge === 'function') {
+        updateChatHomeBadge();
+      }
+    }
+
+    /* ── فتح الغرفة عند النقر على الإشعار ── */
+    if (type === 'NOTIFICATION_CLICK') {
+      /* تصفير الرقم */
+      if ('clearAppBadge' in navigator) {
+        navigator.clearAppBadge().catch(() => {});
+      }
+
+      /* فتح الغرفة إذا كان التطبيق مفتوحاً */
+      if (roomId && typeof openRoomWindow === 'function') {
+        /* تأكد أن mainSite ظاهر أولاً */
+        const hs = document.getElementById('homeScreen');
+        const ms = document.getElementById('mainSite');
+        if (hs) hs.style.display = 'none';
+        if (ms) ms.style.display = 'block';
+
+        setTimeout(() => {
+          openRoomWindow(Number(roomId), 'group');
+        }, 300);
+      }
+    }
+  });
+
 }
 
+
+
+  
 function trackWorker(worker) {
   if (!worker) return;
   worker.addEventListener('statechange', () => {
