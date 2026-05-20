@@ -7113,6 +7113,7 @@ async function notifyRoomMembers(msg, roomId) {
 
   const mediaType = msg.media_type || 'text';
   const fileName  = msg.file_name  || '';
+  const mediaUrl  = msg.media_url  || null; // ← جلب الرابط
 
   let bodyText = '';
   switch (mediaType) {
@@ -7146,6 +7147,7 @@ async function notifyRoomMembers(msg, roomId) {
           roomId,
           url            : './',
           mediaType,
+          mediaUrl,      // ← إرسال الرابط
           senderUsername,
           fileName,
         })
