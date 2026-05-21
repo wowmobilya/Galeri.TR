@@ -2988,6 +2988,34 @@ body.wow-mode .mobile-menu {
   font-size: clamp(9px, 2.5vw, 11px);
   color: rgba(255,255,255,0.12);
 }
+/* ══════════════════════════════════════════════════════════════
+   ✅ إصلاح 1 — تباعد البطاقات الأربعة عن البحث
+══════════════════════════════════════════════════════════════ */
+
+.myorders-stats-grid {
+  padding: 14px 14px 0;
+  margin-bottom: 16px;        /* ← مسافة تحت البطاقات */
+}
+
+@media (min-width: 600px) {
+  .myorders-stats-grid {
+    padding: 16px 22px 0;
+    margin-bottom: 18px;
+  }
+}
+
+.myorders-filter-bar {
+  padding: 12px 14px;
+  margin-top: 0;
+  border-top: 1px solid rgba(255,255,255,0.05);  /* ← فاصل خفيف */
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+@media (min-width: 600px) {
+  .myorders-filter-bar {
+    padding: 12px 22px;
+  }
+}
 
 
     
@@ -33830,21 +33858,116 @@ function renderMyOrdersList(data) {
   if (!listEl) return;
 
   if (!data.length) {
-    listEl.innerHTML = `
-      <div class="myorders-empty">
-        <i class="fas fa-warehouse"></i>
-        <p>Henüz hareket yok</p>
-        <small>Sipariş verdikten sonra ürünler burada görünür</small><br/>
-        <button onclick="showPage('orders')" style="
-          margin-top:18px;padding:11px 22px;border-radius:50px;border:none;
-          background:linear-gradient(135deg,#c9a84c,#f0d080);
-          color:#0a0a0a;font-family:'Montserrat',sans-serif;
-          font-size:11px;font-weight:900;letter-spacing:1.5px;cursor:pointer;">
-          <i class="fas fa-shopping-cart"></i> Sipariş Ver
-        </button>
-      </div>`;
-    return;
-  }
+  listEl.innerHTML = `
+    <div class="myorders-empty">
+
+      <!-- أيقونة المستودع -->
+      <div style="
+        width: 80px;
+        height: 80px;
+        border-radius: 22px;
+        background: rgba(201,168,76,0.07);
+        border: 1px solid rgba(201,168,76,0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 18px;
+      ">
+        <i class="fas fa-warehouse"
+           style="font-size:32px;color:rgba(201,168,76,0.25);"></i>
+      </div>
+
+      <!-- النص -->
+      <p style="
+        font-size: clamp(12px,3.5vw,14px);
+        font-weight: 700;
+        color: rgba(255,255,255,0.3);
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      ">Henüz hareket yok</p>
+
+      <small style="
+        font-size: clamp(10px,2.8vw,12px);
+        color: rgba(255,255,255,0.12);
+        line-height: 1.6;
+        display: block;
+        max-width: 240px;
+        margin: 0 auto;
+      ">
+        Sipariş verdikten sonra<br/>ürünler burada görünür
+      </small>
+
+      <!-- ✅ الزر المحسّن -->
+      <button
+        onclick="showPage('orders')"
+        style="
+          margin-top: 28px;
+          padding: 0 28px;
+          height: 52px;
+          border-radius: 14px;
+          border: none;
+          background: linear-gradient(135deg, #c9a84c 0%, #f0d080 50%, #c9a84c 100%);
+          background-size: 200% auto;
+          color: #0a0a0a;
+          font-family: 'Montserrat', sans-serif;
+          font-size: 13px;
+          font-weight: 900;
+          letter-spacing: 1.5px;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          box-shadow:
+            0 4px 20px rgba(201,168,76,0.3),
+            0 1px 0 rgba(255,255,255,0.15) inset;
+          transition: all 0.3s ease;
+          position: relative;
+          overflow: hidden;
+        "
+        onmouseover="
+          this.style.transform='translateY(-3px)';
+          this.style.boxShadow='0 8px 28px rgba(201,168,76,0.45), 0 1px 0 rgba(255,255,255,0.15) inset';
+          this.style.backgroundPosition='right center';
+        "
+        onmouseout="
+          this.style.transform='translateY(0)';
+          this.style.boxShadow='0 4px 20px rgba(201,168,76,0.3), 0 1px 0 rgba(255,255,255,0.15) inset';
+          this.style.backgroundPosition='left center';
+        "
+        ontouchstart="
+          this.style.transform='scale(0.96)';
+          this.style.boxShadow='0 2px 12px rgba(201,168,76,0.25)';
+        "
+        ontouchend="
+          this.style.transform='scale(1)';
+          this.style.boxShadow='0 4px 20px rgba(201,168,76,0.3), 0 1px 0 rgba(255,255,255,0.15) inset';
+        "
+      >
+        <!-- بريق متحرك -->
+        <span style="
+          position: absolute;
+          top: 0; left: -100%;
+          width: 60%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255,255,255,0.25),
+            transparent
+          );
+          transform: skewX(-20deg);
+          animation: btnShine 3s ease infinite;
+          pointer-events: none;
+        "></span>
+
+        <i class="fas fa-shopping-cart"
+           style="font-size:14px;position:relative;z-index:1;"></i>
+        <span style="position:relative;z-index:1;">SİPARİŞ VER</span>
+      </button>
+
+    </div>`;
+  return;
+}
 
   listEl.innerHTML = data.map(item => buildMyItemCard(item)).join('');
 }
