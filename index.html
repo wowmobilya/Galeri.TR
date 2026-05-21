@@ -9993,6 +9993,19 @@ async function deleteOrder(orderId) {
     return;
   }
 
+  // ★★★ الإضافة الجديدة ★★★
+  // 4. حذف من user_orders_inventory (دابو العميل)
+  if (order?.order_number && order?.username) {
+    await sb
+      .from('user_orders_inventory')
+      .delete()
+      .eq('order_number', order.order_number)
+      .eq('username', order.username);
+    
+    console.log('[Sync] ✅ حُذف من دابو:', order.order_number);
+  }
+  // ★★★ نهاية الإضافة ★★★
+
   /* إزالة من المصفوفة المحلية */
   allAdminOrders = allAdminOrders.filter(o => o.id !== orderId);
 
@@ -10420,7 +10433,6 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* تأثير بصري فوري */
   const card = document.getElementById('admincard-' + orderId);
   if (card) card.style.opacity = '0.6';
 
@@ -10455,17 +10467,27 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
     newStatus === 'ready'     ? 'success' : 'info'
   );
 
-  // ---------------------------------------------------------
-  // ★ إرسال إشعار للمشتري بتغيير حالة الطلب
-  // ---------------------------------------------------------
+  // ★★★ هذا هو السطر الناقص — أضفه هنا ★★★
+  const order = allAdminOrders[idx];
+  if (order?.order_number) {
+    const deliveryDate = newStatus === 'delivered'
+      ? new Date().toISOString()
+      : null;
+    await syncOrderStatusToUserInventory(
+      order.order_number,
+      order.username,
+      newStatus,
+      deliveryDate
+    );
+  }
+
+  // إرسال إشعار Push للمشتري
   if (idx !== -1) {
     const order = allAdminOrders[idx];
-    
-    // تحديد نص الإشعار بناءً على الحالة
     let notifBody = `${order.order_number} numaralı siparişinizin durumu güncellendi.`;
-    if (newStatus === 'ready') notifBody = `${order.order_number} numaralı siparişiniz teslime hazır! 🎉`;
+    if (newStatus === 'ready')         notifBody = `${order.order_number} numaralı siparişiniz teslime hazır! 🎉`;
     if (newStatus === 'manufacturing') notifBody = `${order.order_number} numaralı siparişiniz üretime alındı. 🛠️`;
-    if (newStatus === 'cancelled') notifBody = `${order.order_number} numaralı siparişiniz iptal edildi. ❌`;
+    if (newStatus === 'cancelled')     notifBody = `${order.order_number} numaralı siparişiniz iptal edildi. ❌`;
 
     await sendPushToUser(
       order.username,
@@ -10475,6 +10497,7 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
     );
   }
 }
+
 
 
 
@@ -36154,6 +36177,37 @@ finishLogin = function() {
     }
   }, 1200);
 };
+/* ══════════════════════════════════════════════════════════════
+   ★ مزامنة حالة الطلب → user_orders_inventory (دابو) ★
+══════════════════════════════════════════════════════════════ */
+async function syncOrderStatusToUserInventory(orderNum, username, newStatus, deliveryDate) {
+  if (!orderNum || !username) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const updateData = {
+    order_status : newStatus,
+    updated_at   : new Date().toISOString()
+  };
+
+  // أضف تاريخ التسليم إذا كانت الحالة "delivered"
+  if (newStatus === 'delivered' && deliveryDate) {
+    updateData.delivery_date = deliveryDate;
+  }
+
+  const { error } = await sb
+    .from('user_orders_inventory')
+    .update(updateData)
+    .eq('order_number', orderNum)
+    .eq('username', username);
+
+  if (error) {
+    console.error('[Sync] user_orders_inventory تحديث فشل:', error.message);
+  } else {
+    console.log('[Sync] ✅ حالة الطلب حُدِّثت في دابو:', orderNum, '→', newStatus);
+  }
+}
 
 
 
