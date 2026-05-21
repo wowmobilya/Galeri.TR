@@ -2791,6 +2791,9 @@ body.wow-mode .mobile-menu {
       <a class="nav-link active" id="nav-orta"   href="#" onclick="showPage('orta');return false;">ORTA SEHPA</a>
       <a class="nav-link"        id="nav-tv"      href="#" onclick="showPage('tv');return false;">TV ÜNİTESİ</a>
       <a class="nav-link"        id="nav-dresuar" href="#" onclick="showPage('dresuar');return false;">DRESUAR</a>
+      <a class="nav-link" id="nav-support" href="#" onclick="openDirectWowChat(); return false;">
+  <i class="fas fa-headset"></i> DESTEK
+</a>
       <a class="nav-link" id="nav-orders" href="#" onclick="showPage('orders');return false;">SİPARİŞ</a>
 <a class="nav-link" id="nav-admin" href="#" 
    onclick="showPage('admin');return false;" 
@@ -2855,6 +2858,11 @@ body.wow-mode .mobile-menu {
       <a href="#" id="mob-orta"    onclick="showPage('orta');closeMobileMenu();return false;"><i class="fas fa-table"></i> ORTA SEHPA</a>
       <a href="#" id="mob-tv"      onclick="showPage('tv');closeMobileMenu();return false;"><i class="fas fa-tv"></i> TV ÜNİTESİ</a>
       <a href="#" id="mob-dresuar" onclick="showPage('dresuar');closeMobileMenu();return false;"><i class="fas fa-border-all"></i> DRESUAR</a>
+      <!-- أضف هذا الزر داخل قائمة الموبايل -->
+<a href="#" id="mob-support" onclick="openDirectWowChat(); return false;">
+  <i class="fas fa-headset"></i> MÜŞTERİ HİZMETLERİ
+</a>
+
       <a href="#" id="mob-orders" onclick="showPage('orders');closeMobileMenu();return false;"><i class="fas fa-shopping-cart"></i> SİPARİŞ VER</a>
 <a href="#" id="mob-admin" onclick="showPage('admin');closeMobileMenu();return false;" 
    style="display:none;">
@@ -32718,6 +32726,74 @@ document.head.appendChild(fixStyle);
 
 
 
+/* ============================================================
+   ★ فتح المحادثة الخاصة المباشرة للمشتري مع WOW ★
+============================================================ */
+async function openDirectWowChat() {
+  // التأكد من أن المستخدم مسجل الدخول
+  if (!currentUser) {
+    showInvToast('Lütfen önce giriş yapın', 'error');
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  // مفتاح الغرفة الخاصة بهذا المستخدم
+  const privateKey = `wow_private_${currentUser}`;
+
+  // البحث عن الغرفة في قاعدة البيانات
+  const { data: room } = await sb
+    .from('group_rooms')
+    .select('id')
+    .eq('room_key', privateKey)
+    .maybeSingle();
+
+  if (room) {
+    // إذا وجدت الغرفة، افتحها مباشرة
+    openRoomWindow(room.id, 'private_wow');
+    
+    // إغلاق قائمة الموبايل إذا كانت مفتوحة
+    if (typeof closeMobileMenu === 'function') {
+      closeMobileMenu();
+    }
+  } else {
+    // في حال لم يتم إنشاء الغرفة بعد (حالة نادرة)، نقوم بتهيئتها ثم فتحها
+    showInvToast('Sohbet odası hazırlanıyor...', 'info');
+    await initChatRooms();
+    setTimeout(openDirectWowChat, 1000);
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
 
 async function testPushSystem() {
   let results = '';
@@ -32963,6 +33039,26 @@ function findCurrentUser() {
 
   showTestResults(found || '❌ لم يُعثر على متغير\n' + storage);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   
