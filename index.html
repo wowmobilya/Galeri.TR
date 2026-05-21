@@ -36191,7 +36191,6 @@ async function syncOrderStatusToUserInventory(orderNum, username, newStatus, del
     updated_at   : new Date().toISOString()
   };
 
-  // أضف تاريخ التسليم إذا كانت الحالة "delivered"
   if (newStatus === 'delivered' && deliveryDate) {
     updateData.delivery_date = deliveryDate;
   }
@@ -36206,6 +36205,21 @@ async function syncOrderStatusToUserInventory(orderNum, username, newStatus, del
     console.error('[Sync] user_orders_inventory تحديث فشل:', error.message);
   } else {
     console.log('[Sync] ✅ حالة الطلب حُدِّثت في دابو:', orderNum, '→', newStatus);
+
+    // ★★★ تحديث المصفوفة المحلية فوراً ★★★
+    _myOrdersData.forEach(item => {
+      if (item.order_number === orderNum) {
+        item.order_status = newStatus;
+        if (newStatus === 'delivered' && deliveryDate) {
+          item.delivery_date = deliveryDate;
+        }
+      }
+    });
+
+    // ★★★ إعادة رسم البطاقات إذا كانت صفحة دابو مفتوحة ★★★
+    if (currentPage === 'myorders') {
+      renderMyOrdersContent();
+    }
   }
 }
 
