@@ -28838,7 +28838,7 @@ async function openRoomWindow(roomId, roomType) {
   const isGroup = room.room_type === 'group';
   const { data: myMem } = await sb.from(GRP_MEMBERS).select('role').eq('room_id', roomId).eq('username', currentUser).maybeSingle();
   const myRole = myMem ? myMem.role : 'member';
-  const canManage = isGroup && (myRole === 'owner' || myRole === 'admin' || currentUser === 'WOW');
+const canManage = (myRole === 'owner' || myRole === 'admin' || currentUser === 'WOW' || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin));
   
   const win = document.createElement('div');
   win.id = 'chatWin';
