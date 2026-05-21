@@ -13698,17 +13698,23 @@ showPage = function(cat) {
 })();
 
 /* ============================================================
-   ★ تعديل updateAdminNavVisibility لإظهار زر المستخدمين ★
+   ★ تعديل updateAdminNavVisibility لإظهار زر المستخدمين والدعم ★
 ============================================================ */
 const _origUpdateAdminNav = updateAdminNavVisibility;
 updateAdminNavVisibility = function() {
   _origUpdateAdminNav();
-const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
+  const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
 
-  /* إظهار/إخفاء روابط المستخدمين */
+  /* إظهار/إخفاء روابط المستخدمين (للأدمن فقط) */
   ['nav-users', 'mob-users'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = isAdmin ? '' : 'none';
+  });
+
+  /* إظهار/إخفاء زر الدعم الفني (للمشتري العادي فقط) */
+  ['nav-support', 'mob-support'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = isAdmin ? 'none' : 'flex'; // نعرضه كـ flex ليتناسب مع تصميمك
   });
 
   /* إظهار زر إعدادات الحساب للجميع (ليس WOW) */
@@ -13718,6 +13724,7 @@ const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
     accBtn.style.display = isAdmin ? 'none' : 'flex';
   }
 };
+
 
 /* ============================================================
    ★ إضافة زر إعدادات الحساب في القائمة الجانبية للموبايل ★
