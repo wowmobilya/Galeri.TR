@@ -10439,8 +10439,8 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
   const { error } = await sb
     .from('orders')
     .update({
-      status:     newStatus,
-      updated_at: new Date().toISOString()
+      status     : newStatus,
+      updated_at : new Date().toISOString()
     })
     .eq('id', orderId);
 
@@ -10467,7 +10467,7 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
     newStatus === 'ready'     ? 'success' : 'info'
   );
 
-  // ★★★ هذا هو السطر الناقص — أضفه هنا ★★★
+  /* ★ مزامنة مع دابو المشتري ★ */
   const order = allAdminOrders[idx];
   if (order?.order_number) {
     const deliveryDate = newStatus === 'delivered'
@@ -10481,16 +10481,17 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
     );
   }
 
-  // إرسال إشعار Push للمشتري
+  /* إشعار Push للمشتري */
   if (idx !== -1) {
-    const order = allAdminOrders[idx];
-    let notifBody = `${order.order_number} numaralı siparişinizin durumu güncellendi.`;
-    if (newStatus === 'ready')         notifBody = `${order.order_number} numaralı siparişiniz teslime hazır! 🎉`;
-    if (newStatus === 'manufacturing') notifBody = `${order.order_number} numaralı siparişiniz üretime alındı. 🛠️`;
-    if (newStatus === 'cancelled')     notifBody = `${order.order_number} numaralı siparişiniz iptal edildi. ❌`;
+    const orderForPush = allAdminOrders[idx];
+    let notifBody = `${orderForPush.order_number} numaralı siparişinizin durumu güncellendi.`;
+    if (newStatus === 'ready')         notifBody = `${orderForPush.order_number} siparişiniz teslime hazır! 🎉`;
+    if (newStatus === 'manufacturing') notifBody = `${orderForPush.order_number} siparişiniz üretime alındı. 🛠️`;
+    if (newStatus === 'cancelled')     notifBody = `${orderForPush.order_number} siparişiniz iptal edildi. ❌`;
+    if (newStatus === 'delivered')     notifBody = `${orderForPush.order_number} siparişiniz teslim edildi! ✅`;
 
     await sendPushToUser(
-      order.username,
+      orderForPush.username,
       `📦 Sipariş Durumu: ${st.label}`,
       notifBody,
       null
