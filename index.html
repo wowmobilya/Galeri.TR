@@ -9952,13 +9952,11 @@ async function deleteOrder(orderId) {
   const sb = await initSupabase();
   if (!sb) return;
 
-  // 1. جلب بيانات الطلبية لمعرفة المنتجات التي يجب إرجاعها للمخزون
   const order = allAdminOrders.find(o => o.id === orderId);
   if (!order) return;
-  
+
   const itemsToRestore = order.items.map(i => ({ id: i.id, qty: i.qty }));
 
-  /* تأثير بصري */
   const card = document.getElementById('admincard-' + orderId);
   if (card) {
     card.style.transition = 'all 0.3s ease';
@@ -9966,7 +9964,7 @@ async function deleteOrder(orderId) {
     card.style.transform  = 'scale(0.98)';
   }
 
-  // 2. إرجاع المخزون في قاعدة البيانات
+  /* إرجاع المخزون */
   if (itemsToRestore.length > 0) {
     const { error: restoreErr } = await sb.rpc('restore_stock', { p_items: itemsToRestore });
     if (restoreErr) {
@@ -9977,34 +9975,26 @@ async function deleteOrder(orderId) {
     }
   }
 
-  // 3. حذف الطلبية من قاعدة البيانات
-  const { error } = await sb
-    .from('orders')
-    .delete()
-    .eq('id', orderId);
+  /* حذف الطلبية */
+  const { error } = await sb.from('orders').delete().eq('id', orderId);
 
   if (error) {
     console.error('[Orders] حذف فشل:', error.message);
-    if (card) {
-      card.style.opacity   = '1';
-      card.style.transform = 'scale(1)';
-    }
+    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
     showInvToast('Silme hatası: ' + error.message, 'error');
     return;
   }
 
-  // ★★★ الإضافة الجديدة ★★★
-  // 4. حذف من user_orders_inventory (دابو العميل)
+  /* ★ حذف من دابو المشتري فوراً ★ */
   if (order?.order_number && order?.username) {
     await sb
       .from('user_orders_inventory')
       .delete()
       .eq('order_number', order.order_number)
       .eq('username', order.username);
-    
+
     console.log('[Sync] ✅ حُذف من دابو:', order.order_number);
   }
-  // ★★★ نهاية الإضافة ★★★
 
   /* إزالة من المصفوفة المحلية */
   allAdminOrders = allAdminOrders.filter(o => o.id !== orderId);
@@ -10025,7 +10015,6 @@ async function deleteOrder(orderId) {
 
   showInvToast('Sipariş silindi ve stok iade edildi ✓', 'success');
 
-  /* تحديث العداد */
   const countEl = document.getElementById('adminOrderCount');
   if (countEl) {
     countEl.textContent =
@@ -36140,7 +36129,7 @@ async function subscribeMyOrdersRealtimeMO() {
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* مخزون المستخدم */
+  /* ── 1. مخزون المستخدم (user_orders_inventory) ── */
   sb.channel('my-inv-rt-' + currentUser)
     .on('postgres_changes', {
       event  : '*',
@@ -36148,7 +36137,6 @@ async function subscribeMyOrdersRealtimeMO() {
       table  : 'user_orders_inventory',
       filter : `username=eq.${currentUser}`
     }, async payload => {
-      /* تحديث العنصر المتغير فقط */
       if (payload.eventType === 'UPDATE' && payload.new) {
         const idx = _myOrdersData.findIndex(i => i.id === payload.new.id);
         if (idx !== -1) {
@@ -36164,17 +36152,145 @@ async function subscribeMyOrdersRealtimeMO() {
           }
         }
       } else if (payload.eventType === 'DELETE' && payload.old) {
+        /* ★ حذف فوري من الواجهة ★ */
         _myOrdersData = _myOrdersData.filter(i => i.id !== payload.old.id);
-        if (currentPage === 'myorders') renderMyOrdersContent();
-      } else {
-        /* INSERT أو تغيير كبير — إعادة تحميل كاملة */
-        await loadMyOrdersInventory();
+        if (currentPage === 'myorders') {
+          const card = document.getElementById('myitem-' + payload.old.id);
+          if (card) {
+            card.style.transition = 'all 0.3s ease';
+            card.style.opacity    = '0';
+            card.style.transform  = 'scale(0.95)';
+            setTimeout(() => {
+              card.remove();
+              renderMyOrdersStats();
+            }, 300);
+          } else {
+            renderMyOrdersContent();
+          }
+        }
+      } else if (payload.eventType === 'INSERT' && payload.new) {
+        /* ★ إضافة فورية ★ */
+        _myOrdersData.unshift(payload.new);
         if (currentPage === 'myorders') renderMyOrdersContent();
       }
     })
     .subscribe();
 
-  /* سجل المبيعات */
+  /* ── 2. جدول orders — للحذف والتعديل من WOW ── */
+  sb.channel('orders-watch-' + currentUser)
+    .on('postgres_changes', {
+      event  : '*',
+      schema : 'public',
+      table  : 'orders',
+      filter : `username=eq.${currentUser}`
+    }, async payload => {
+
+      /* ★ حذف الطلب من WOW → احذفه فوراً من دابو ★ */
+      if (payload.eventType === 'DELETE' && payload.old) {
+        const orderNum = payload.old.order_number;
+        if (!orderNum) return;
+
+        /* إزالة كل عناصر هذا الطلب من المصفوفة المحلية */
+        const toRemove = _myOrdersData.filter(i => i.order_number === orderNum);
+        _myOrdersData  = _myOrdersData.filter(i => i.order_number !== orderNum);
+
+        if (currentPage === 'myorders') {
+          toRemove.forEach(item => {
+            const card = document.getElementById('myitem-' + item.id);
+            if (card) {
+              card.style.transition = 'all 0.3s ease';
+              card.style.opacity    = '0';
+              card.style.transform  = 'scale(0.95)';
+              setTimeout(() => card.remove(), 300);
+            }
+          });
+          setTimeout(() => renderMyOrdersStats(), 350);
+        }
+
+        /* حذف من قاعدة البيانات أيضاً */
+        await sb.from('user_orders_inventory')
+          .delete()
+          .eq('order_number', orderNum)
+          .eq('username', currentUser);
+      }
+
+      /* ★ تعديل الطلب من WOW → حدّث دابو فوراً ★ */
+      if (payload.eventType === 'UPDATE' && payload.new) {
+        const order    = payload.new;
+        const orderNum = order.order_number;
+        if (!orderNum) return;
+
+        const newStatus    = order.status;
+        const deliveryDate = newStatus === 'delivered'
+          ? (order.updated_at || new Date().toISOString())
+          : null;
+
+        /* تحديث الحالة في قاعدة البيانات */
+        const updateData = {
+          order_status : newStatus,
+          updated_at   : new Date().toISOString()
+        };
+        if (deliveryDate) updateData.delivery_date = deliveryDate;
+
+        await sb.from('user_orders_inventory')
+          .update(updateData)
+          .eq('order_number', orderNum)
+          .eq('username', currentUser);
+
+        /* تحديث المصفوفة المحلية فوراً */
+        let changed = false;
+        _myOrdersData.forEach(item => {
+          if (item.order_number === orderNum) {
+            item.order_status = newStatus;
+            if (deliveryDate) item.delivery_date = deliveryDate;
+            changed = true;
+          }
+        });
+
+        /* تحديث الكميات إذا تغيّرت items ★ */
+        if (order.items && Array.isArray(order.items)) {
+          order.items.forEach(orderItem => {
+            const inv = _myOrdersData.find(
+              i => i.order_number === orderNum &&
+                   i.product_id  === orderItem.id
+            );
+            if (inv && inv.qty_purchased !== orderItem.qty) {
+              inv.qty_purchased = orderItem.qty;
+              changed = true;
+
+              /* تحديث في DB أيضاً */
+              sb.from('user_orders_inventory')
+                .update({
+                  qty_purchased : orderItem.qty,
+                  updated_at    : new Date().toISOString()
+                })
+                .eq('order_number', orderNum)
+                .eq('product_id', orderItem.id)
+                .eq('username', currentUser)
+                .then(() => {});
+            }
+          });
+        }
+
+        /* إعادة رسم الصفحة إذا كانت مفتوحة */
+        if (changed && currentPage === 'myorders') {
+          _myOrdersData
+            .filter(i => i.order_number === orderNum)
+            .forEach(item => {
+              const card = document.getElementById('myitem-' + item.id);
+              if (card) {
+                const w = document.createElement('div');
+                w.innerHTML = buildMyItemCard(item);
+                card.replaceWith(w.firstElementChild);
+              }
+            });
+          renderMyOrdersStats();
+        }
+      }
+    })
+    .subscribe();
+
+  /* ── 3. سجل المبيعات ── */
   sb.channel('my-sales-rt-' + currentUser)
     .on('postgres_changes', {
       event  : 'INSERT',
@@ -36183,7 +36299,6 @@ async function subscribeMyOrdersRealtimeMO() {
       filter : `username=eq.${currentUser}`
     }, payload => {
       if (payload.new?.inventory_id) {
-        /* مسح الـ cache لهذا المنتج ليُعاد تحميله */
         delete _salesLogCache[payload.new.inventory_id];
       }
     })
