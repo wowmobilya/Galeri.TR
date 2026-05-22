@@ -34041,7 +34041,7 @@ function buildMyItemCard(item) {
   /* حالة الطلب */
   const status     = item.order_status || 'pending';
   const statusInfo = ORDER_STATUS_MAP[status] || ORDER_STATUS_MAP.pending;
-  const isDelivered = status === 'delivered';
+const isDelivered = status === 'delivered' || status === 'ready';
   const isCancelled = status === 'cancelled';
 
   /* تاريخ الطلب */
