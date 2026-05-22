@@ -34069,7 +34069,11 @@ const isDelivered = status === 'delivered' || status === 'ready';
     sellBtnHtml = `
       <div class="sell-btn-locked"
            title="Teslim alındıktan sonra satış yapabilirsiniz">
-        <i class="fas fa-lock"></i> Teslim Bekleniyor
+        <i class="fas fa-lock"></i> ${
+    status === 'manufacturing' ? 'Üretimde' :
+    status === 'pending'       ? 'Beklemede' :
+    'Teslim Bekleniyor'
+  }
       </div>`;
   } else {
     sellBtnHtml = `
