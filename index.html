@@ -10467,15 +10467,17 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
     newStatus === 'ready'     ? 'success' : 'info'
   );
 
-  /* ★ مزامنة مع دابو المشتري ★ */
+  /* ★ مزامنة مع دابو المشتري — الإصلاح هنا ★ */
   const order = allAdminOrders[idx];
-  if (order?.order_number) {
+  if (order?.order_number && order?.username) {
     const deliveryDate = newStatus === 'delivered'
       ? new Date().toISOString()
       : null;
+
+    // ★ استدعاء الدالة الصحيحة مع username ★
     await syncOrderStatusToUserInventory(
       order.order_number,
-      order.username,
+      order.username,        // ← هذا كان مفقوداً
       newStatus,
       deliveryDate
     );
@@ -10498,6 +10500,7 @@ async function updateOrderStatus(orderId, newStatus, btnEl) {
     );
   }
 }
+
 
 
 
@@ -36182,7 +36185,10 @@ finishLogin = function() {
    ★ مزامنة حالة الطلب → user_orders_inventory (دابو) ★
 ══════════════════════════════════════════════════════════════ */
 async function syncOrderStatusToUserInventory(orderNum, username, newStatus, deliveryDate) {
-  if (!orderNum || !username) return;
+  if (!orderNum || !username) {
+    console.warn('[Sync] orderNum أو username مفقود!', { orderNum, username });
+    return;
+  }
 
   const sb = await initSupabase();
   if (!sb) return;
@@ -36196,31 +36202,17 @@ async function syncOrderStatusToUserInventory(orderNum, username, newStatus, del
     updateData.delivery_date = deliveryDate;
   }
 
-  const { error } = await sb
+  const { data, error } = await sb
     .from('user_orders_inventory')
     .update(updateData)
     .eq('order_number', orderNum)
-    .eq('username', username);
+    .eq('username', username)
+    .select(); // ← أضف هذا لرؤية ما تم تحديثه
 
   if (error) {
-    console.error('[Sync] user_orders_inventory تحديث فشل:', error.message);
+    console.error('[Sync] فشل التحديث:', error.message);
   } else {
-    console.log('[Sync] ✅ حالة الطلب حُدِّثت في دابو:', orderNum, '→', newStatus);
-
-    // ★★★ تحديث المصفوفة المحلية فوراً ★★★
-    _myOrdersData.forEach(item => {
-      if (item.order_number === orderNum) {
-        item.order_status = newStatus;
-        if (newStatus === 'delivered' && deliveryDate) {
-          item.delivery_date = deliveryDate;
-        }
-      }
-    });
-
-    // ★★★ إعادة رسم البطاقات إذا كانت صفحة دابو مفتوحة ★★★
-    if (currentPage === 'myorders') {
-      renderMyOrdersContent();
-    }
+    console.log('[Sync] ✅ تم التحديث:', orderNum, '→', newStatus, '| صفوف:', data?.length);
   }
 }
 
