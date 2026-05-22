@@ -9957,6 +9957,7 @@ async function deleteOrder(orderId) {
 
   const itemsToRestore = order.items.map(i => ({ id: i.id, qty: i.qty }));
 
+  /* تأثير بصري */
   const card = document.getElementById('admincard-' + orderId);
   if (card) {
     card.style.transition = 'all 0.3s ease';
@@ -9968,7 +9969,6 @@ async function deleteOrder(orderId) {
   if (itemsToRestore.length > 0) {
     const { error: restoreErr } = await sb.rpc('restore_stock', { p_items: itemsToRestore });
     if (restoreErr) {
-      console.error('[Stock] إرجاع المخزون فشل:', restoreErr.message);
       showInvToast('Stok iade hatası: ' + restoreErr.message, 'error');
       if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
       return;
@@ -9977,38 +9977,60 @@ async function deleteOrder(orderId) {
 
   /* حذف الطلبية */
   const { error } = await sb.from('orders').delete().eq('id', orderId);
-
   if (error) {
-    console.error('[Orders] حذف فشل:', error.message);
-    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
     showInvToast('Silme hatası: ' + error.message, 'error');
+    if (card) { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }
     return;
   }
 
-  /* ★ حذف من دابو المشتري فوراً ★ */
+  /* ★ حذف من دابو المشتري — بالتوازي بدون انتظار ★ */
   if (order?.order_number && order?.username) {
-    await sb
-      .from('user_orders_inventory')
+    sb.from('user_orders_inventory')
       .delete()
       .eq('order_number', order.order_number)
-      .eq('username', order.username);
+      .eq('username', order.username)
+      .then(() => console.log('[Sync] ✅ حُذف من دابو:', order.order_number))
+      .catch(e => console.warn('[Sync] خطأ:', e));
 
-    console.log('[Sync] ✅ حُذف من دابو:', order.order_number);
+    /* ★ تحديث واجهة المشتري فوراً بدون انتظار DB ★ */
+    _myOrdersData = _myOrdersData.filter(
+      i => i.order_number !== order.order_number
+    );
+
+    /* إذا كانت صفحة دابو مفتوحة — احذف البطاقات فوراً */
+    if (currentPage === 'myorders') {
+      const itemsToDelete = document.querySelectorAll(
+        `[id^="myitem-"]`
+      );
+      itemsToDelete.forEach(el => {
+        const itemId = parseInt(el.id.replace('myitem-', ''));
+        const exists = _myOrdersData.find(i => i.id === itemId);
+        if (!exists) {
+          el.style.transition = 'all 0.3s ease';
+          el.style.opacity    = '0';
+          el.style.transform  = 'scale(0.95)';
+          setTimeout(() => {
+            el.remove();
+            renderMyOrdersStats();
+          }, 300);
+        }
+      });
+    }
   }
 
-  /* إزالة من المصفوفة المحلية */
+  /* إزالة من المصفوفة المحلية لـ WOW */
   allAdminOrders = allAdminOrders.filter(o => o.id !== orderId);
 
-  /* إزالة البطاقة بأنيميشن */
+  /* إزالة بطاقة WOW بأنيميشن */
   if (card) {
-    card.style.maxHeight  = card.offsetHeight + 'px';
-    card.style.overflow   = 'hidden';
+    card.style.maxHeight   = card.offsetHeight + 'px';
+    card.style.overflow    = 'hidden';
     requestAnimationFrame(() => {
-      card.style.transition  = 'all 0.4s ease';
-      card.style.maxHeight   = '0';
-      card.style.opacity     = '0';
+      card.style.transition   = 'all 0.4s ease';
+      card.style.maxHeight    = '0';
+      card.style.opacity      = '0';
       card.style.marginBottom = '0';
-      card.style.padding     = '0';
+      card.style.padding      = '0';
       setTimeout(() => card.remove(), 420);
     });
   }
