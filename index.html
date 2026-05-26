@@ -5662,39 +5662,23 @@ function doLogin(){
 function showHomeScreen() {
   const hs = document.getElementById('homeScreen');
 
-  /* ── حماية من التكرار السريع ── */
   if (hs._rendering) return;
   hs._rendering = true;
-  /* ★ تحديث نص الفوتر بناءً على المستخدم ★ */
-const footerTextEl = document.getElementById('homeFooterText');
-if (footerTextEl) {
-  if (currentUser === ADMIN_USER) {
-   footerTextEl.innerHTML = `
-  <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
-    <span style="letter-spacing:2px;">
-      Yazılım & Tasarım — Müh. MUATAZ BELLAH
-    </span>
-    <span style="
-      font-size:9px;
-      letter-spacing:3px;
-      color:rgba(201,168,76,0.45);
-      font-weight:700;
-      display:flex;
-      align-items:center;
-      gap:5px;
-    ">
-      <i class="fas fa-laptop-code" style="font-size:11px;color:rgba(201,168,76,0.6);"></i>
-      V.3.2
-    </span>
-  </div>
-`;
 
-
-  } else {
-    /* المستخدم العادي — النص يأتي من Supabase */
-    footerTextEl.textContent = localStorage.getItem('wow_footer_copy') || '';
+  /* ── تحديث نص الفوتر ── */
+  const footerTextEl = document.getElementById('homeFooterText');
+  if (footerTextEl) {
+    if (currentUser === ADMIN_USER) {
+      footerTextEl.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <span style="letter-spacing:2px;">
+            Yazılım & Tasarım — Müh. MUATAZ BELLAH
+          </span>
+        </div>`;
+    } else {
+      footerTextEl.textContent = localStorage.getItem('wow_footer_copy') || '';
+    }
   }
-}
 
   setTimeout(() => { hs._rendering = false; }, 600);
 
@@ -5724,35 +5708,27 @@ if (footerTextEl) {
       container.classList.add('admin-mode');
       renderAdminHomeCards(container);
     } else {
+      /* ★ المستخدم العادي — يرسم بطاقاته + حركاتي ★ */
       container.classList.remove('admin-mode');
       container.classList.add('user-mode');
-      renderUserHomeCards(container);
+      renderUserHomeCards(container);   /* ← هذا يضيف بطاقة حركاتي تلقائياً */
     }
   }
 
-  /* ── أنيميشن الظهور — أول مرة فقط ── */
+  /* ── أنيميشن الظهور ── */
   if (isFirstShow) {
     hs.style.opacity    = '0';
     hs.style.display    = 'block';
     hs.style.transition = 'opacity 0.5s ease';
     window.scrollTo({ top: 0 });
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {        /* ← double rAF يضمن الـ paint */
+      requestAnimationFrame(() => {
         hs.style.opacity = '1';
       });
     });
   }
 }
 
-function enterSection(cat){
-  const hs=document.getElementById('homeScreen');
-  hs.style.transition='opacity 0.4s ease';hs.style.opacity='0';
-  setTimeout(()=>{
-    hs.style.display='none';
-    document.getElementById('mainSite').style.display='block';
-    showPage(cat);
-  },400);
-}
 
 
 
@@ -18851,6 +18827,7 @@ function renderUserHomeCards(container) {
     ? _homeCards
     : getStaticCards();
 
+  /* ── رسم بطاقات Supabase ── */
   container.innerHTML = cards
     .filter(c => c.is_active !== false
               && c.section_key !== 'admin'
@@ -18861,7 +18838,46 @@ function renderUserHomeCards(container) {
               && c.section_key !== 'user_preview')
     .map((card, idx) => buildHomeCardHTML(card, idx))
     .join('');
+
+  /* ══════════════════════════════════════════
+     ★ بطاقة "حركاتي" — تُضاف دائماً للمستخدم
+  ══════════════════════════════════════════ */
+  const myOrdersCard = document.createElement('div');
+  myOrdersCard.id        = 'myOrdersHomeCard';
+  myOrdersCard.className = 'home-card';
+  myOrdersCard.style.cssText = `
+    animation: cardSlideIn 0.7s ease 0.9s both;
+    border-color: rgba(74,222,128,0.2);
+  `;
+  myOrdersCard.onclick = () => enterSection('myorders');
+
+  myOrdersCard.innerHTML = `
+    <img class="home-card-img"
+         src="https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png"
+         alt="Hareketlerim" loading="lazy" draggable="false"
+         onerror="this.style.display='none'"/>
+    <div class="home-card-overlay"></div>
+    <div class="home-card-shine"></div>
+    <div class="home-card-count"
+         style="background:rgba(74,222,128,0.75);
+                border-color:rgba(74,222,128,0.5);
+                color:#fff;font-weight:900;">
+      DEPO
+    </div>
+    <div class="home-card-content">
+      <div class="home-card-num">— KİŞİSEL DEPO</div>
+      <div class="home-card-title">
+        HAREKETLERİM<span>& DEPOM</span>
+      </div>
+      <div class="home-card-desc">Satışlarım · Fiyatlarım · Baskı</div>
+      <div class="home-card-btn">
+        Depoma Git <i class="fas fa-warehouse"></i>
+      </div>
+    </div>`;
+
+  container.appendChild(myOrdersCard);
 }
+
 
 /* ─────────────────────────────────────────
    بطاقات الـ WOW (Admin)
@@ -23281,43 +23297,7 @@ enterSection = function(cat) {
   _origEnterSection_adminAcc(cat);
 };
 
-/* ============================================================
-   ★ إضافة بطاقة "إدارة الأدمن" في renderAdminHomeCards ★
-   أضف هذا الكائن لمصفوفة controlPanels داخل renderAdminHomeCards
-============================================================ */
 
-/* ── تعديل renderAdminHomeCards لإضافة بطاقة admin_accounts ── */
-const _origRenderAdminHomeCards = renderAdminHomeCards;
-renderAdminHomeCards = function(container) {
-  _origRenderAdminHomeCards(container);
-
-  /* إضافة بطاقة إدارة الأدمن بعد الرسم */
-  const existingGrid = container.innerHTML;
-
-  /* بطاقة إدارة الأدمن */
-  const adminAccCard = buildControlCard({
-    section_key : 'admin_accounts',
-    title       : 'ADMİN',
-    subtitle    : 'HESAPLARI',
-    description : 'Yönetici hesaplarını düzenle',
-    count_label : 'ADMINS',
-    btn_text    : 'Hesaplara Git',
-    _icon       : 'fa-user-shield',
-    _color      : '#8b5cf6',
-  }, 5);
-
-  container.innerHTML = existingGrid + adminAccCard;
-};
-
-/* ── تحديث handleAdminCardClick لدعم admin_accounts ── */
-const _origHandleAdminCardClick = handleAdminCardClick;
-handleAdminCardClick = function(sectionKey) {
-  if (sectionKey === 'admin_accounts') {
-    enterSection('admin_accounts');
-    return;
-  }
-  _origHandleAdminCardClick(sectionKey);
-};
 
 /* ============================================================
    ★ إضافة روابط في الهيدر والموبايل ★
