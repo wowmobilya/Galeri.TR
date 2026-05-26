@@ -33641,630 +33641,26 @@ async function openDirectWowChat() {
 
 
 
-/* ============================================================
-   ★ نظام "حركاتي" المطور — النسخة الكاملة ★
-   • رقم الطلب + تاريخه + حالته
-   • قفل البيع حتى التسليم
-   • سجل مبيعات مفصّل لكل موديل
-   • مزامنة تلقائية مع WOW
-============================================================ */
-
-/* ══ المتغيرات العامة ══ */
-let _myOrdersData    = [];
-let _myPrintSettings = {};
-let _myOrdersLoaded  = false;
-let _salesLogCache   = {};   /* cache لسجلات البيع { inventoryId: [...] } */
-
-/* ══ ترجمة حالات الطلب ══ */
-const ORDER_STATUS_MAP = {
-  pending       : { label:'Beklemede',      icon:'fa-clock',          cls:'status-pending'       },
-  manufacturing : { label:'Üretimde',       icon:'fa-industry',       cls:'status-manufacturing' },
-  ready         : { label:'Hazır',          icon:'fa-box-open',       cls:'status-ready'         },
-  delivered     : { label:'Teslim Edildi',  icon:'fa-check-circle',   cls:'status-delivered'     },
-  cancelled     : { label:'İptal Edildi',   icon:'fa-times-circle',   cls:'status-cancelled'     },
-};
-
 /* ══════════════════════════════════════════════════════════════
-   تحميل البيانات
+   ★ نظام الفاتورة المتكامل — Invoice + Payments System ★
+   • فاتورة احترافية مع بيانات الزبون
+   • دفعة أولى + باقي مستحق
+   • إضافة دفعات لاحقة
+   • تعديل بيانات البيع
+   • طباعة فاتورة كاملة
 ══════════════════════════════════════════════════════════════ */
-async function loadMyOrdersInventory() {
-  const sb = await initSupabase();
-  if (!sb || !currentUser || currentUser === ADMIN_USER) return;
 
-  const { data: inv } = await sb
-    .from('user_orders_inventory')
-    .select('*')
-    .eq('username', currentUser)
-    .eq('is_hidden', false)
-    .order('purchased_at', { ascending: false });
-
-  _myOrdersData   = inv || [];
-  _myOrdersLoaded = true;
-  _salesLogCache  = {};   /* مسح الـ cache عند إعادة التحميل */
-
-  const { data: ps } = await sb
-    .from('user_print_settings')
-    .select('*')
-    .eq('username', currentUser)
-    .maybeSingle();
-
-  _myPrintSettings = ps || {};
-}
+/* ══ قاعدة بيانات الفواتير المحلية ══ */
+let _invoicesCache = {};   /* { inventoryId: [...invoices] } */
 
 /* ══════════════════════════════════════════════════════════════
-   حفظ الطلبية في مخزون المستخدم
-══════════════════════════════════════════════════════════════ */
-async function saveOrderToUserInventory(orderNum, items, orderData) {
-  const sb = await initSupabase();
-  if (!sb || !currentUser || currentUser === ADMIN_USER) return;
-
-  const orderDate   = orderData?.created_at || new Date().toISOString();
-  const orderStatus = orderData?.status || 'pending';
-
-  const rows = items
-    .filter(item => (item.qty || 0) > 0)
-    .map(item => ({
-      username      : currentUser,
-      order_number  : orderNum,
-      order_date    : orderDate,
-      order_status  : orderStatus,
-      product_id    : item.id,
-      product_title : item.title || '',
-      product_cat   : item.catLabel || '',
-      product_img   : item.src || '',
-      qty_purchased : item.qty || 0,
-      qty_sold      : 0,
-      base_price    : item.price || 0,
-      user_price    : null,
-      show_base_price: true,
-      show_user_price: true,
-      show_in_print  : true,
-      purchased_at  : orderDate
-    }));
-
-  if (rows.length > 0) {
-    const { error } = await sb
-      .from('user_orders_inventory')
-      .insert(rows);
-    if (!error) _myOrdersLoaded = false;
-  }
-}
-
-/* ══════════════════════════════════════════════════════════════
-   مزامنة حالة الطلب من WOW → حركاتي
-══════════════════════════════════════════════════════════════ */
-async function syncOrderStatusToInventory(orderNum, newStatus, deliveryDate) {
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  const updateData = {
-    order_status : newStatus,
-    updated_at   : new Date().toISOString()
-  };
-  if (newStatus === 'delivered' && deliveryDate) {
-    updateData.delivery_date = deliveryDate;
-  }
-
-  await sb.from('user_orders_inventory')
-    .update(updateData)
-    .eq('order_number', orderNum);
-
-  /* تحديث محلي */
-  _myOrdersData.forEach(item => {
-    if (item.order_number === orderNum) {
-      item.order_status  = newStatus;
-      if (deliveryDate) item.delivery_date = deliveryDate;
-    }
-  });
-
-  if (currentPage === 'myorders') renderMyOrdersContent();
-}
-
-/* ══════════════════════════════════════════════════════════════
-   حذف طلب من حركاتي عند حذفه من WOW
-══════════════════════════════════════════════════════════════ */
-async function deleteOrderFromInventory(orderNum) {
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  await sb.from('user_orders_inventory')
-    .delete()
-    .eq('order_number', orderNum);
-
-  _myOrdersData = _myOrdersData.filter(i => i.order_number !== orderNum);
-  if (currentPage === 'myorders') renderMyOrdersContent();
-}
-
-/* ══════════════════════════════════════════════════════════════
-   بناء صفحة "حركاتي"
-══════════════════════════════════════════════════════════════ */
-async function buildMyOrdersPage() {
-  document.getElementById('pageContent').innerHTML = `
-    <div class="myorders-page page-transition">
-
-      <!-- Banner -->
-      <div class="section-banner">
-        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
-          <button class="section-back-btn" onclick="goHome()">
-            <i class="fas fa-arrow-left"></i>
-          </button>
-          <div style="min-width:0;">
-            <div class="section-banner-tag">✦ KİŞİSEL DEPO</div>
-            <div class="section-banner-title"
-                 style="font-size:clamp(18px,5vw,34px);">
-              HAREKETLERİM
-            </div>
-            <div class="section-banner-count" id="myOrdersCount">
-              Yükleniyor...
-            </div>
-            <div class="section-banner-line"></div>
-          </div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0;">
-          <button onclick="openMyPrintSettings()" style="
-            width:36px;height:36px;border-radius:9px;
-            border:1px solid rgba(201,168,76,0.3);
-            background:rgba(201,168,76,0.08);
-            color:#c9a84c;font-size:14px;cursor:pointer;
-            display:flex;align-items:center;justify-content:center;
-            transition:all 0.25s;"
-            title="Ayarlar"
-            onmouseover="this.style.background='rgba(201,168,76,0.18)'"
-            onmouseout="this.style.background='rgba(201,168,76,0.08)'">
-            <i class="fas fa-cog"></i>
-          </button>
-          <button onclick="printMyInventory()" style="
-            width:36px;height:36px;border-radius:9px;border:none;
-            background:linear-gradient(135deg,#c9a84c,#f0d080);
-            color:#0a0a0a;font-size:14px;cursor:pointer;
-            display:flex;align-items:center;justify-content:center;
-            transition:all 0.25s;"
-            title="Yazdır"
-            onmouseover="this.style.transform='scale(1.08)'"
-            onmouseout="this.style.transform='scale(1)'">
-            <i class="fas fa-print"></i>
-          </button>
-        </div>
-      </div>
-
-      <!-- إحصائيات -->
-      <div class="myorders-stats-grid" id="myOrdersStats"></div>
-
-      <!-- فلاتر -->
-      <div class="myorders-filter-bar">
-        <div class="myorders-search-wrap">
-          <i class="fas fa-search"></i>
-          <input type="text" class="myorders-search-inp"
-            id="myOrdersSearch"
-            placeholder="Ürün veya sipariş ara..."
-            oninput="filterMyOrders(this.value)"
-            autocomplete="off"/>
-        </div>
-        <select class="myorders-filter-sel"
-          id="myOrdersFilter"
-          onchange="filterMyOrders()">
-          <option value="all">Tümü</option>
-          <option value="delivered">Teslim Edildi</option>
-          <option value="manufacturing">Üretimde</option>
-          <option value="ready">Hazır</option>
-          <option value="pending">Beklemede</option>
-          <option value="cancelled">İptal</option>
-          <option value="in_stock">Stokta Var</option>
-          <option value="sold_out">Tükendi</option>
-        </select>
-      </div>
-
-      <!-- القائمة -->
-      <div class="myorders-list" id="myOrdersList">
-        <div style="text-align:center;padding:50px 20px;">
-          <i class="fas fa-spinner fa-spin"
-             style="font-size:26px;color:rgba(201,168,76,0.4);"></i>
-        </div>
-      </div>
-    </div>`;
-
-  if (!_myOrdersLoaded) await loadMyOrdersInventory();
-  renderMyOrdersContent();
-}
-
-/* ══════════════════════════════════════════════════════════════
-   رسم المحتوى
-══════════════════════════════════════════════════════════════ */
-function renderMyOrdersContent() {
-  renderMyOrdersStats();
-  renderMyOrdersList(_myOrdersData);
-}
-
-/* ── الإحصائيات ── */
-function renderMyOrdersStats() {
-  const statsEl = document.getElementById('myOrdersStats');
-  const countEl = document.getElementById('myOrdersCount');
-  if (!statsEl) return;
-
-  const d           = _myOrdersData;
-  const totalItems  = d.length;
-  const totalPurch  = d.reduce((s,i) => s + (i.qty_purchased||0), 0);
-  const totalSold   = d.reduce((s,i) => s + (i.qty_sold||0), 0);
-  const totalLeft   = totalPurch - totalSold;
-  const inDelivery  = d.filter(i =>
-    ['pending','manufacturing','ready'].includes(i.order_status)
-  ).length;
-
-  if (countEl) countEl.textContent =
-    `${totalItems} ürün — ${totalPurch} adet alındı`;
-
-  const stats = [
-    { icon:'fa-boxes',         color:'#c9a84c', bg:'rgba(201,168,76,0.12)',
-      val:totalItems, lbl:'Ürün Çeşidi' },
-    { icon:'fa-check-circle',  color:'#4ade80', bg:'rgba(74,222,128,0.12)',
-      val:totalSold,  lbl:'Satılan' },
-    { icon:'fa-warehouse',     color:'#f59e0b', bg:'rgba(245,158,11,0.12)',
-      val:totalLeft,  lbl:'Depoda Kalan' },
-    { icon:'fa-industry',      color:'#60a5fa', bg:'rgba(96,165,250,0.12)',
-      val:inDelivery, lbl:'Yolda / Üretimde' },
-  ];
-
-  statsEl.innerHTML = stats.map(s => `
-    <div class="myorders-stat-card">
-      <div class="myorders-stat-icon"
-           style="background:${s.bg};border:1px solid ${s.color}30;color:${s.color};">
-        <i class="fas ${s.icon}"></i>
-      </div>
-      <div>
-        <div class="myorders-stat-val">${s.val.toLocaleString('tr-TR')}</div>
-        <div class="myorders-stat-lbl">${s.lbl}</div>
-      </div>
-    </div>`).join('');
-}
-
-/* ── قائمة المنتجات ── */
-function renderMyOrdersList(data) {
-  const listEl = document.getElementById('myOrdersList');
-  if (!listEl) return;
-
-  if (!data.length) {
-  listEl.innerHTML = `
-    <div class="myorders-empty">
-
-      <!-- أيقونة المستودع -->
-      <div style="
-        width: 80px;
-        height: 80px;
-        border-radius: 22px;
-        background: rgba(201,168,76,0.07);
-        border: 1px solid rgba(201,168,76,0.12);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 18px;
-      ">
-        <i class="fas fa-warehouse"
-           style="font-size:32px;color:rgba(201,168,76,0.25);"></i>
-      </div>
-
-      <!-- النص -->
-      <p style="
-        font-size: clamp(12px,3.5vw,14px);
-        font-weight: 700;
-        color: rgba(255,255,255,0.3);
-        letter-spacing: 1px;
-        margin-bottom: 8px;
-      ">Henüz hareket yok</p>
-
-      <small style="
-        font-size: clamp(10px,2.8vw,12px);
-        color: rgba(255,255,255,0.12);
-        line-height: 1.6;
-        display: block;
-        max-width: 240px;
-        margin: 0 auto;
-      ">
-        Sipariş verdikten sonra<br/>ürünler burada görünür
-      </small>
-
-      <!-- ✅ الزر المحسّن -->
-      <button
-        onclick="showPage('orders')"
-        style="
-          margin-top: 28px;
-          padding: 0 28px;
-          height: 52px;
-          border-radius: 14px;
-          border: none;
-          background: linear-gradient(135deg, #c9a84c 0%, #f0d080 50%, #c9a84c 100%);
-          background-size: 200% auto;
-          color: #0a0a0a;
-          font-family: 'Montserrat', sans-serif;
-          font-size: 13px;
-          font-weight: 900;
-          letter-spacing: 1.5px;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 9px;
-          box-shadow:
-            0 4px 20px rgba(201,168,76,0.3),
-            0 1px 0 rgba(255,255,255,0.15) inset;
-          transition: all 0.3s ease;
-          position: relative;
-          overflow: hidden;
-        "
-        onmouseover="
-          this.style.transform='translateY(-3px)';
-          this.style.boxShadow='0 8px 28px rgba(201,168,76,0.45), 0 1px 0 rgba(255,255,255,0.15) inset';
-          this.style.backgroundPosition='right center';
-        "
-        onmouseout="
-          this.style.transform='translateY(0)';
-          this.style.boxShadow='0 4px 20px rgba(201,168,76,0.3), 0 1px 0 rgba(255,255,255,0.15) inset';
-          this.style.backgroundPosition='left center';
-        "
-        ontouchstart="
-          this.style.transform='scale(0.96)';
-          this.style.boxShadow='0 2px 12px rgba(201,168,76,0.25)';
-        "
-        ontouchend="
-          this.style.transform='scale(1)';
-          this.style.boxShadow='0 4px 20px rgba(201,168,76,0.3), 0 1px 0 rgba(255,255,255,0.15) inset';
-        "
-      >
-        <!-- بريق متحرك -->
-        <span style="
-          position: absolute;
-          top: 0; left: -100%;
-          width: 60%;
-          height: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255,255,255,0.25),
-            transparent
-          );
-          transform: skewX(-20deg);
-          animation: btnShine 3s ease infinite;
-          pointer-events: none;
-        "></span>
-
-        <i class="fas fa-shopping-cart"
-           style="font-size:14px;position:relative;z-index:1;"></i>
-        <span style="position:relative;z-index:1;">SİPARİŞ VER</span>
-      </button>
-
-    </div>`;
-  return;
-}
-
-  listEl.innerHTML = data.map(item => buildMyItemCard(item)).join('');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   بناء بطاقة منتج — النسخة المطورة
-══════════════════════════════════════════════════════════════ */
-function buildMyItemCard(item) {
-  const remain     = (item.qty_purchased||0) - (item.qty_sold||0);
-  const pct        = item.qty_purchased > 0
-    ? Math.round((item.qty_sold / item.qty_purchased) * 100) : 0;
-  const stockClr   = remain <= 0 ? '#ef4444'
-    : remain < item.qty_purchased * 0.3 ? '#fbbf24' : '#4ade80';
-  const stockLbl   = remain <= 0 ? 'Tükendi'
-    : remain < item.qty_purchased * 0.3 ? 'Az Kaldı' : 'Stokta';
-
-  /* حالة الطلب */
-  const status     = item.order_status || 'pending';
-  const statusInfo = ORDER_STATUS_MAP[status] || ORDER_STATUS_MAP.pending;
-const isDelivered = status === 'delivered' || status === 'ready';
-  const isCancelled = status === 'cancelled';
-
-  /* تاريخ الطلب */
-  const orderDateStr = item.order_date
-    ? new Date(item.order_date).toLocaleDateString('tr-TR', {
-        day:'2-digit', month:'short', year:'numeric'
-      })
-    : '—';
-
-  /* تاريخ التسليم */
-  const deliveryDateStr = item.delivery_date
-    ? new Date(item.delivery_date).toLocaleDateString('tr-TR', {
-        day:'2-digit', month:'short', year:'numeric'
-      })
-    : null;
-
- /* زر البيع */
-let sellBtnHtml = '';
-if (isCancelled) {
-  sellBtnHtml = `
-    <div class="sell-btn-cancelled">
-      <i class="fas fa-ban"></i> İptal Edildi
-    </div>`;
-} else if (!isDelivered) {
-  sellBtnHtml = `
-    <div class="sell-btn-locked"
-         title="Sipariş hazır veya teslim edildiğinde satış yapabilirsiniz">
-      <i class="fas fa-lock"></i> ${
-        status === 'manufacturing' ? 'Üretimde' :
-        status === 'pending'       ? 'Beklemede' :
-        'Teslim Bekleniyor'
-      }
-    </div>`;
-} else if (remain <= 0) {
-  // ★ جديد: تم بيع كل شيء
-  sellBtnHtml = `
-    <div style="
-      display:flex;align-items:center;gap:5px;
-      padding:5px 11px;border-radius:7px;
-      background:rgba(74,222,128,0.08);
-      border:1px solid rgba(74,222,128,0.25);
-      color:#4ade80;font-size:9px;font-weight:700;
-      font-family:'Montserrat',sans-serif;
-      white-space:nowrap;">
-      <i class="fas fa-check-double"></i> Tümü Satıldı ✓
-    </div>`;
-} else {
-  sellBtnHtml = `
-    <button class="sell-btn-active"
-      onclick="openSaleModalMO(${item.id})">
-      <i class="fas fa-handshake"></i> Satış Yap
-    </button>`;
-}
-
-
-  return `
-    <div class="myitem-card" id="myitem-${item.id}">
-
-      <!-- ── معلومات الطلب (رقم + تاريخ + حالة) ── -->
-      <div class="myitem-order-info">
-        <span class="myitem-order-num">
-          <i class="fas fa-hashtag" style="font-size:8px;margin-right:2px;"></i>
-          ${item.order_number || '—'}
-        </span>
-        <span style="color:rgba(255,255,255,0.1);font-size:9px;">|</span>
-        <span class="myitem-order-date">
-          <i class="fas fa-calendar-alt"></i>${orderDateStr}
-        </span>
-        ${deliveryDateStr ? `
-        <span style="color:rgba(255,255,255,0.1);font-size:9px;">|</span>
-        <span class="myitem-order-date" style="color:rgba(74,222,128,0.5);">
-          <i class="fas fa-truck" style="color:rgba(74,222,128,0.4);"></i>
-          ${deliveryDateStr}
-        </span>` : ''}
-        <span style="margin-left:auto;">
-          <span class="order-status-badge ${statusInfo.cls}">
-            <i class="fas ${statusInfo.icon}"></i>
-            ${statusInfo.label}
-          </span>
-        </span>
-      </div>
-
-      <!-- ── الصف الرئيسي ── -->
-      <div class="myitem-main">
-
-        <!-- الصورة -->
-        <div class="myitem-img-wrap">
-          <img class="myitem-img"
-               src="${item.product_img || ''}"
-               alt="${item.product_title}"
-               draggable="false"
-               onerror="this.src='https://placehold.co/70x56/1a1a1a/c9a84c?text=W'"/>
-          <div class="myitem-status-badge"
-               style="background:${stockClr};">
-            ${stockLbl}
-          </div>
-        </div>
-
-        <!-- المعلومات -->
-        <div class="myitem-info">
-          <div class="myitem-title">${item.product_title}</div>
-          <div class="myitem-cat">${item.product_cat || ''}</div>
-          <div class="myitem-progress-bar">
-            <div class="myitem-progress-fill"
-                 style="width:${pct}%;background:${stockClr};"></div>
-          </div>
-          <div class="myitem-qty-row">
-            <span class="myitem-qty-item">
-              Alınan: <strong>${item.qty_purchased}</strong>
-            </span>
-            <span class="myitem-qty-item">
-              Satılan: <strong style="color:#4ade80;">${item.qty_sold}</strong>
-            </span>
-            <span class="myitem-qty-item">
-              Kalan: <strong style="color:${stockClr};">${remain}</strong>
-            </span>
-          </div>
-        </div>
-
-        <!-- الأسعار -->
-        <div class="myitem-prices">
-          ${item.show_base_price && item.base_price ? `
-          <div class="myitem-price-lbl">ALIŞ</div>
-          <div class="myitem-base-price">
-            ${Number(item.base_price).toLocaleString('tr-TR')} ₺
-          </div>` : ''}
-          ${item.show_user_price && item.user_price ? `
-          <div class="myitem-price-lbl"
-               style="color:rgba(201,168,76,0.5);">SATIŞ</div>
-          <div class="myitem-user-price">
-            ${Number(item.user_price).toLocaleString('tr-TR')} ₺
-          </div>` : `
-          <button class="myitem-add-price-btn"
-            onclick="openPriceEditorMO(${item.id})">
-            <i class="fas fa-tag"></i> Fiyat
-          </button>`}
-        </div>
-      </div>
-
-      <!-- ── شريط الإجراءات ── -->
-      <div class="myitem-actions">
-
-        <!-- زر البيع (مقفل/مفتوح/ملغي) -->
-        ${sellBtnHtml}
-
-       <!-- زر الحركات -->
-<button onclick="openSalesLogMO(${item.id},'${item.product_title.replace(/'/g,"\\'")}','${item.product_img||''}')"
-  style="
-    display:flex;align-items:center;gap:5px;
-    padding:5px 11px;border-radius:7px;
-    background:rgba(96,165,250,0.08);
-    border:1px solid rgba(96,165,250,0.2);
-    color:#60a5fa;font-size:9px;font-weight:700;
-    font-family:'Montserrat',sans-serif;
-    cursor:pointer;white-space:nowrap;transition:all 0.2s;"
-  onmouseover="this.style.background='rgba(96,165,250,0.18)'"
-  onmouseout="this.style.background='rgba(96,165,250,0.08)'">
-  <i class="fas fa-chart-bar"></i> 
-  Hareketler ${item.qty_sold > 0 
-    ? `<span style="background:rgba(74,222,128,0.15);
-                    border:1px solid rgba(74,222,128,0.3);
-                    color:#4ade80;border-radius:50px;
-                    padding:1px 6px;font-size:8px;">
-         ${item.qty_sold}
-       </span>` 
-    : ''}
-</button>
-
-
-        <!-- أزرار الإجراءات -->
-        <div class="myitem-action-btns">
-          <button class="myitem-action-btn"
-            style="background:rgba(201,168,76,0.08);
-                   border-color:rgba(201,168,76,0.2);color:#c9a84c;"
-            onclick="openPriceEditorMO(${item.id})"
-            title="Fiyat Düzenle"
-            onmouseover="this.style.background='rgba(201,168,76,0.2)'"
-            onmouseout="this.style.background='rgba(201,168,76,0.08)'">
-            <i class="fas fa-tag"></i>
-          </button>
-          <button class="myitem-action-btn"
-            style="background:rgba(167,139,250,0.08);
-                   border-color:rgba(167,139,250,0.2);color:#a78bfa;"
-            onclick="printSingleItemMO(${item.id})"
-            title="Yazdır"
-            onmouseover="this.style.background='rgba(167,139,250,0.2)'"
-            onmouseout="this.style.background='rgba(167,139,250,0.08)'">
-            <i class="fas fa-print"></i>
-          </button>
-          <button class="myitem-action-btn"
-            style="background:rgba(239,68,68,0.06);
-                   border-color:rgba(239,68,68,0.15);
-                   color:rgba(239,68,68,0.5);"
-            onclick="hideMyItemMO(${item.id})"
-            title="Gizle"
-            onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#ef4444'"
-            onmouseout="this.style.background='rgba(239,68,68,0.06)';this.style.color='rgba(239,68,68,0.5)'">
-            <i class="fas fa-eye-slash"></i>
-          </button>
-        </div>
-      </div>
-    </div>`;
-}
-
-/* ══════════════════════════════════════════════════════════════
-   نافذة تسجيل البيع
+   فتح نافذة الفاتورة الجديدة
 ══════════════════════════════════════════════════════════════ */
 function openSaleModalMO(itemId) {
   const item = _myOrdersData.find(i => i.id === itemId);
   if (!item) return;
 
-  const remain = (item.qty_purchased||0) - (item.qty_sold||0);
+  const remain = (item.qty_purchased || 0) - (item.qty_sold || 0);
   if (remain <= 0) {
     showInvToast('Stok tükendi!', 'error');
     return;
@@ -34278,7 +33674,7 @@ function openSaleModalMO(itemId) {
   const defaultPrice = item.user_price || item.base_price || '';
 
   modal.innerHTML = `
-    <div class="sale-modal-box">
+    <div class="sale-modal-box" style="max-width:520px;">
       <!-- Handle -->
       <div style="display:flex;align-items:center;justify-content:center;
            padding:10px 0 4px;">
@@ -34298,23 +33694,21 @@ function openSaleModalMO(itemId) {
           <img src="${item.product_img}"
                style="width:46px;height:36px;object-fit:cover;
                       border-radius:8px;border:1px solid rgba(255,255,255,0.08);
-                      flex-shrink:0;"
-               draggable="false"
+                      flex-shrink:0;" draggable="false"
                onerror="this.style.display='none'"/>` : `
           <div style="width:46px;height:36px;border-radius:8px;flex-shrink:0;
                background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);
                display:flex;align-items:center;justify-content:center;
                color:#4ade80;font-size:16px;">
-            <i class="fas fa-handshake"></i>
+            <i class="fas fa-file-invoice"></i>
           </div>`}
           <div style="min-width:0;">
             <div style="font-size:8px;letter-spacing:3px;
                  color:rgba(74,222,128,0.6);text-transform:uppercase;margin-bottom:2px;">
-              SATIŞ KAYDI
+              YENİ FATURA
             </div>
             <div style="font-size:14px;font-weight:900;color:#fff;
-                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                 max-width:210px;">
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px;">
               ${item.product_title}
             </div>
           </div>
@@ -34330,104 +33724,135 @@ function openSaleModalMO(itemId) {
         </button>
       </div>
 
-      <!-- الجسم -->
-      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:13px;">
+      <!-- الجسم القابل للتمرير -->
+      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;
+           overflow-y:auto;max-height:75dvh;scrollbar-width:thin;
+           scrollbar-color:rgba(74,222,128,0.3) transparent;">
 
-        <!-- المخزون المتاح -->
-        <div style="
-          display:flex;align-items:center;justify-content:space-between;
-          padding:10px 14px;border-radius:11px;
-          background:rgba(74,222,128,0.06);
-          border:1px solid rgba(74,222,128,0.15);">
-          <span style="font-size:10px;color:rgba(255,255,255,0.4);
+        <!-- ══ بيانات الزبون ══ -->
+        <div style="background:rgba(74,222,128,0.04);border:1px solid rgba(74,222,128,0.15);
+             border-radius:12px;padding:13px 14px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(74,222,128,0.6);
+               text-transform:uppercase;font-weight:700;margin-bottom:10px;
                display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-warehouse" style="color:#4ade80;"></i>
-            Satılabilir Stok
-          </span>
-          <span style="font-size:18px;font-weight:900;color:#4ade80;">
-            ${remain} <span style="font-size:11px;color:rgba(74,222,128,0.5);">adet</span>
-          </span>
+            <i class="fas fa-user-circle"></i> MÜŞTERİ BİLGİLERİ
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
+
+            <!-- الاسم -->
+            <div style="grid-column:1/-1;">
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:5px;display:block;">
+                AD SOYAD *
+              </label>
+              <input type="text" id="invBuyerName"
+                placeholder="Müşteri adı soyadı"
+                autocomplete="off"
+                style="width:100%;padding:11px 13px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(74,222,128,0.2);
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:13px;font-weight:600;
+                outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+                onfocus="this.style.borderColor='#4ade80'"
+                onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+            </div>
+
+            <!-- الهاتف -->
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:5px;display:block;">
+                TELEFON
+              </label>
+              <input type="tel" id="invBuyerPhone"
+                placeholder="+90 XXX XXX XX XX"
+                inputmode="tel"
+                style="width:100%;padding:11px 13px;
+                background:rgba(255,255,255,0.04);
+                border:1px solid rgba(74,222,128,0.15);
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:12px;outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+                onfocus="this.style.borderColor='#4ade80'"
+                onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"/>
+            </div>
+
+            <!-- العنوان -->
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:5px;display:block;">
+                ADRES
+              </label>
+              <input type="text" id="invBuyerAddress"
+                placeholder="Şehir / İlçe"
+                style="width:100%;padding:11px 13px;
+                background:rgba(255,255,255,0.04);
+                border:1px solid rgba(74,222,128,0.15);
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:12px;outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+                onfocus="this.style.borderColor='#4ade80'"
+                onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"/>
+            </div>
+          </div>
         </div>
 
-        <!-- اسم المشتري -->
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;
-               display:flex;align-items:center;gap:5px;">
-            <i class="fas fa-user" style="color:rgba(74,222,128,0.5);"></i>
-            MÜŞTERİ ADI *
-          </label>
-          <input type="text" id="saleBuyerName"
-            placeholder="Müşteri adı soyadı"
-            autocomplete="off"
-            style="
-              width:100%;padding:12px 13px;
-              background:rgba(255,255,255,0.04);
-              border:1.5px solid rgba(74,222,128,0.2);
-              border-radius:10px;color:#fff;
-              font-family:'Montserrat',sans-serif;
-              font-size:14px;font-weight:600;
-              outline:none;transition:all 0.3s;
-              -webkit-user-select:text;user-select:text;
-              box-sizing:border-box;"
-            onfocus="this.style.borderColor='#4ade80'"
-            onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
-        </div>
+        <!-- ══ تفاصيل البيع ══ -->
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);
+             border-radius:12px;padding:13px 14px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,0.6);
+               text-transform:uppercase;font-weight:700;margin-bottom:10px;
+               display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-boxes"></i> SATIŞ DETAYLARI
+          </div>
 
-        <!-- الهاتف (اختياري) -->
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;
-               display:flex;align-items:center;gap:5px;">
-            <i class="fas fa-phone" style="color:rgba(74,222,128,0.5);"></i>
-            TELEFON
-            <span style="font-size:8px;color:rgba(255,255,255,0.15);
-                 font-weight:400;">(İsteğe Bağlı)</span>
-          </label>
-          <input type="tel" id="saleBuyerPhone"
-            placeholder="+90 XXX XXX XX XX"
-            inputmode="tel"
-            style="
-              width:100%;padding:12px 13px;
-              background:rgba(255,255,255,0.04);
-              border:1px solid rgba(74,222,128,0.15);
-              border-radius:10px;color:#fff;
-              font-family:'Montserrat',sans-serif;
-              font-size:13px;outline:none;transition:all 0.3s;
-              -webkit-user-select:text;user-select:text;
-              box-sizing:border-box;"
-            onfocus="this.style.borderColor='#4ade80'"
-            onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"/>
-        </div>
+          <!-- المخزون المتاح -->
+          <div style="display:flex;align-items:center;justify-content:space-between;
+               padding:9px 12px;border-radius:9px;margin-bottom:10px;
+               background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15);">
+            <span style="font-size:10px;color:rgba(255,255,255,0.4);
+                 display:flex;align-items:center;gap:6px;">
+              <i class="fas fa-warehouse" style="color:#4ade80;"></i>
+              Satılabilir Stok
+            </span>
+            <span style="font-size:18px;font-weight:900;color:#4ade80;">
+              ${remain} <span style="font-size:11px;color:rgba(74,222,128,0.5);">adet</span>
+            </span>
+          </div>
 
-        <!-- الكمية + السعر -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-
-          <!-- الكمية -->
-          <div>
-            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-                 text-transform:uppercase;font-weight:700;margin-bottom:6px;
-                 display:flex;align-items:center;gap:5px;">
-              <i class="fas fa-sort-numeric-up"
-                 style="color:rgba(74,222,128,0.5);"></i>
-              MİKTAR
-            </label>
-            <div style="display:flex;align-items:center;gap:6px;">
-              <button onclick="changeSaleQty(-1)" style="
-                width:32px;height:42px;border-radius:8px;flex-shrink:0;
-                border:1px solid rgba(239,68,68,0.3);
-                background:rgba(239,68,68,0.1);color:#ef4444;
-                font-size:16px;font-weight:700;cursor:pointer;
-                display:flex;align-items:center;justify-content:center;
-                transition:all 0.2s;"
-                onmouseover="this.style.background='rgba(239,68,68,0.2)'"
-                onmouseout="this.style.background='rgba(239,68,68,0.1)'">−</button>
-              <input type="number" id="saleQty"
-                value="1" min="1" max="${remain}"
-                inputmode="numeric"
-                oninput="updateSaleTotal()"
-                style="
-                  flex:1;padding:10px 6px;text-align:center;
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <!-- الكمية -->
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:5px;display:block;">
+                MİKTAR *
+              </label>
+              <div style="display:flex;align-items:center;gap:5px;">
+                <button onclick="changeSaleQty(-1)" style="
+                  width:32px;height:42px;border-radius:8px;flex-shrink:0;
+                  border:1px solid rgba(239,68,68,0.3);
+                  background:rgba(239,68,68,0.1);color:#ef4444;
+                  font-size:16px;font-weight:700;cursor:pointer;
+                  display:flex;align-items:center;justify-content:center;
+                  transition:all 0.2s;"
+                  onmouseover="this.style.background='rgba(239,68,68,0.2)'"
+                  onmouseout="this.style.background='rgba(239,68,68,0.1)'">−</button>
+                <input type="number" id="saleQty"
+                  value="1" min="1" max="${remain}"
+                  inputmode="numeric"
+                  oninput="updateInvoiceTotals()"
+                  style="flex:1;padding:10px 6px;text-align:center;
                   background:rgba(255,255,255,0.04);
                   border:1px solid rgba(74,222,128,0.2);
                   border-radius:8px;color:#fff;
@@ -34435,37 +33860,34 @@ function openSaleModalMO(itemId) {
                   font-size:16px;font-weight:900;
                   outline:none;-webkit-user-select:text;user-select:text;
                   box-sizing:border-box;"
-                onfocus="this.style.borderColor='#4ade80'"
-                onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
-              <button onclick="changeSaleQty(+1,${remain})" style="
-                width:32px;height:42px;border-radius:8px;flex-shrink:0;
-                border:1px solid rgba(74,222,128,0.3);
-                background:rgba(74,222,128,0.1);color:#4ade80;
-                font-size:16px;font-weight:700;cursor:pointer;
-                display:flex;align-items:center;justify-content:center;
-                transition:all 0.2s;"
-                onmouseover="this.style.background='rgba(74,222,128,0.2)'"
-                onmouseout="this.style.background='rgba(74,222,128,0.1)'">+</button>
+                  onfocus="this.style.borderColor='#4ade80'"
+                  onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+                <button onclick="changeSaleQty(+1,${remain})" style="
+                  width:32px;height:42px;border-radius:8px;flex-shrink:0;
+                  border:1px solid rgba(74,222,128,0.3);
+                  background:rgba(74,222,128,0.1);color:#4ade80;
+                  font-size:16px;font-weight:700;cursor:pointer;
+                  display:flex;align-items:center;justify-content:center;
+                  transition:all 0.2s;"
+                  onmouseover="this.style.background='rgba(74,222,128,0.2)'"
+                  onmouseout="this.style.background='rgba(74,222,128,0.1)'">+</button>
+              </div>
             </div>
-          </div>
 
-          <!-- السعر -->
-          <div>
-            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-                 text-transform:uppercase;font-weight:700;margin-bottom:6px;
-                 display:flex;align-items:center;gap:5px;">
-              <i class="fas fa-lira-sign"
-                 style="color:rgba(201,168,76,0.5);"></i>
-              BİRİM FİYAT
-            </label>
-            <div style="position:relative;">
-              <input type="number" id="salePriceUnit"
-                value="${defaultPrice}"
-                placeholder="0"
-                inputmode="decimal"
-                oninput="updateSaleTotal()"
-                style="
-                  width:100%;padding:10px 30px 10px 12px;
+            <!-- سعر الوحدة -->
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:5px;display:block;">
+                BİRİM FİYAT *
+              </label>
+              <div style="position:relative;">
+                <input type="number" id="salePriceUnit"
+                  value="${defaultPrice}"
+                  placeholder="0"
+                  inputmode="decimal"
+                  oninput="updateInvoiceTotals()"
+                  style="width:100%;padding:10px 30px 10px 12px;
                   background:rgba(255,255,255,0.04);
                   border:1px solid rgba(201,168,76,0.2);
                   border-radius:8px;color:#fff;
@@ -34474,58 +33896,104 @@ function openSaleModalMO(itemId) {
                   outline:none;transition:all 0.3s;
                   -webkit-user-select:text;user-select:text;
                   box-sizing:border-box;"
-                onfocus="this.style.borderColor='#c9a84c'"
-                onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
-              <span style="position:absolute;right:10px;top:50%;
-                   transform:translateY(-50%);font-size:13px;font-weight:900;
-                   color:rgba(201,168,76,0.5);pointer-events:none;">₺</span>
+                  onfocus="this.style.borderColor='#c9a84c'"
+                  onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+                <span style="position:absolute;right:10px;top:50%;
+                     transform:translateY(-50%);font-size:13px;font-weight:900;
+                     color:rgba(201,168,76,0.5);pointer-events:none;">₺</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- الإجمالي -->
-        <div style="
-          display:flex;align-items:center;justify-content:space-between;
-          padding:11px 14px;border-radius:11px;
-          background:rgba(201,168,76,0.06);
-          border:1px solid rgba(201,168,76,0.15);">
-          <span style="font-size:10px;color:rgba(255,255,255,0.4);
+        <!-- ══ ملخص الفاتورة ══ -->
+        <div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);
+             border-radius:12px;padding:13px 14px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,0.6);
+               text-transform:uppercase;font-weight:700;margin-bottom:10px;
                display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-receipt" style="color:#c9a84c;"></i>
-            Toplam Tutar
-          </span>
-          <span id="saleTotalDisplay"
-                style="font-size:clamp(16px,4vw,20px);font-weight:900;
-                       background:linear-gradient(135deg,#c9a84c,#f0d080);
-                       -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                       background-clip:text;">
-            — ₺
-          </span>
+            <i class="fas fa-receipt"></i> FATURA ÖZETİ
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:11px;color:rgba(255,255,255,0.4);">
+                Toplam Tutar
+              </span>
+              <span id="invTotalAmount" style="font-size:16px;font-weight:900;
+                   background:linear-gradient(135deg,#c9a84c,#f0d080);
+                   -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                   background-clip:text;">
+                0 ₺
+              </span>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
+
+            <!-- الدفعة الأولى -->
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(74,222,128,0.6);text-transform:uppercase;
+                   font-weight:700;margin-bottom:5px;display:block;">
+                <i class="fas fa-money-bill-wave"></i> İLK ÖDEME (PEŞİNAT)
+              </label>
+              <div style="position:relative;">
+                <input type="number" id="invFirstPayment"
+                  placeholder="0 — Tamamı sonra ödenecekse boş bırakın"
+                  inputmode="decimal"
+                  oninput="updateInvoiceTotals()"
+                  style="width:100%;padding:11px 30px 11px 12px;
+                  background:rgba(74,222,128,0.05);
+                  border:1.5px solid rgba(74,222,128,0.25);
+                  border-radius:9px;color:#fff;
+                  font-family:'Montserrat',sans-serif;
+                  font-size:14px;font-weight:700;
+                  outline:none;transition:all 0.3s;
+                  -webkit-user-select:text;user-select:text;
+                  box-sizing:border-box;"
+                  onfocus="this.style.borderColor='#4ade80'"
+                  onfocusout="this.style.borderColor='rgba(74,222,128,0.25)'"/>
+                <span style="position:absolute;right:10px;top:50%;
+                     transform:translateY(-50%);font-size:13px;font-weight:900;
+                     color:rgba(74,222,128,0.5);pointer-events:none;">₺</span>
+              </div>
+            </div>
+
+            <!-- الباقي -->
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                 padding:9px 12px;border-radius:9px;
+                 background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);">
+              <span style="font-size:11px;color:rgba(255,255,255,0.4);
+                   display:flex;align-items:center;gap:6px;">
+                <i class="fas fa-clock" style="color:#ef4444;"></i>
+                Kalan Borç
+              </span>
+              <span id="invRemainingDebt" style="font-size:16px;font-weight:900;color:#ef4444;">
+                0 ₺
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- ملاحظة -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;
-               display:flex;align-items:center;gap:5px;">
+          <label style="font-size:8px;letter-spacing:1.5px;
+               color:rgba(255,255,255,0.3);text-transform:uppercase;
+               font-weight:700;margin-bottom:5px;display:block;">
             <i class="fas fa-sticky-note"
-               style="color:rgba(74,222,128,0.5);"></i>
+               style="color:rgba(74,222,128,0.5);margin-right:4px;"></i>
             NOT
-            <span style="font-size:8px;color:rgba(255,255,255,0.15);
-                 font-weight:400;">(İsteğe Bağlı)</span>
           </label>
           <textarea id="saleNotes"
-            placeholder="Ödeme şekli, teslimat notu vb..."
+            placeholder="Teslimat notu, ödeme şekli vb..."
             rows="2"
-            style="
-              width:100%;padding:10px 13px;
-              background:rgba(255,255,255,0.04);
-              border:1px solid rgba(74,222,128,0.15);
-              border-radius:10px;color:#fff;
-              font-family:'Montserrat',sans-serif;
-              font-size:12px;outline:none;resize:none;
-              -webkit-user-select:text;user-select:text;
-              transition:all 0.3s;box-sizing:border-box;"
+            style="width:100%;padding:10px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(74,222,128,0.15);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;resize:none;
+            -webkit-user-select:text;user-select:text;
+            transition:all 0.3s;box-sizing:border-box;"
             onfocus="this.style.borderColor='#4ade80'"
             onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"></textarea>
         </div>
@@ -34553,110 +34021,149 @@ function openSaleModalMO(itemId) {
             display:flex;align-items:center;justify-content:center;gap:7px;"
             onmouseover="this.style.transform='translateY(-2px)'"
             onmouseout="this.style.transform=''">
-            <i class="fas fa-check"></i> SATIŞI KAYDET
+            <i class="fas fa-file-invoice"></i> FATURA OLUŞTUR
           </button>
         </div>
       </div>
     </div>`;
 
   document.body.appendChild(modal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.remove();
-  });
-
-  updateSaleTotal();
-  setTimeout(() => document.getElementById('saleBuyerName')?.focus(), 350);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  updateInvoiceTotals();
+  setTimeout(() => document.getElementById('invBuyerName')?.focus(), 350);
 }
 
-/* ── تغيير كمية البيع ── */
-function changeSaleQty(delta, max) {
-  const inp = document.getElementById('saleQty');
-  if (!inp) return;
-  const cur = parseInt(inp.value) || 1;
-  const newVal = Math.max(1, Math.min(max || 9999, cur + delta));
-  inp.value = newVal;
-  updateSaleTotal();
-}
+/* ══════════════════════════════════════════════════════════════
+   تحديث إجماليات الفاتورة في الوقت الفعلي
+══════════════════════════════════════════════════════════════ */
+function updateInvoiceTotals() {
+  const qty        = parseInt(document.getElementById('saleQty')?.value)          || 0;
+  const unitPrice  = parseFloat(document.getElementById('salePriceUnit')?.value)  || 0;
+  const firstPay   = parseFloat(document.getElementById('invFirstPayment')?.value) || 0;
+  const total      = qty * unitPrice;
+  const remaining  = Math.max(0, total - firstPay);
 
-/* ── تحديث الإجمالي ── */
-function updateSaleTotal() {
-  const qty   = parseInt(document.getElementById('saleQty')?.value)       || 0;
-  const price = parseFloat(document.getElementById('salePriceUnit')?.value) || 0;
-  const total = qty * price;
-  const el    = document.getElementById('saleTotalDisplay');
-  if (el) {
-    el.textContent = total > 0
-      ? Number(total).toLocaleString('tr-TR') + ' ₺'
-      : '— ₺';
+  const totalEl   = document.getElementById('invTotalAmount');
+  const remEl     = document.getElementById('invRemainingDebt');
+
+  if (totalEl) totalEl.textContent =
+    total > 0 ? Number(total).toLocaleString('tr-TR') + ' ₺' : '0 ₺';
+
+  if (remEl) {
+    remEl.textContent = Number(remaining).toLocaleString('tr-TR') + ' ₺';
+    remEl.style.color = remaining > 0 ? '#ef4444' : '#4ade80';
   }
 }
 
-/* ── تأكيد البيع وحفظه ── */
+/* ══════════════════════════════════════════════════════════════
+   تأكيد البيع وحفظ الفاتورة
+══════════════════════════════════════════════════════════════ */
 async function confirmSaleMO(itemId) {
   const item = _myOrdersData.find(i => i.id === itemId);
   if (!item) return;
 
-  const buyerName  = document.getElementById('saleBuyerName')?.value.trim();
-  const buyerPhone = document.getElementById('saleBuyerPhone')?.value.trim() || '';
-  const qty        = parseInt(document.getElementById('saleQty')?.value) || 0;
-  const unitPrice  = parseFloat(document.getElementById('salePriceUnit')?.value) || 0;
-  const notes      = document.getElementById('saleNotes')?.value.trim() || '';
+  const buyerName    = document.getElementById('invBuyerName')?.value.trim();
+  const buyerPhone   = document.getElementById('invBuyerPhone')?.value.trim()   || '';
+  const buyerAddress = document.getElementById('invBuyerAddress')?.value.trim() || '';
+  const qty          = parseInt(document.getElementById('saleQty')?.value)       || 0;
+  const unitPrice    = parseFloat(document.getElementById('salePriceUnit')?.value) || 0;
+  const firstPayment = parseFloat(document.getElementById('invFirstPayment')?.value) || 0;
+  const notes        = document.getElementById('saleNotes')?.value.trim()        || '';
 
   /* التحقق */
   if (!buyerName) {
     showInvToast('Müşteri adını girin!', 'error');
-    document.getElementById('saleBuyerName')?.focus();
+    document.getElementById('invBuyerName')?.focus();
     return;
   }
-  if (qty < 1) {
-    showInvToast('Miktar en az 1 olmalı!', 'error');
-    return;
-  }
-  const remain = (item.qty_purchased||0) - (item.qty_sold||0);
+  if (qty < 1) { showInvToast('Miktar en az 1 olmalı!', 'error'); return; }
+  if (unitPrice <= 0) { showInvToast('Birim fiyat giriniz!', 'error'); return; }
+
+  const remain = (item.qty_purchased || 0) - (item.qty_sold || 0);
   if (qty > remain) {
-    showInvToast(`Maksimum ${remain} adet satabilirsiniz!`, 'error');
+    showInvToast(`Maksimum ${remain} adet!`, 'error');
     return;
   }
 
-  const totalAmount = qty * unitPrice;
+  const totalAmount   = qty * unitPrice;
+  const remainingDebt = Math.max(0, totalAmount - firstPayment);
+  const invoiceNum    = 'INV-' + Date.now().toString().slice(-8);
+
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* 1. إضافة سجل البيع */
+  /* 1. حفظ سجل البيع مع بيانات الفاتورة */
   const { data: saleRow, error: saleErr } = await sb
     .from('user_sales_log')
     .insert([{
-      username      : currentUser,
-      inventory_id  : itemId,
-      product_title : item.product_title,
-      product_img   : item.product_img || '',
-      buyer_name    : buyerName,
-      buyer_phone   : buyerPhone,
-      qty_sold      : qty,
-      sale_price    : unitPrice,
-      total_amount  : totalAmount,
-      notes         : notes,
-      sold_at       : new Date().toISOString()
+      username        : currentUser,
+      inventory_id    : itemId,
+      product_title   : item.product_title,
+      product_img     : item.product_img || '',
+      buyer_name      : buyerName,
+      buyer_phone     : buyerPhone,
+      buyer_address   : buyerAddress,
+      qty_sold        : qty,
+      sale_price      : unitPrice,
+      total_amount    : totalAmount,
+      paid_amount     : firstPayment,
+      remaining_debt  : remainingDebt,
+      invoice_number  : invoiceNum,
+      notes           : notes,
+      sold_at         : new Date().toISOString()
     }])
     .select()
     .single();
 
-  if (saleErr) { showInvToast('Kayıt hatası!', 'error'); return; }
+  if (saleErr) {
+    /* إذا الأعمدة الجديدة غير موجودة، نحفظ بالحقول الأساسية */
+    const { data: fallbackRow, error: fallbackErr } = await sb
+      .from('user_sales_log')
+      .insert([{
+        username      : currentUser,
+        inventory_id  : itemId,
+        product_title : item.product_title,
+        product_img   : item.product_img || '',
+        buyer_name    : buyerName,
+        buyer_phone   : buyerPhone,
+        qty_sold      : qty,
+        sale_price    : unitPrice,
+        total_amount  : totalAmount,
+        notes         : `[${invoiceNum}] Peşinat:${firstPayment}₺ | Kalan:${remainingDebt}₺ | Adres:${buyerAddress} | ${notes}`,
+        sold_at       : new Date().toISOString()
+      }])
+      .select()
+      .single();
 
-  /* 2. تحديث qty_sold في المخزون */
-  const newSold = (item.qty_sold||0) + qty;
+    if (fallbackErr) { showInvToast('Kayıt hatası!', 'error'); return; }
+
+    /* إضافة الحقول الإضافية محلياً */
+    if (fallbackRow) {
+      fallbackRow.buyer_address  = buyerAddress;
+      fallbackRow.paid_amount    = firstPayment;
+      fallbackRow.remaining_debt = remainingDebt;
+      fallbackRow.invoice_number = invoiceNum;
+    }
+  }
+
+  /* 2. تحديث qty_sold */
+  const newSold = (item.qty_sold || 0) + qty;
   await sb.from('user_orders_inventory')
     .update({ qty_sold: newSold, updated_at: new Date().toISOString() })
     .eq('id', itemId);
 
   /* 3. تحديث محلي */
   item.qty_sold = newSold;
-  if (_salesLogCache[itemId]) {
-    _salesLogCache[itemId].unshift(saleRow);
-  }
+  const finalRow = saleRow || { id: Date.now(), buyer_name: buyerName,
+    buyer_phone: buyerPhone, buyer_address: buyerAddress,
+    qty_sold: qty, sale_price: unitPrice, total_amount: totalAmount,
+    paid_amount: firstPayment, remaining_debt: remainingDebt,
+    invoice_number: invoiceNum, notes, sold_at: new Date().toISOString() };
+
+  if (_salesLogCache[itemId]) _salesLogCache[itemId].unshift(finalRow);
 
   document.getElementById('saleModalMO')?.remove();
-  showInvToast(`${qty} adet — ${buyerName} ✓`, 'success');
+  showInvToast(`Fatura #${invoiceNum} oluşturuldu ✓`, 'success');
 
   /* إعادة رسم البطاقة */
   const card = document.getElementById('myitem-' + itemId);
@@ -34666,15 +34173,17 @@ async function confirmSaleMO(itemId) {
     card.replaceWith(w.firstElementChild);
   }
   renderMyOrdersStats();
+
+  /* عرض الفاتورة للطباعة */
+  setTimeout(() => openInvoicePrintMO(finalRow, item), 400);
 }
 
 /* ══════════════════════════════════════════════════════════════
-   نافذة سجل الحركات لكل موديل
+   نافذة سجل الحركات المطور — مع إدارة الدفعات
 ══════════════════════════════════════════════════════════════ */
 async function openSalesLogMO(itemId, productTitle, productImg) {
   document.getElementById('salesLogMO')?.remove();
 
-  /* تحميل السجلات */
   let logs = _salesLogCache[itemId];
   if (!logs) {
     const sb = await initSupabase();
@@ -34688,20 +34197,18 @@ async function openSalesLogMO(itemId, productTitle, productImg) {
     _salesLogCache[itemId] = logs;
   }
 
-  const item        = _myOrdersData.find(i => i.id === itemId);
-  const totalSoldQ  = logs.reduce((s,l) => s + (l.qty_sold||0), 0);
-  const totalRev    = logs.reduce((s,l) => s + (l.total_amount||0), 0);
+  const item       = _myOrdersData.find(i => i.id === itemId);
+  const totalSoldQ = logs.reduce((s, l) => s + (l.qty_sold || 0), 0);
+  const totalRev   = logs.reduce((s, l) => s + (l.total_amount || 0), 0);
+  const totalPaid  = logs.reduce((s, l) => s + (l.paid_amount || l.total_amount || 0), 0);
+  const totalDebt  = logs.reduce((s, l) => s + (l.remaining_debt || 0), 0);
 
-// ✅ صحيح
-const modal = document.createElement('div');
-modal.id = 'salesLogMO';
-modal.className = 'sales-log-modal';
-
+  const modal = document.createElement('div');
+  modal.id = 'salesLogMO';
+  modal.className = 'sales-log-modal';
 
   modal.innerHTML = `
     <div class="sales-log-inner">
-
-      <!-- الخط الأزرق -->
       <div style="height:3px;background:linear-gradient(90deg,
         transparent,#60a5fa 30%,#93c5fd 50%,#60a5fa 70%,transparent);
         flex-shrink:0;"></div>
@@ -34713,11 +34220,9 @@ modal.className = 'sales-log-modal';
         <div style="display:flex;align-items:center;gap:11px;min-width:0;">
           ${productImg ? `
           <img src="${productImg}"
-               style="width:46px;height:36px;object-fit:cover;
-                      border-radius:8px;border:1px solid rgba(255,255,255,0.08);
-                      flex-shrink:0;"
-               draggable="false"
-               onerror="this.style.display='none'"/>` : `
+               style="width:46px;height:36px;object-fit:cover;border-radius:8px;
+                      border:1px solid rgba(255,255,255,0.08);flex-shrink:0;"
+               draggable="false" onerror="this.style.display='none'"/>` : `
           <div style="width:46px;height:36px;border-radius:8px;flex-shrink:0;
                background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);
                display:flex;align-items:center;justify-content:center;
@@ -34730,8 +34235,7 @@ modal.className = 'sales-log-modal';
               SATIŞ HAREKETLERİ
             </div>
             <div style="font-size:14px;font-weight:900;color:#fff;
-                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                 max-width:200px;">
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">
               ${productTitle}
             </div>
           </div>
@@ -34747,174 +34251,257 @@ modal.className = 'sales-log-modal';
         </button>
       </div>
 
-      <!-- ملخص الإحصائيات -->
-      <div style="
-        display:grid;grid-template-columns:repeat(3,1fr);
-        gap:0;border-bottom:1px solid rgba(255,255,255,0.05);
-        flex-shrink:0;">
+      <!-- إحصائيات مالية -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);
+           gap:0;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
         ${[
-          { icon:'fa-receipt',    color:'#60a5fa', val:logs.length,                              lbl:'İşlem Sayısı'  },
-          { icon:'fa-boxes',      color:'#4ade80', val:totalSoldQ,                               lbl:'Toplam Satılan'},
-          { icon:'fa-lira-sign',  color:'#c9a84c', val:Number(totalRev).toLocaleString('tr-TR')+'₺', lbl:'Toplam Gelir'  },
+          { icon:'fa-receipt',      color:'#60a5fa', val:logs.length,
+            lbl:'İşlem' },
+          { icon:'fa-boxes',        color:'#4ade80', val:totalSoldQ,
+            lbl:'Satılan' },
+          { icon:'fa-check-circle', color:'#c9a84c',
+            val:Number(totalPaid).toLocaleString('tr-TR')+'₺', lbl:'Tahsil' },
+          { icon:'fa-clock',        color:'#ef4444',
+            val:Number(totalDebt).toLocaleString('tr-TR')+'₺', lbl:'Kalan Borç' },
         ].map(s => `
-          <div style="padding:12px 8px;text-align:center;
+          <div style="padding:10px 6px;text-align:center;
                border-right:1px solid rgba(255,255,255,0.05);">
-            <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
-                 color:${s.color};line-height:1;margin-bottom:3px;">
-              ${s.val}
-            </div>
+            <div style="font-size:clamp(11px,3vw,14px);font-weight:900;
+                 color:${s.color};line-height:1;margin-bottom:3px;">${s.val}</div>
             <div style="font-size:8px;color:rgba(255,255,255,0.25);
-                 text-transform:uppercase;letter-spacing:0.8px;">
-              ${s.lbl}
-            </div>
+                 text-transform:uppercase;letter-spacing:0.8px;">${s.lbl}</div>
           </div>`).join('')}
       </div>
 
-      <!-- قائمة السجلات -->
+      <!-- قائمة الفواتير -->
       <div style="flex:1;overflow-y:auto;padding:12px 14px 20px;
-           display:flex;flex-direction:column;gap:8px;">
+           display:flex;flex-direction:column;gap:10px;">
 
         ${logs.length === 0 ? `
-        <div style="text-align:center;padding:50px 20px;
-             color:rgba(255,255,255,0.15);">
-          <i class="fas fa-chart-bar"
+        <div style="text-align:center;padding:50px 20px;color:rgba(255,255,255,0.15);">
+          <i class="fas fa-file-invoice"
              style="font-size:36px;display:block;margin-bottom:12px;
                     color:rgba(96,165,250,0.1);"></i>
-          <p style="font-size:12px;letter-spacing:1.5px;">
-            Henüz satış hareketi yok
-          </p>
+          <p style="font-size:12px;letter-spacing:1.5px;">Henüz satış hareketi yok</p>
         </div>` :
 
         logs.map(log => {
-          const soldDate = new Date(log.sold_at);
-          const dateStr  = soldDate.toLocaleDateString('tr-TR', {
-            day:'2-digit', month:'short', year:'numeric'
-          });
-          const timeStr  = soldDate.toLocaleTimeString('tr-TR', {
-            hour:'2-digit', minute:'2-digit'
-          });
-          const initials = (log.buyer_name || '?')
-            .split(' ')
-            .slice(0,2)
-            .map(w => w[0]?.toUpperCase() || '')
-            .join('');
+          const soldDate    = new Date(log.sold_at);
+          const dateStr     = soldDate.toLocaleDateString('tr-TR',
+            { day:'2-digit', month:'short', year:'numeric' });
+          const timeStr     = soldDate.toLocaleTimeString('tr-TR',
+            { hour:'2-digit', minute:'2-digit' });
+          const initials    = (log.buyer_name || '?')
+            .split(' ').slice(0,2).map(w => w[0]?.toUpperCase() || '').join('');
+
+          /* استخراج بيانات الدفع */
+          let paidAmt   = log.paid_amount   || log.total_amount || 0;
+          let debtAmt   = log.remaining_debt || 0;
+          let invNum    = log.invoice_number || '';
+          let buyerAddr = log.buyer_address  || '';
+
+          /* استخراج من الملاحظة إذا كانت مخزنة هناك */
+          if (!invNum && log.notes) {
+            const m = log.notes.match(/\[([A-Z0-9\-]+)\]/);
+            if (m) invNum = m[1];
+          }
+          if (!debtAmt && log.notes) {
+            const m = log.notes.match(/Kalan:(\d+(?:\.\d+)?)₺/);
+            if (m) debtAmt = parseFloat(m[1]);
+          }
+          if (!paidAmt && log.notes) {
+            const m = log.notes.match(/Peşinat:(\d+(?:\.\d+)?)₺/);
+            if (m) paidAmt = parseFloat(m[1]);
+          }
+
+          const hasDebt = debtAmt > 0;
 
           return `
-            <div class="sale-log-card" id="salelog-${log.id}">
+            <div class="sale-log-card" id="salelog-${log.id}"
+                 style="border-left:3px solid ${hasDebt ? '#ef4444' : '#4ade80'};">
 
-              <!-- الأفاتار -->
-              <div class="sale-log-avatar">${initials}</div>
+              <!-- الصف الرئيسي -->
+              <div style="display:flex;align-items:flex-start;gap:10px;width:100%;">
+                <div class="sale-log-avatar">${initials}</div>
 
-              <!-- التفاصيل -->
-              <div style="flex:1;min-width:0;">
-                <div style="display:flex;align-items:center;
-                     justify-content:space-between;gap:8px;margin-bottom:4px;">
-                  <div style="font-size:clamp(12px,3.5vw,14px);
-                       font-weight:900;color:#fff;
-                       white-space:nowrap;overflow:hidden;
-                       text-overflow:ellipsis;">
-                    ${log.buyer_name}
+                <div style="flex:1;min-width:0;">
+                  <!-- الاسم + الإجمالي -->
+                  <div style="display:flex;align-items:center;
+                       justify-content:space-between;gap:8px;margin-bottom:5px;">
+                    <div style="min-width:0;">
+                      <div style="font-size:clamp(12px,3.5vw,14px);
+                           font-weight:900;color:#fff;
+                           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        ${log.buyer_name}
+                      </div>
+                      ${log.buyer_phone ? `
+                      <a href="tel:${log.buyer_phone}" style="
+                        font-size:10px;color:rgba(96,165,250,0.7);
+                        text-decoration:none;display:flex;align-items:center;gap:3px;
+                        margin-top:2px;">
+                        <i class="fas fa-phone" style="font-size:8px;"></i>
+                        ${log.buyer_phone}
+                      </a>` : ''}
+                      ${buyerAddr ? `
+                      <div style="font-size:10px;color:rgba(255,255,255,0.3);
+                           margin-top:1px;display:flex;align-items:center;gap:3px;">
+                        <i class="fas fa-map-marker-alt" style="font-size:8px;color:rgba(201,168,76,0.4);"></i>
+                        ${buyerAddr}
+                      </div>` : ''}
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;">
+                      <div style="font-size:clamp(14px,3.5vw,16px);font-weight:900;
+                           background:linear-gradient(135deg,#c9a84c,#f0d080);
+                           -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                           background-clip:text;">
+                        ${Number(log.total_amount).toLocaleString('tr-TR')} ₺
+                      </div>
+                      <div style="font-size:9px;color:rgba(255,255,255,0.25);margin-top:1px;">
+                        ${log.qty_sold} × ${Number(log.sale_price).toLocaleString('tr-TR')} ₺
+                      </div>
+                    </div>
                   </div>
-                  <div style="font-size:clamp(13px,3.5vw,15px);
-                       font-weight:900;flex-shrink:0;
-                       background:linear-gradient(135deg,#c9a84c,#f0d080);
-                       -webkit-background-clip:text;
-                       -webkit-text-fill-color:transparent;
-                       background-clip:text;">
-                    ${log.total_amount > 0
-                      ? Number(log.total_amount).toLocaleString('tr-TR') + ' ₺'
-                      : '—'}
+
+                  <!-- شارات الكمية والفاتورة -->
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+                    <span style="padding:2px 8px;border-radius:50px;
+                         background:rgba(74,222,128,0.1);
+                         border:1px solid rgba(74,222,128,0.2);
+                         font-size:9px;font-weight:700;color:#4ade80;
+                         font-family:'Montserrat',sans-serif;">
+                      <i class="fas fa-boxes" style="margin-right:3px;"></i>
+                      ${log.qty_sold} adet
+                    </span>
+                    ${invNum ? `
+                    <span style="padding:2px 8px;border-radius:50px;
+                         background:rgba(96,165,250,0.08);
+                         border:1px solid rgba(96,165,250,0.15);
+                         font-size:9px;font-weight:700;color:#60a5fa;
+                         font-family:'Montserrat',sans-serif;">
+                      <i class="fas fa-file-invoice" style="margin-right:3px;"></i>
+                      ${invNum}
+                    </span>` : ''}
                   </div>
-                </div>
 
-                <div style="display:flex;align-items:center;
-                     gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-                  <!-- الكمية -->
-                  <span style="
-                    padding:2px 8px;border-radius:50px;
-                    background:rgba(74,222,128,0.1);
-                    border:1px solid rgba(74,222,128,0.2);
-                    font-size:9px;font-weight:700;color:#4ade80;
-                    font-family:'Montserrat',sans-serif;">
-                    <i class="fas fa-boxes" style="margin-right:3px;"></i>
-                    ${log.qty_sold} adet
-                  </span>
-                  <!-- سعر الوحدة -->
-                  ${log.sale_price > 0 ? `
-                  <span style="
-                    padding:2px 8px;border-radius:50px;
-                    background:rgba(201,168,76,0.08);
-                    border:1px solid rgba(201,168,76,0.15);
-                    font-size:9px;font-weight:700;
-                    color:rgba(201,168,76,0.7);
-                    font-family:'Montserrat',sans-serif;">
-                    ${Number(log.sale_price).toLocaleString('tr-TR')} ₺/adet
-                  </span>` : ''}
-                  <!-- الهاتف -->
-                  ${log.buyer_phone ? `
-                  <a href="tel:${log.buyer_phone}" style="
-                    padding:2px 8px;border-radius:50px;
-                    background:rgba(96,165,250,0.08);
-                    border:1px solid rgba(96,165,250,0.15);
-                    font-size:9px;font-weight:700;color:#60a5fa;
-                    font-family:'Montserrat',sans-serif;
-                    text-decoration:none;display:inline-flex;
-                    align-items:center;gap:3px;">
-                    <i class="fas fa-phone"></i>
-                    ${log.buyer_phone}
-                  </a>` : ''}
-                </div>
+                  <!-- شريط الدفع -->
+                  <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+                       border-radius:9px;padding:9px 11px;margin-bottom:7px;">
+                    <div style="display:flex;justify-content:space-between;
+                         align-items:center;margin-bottom:6px;">
+                      <span style="font-size:9px;color:rgba(255,255,255,0.3);">
+                        Tahsil Edilen
+                      </span>
+                      <span style="font-size:12px;font-weight:900;color:#4ade80;">
+                        ${Number(paidAmt).toLocaleString('tr-TR')} ₺
+                      </span>
+                    </div>
+                    <!-- شريط التقدم -->
+                    <div style="height:5px;background:rgba(255,255,255,0.06);
+                         border-radius:5px;overflow:hidden;margin-bottom:6px;">
+                      <div style="height:100%;
+                           width:${log.total_amount > 0
+                             ? Math.min(100, Math.round((paidAmt / log.total_amount) * 100))
+                             : 0}%;
+                           background:${hasDebt
+                             ? 'linear-gradient(90deg,#4ade80,#fbbf24)'
+                             : '#4ade80'};
+                           border-radius:5px;transition:width 0.5s ease;"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                      <span style="font-size:9px;color:rgba(255,255,255,0.3);">
+                        Kalan Borç
+                      </span>
+                      <span style="font-size:12px;font-weight:900;
+                           color:${hasDebt ? '#ef4444' : '#4ade80'};">
+                        ${Number(debtAmt).toLocaleString('tr-TR')} ₺
+                        ${!hasDebt ? '<i class="fas fa-check-circle" style="font-size:10px;"></i>' : ''}
+                      </span>
+                    </div>
+                  </div>
 
-                <!-- التاريخ + الملاحظة -->
-                <div style="display:flex;align-items:center;
-                     justify-content:space-between;gap:6px;flex-wrap:wrap;">
-                  <span style="font-size:9px;color:rgba(255,255,255,0.2);
-                       display:flex;align-items:center;gap:4px;">
-                    <i class="fas fa-clock"
-                       style="color:rgba(255,255,255,0.1);"></i>
-                    ${dateStr} — ${timeStr}
-                  </span>
-                  <!-- زر حذف السجل -->
-                  <button onclick="deleteSaleLogMO(${log.id},${itemId})"
-                    style="
-                      padding:2px 8px;border-radius:6px;
-                      background:rgba(239,68,68,0.06);
-                      border:1px solid rgba(239,68,68,0.12);
-                      color:rgba(239,68,68,0.4);font-size:9px;
-                      font-family:'Montserrat',sans-serif;
-                      cursor:pointer;transition:all 0.2s;"
-                    onmouseover="this.style.background='rgba(239,68,68,0.15)';
-                                 this.style.color='#ef4444'"
-                    onmouseout="this.style.background='rgba(239,68,68,0.06)';
-                                this.style.color='rgba(239,68,68,0.4)'">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
-                </div>
+                  <!-- أزرار الإجراءات -->
+                  <div style="display:flex;align-items:center;
+                       justify-content:space-between;gap:6px;flex-wrap:wrap;">
+                    <span style="font-size:9px;color:rgba(255,255,255,0.2);
+                         display:flex;align-items:center;gap:4px;">
+                      <i class="fas fa-clock" style="color:rgba(255,255,255,0.1);"></i>
+                      ${dateStr} — ${timeStr}
+                    </span>
+                    <div style="display:flex;gap:5px;">
+                      <!-- إضافة دفعة -->
+                      ${hasDebt ? `
+                      <button onclick="openAddPaymentMO(${log.id},${itemId},${debtAmt})"
+                        style="padding:4px 9px;border-radius:6px;
+                        background:rgba(74,222,128,0.1);
+                        border:1px solid rgba(74,222,128,0.25);
+                        color:#4ade80;font-size:9px;font-weight:700;
+                        font-family:'Montserrat',sans-serif;cursor:pointer;
+                        transition:all 0.2s;display:flex;align-items:center;gap:4px;"
+                        onmouseover="this.style.background='rgba(74,222,128,0.2)'"
+                        onmouseout="this.style.background='rgba(74,222,128,0.1)'">
+                        <i class="fas fa-plus"></i> Ödeme Ekle
+                      </button>` : ''}
+                      <!-- تعديل -->
+                      <button onclick="openEditSaleMO(${log.id},${itemId})"
+                        style="padding:4px 9px;border-radius:6px;
+                        background:rgba(96,165,250,0.08);
+                        border:1px solid rgba(96,165,250,0.2);
+                        color:#60a5fa;font-size:9px;font-weight:700;
+                        font-family:'Montserrat',sans-serif;cursor:pointer;
+                        transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(96,165,250,0.18)'"
+                        onmouseout="this.style.background='rgba(96,165,250,0.08)'">
+                        <i class="fas fa-edit"></i>
+                      </button>
+                      <!-- طباعة -->
+                      <button onclick="openInvoicePrintMO(${JSON.stringify(log).replace(/"/g,'&quot;')},null)"
+                        style="padding:4px 9px;border-radius:6px;
+                        background:rgba(167,139,250,0.08);
+                        border:1px solid rgba(167,139,250,0.2);
+                        color:#a78bfa;font-size:9px;font-weight:700;
+                        font-family:'Montserrat',sans-serif;cursor:pointer;
+                        transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(167,139,250,0.18)'"
+                        onmouseout="this.style.background='rgba(167,139,250,0.08)'">
+                        <i class="fas fa-print"></i>
+                      </button>
+                      <!-- حذف -->
+                      <button onclick="deleteSaleLogMO(${log.id},${itemId})"
+                        style="padding:4px 9px;border-radius:6px;
+                        background:rgba(239,68,68,0.06);
+                        border:1px solid rgba(239,68,68,0.12);
+                        color:rgba(239,68,68,0.4);font-size:9px;
+                        font-family:'Montserrat',sans-serif;cursor:pointer;
+                        transition:all 0.2s;"
+                        onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#ef4444'"
+                        onmouseout="this.style.background='rgba(239,68,68,0.06)';this.style.color='rgba(239,68,68,0.4)'">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+                  </div>
 
-                <!-- الملاحظة -->
-                ${log.notes ? `
-                <div style="
-                  margin-top:6px;padding:6px 10px;
-                  background:rgba(255,255,255,0.025);
-                  border:1px solid rgba(255,255,255,0.05);
-                  border-radius:7px;
-                  font-size:10px;color:rgba(255,255,255,0.35);
-                  font-style:italic;line-height:1.5;">
-                  <i class="fas fa-quote-left"
-                     style="font-size:8px;margin-right:4px;
-                            color:rgba(255,255,255,0.15);"></i>
-                  ${log.notes}
-                </div>` : ''}
+                  <!-- الملاحظة -->
+                  ${log.notes && !log.notes.startsWith('[') ? `
+                  <div style="margin-top:6px;padding:6px 10px;
+                       background:rgba(255,255,255,0.025);
+                       border:1px solid rgba(255,255,255,0.05);
+                       border-radius:7px;font-size:10px;
+                       color:rgba(255,255,255,0.35);font-style:italic;line-height:1.5;">
+                    <i class="fas fa-quote-left"
+                       style="font-size:8px;margin-right:4px;
+                              color:rgba(255,255,255,0.15);"></i>
+                    ${log.notes}
+                  </div>` : ''}
+                </div>
               </div>
             </div>`;
         }).join('')}
       </div>
 
-      <!-- زر إضافة بيع جديد من داخل السجل -->
-      ${item && item.order_status === 'delivered' &&
-        ((item.qty_purchased||0) - (item.qty_sold||0)) > 0 ? `
-      <div style="padding:12px 14px;border-top:1px solid rgba(255,255,255,0.05);
-           flex-shrink:0;">
+      <!-- زر إضافة بيع جديد -->
+      ${item && (item.order_status === 'delivered' || item.order_status === 'ready') &&
+        ((item.qty_purchased || 0) - (item.qty_sold || 0)) > 0 ? `
+      <div style="padding:12px 14px;border-top:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
         <button onclick="document.getElementById('salesLogMO').remove();
                          openSaleModalMO(${itemId});" style="
           width:100%;padding:13px;border-radius:11px;border:none;
@@ -34925,278 +34512,156 @@ modal.className = 'sales-log-modal';
           display:flex;align-items:center;justify-content:center;gap:8px;"
           onmouseover="this.style.transform='translateY(-2px)'"
           onmouseout="this.style.transform=''">
-          <i class="fas fa-plus"></i> YENİ SATIŞ EKLE
+          <i class="fas fa-file-invoice"></i> YENİ FATURA OLUŞTUR
         </button>
       </div>` : ''}
-
     </div>`;
 
   document.body.appendChild(modal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.remove();
-  });
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
 /* ══════════════════════════════════════════════════════════════
-   حذف سجل بيع واحد
+   إضافة دفعة جديدة
 ══════════════════════════════════════════════════════════════ */
-async function deleteSaleLogMO(logId, itemId) {
-  const ok = await showChatConfirm('Bu satış kaydı silinsin mi?\nStok geri yüklenecek.');
-  if (!ok) return;
-
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  /* جلب السجل أولاً لمعرفة الكمية */
-  const { data: logRow } = await sb
-    .from('user_sales_log')
-    .select('qty_sold')
-    .eq('id', logId)
-    .single();
-
-  if (!logRow) { showInvToast('Kayıt bulunamadı!', 'error'); return; }
-
-  /* حذف السجل */
-  await sb.from('user_sales_log').delete().eq('id', logId);
-
-  /* إعادة الكمية للمخزون */
-  const item    = _myOrdersData.find(i => i.id === itemId);
-  if (item) {
-    const newSold = Math.max(0, (item.qty_sold||0) - (logRow.qty_sold||0));
-    await sb.from('user_orders_inventory')
-      .update({ qty_sold: newSold, updated_at: new Date().toISOString() })
-      .eq('id', itemId);
-    item.qty_sold = newSold;
-  }
-
-  /* تحديث الـ cache */
-  if (_salesLogCache[itemId]) {
-    _salesLogCache[itemId] = _salesLogCache[itemId].filter(l => l.id !== logId);
-  }
-
-  /* إزالة البطاقة بتأثير */
-  const logCard = document.getElementById('salelog-' + logId);
-  if (logCard) {
-    logCard.style.transition = 'all 0.3s ease';
-    logCard.style.opacity    = '0';
-    logCard.style.transform  = 'scale(0.95)';
-    setTimeout(() => logCard.remove(), 300);
-  }
-
-  /* إعادة رسم بطاقة المنتج */
-  const card = document.getElementById('myitem-' + itemId);
-  if (card && item) {
-    const w = document.createElement('div');
-    w.innerHTML = buildMyItemCard(item);
-    card.replaceWith(w.firstElementChild);
-  }
-
-  renderMyOrdersStats();
-  showInvToast('Kayıt silindi, stok güncellendi ✓', 'success');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   فلترة المنتجات
-══════════════════════════════════════════════════════════════ */
-function filterMyOrders(searchVal) {
-  const q = (searchVal !== undefined
-    ? searchVal
-    : (document.getElementById('myOrdersSearch')?.value || '')
-  ).toLowerCase().trim();
-
-  const filter = document.getElementById('myOrdersFilter')?.value || 'all';
-
-  const filtered = _myOrdersData.filter(item => {
-    const matchQ = !q
-      || item.product_title.toLowerCase().includes(q)
-      || (item.product_cat||'').toLowerCase().includes(q)
-      || (item.order_number||'').toLowerCase().includes(q);
-
-    const remain = (item.qty_purchased||0) - (item.qty_sold||0);
-    const matchF =
-      filter === 'all'          ? true :
-      filter === 'in_stock'     ? remain > 0 :
-      filter === 'sold_out'     ? remain <= 0 :
-      filter === 'delivered'    ? item.order_status === 'delivered' :
-      filter === 'manufacturing'? item.order_status === 'manufacturing' :
-      filter === 'ready'        ? item.order_status === 'ready' :
-      filter === 'pending'      ? item.order_status === 'pending' :
-      filter === 'cancelled'    ? item.order_status === 'cancelled' :
-      true;
-
-    return matchQ && matchF;
-  });
-
-  renderMyOrdersList(filtered);
-}
-
-/* ══════════════════════════════════════════════════════════════
-   إخفاء منتج
-══════════════════════════════════════════════════════════════ */
-async function hideMyItemMO(itemId) {
-  const ok = await showChatConfirm('Bu ürün listeden gizlensin mi?');
-  if (!ok) return;
-
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  await sb.from('user_orders_inventory')
-    .update({ is_hidden: true, updated_at: new Date().toISOString() })
-    .eq('id', itemId);
-
-  _myOrdersData = _myOrdersData.filter(i => i.id !== itemId);
-
-  const card = document.getElementById('myitem-' + itemId);
-  if (card) {
-    card.style.transition = 'all 0.3s ease';
-    card.style.opacity    = '0';
-    card.style.transform  = 'scale(0.95)';
-    setTimeout(() => { card.remove(); renderMyOrdersStats(); }, 300);
-  }
-
-  showInvToast('Ürün gizlendi ✓', 'info');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   نافذة تعديل السعر
-══════════════════════════════════════════════════════════════ */
-function openPriceEditorMO(itemId) {
-  const item = _myOrdersData.find(i => i.id === itemId);
-  if (!item) return;
-
-  document.getElementById('priceEditorMO')?.remove();
+function openAddPaymentMO(logId, itemId, currentDebt) {
+  document.getElementById('addPaymentModal')?.remove();
   const modal = document.createElement('div');
-  modal.id = 'priceEditorMO';
-  modal.className = 'price-modal-overlay';
+  modal.id = 'addPaymentModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9600;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);backdrop-filter:blur(18px);padding:16px;`;
 
   modal.innerHTML = `
-    <div class="price-modal-box">
-      <div class="price-modal-handle"></div>
+    <div style="width:100%;max-width:400px;
+         background:linear-gradient(145deg,#0a0f0a,#0f1a0f);
+         border:1px solid rgba(74,222,128,0.25);border-radius:20px;overflow:hidden;
+         box-shadow:0 40px 80px rgba(0,0,0,0.9);
+         animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;">
       <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+        transparent,#4ade80 30%,#86efac 50%,#4ade80 70%,transparent);"></div>
 
-      <div style="padding:15px 18px 12px;display:flex;align-items:center;
+      <div style="padding:18px 20px 14px;display:flex;align-items:center;
            justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;align-items:center;gap:11px;min-width:0;">
-          <div style="width:40px;height:40px;border-radius:11px;flex-shrink:0;
-               background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:42px;height:42px;border-radius:12px;
+               background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);
                display:flex;align-items:center;justify-content:center;
-               color:#c9a84c;font-size:17px;">
-            <i class="fas fa-tag"></i>
+               color:#4ade80;font-size:17px;">
+            <i class="fas fa-money-bill-wave"></i>
           </div>
-          <div style="min-width:0;">
-            <div style="font-size:8px;letter-spacing:3px;
-                 color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:2px;">
-              FİYAT DÜZENLE
-            </div>
-            <div style="font-size:14px;font-weight:900;color:#fff;
-                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                 max-width:200px;">
-              ${item.product_title}
-            </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;color:rgba(74,222,128,0.55);
+                 text-transform:uppercase;margin-bottom:3px;">ÖDEME EKLE</div>
+            <div style="font-size:16px;font-weight:900;color:#fff;">Yeni Ödeme Kaydı</div>
           </div>
         </div>
-        <button onclick="document.getElementById('priceEditorMO').remove()"
-          style="width:32px;height:32px;border-radius:8px;flex-shrink:0;
-          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+        <div onclick="document.getElementById('addPaymentModal').remove()" style="
+          width:32px;height:32px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);border-radius:8px;
           color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
           display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
           onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
           onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
           <i class="fas fa-times"></i>
-        </button>
+        </div>
       </div>
 
-      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;">
+      <div style="padding:18px 20px 22px;display:flex;flex-direction:column;gap:14px;">
 
-        <!-- السعر الأساسي -->
-        <div style="
-          background:rgba(255,255,255,0.025);
-          border:1px solid rgba(255,255,255,0.06);
-          border-radius:11px;padding:12px 14px;
-          display:flex;align-items:center;
-          justify-content:space-between;flex-wrap:wrap;gap:8px;">
-          <div>
-            <div style="font-size:9px;letter-spacing:1.5px;
-                 color:rgba(255,255,255,0.3);text-transform:uppercase;margin-bottom:3px;">
-              WOW ALIŞ FİYATI
-            </div>
-            <div style="font-size:clamp(15px,4vw,18px);font-weight:900;
-                 color:rgba(255,255,255,0.6);">
-              ${item.base_price
-                ? Number(item.base_price).toLocaleString('tr-TR') + ' ₺'
-                : '—'}
-            </div>
-          </div>
-          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;">
-            <span style="font-size:10px;color:rgba(255,255,255,0.3);">Göster</span>
-            <input type="checkbox" id="moShowBase"
-              ${item.show_base_price ? 'checked' : ''}
-              style="width:18px;height:18px;cursor:pointer;accent-color:#c9a84c;"/>
-          </label>
+        <!-- الدين الحالي -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+             padding:11px 14px;border-radius:11px;
+             background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);">
+          <span style="font-size:11px;color:rgba(255,255,255,0.4);
+               display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-clock" style="color:#ef4444;"></i>
+            Mevcut Kalan Borç
+          </span>
+          <span style="font-size:18px;font-weight:900;color:#ef4444;">
+            ${Number(currentDebt).toLocaleString('tr-TR')} ₺
+          </span>
         </div>
 
-        <!-- سعر المستخدم -->
+        <!-- مبلغ الدفعة -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;
-               color:rgba(255,255,255,0.3);text-transform:uppercase;
-               font-weight:700;margin-bottom:7px;
-               display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-tag" style="color:rgba(201,168,76,0.5);"></i>
-            MÜŞTERİ SATIŞ FİYATINIZ
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-lira-sign" style="color:rgba(74,222,128,0.5);margin-right:4px;"></i>
+            ÖDEME MİKTARI *
           </label>
           <div style="position:relative;">
-            <input type="number" id="moUserPrice"
-              value="${item.user_price || ''}"
-              placeholder="Müşterilerinize satacağınız fiyat"
+            <input type="number" id="newPaymentAmount"
+              placeholder="0"
+              max="${currentDebt}"
               inputmode="decimal"
-              style="
-                width:100%;padding:13px 46px 13px 14px;
-                background:rgba(255,255,255,0.04);
-                border:1.5px solid rgba(201,168,76,0.2);
-                border-radius:11px;color:#fff;
-                font-family:'Montserrat',sans-serif;
-                font-size:clamp(14px,4vw,16px);font-weight:700;
-                outline:none;transition:all 0.3s;
-                -webkit-user-select:text;user-select:text;
-                box-sizing:border-box;"
-              onfocus="this.style.borderColor='#c9a84c';
-                       this.style.boxShadow='0 0 20px rgba(201,168,76,0.12)';"
-              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
-                          this.style.boxShadow='none';"/>
+              oninput="updateNewPaymentPreview(${currentDebt})"
+              style="width:100%;padding:13px 46px 13px 14px;
+              background:rgba(74,222,128,0.05);
+              border:1.5px solid rgba(74,222,128,0.25);
+              border-radius:11px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:clamp(15px,4vw,18px);font-weight:700;
+              outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;
+              box-sizing:border-box;"
+              onfocus="this.style.borderColor='#4ade80'"
+              onfocusout="this.style.borderColor='rgba(74,222,128,0.25)'"/>
             <span style="position:absolute;right:14px;top:50%;
                  transform:translateY(-50%);font-size:15px;font-weight:900;
-                 color:rgba(201,168,76,0.6);pointer-events:none;">₺</span>
+                 color:rgba(74,222,128,0.6);pointer-events:none;">₺</span>
           </div>
-          <label style="display:flex;align-items:center;gap:7px;
-               margin-top:8px;cursor:pointer;">
-            <input type="checkbox" id="moShowUser"
-              ${item.show_user_price ? 'checked' : ''}
-              style="width:16px;height:16px;cursor:pointer;accent-color:#c9a84c;"/>
-            <span style="font-size:10px;color:rgba(255,255,255,0.3);">
-              Baskıda göster
-            </span>
-          </label>
+          <!-- زر الدفع الكامل -->
+          <button onclick="document.getElementById('newPaymentAmount').value='${currentDebt}';
+                           updateNewPaymentPreview(${currentDebt})" style="
+            width:100%;margin-top:7px;padding:9px;border-radius:9px;
+            border:1px solid rgba(74,222,128,0.2);
+            background:rgba(74,222,128,0.06);
+            color:#4ade80;font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:700;letter-spacing:1px;cursor:pointer;
+            transition:all 0.25s;display:flex;align-items:center;justify-content:center;gap:6px;"
+            onmouseover="this.style.background='rgba(74,222,128,0.14)'"
+            onmouseout="this.style.background='rgba(74,222,128,0.06)'">
+            <i class="fas fa-check-double"></i> Tüm Borcu Öde (${Number(currentDebt).toLocaleString('tr-TR')} ₺)
+          </button>
         </div>
 
-        <!-- هامش الربح -->
-        <div style="
-          background:rgba(74,222,128,0.06);
-          border:1px solid rgba(74,222,128,0.15);
-          border-radius:10px;padding:11px 14px;
-          display:flex;align-items:center;justify-content:space-between;">
-          <span style="font-size:10px;color:rgba(255,255,255,0.3);
-               display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-chart-line" style="color:#4ade80;"></i>
-            Kâr Marjı
+        <!-- معاينة الباقي بعد الدفعة -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+             padding:11px 14px;border-radius:11px;
+             background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:11px;color:rgba(255,255,255,0.4);">
+            Ödeme Sonrası Kalan
           </span>
-          <span id="moProfitText"
-                style="font-size:13px;font-weight:900;color:#4ade80;">—</span>
+          <span id="newPaymentRemaining" style="font-size:16px;font-weight:900;color:#4ade80;">
+            ${Number(currentDebt).toLocaleString('tr-TR')} ₺
+          </span>
+        </div>
+
+        <!-- ملاحظة الدفعة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            NOT (İsteğe Bağlı)
+          </label>
+          <input type="text" id="newPaymentNote"
+            placeholder="Nakit / Havale / EFT vb..."
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(74,222,128,0.15);
+            border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;
+            box-sizing:border-box;"
+            onfocus="this.style.borderColor='#4ade80'"
+            onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"/>
         </div>
 
         <!-- أزرار -->
         <div style="display:flex;gap:10px;">
-          <button onclick="document.getElementById('priceEditorMO').remove()" style="
+          <button onclick="document.getElementById('addPaymentModal').remove()" style="
             flex:1;padding:13px;border-radius:11px;
             border:1px solid rgba(255,255,255,0.1);
             background:rgba(255,255,255,0.04);
@@ -35208,291 +34673,354 @@ function openPriceEditorMO(itemId) {
             onmouseout="this.style.background='rgba(255,255,255,0.04)'">
             İPTAL
           </button>
-          <button onclick="savePriceEditorMO(${itemId})" style="
+          <button onclick="saveNewPaymentMO(${logId},${itemId},${currentDebt})" style="
             flex:2;padding:13px;border-radius:11px;border:none;
-            background:linear-gradient(135deg,#c9a84c,#f0d080);
-            color:#0a0a0a;font-family:'Montserrat',sans-serif;
+            background:linear-gradient(135deg,#16a34a,#4ade80);
+            color:#fff;font-family:'Montserrat',sans-serif;
             font-size:11px;font-weight:900;letter-spacing:2px;
             cursor:pointer;transition:all 0.25s;
             display:flex;align-items:center;justify-content:center;gap:7px;"
             onmouseover="this.style.transform='translateY(-2px)'"
             onmouseout="this.style.transform=''">
-            <i class="fas fa-save"></i> KAYDET
+            <i class="fas fa-check"></i> ÖDEME KAYDET
           </button>
         </div>
       </div>
     </div>`;
 
   document.body.appendChild(modal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.remove();
-  });
-
-  const inp = document.getElementById('moUserPrice');
-  if (inp) {
-    const calcProfit = () => {
-      const up = parseFloat(inp.value) || 0;
-      const bp = item.base_price || 0;
-      const el = document.getElementById('moProfitText');
-      if (!el) return;
-      if (bp > 0 && up > 0) {
-        const diff = up - bp;
-        const pct  = ((diff / bp) * 100).toFixed(1);
-        el.textContent = `${diff >= 0 ? '+' : ''}${Number(diff).toLocaleString('tr-TR')} ₺ (%${pct})`;
-        el.style.color = diff >= 0 ? '#4ade80' : '#ef4444';
-      } else {
-        el.textContent = '—';
-        el.style.color = '#4ade80';
-      }
-    };
-    inp.addEventListener('input', calcProfit);
-    calcProfit();
-    setTimeout(() => inp.focus(), 300);
-  }
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  setTimeout(() => document.getElementById('newPaymentAmount')?.focus(), 300);
 }
 
-/* ── حفظ السعر ── */
-async function savePriceEditorMO(itemId) {
-  const userPrice = parseFloat(document.getElementById('moUserPrice')?.value) || null;
-  const showBase  = document.getElementById('moShowBase')?.checked ?? true;
-  const showUser  = document.getElementById('moShowUser')?.checked ?? true;
+/* ── معاينة الباقي بعد الدفعة ── */
+function updateNewPaymentPreview(currentDebt) {
+  const amt = parseFloat(document.getElementById('newPaymentAmount')?.value) || 0;
+  const rem = Math.max(0, currentDebt - amt);
+  const el  = document.getElementById('newPaymentRemaining');
+  if (!el) return;
+  el.textContent = Number(rem).toLocaleString('tr-TR') + ' ₺';
+  el.style.color = rem <= 0 ? '#4ade80' : rem < currentDebt ? '#fbbf24' : '#ef4444';
+}
+
+/* ── حفظ الدفعة الجديدة ── */
+async function saveNewPaymentMO(logId, itemId, currentDebt) {
+  const amount = parseFloat(document.getElementById('newPaymentAmount')?.value) || 0;
+  const note   = document.getElementById('newPaymentNote')?.value.trim() || '';
+
+  if (amount <= 0) {
+    showInvToast('Ödeme miktarı giriniz!', 'error');
+    document.getElementById('newPaymentAmount')?.focus();
+    return;
+  }
+  if (amount > currentDebt) {
+    showInvToast(`Maksimum ${Number(currentDebt).toLocaleString('tr-TR')} ₺ ödenebilir!`, 'error');
+    return;
+  }
 
   const sb = await initSupabase();
   if (!sb) return;
 
-  const { error } = await sb.from('user_orders_inventory')
+  const newDebt = Math.max(0, currentDebt - amount);
+
+  /* تحديث السجل في قاعدة البيانات */
+  const { error } = await sb
+    .from('user_sales_log')
     .update({
-      user_price      : userPrice,
-      show_base_price : showBase,
-      show_user_price : showUser,
-      updated_at      : new Date().toISOString()
+      paid_amount    : (await (async () => {
+        const { data } = await sb.from('user_sales_log')
+          .select('paid_amount').eq('id', logId).single();
+        return (data?.paid_amount || 0) + amount;
+      })()),
+      remaining_debt : newDebt,
+      notes          : note
+        ? `[ÖDEME:${Number(amount).toLocaleString('tr-TR')}₺] ${note}`
+        : undefined
     })
-    .eq('id', itemId);
+    .eq('id', logId);
 
-  if (error) { showInvToast('Kayıt hatası!', 'error'); return; }
+  if (error) {
+    /* Fallback: تحديث الملاحظة فقط إذا الأعمدة غير موجودة */
+    const { data: existing } = await sb
+      .from('user_sales_log')
+      .select('notes')
+      .eq('id', logId)
+      .single();
 
-  const idx = _myOrdersData.findIndex(i => i.id === itemId);
-  if (idx !== -1) {
-    _myOrdersData[idx].user_price      = userPrice;
-    _myOrdersData[idx].show_base_price = showBase;
-    _myOrdersData[idx].show_user_price = showUser;
+    const updatedNotes = (existing?.notes || '') +
+      `\n[${new Date().toLocaleDateString('tr-TR')}] Ödeme: ${Number(amount).toLocaleString('tr-TR')}₺` +
+      ` | Kalan:${Number(newDebt).toLocaleString('tr-TR')}₺` +
+      (note ? ` | ${note}` : '');
+
+    await sb.from('user_sales_log')
+      .update({ notes: updatedNotes })
+      .eq('id', logId);
   }
 
-  document.getElementById('priceEditorMO')?.remove();
-  showInvToast('Fiyat kaydedildi ✓', 'success');
+  /* تحديث الـ cache المحلي */
+  if (_salesLogCache[itemId]) {
+    const idx = _salesLogCache[itemId].findIndex(l => l.id === logId);
+    if (idx !== -1) {
+      _salesLogCache[itemId][idx].remaining_debt = newDebt;
+      _salesLogCache[itemId][idx].paid_amount =
+        (_salesLogCache[itemId][idx].paid_amount || 0) + amount;
+    }
+  }
 
-  const card = document.getElementById('myitem-' + itemId);
-  if (card && idx !== -1) {
-    const w = document.createElement('div');
-    w.innerHTML = buildMyItemCard(_myOrdersData[idx]);
-    card.replaceWith(w.firstElementChild);
+  document.getElementById('addPaymentModal')?.remove();
+  showInvToast(`${Number(amount).toLocaleString('tr-TR')} ₺ ödeme kaydedildi ✓`, 'success');
+
+  /* إعادة فتح سجل الحركات لتحديث العرض */
+  const item = _myOrdersData.find(i => i.id === itemId);
+  if (item) {
+    delete _salesLogCache[itemId];
+    document.getElementById('salesLogMO')?.remove();
+    setTimeout(() => openSalesLogMO(itemId, item.product_title, item.product_img), 300);
   }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   نافذة إعدادات الطباعة
+   تعديل بيانات البيع
 ══════════════════════════════════════════════════════════════ */
-function openMyPrintSettings() {
-  document.getElementById('printSettingsMO')?.remove();
-  const ps = _myPrintSettings;
+async function openEditSaleMO(logId, itemId) {
+  const sb = await initSupabase();
+  if (!sb) return;
 
+  /* جلب بيانات السجل */
+  const { data: log } = await sb
+    .from('user_sales_log')
+    .select('*')
+    .eq('id', logId)
+    .single();
+
+  if (!log) { showInvToast('Kayıt bulunamadı!', 'error'); return; }
+
+  /* استخراج البيانات */
+  let paidAmt   = log.paid_amount   || log.total_amount || 0;
+  let debtAmt   = log.remaining_debt || 0;
+  let buyerAddr = log.buyer_address  || '';
+
+  document.getElementById('editSaleModal')?.remove();
   const modal = document.createElement('div');
-  modal.id = 'printSettingsMO';
-  modal.className = 'price-modal-overlay';
+  modal.id = 'editSaleModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9600;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.88);backdrop-filter:blur(18px);padding:16px;`;
 
   modal.innerHTML = `
-    <div class="price-modal-box" style="max-width:500px;">
-      <div class="price-modal-handle"></div>
+    <div style="width:100%;max-width:460px;max-height:90vh;overflow-y:auto;
+         background:linear-gradient(145deg,#0f0f0f,#161616);
+         border:1px solid rgba(96,165,250,0.25);border-radius:22px;overflow:hidden;
+         box-shadow:0 40px 100px rgba(0,0,0,0.9);
+         animation:devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+         scrollbar-width:thin;">
       <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+        transparent,#60a5fa 30%,#93c5fd 50%,#60a5fa 70%,transparent);"></div>
 
-      <div style="padding:15px 18px 12px;display:flex;align-items:center;
-           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
-        <div style="display:flex;align-items:center;gap:11px;">
-          <div style="width:40px;height:40px;border-radius:11px;flex-shrink:0;
-               background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);
+      <div style="padding:16px 20px 14px;display:flex;align-items:center;
+           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);
+           position:sticky;top:0;background:linear-gradient(145deg,#0f0f0f,#161616);z-index:2;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:42px;height:42px;border-radius:12px;
+               background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.3);
                display:flex;align-items:center;justify-content:center;
-               color:#c9a84c;font-size:17px;">
-            <i class="fas fa-print"></i>
+               color:#60a5fa;font-size:17px;">
+            <i class="fas fa-edit"></i>
           </div>
           <div>
-            <div style="font-size:8px;letter-spacing:3px;
-                 color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:2px;">
-              BASKI AYARLARI
-            </div>
+            <div style="font-size:8px;letter-spacing:3px;color:rgba(96,165,250,0.55);
+                 text-transform:uppercase;margin-bottom:3px;">SATIŞ DÜZENLE</div>
             <div style="font-size:15px;font-weight:900;color:#fff;">
-              Logo & Şirket Bilgileri
+              ${log.buyer_name}
             </div>
           </div>
         </div>
-        <button onclick="document.getElementById('printSettingsMO').remove()"
-          style="width:32px;height:32px;border-radius:8px;flex-shrink:0;
-          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+        <div onclick="document.getElementById('editSaleModal').remove()" style="
+          width:32px;height:32px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);border-radius:8px;
           color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
           display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
           onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
           onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
           <i class="fas fa-times"></i>
-        </button>
+        </div>
       </div>
 
-      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:14px;
-           overflow-y:auto;max-height:65dvh;">
+      <div style="padding:18px 20px 22px;display:flex;flex-direction:column;gap:13px;">
 
-        ${ps.logo_url ? `
-        <div style="text-align:center;padding:12px;
-             background:rgba(255,255,255,0.025);
-             border:1px solid rgba(255,255,255,0.06);border-radius:12px;">
-          <div style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.2);
-               text-transform:uppercase;margin-bottom:8px;">MEVCUT LOGO</div>
-          <img src="${ps.logo_url}" alt="Logo"
-               style="max-height:70px;max-width:180px;object-fit:contain;
-                      border-radius:8px;display:block;margin:0 auto;"
-               draggable="false"/>
-        </div>` : ''}
-
-        <!-- رفع اللوجو -->
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:8px;display:block;">
-            <i class="fas fa-image" style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
-            ŞİRKET LOGONUZ
-          </label>
-          <div style="display:flex;gap:8px;margin-bottom:8px;">
-            <label style="flex:1;cursor:pointer;">
-              <input type="file" accept="image/*"
-                onchange="uploadMyLogoMO(this)" style="display:none;"/>
-              <div style="padding:10px 8px;border-radius:9px;
-                   border:1px solid rgba(201,168,76,0.2);
-                   background:rgba(201,168,76,0.06);
-                   color:rgba(201,168,76,0.7);
-                   font-family:'Montserrat',sans-serif;
-                   font-size:9px;font-weight:700;letter-spacing:1px;
-                   text-align:center;transition:all 0.25s;
-                   display:flex;flex-direction:column;
-                   align-items:center;gap:5px;"
-                   onmouseover="this.style.background='rgba(201,168,76,0.14)'"
-                   onmouseout="this.style.background='rgba(201,168,76,0.06)'">
-                <i class="fas fa-images" style="font-size:18px;"></i>
-                GALERİ
-              </div>
-            </label>
-            <label style="flex:1;cursor:pointer;">
-              <input type="file" accept="image/*" capture="environment"
-                onchange="uploadMyLogoMO(this)" style="display:none;"/>
-              <div style="padding:10px 8px;border-radius:9px;
-                   border:1px solid rgba(96,165,250,0.2);
-                   background:rgba(96,165,250,0.06);
-                   color:rgba(96,165,250,0.7);
-                   font-family:'Montserrat',sans-serif;
-                   font-size:9px;font-weight:700;letter-spacing:1px;
-                   text-align:center;transition:all 0.25s;
-                   display:flex;flex-direction:column;
-                   align-items:center;gap:5px;"
-                   onmouseover="this.style.background='rgba(96,165,250,0.14)'"
-                   onmouseout="this.style.background='rgba(96,165,250,0.06)'">
-                <i class="fas fa-camera" style="font-size:18px;"></i>
-                KAMERA
-              </div>
-            </label>
+        <!-- بيانات الزبون -->
+        <div style="background:rgba(96,165,250,0.04);border:1px solid rgba(96,165,250,0.15);
+             border-radius:12px;padding:13px 14px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(96,165,250,0.6);
+               text-transform:uppercase;font-weight:700;margin-bottom:10px;">
+            <i class="fas fa-user"></i> MÜŞTERİ BİLGİLERİ
           </div>
-          <input type="url" id="psLogoUrlMO"
-            value="${ps.logo_url || ''}"
-            placeholder="https://... (Logo URL)"
-            style="width:100%;padding:10px 12px;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(201,168,76,0.2);
-            border-radius:9px;color:#fff;
-            font-family:'Montserrat',sans-serif;
-            font-size:11px;outline:none;transition:all 0.3s;
-            -webkit-user-select:text;user-select:text;
-            box-sizing:border-box;"
-            onfocus="this.style.borderColor='#c9a84c'"
-            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
-          <div id="moLogoProgress" style="display:none;margin-top:8px;">
-            <div style="height:4px;background:rgba(255,255,255,0.06);
-                 border-radius:4px;overflow:hidden;">
-              <div id="moLogoProgressBar" style="height:100%;width:0%;
-                   background:linear-gradient(90deg,#c9a84c,#f0d080);
-                   border-radius:4px;transition:width 0.3s ease;"></div>
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            ${[
+              { id:'editBuyerName',    label:'AD SOYAD',  val: log.buyer_name  || '', type:'text'  },
+              { id:'editBuyerPhone',   label:'TELEFON',   val: log.buyer_phone || '', type:'tel'   },
+              { id:'editBuyerAddress', label:'ADRES',     val: buyerAddr,             type:'text'  },
+            ].map(f => `
+              <div>
+                <label style="font-size:8px;letter-spacing:1.5px;
+                     color:rgba(255,255,255,0.3);text-transform:uppercase;
+                     font-weight:700;margin-bottom:4px;display:block;">
+                  ${f.label}
+                </label>
+                <input type="${f.type}" id="${f.id}"
+                  value="${f.val}"
+                  style="width:100%;padding:10px 12px;
+                  background:rgba(255,255,255,0.04);
+                  border:1px solid rgba(96,165,250,0.2);
+                  border-radius:9px;color:#fff;
+                  font-family:'Montserrat',sans-serif;
+                  font-size:13px;outline:none;transition:all 0.3s;
+                  -webkit-user-select:text;user-select:text;
+                  box-sizing:border-box;"
+                  onfocus="this.style.borderColor='#60a5fa'"
+                  onfocusout="this.style.borderColor='rgba(96,165,250,0.2)'"/>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- تفاصيل البيع -->
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);
+             border-radius:12px;padding:13px 14px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(201,168,76,0.6);
+               text-transform:uppercase;font-weight:700;margin-bottom:10px;">
+            <i class="fas fa-boxes"></i> SATIŞ DETAYLARI
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:4px;display:block;">
+                MİKTAR
+              </label>
+              <input type="number" id="editQty"
+                value="${log.qty_sold}" min="1"
+                style="width:100%;padding:10px 12px;
+                background:rgba(255,255,255,0.04);
+                border:1px solid rgba(201,168,76,0.2);
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:14px;font-weight:700;
+                outline:none;-webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+                onfocus="this.style.borderColor='#c9a84c'"
+                onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+            </div>
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:4px;display:block;">
+                BİRİM FİYAT
+              </label>
+              <div style="position:relative;">
+                <input type="number" id="editUnitPrice"
+                  value="${log.sale_price}"
+                  style="width:100%;padding:10px 30px 10px 12px;
+                  background:rgba(255,255,255,0.04);
+                  border:1px solid rgba(201,168,76,0.2);
+                  border-radius:9px;color:#fff;
+                  font-family:'Montserrat',sans-serif;
+                  font-size:14px;font-weight:700;
+                  outline:none;-webkit-user-select:text;user-select:text;
+                  box-sizing:border-box;"
+                  onfocus="this.style.borderColor='#c9a84c'"
+                  onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+                <span style="position:absolute;right:10px;top:50%;
+                     transform:translateY(-50%);font-size:12px;font-weight:900;
+                     color:rgba(201,168,76,0.5);pointer-events:none;">₺</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- اسم الشركة -->
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
-            <i class="fas fa-building" style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
-            ŞİRKET ADI
-          </label>
-          <input type="text" id="psCompanyMO"
-            value="${ps.company_name || _currentUserData?.company_name || ''}"
-            placeholder="Şirket adınız"
-            style="width:100%;padding:12px 13px;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(201,168,76,0.2);
-            border-radius:10px;color:#fff;
-            font-family:'Montserrat',sans-serif;
-            font-size:clamp(12px,3.5vw,14px);font-weight:700;
-            outline:none;transition:all 0.3s;
-            -webkit-user-select:text;user-select:text;
-            box-sizing:border-box;"
-            onfocus="this.style.borderColor='#c9a84c'"
-            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        <!-- حالة الدفع -->
+        <div style="background:rgba(255,255,255,0.025);border:1px solid rgba(255,255,255,0.07);
+             border-radius:12px;padding:13px 14px;">
+          <div style="font-size:9px;letter-spacing:2px;color:rgba(74,222,128,0.6);
+               text-transform:uppercase;font-weight:700;margin-bottom:10px;">
+            <i class="fas fa-money-bill-wave"></i> ÖDEME DURUMU
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:4px;display:block;">
+                TAHSİL EDİLEN
+              </label>
+              <div style="position:relative;">
+                <input type="number" id="editPaidAmount"
+                  value="${paidAmt}"
+                  style="width:100%;padding:10px 30px 10px 12px;
+                  background:rgba(74,222,128,0.05);
+                  border:1px solid rgba(74,222,128,0.2);
+                  border-radius:9px;color:#fff;
+                  font-family:'Montserrat',sans-serif;
+                  font-size:14px;font-weight:700;
+                  outline:none;-webkit-user-select:text;user-select:text;
+                  box-sizing:border-box;"
+                  onfocus="this.style.borderColor='#4ade80'"
+                  onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+                <span style="position:absolute;right:10px;top:50%;
+                     transform:translateY(-50%);font-size:12px;font-weight:900;
+                     color:rgba(74,222,128,0.5);pointer-events:none;">₺</span>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:8px;letter-spacing:1.5px;
+                   color:rgba(255,255,255,0.3);text-transform:uppercase;
+                   font-weight:700;margin-bottom:4px;display:block;">
+                KALAN BORÇ
+              </label>
+              <div style="position:relative;">
+                <input type="number" id="editDebtAmount"
+                  value="${debtAmt}"
+                  style="width:100%;padding:10px 30px 10px 12px;
+                  background:rgba(239,68,68,0.05);
+                  border:1px solid rgba(239,68,68,0.2);
+                  border-radius:9px;color:#fff;
+                  font-family:'Montserrat',sans-serif;
+                  font-size:14px;font-weight:700;
+                  outline:none;-webkit-user-select:text;user-select:text;
+                  box-sizing:border-box;"
+                  onfocus="this.style.borderColor='#ef4444'"
+                  onfocusout="this.style.borderColor='rgba(239,68,68,0.2)'"/>
+                <span style="position:absolute;right:10px;top:50%;
+                     transform:translateY(-50%);font-size:12px;font-weight:900;
+                     color:rgba(239,68,68,0.5);pointer-events:none;">₺</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- الهاتف -->
+        <!-- ملاحظة -->
         <div>
           <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
                text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
-            <i class="fas fa-phone" style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
-            TELEFON
+            NOT
           </label>
-          <input type="tel" id="psPhoneMO"
-            value="${ps.company_phone || _currentUserData?.phone || ''}"
-            placeholder="+90 XXX XXX XX XX"
-            inputmode="tel"
-            style="width:100%;padding:12px 13px;
+          <textarea id="editSaleNote"
+            rows="2"
+            style="width:100%;padding:10px 13px;
             background:rgba(255,255,255,0.04);
-            border:1px solid rgba(201,168,76,0.2);
-            border-radius:10px;color:#fff;
-            font-family:'Montserrat',sans-serif;
-            font-size:clamp(12px,3.5vw,14px);
-            outline:none;transition:all 0.3s;
-            -webkit-user-select:text;user-select:text;
-            box-sizing:border-box;"
-            onfocus="this.style.borderColor='#c9a84c'"
-            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
-        </div>
-
-        <!-- ملاحظة الطباعة -->
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
-            <i class="fas fa-sticky-note"
-               style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
-            BASKI NOTU
-          </label>
-          <textarea id="psFooterMO"
-            placeholder="Baskıda görünecek özel not..."
-            rows="3"
-            style="width:100%;padding:11px 13px;
-            background:rgba(255,255,255,0.04);
-            border:1px solid rgba(201,168,76,0.2);
-            border-radius:10px;color:#fff;
+            border:1px solid rgba(96,165,250,0.15);
+            border-radius:9px;color:#fff;
             font-family:'Montserrat',sans-serif;
             font-size:12px;outline:none;resize:none;
             -webkit-user-select:text;user-select:text;
             transition:all 0.3s;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#c9a84c'"
-            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"
-          >${ps.print_footer || ''}</textarea>
+            onfocus="this.style.borderColor='#60a5fa'"
+            onfocusout="this.style.borderColor='rgba(96,165,250,0.15)'"
+          >${log.notes || ''}</textarea>
         </div>
 
         <!-- أزرار -->
         <div style="display:flex;gap:10px;">
-          <button onclick="document.getElementById('printSettingsMO').remove()" style="
+          <button onclick="document.getElementById('editSaleModal').remove()" style="
             flex:1;padding:13px;border-radius:11px;
             border:1px solid rgba(255,255,255,0.1);
             background:rgba(255,255,255,0.04);
@@ -35504,883 +35032,509 @@ function openMyPrintSettings() {
             onmouseout="this.style.background='rgba(255,255,255,0.04)'">
             İPTAL
           </button>
-          <button onclick="saveMyPrintSettingsMO()" style="
+          <button onclick="saveEditSaleMO(${logId},${itemId})" style="
             flex:2;padding:13px;border-radius:11px;border:none;
-            background:linear-gradient(135deg,#c9a84c,#f0d080);
-            color:#0a0a0a;font-family:'Montserrat',sans-serif;
+            background:linear-gradient(135deg,#1d4ed8,#60a5fa);
+            color:#fff;font-family:'Montserrat',sans-serif;
             font-size:11px;font-weight:900;letter-spacing:2px;
             cursor:pointer;transition:all 0.25s;
             display:flex;align-items:center;justify-content:center;gap:7px;"
             onmouseover="this.style.transform='translateY(-2px)'"
             onmouseout="this.style.transform=''">
-            <i class="fas fa-save"></i> KAYDET
+            <i class="fas fa-save"></i> GÜNCELLE
           </button>
         </div>
       </div>
     </div>`;
 
   document.body.appendChild(modal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.remove();
-  });
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
-/* ── رفع اللوجو ── */
-async function uploadMyLogoMO(input) {
-  const file = input.files?.[0];
-  if (!file || !file.type.startsWith('image/')) return;
-
-  const bar  = document.getElementById('moLogoProgressBar');
-  const wrap = document.getElementById('moLogoProgress');
-  if (wrap) wrap.style.display = 'block';
-  if (bar)  bar.style.width = '20%';
-
-  try {
-    const sb  = await initSupabase();
-    if (!sb) throw new Error('Bağlantı yok');
-    if (bar) bar.style.width = '50%';
-
-    const ext  = file.name.split('.').pop().toLowerCase() || 'png';
-    const path = `user_logos/${currentUser}_${Date.now()}.${ext}`;
-
-    const { error } = await sb.storage
-      .from('home-images')
-      .upload(path, file, {
-        cacheControl:'3600', upsert:true, contentType:file.type
-      });
-    if (error) throw error;
-
-    if (bar) bar.style.width = '85%';
-
-    const { data: urlData } = sb.storage
-      .from('home-images').getPublicUrl(path);
-
-    const urlInp = document.getElementById('psLogoUrlMO');
-    if (urlInp) urlInp.value = urlData?.publicUrl || '';
-
-    if (bar) bar.style.width = '100%';
-    showInvToast('Logo yüklendi ✓', 'success');
-    setTimeout(() => {
-      if (wrap) wrap.style.display = 'none';
-      if (bar)  bar.style.width = '0%';
-    }, 1500);
-
-  } catch(e) {
-    if (wrap) wrap.style.display = 'none';
-    showInvToast('Yükleme hatası!', 'error');
-  }
-  input.value = '';
-}
-
-/* ── حفظ إعدادات الطباعة ── */
-async function saveMyPrintSettingsMO() {
-  const logoUrl = document.getElementById('psLogoUrlMO')?.value.trim()  || null;
-  const company = document.getElementById('psCompanyMO')?.value.trim()  || '';
-  const phone   = document.getElementById('psPhoneMO')?.value.trim()    || '';
-  const footer  = document.getElementById('psFooterMO')?.value.trim()   || '';
-
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  const { error } = await sb.from('user_print_settings').upsert([{
-    username      : currentUser,
-    logo_url      : logoUrl,
-    company_name  : company,
-    company_phone : phone,
-    print_footer  : footer,
-    updated_at    : new Date().toISOString()
-  }], { onConflict: 'username' });
-
-  if (error) { showInvToast('Kayıt hatası!', 'error'); return; }
-
-  _myPrintSettings = {
-    ..._myPrintSettings,
-    logo_url: logoUrl, company_name: company,
-    company_phone: phone, print_footer: footer
-  };
-
-  document.getElementById('printSettingsMO')?.remove();
-  showInvToast('Ayarlar kaydedildi ✓', 'success');
-}
-
-/* ══════════════════════════════════════════════════════════════
-   الطباعة
-══════════════════════════════════════════════════════════════ */
-function printSingleItemMO(itemId) {
-  const item = _myOrdersData.find(i => i.id === itemId);
-  if (!item) return;
-  openPrintPreviewMO([item]);
-}
-
-function printMyInventory() {
-  const toPrint = _myOrdersData.filter(i => i.show_in_print !== false);
-  if (!toPrint.length) { showInvToast('Yazdırılacak ürün yok', 'info'); return; }
-  openPrintPreviewMO(toPrint);
-}
-
-function openPrintPreviewMO(items) {
-  document.getElementById('printPreviewMO')?.remove();
-  const ps      = _myPrintSettings;
-  const now     = new Date();
-  const dateStr = now.toLocaleDateString('tr-TR',
-    { day:'2-digit', month:'long', year:'numeric' });
-  const timeStr = now.toLocaleTimeString('tr-TR',
-    { hour:'2-digit', minute:'2-digit' });
-
-  const totalPurch  = items.reduce((s,i) => s + (i.qty_purchased||0), 0);
-  const totalSold   = items.reduce((s,i) => s + (i.qty_sold||0), 0);
-  const totalRemain = totalPurch - totalSold;
-
-  const modal = document.createElement('div');
-  modal.id = 'printPreviewMO';
-  modal.className = 'print-preview-modal';
-  modal.innerHTML = `
-    <div class="print-toolbar">
-      <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0;">
-        <i class="fas fa-print" style="color:#c9a84c;font-size:16px;flex-shrink:0;"></i>
-        <span style="font-family:'Montserrat',sans-serif;
-             font-size:clamp(11px,3vw,13px);font-weight:700;color:#fff;
-             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          BASKI ÖNİZLEME — ${items.length} Ürün
-        </span>
-      </div>
-      <div style="display:flex;gap:6px;flex-shrink:0;">
-        <button onclick="executePrintMO()" style="
-          padding:8px 14px;border-radius:8px;border:none;
-          background:linear-gradient(135deg,#1565c0,#1976d2);
-          color:#fff;font-family:'Montserrat',sans-serif;
-          font-size:10px;font-weight:700;letter-spacing:1px;
-          cursor:pointer;display:flex;align-items:center;gap:5px;
-          transition:all 0.25s;white-space:nowrap;"
-          onmouseover="this.style.transform='translateY(-1px)'"
-          onmouseout="this.style.transform=''">
-          <i class="fas fa-print"></i> YAZDIR
-        </button>
-        <button onclick="document.getElementById('printPreviewMO').remove()" style="
-          padding:8px 12px;border-radius:8px;
-          border:1px solid rgba(255,255,255,0.15);
-          background:rgba(255,255,255,0.06);
-          color:rgba(255,255,255,0.6);
-          font-family:'Montserrat',sans-serif;
-          font-size:10px;font-weight:700;
-          cursor:pointer;display:flex;align-items:center;gap:5px;
-          transition:all 0.25s;"
-          onmouseover="this.style.background='rgba(255,255,255,0.1)'"
-          onmouseout="this.style.background='rgba(255,255,255,0.06)'">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    </div>
-    <div class="print-content-area">
-      <div class="print-page" id="moPrintContent">
-        ${buildPrintHTMLMO(items, ps, dateStr, timeStr,
-          { totalPurch, totalSold, totalRemain })}
-      </div>
-    </div>`;
-
-  document.body.appendChild(modal);
-}
-
-function buildPrintHTMLMO(items, ps, dateStr, timeStr, totals) {
-  const companyName = ps.company_name || _currentUserData?.company_name || '';
-  const phone       = ps.company_phone || _currentUserData?.phone || '';
-  const logoUrl     = ps.logo_url || '';
-  const footer      = ps.print_footer || '';
-
-  const TD = `padding:8px 7px;border:1px solid #e0d0a0;
-    vertical-align:middle;font-family:'Montserrat',sans-serif;font-size:11px;`;
-
-  const rows = items.map((item, idx) => {
-    const remain    = (item.qty_purchased||0) - (item.qty_sold||0);
-    const rowBg     = idx % 2 === 0 ? '#FFFDF5' : '#FFFFF8';
-    const statusClr = remain <= 0 ? '#ef4444'
-      : remain < item.qty_purchased * 0.3 ? '#f59e0b' : '#16a34a';
-    const statusLbl = remain <= 0 ? 'Tükendi'
-      : remain < item.qty_purchased * 0.3 ? 'Az Kaldı' : 'Stokta';
-    const orderInfo = ORDER_STATUS_MAP[item.order_status||'pending'];
-    const orderDate = item.order_date
-      ? new Date(item.order_date).toLocaleDateString('tr-TR',
-          { day:'2-digit', month:'short', year:'numeric' })
-      : '—';
-
-    return `
-      <tr style="background:${rowBg};">
-        <td style="${TD} text-align:center;font-weight:700;
-             color:#c9a84c;font-size:12px;">${idx + 1}</td>
-        <td style="${TD} text-align:center;">
-          <img src="${item.product_img||''}" alt="${item.product_title}"
-               style="width:52px;height:40px;object-fit:cover;
-                      border-radius:5px;border:1px solid #e0d0a0;
-                      display:block;margin:0 auto;"
-               onerror="this.style.display='none'"/>
-        </td>
-        <td style="${TD} font-weight:700;color:#1a1a1a;">
-          ${item.product_title}
-          <div style="font-size:9px;color:#999;margin-top:2px;">
-            #${item.order_number||'—'} · ${orderDate}
-          </div>
-        </td>
-        <td style="${TD} text-align:center;">
-          <span style="padding:2px 7px;border-radius:50px;font-size:9px;
-               font-weight:700;background:${
-                 item.order_status==='delivered'?'#dcfce7':
-                 item.order_status==='cancelled'?'#fee2e2':'#eff6ff'};
-               color:${
-                 item.order_status==='delivered'?'#16a34a':
-                 item.order_status==='cancelled'?'#ef4444':'#1d4ed8'};">
-            ${orderInfo?.label||'—'}
-          </span>
-        </td>
-        <td style="${TD} text-align:center;font-weight:900;
-             font-size:13px;color:#1a1a1a;">${item.qty_purchased}</td>
-        <td style="${TD} text-align:center;font-weight:900;
-             font-size:13px;color:#16a34a;">${item.qty_sold}</td>
-        <td style="${TD} text-align:center;font-weight:900;
-             font-size:13px;color:${statusClr};">${remain}</td>
-        ${item.show_base_price && item.base_price ? `
-        <td style="${TD} text-align:center;color:#5A4A1A;font-style:italic;">
-          ${Number(item.base_price).toLocaleString('tr-TR')} ₺
-        </td>` : `<td style="${TD} text-align:center;color:#ccc;">—</td>`}
-        ${item.show_user_price && item.user_price ? `
-        <td style="${TD} text-align:center;font-weight:900;
-             color:#c9a84c;font-size:12px;">
-          ${Number(item.user_price).toLocaleString('tr-TR')} ₺
-        </td>` : `<td style="${TD} text-align:center;color:#ccc;">—</td>`}
-        <td style="${TD} text-align:center;">
-          <span style="padding:2px 8px;border-radius:50px;font-size:9px;
-               font-weight:700;
-               background:${remain<=0?'#fee2e2':remain<item.qty_purchased*0.3?'#fef3c7':'#dcfce7'};
-               color:${statusClr};">
-            ${statusLbl}
-          </span>
-        </td>
-      </tr>`;
-  }).join('');
-
-  return `
-    <div style="font-family:'Montserrat',sans-serif;background:#fff;padding:0;">
-      <div style="height:5px;background:linear-gradient(90deg,
-        transparent,#c9a84c 20%,#f0d080 50%,#c9a84c 80%,transparent);"></div>
-      <div style="background:#0f0f0f;padding:16px 20px;
-           display:flex;align-items:center;
-           justify-content:space-between;gap:14px;flex-wrap:wrap;">
-        <div style="display:flex;align-items:center;gap:12px;">
-          ${logoUrl ? `
-          <img src="${logoUrl}" alt="Logo"
-               style="max-height:60px;max-width:140px;object-fit:contain;
-                      border-radius:8px;display:block;"
-               onerror="this.style.display='none'"/>` : `
-          <div style="width:52px;height:52px;border-radius:11px;
-               background:rgba(201,168,76,0.15);
-               border:2px solid rgba(201,168,76,0.4);
-               display:flex;align-items:center;justify-content:center;
-               font-size:22px;color:#c9a84c;">🏢</div>`}
-          <div>
-            <div style="font-size:clamp(16px,4vw,20px);font-weight:900;
-                 color:#c9a84c;letter-spacing:1px;line-height:1.2;">
-              ${companyName || 'Şirket Adı'}
-            </div>
-            ${phone ? `
-            <div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:3px;">
-              📞 ${phone}
-            </div>` : ''}
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:11px;font-weight:700;color:#fff;margin-bottom:            3px;">DEPO RAPORU</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.4);">📅 ${dateStr}</div>
-          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px;">
-            🕐 ${timeStr}
-          </div>
-        </div>
-      </div>
-
-      <!-- الإحصائيات -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);
-           gap:0;border-bottom:2px solid #e8d5a0;">
-        ${[
-          { label:'Ürün Çeşidi', val:items.length,        color:'#c9a84c', bg:'#fffdf0' },
-          { label:'Alınan',      val:totals.totalPurch,   color:'#1d4ed8', bg:'#eff6ff' },
-          { label:'Satılan',     val:totals.totalSold,    color:'#16a34a', bg:'#f0fdf4' },
-          { label:'Kalan',       val:totals.totalRemain,  color:'#d97706', bg:'#fffbeb' },
-        ].map(s => `
-          <div style="background:${s.bg};padding:12px 8px;
-               text-align:center;border-right:1px solid #e8d5a0;">
-            <div style="font-size:clamp(18px,5vw,22px);font-weight:900;
-                 color:${s.color};line-height:1;">
-              ${s.val.toLocaleString('tr-TR')}
-            </div>
-            <div style="font-size:8px;color:#888;text-transform:uppercase;
-                 letter-spacing:1px;margin-top:3px;">${s.label}</div>
-          </div>`).join('')}
-      </div>
-
-      <!-- فراغ -->
-      <div style="height:12px;background:#fff;"></div>
-
-      <!-- الجدول -->
-      <div style="padding:0 12px;overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;
-               border:1px solid #e0d0a0;min-width:620px;">
-          <thead>
-            <tr style="background:#1a1a1a;">
-              <th style="${TD} text-align:center;color:#c9a84c;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:26px;">#</th>
-              <th style="${TD} text-align:center;color:#c9a84c;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:68px;">GÖRSEL</th>
-              <th style="${TD} color:#c9a84c;font-size:8px;
-                  letter-spacing:1px;border-color:#333;">MODEL / SİPARİŞ</th>
-              <th style="${TD} text-align:center;color:#a78bfa;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:72px;">DURUM</th>
-              <th style="${TD} text-align:center;color:#60a5fa;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:48px;">ALINAN</th>
-              <th style="${TD} text-align:center;color:#4ade80;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:48px;">SATILAN</th>
-              <th style="${TD} text-align:center;color:#fbbf24;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:48px;">KALAN</th>
-              <th style="${TD} text-align:center;color:#c9a84c;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:72px;">ALIŞ</th>
-              <th style="${TD} text-align:center;color:#f0d080;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:72px;">SATIŞ</th>
-              <th style="${TD} text-align:center;color:#c9a84c;font-size:8px;
-                  letter-spacing:1px;border-color:#333;width:62px;">STOK</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-
-      <!-- فراغ -->
-      <div style="height:14px;background:#fff;"></div>
-
-      <!-- ملاحظة -->
-      ${footer ? `
-      <div style="margin:0 12px 12px;padding:11px 14px;
-           background:#fffbf0;border:1px solid #e8d5a0;border-radius:8px;">
-        <div style="font-size:8px;letter-spacing:2px;color:#c9a84c;
-             font-weight:700;text-transform:uppercase;margin-bottom:4px;">NOT</div>
-        <div style="font-size:11px;color:#5a4a1a;line-height:1.6;">${footer}</div>
-      </div>` : ''}
-
-      <!-- التذييل -->
-      <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#c9a84c 20%,#f0d080 50%,#c9a84c 80%,transparent);"></div>
-      <div style="background:#0f0f0f;padding:9px 20px;text-align:center;">
-        <div style="font-size:9px;color:rgba(201,168,76,0.6);
-             letter-spacing:1px;font-style:italic;">
-          ${companyName ? companyName + ' — ' : ''}Depo Raporu &nbsp;|&nbsp;
-          ${dateStr} ${timeStr}
-        </div>
-      </div>
-      <div style="height:4px;background:linear-gradient(90deg,
-        transparent,#c9a84c 20%,#f0d080 50%,#c9a84c 80%,transparent);"></div>
-    </div>`;
-}
-
-function executePrintMO() {
-  const content = document.getElementById('moPrintContent')?.innerHTML;
-  if (!content) return;
-
-  const win = window.open('', '_blank', 'width=900,height=700');
-  if (!win) {
-    showInvToast('Popup engellendi! Tarayıcı ayarlarını kontrol edin.', 'error');
-    return;
-  }
-  win.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Depo Raporu</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap"
-        rel="stylesheet"/>
-  <style>
-    * { margin:0;padding:0;box-sizing:border-box; }
-    body { font-family:'Montserrat',sans-serif;background:#fff; }
-    @page { size:A4 landscape;margin:7mm 6mm; }
-    @media print {
-      body { -webkit-print-color-adjust:exact;print-color-adjust:exact; }
-    }
-  </style>
-</head>
-<body>${content}</body>
-</html>`);
-  win.document.close();
-  win.focus();
-  setTimeout(() => { win.print(); }, 700);
-}
-
-/* ══════════════════════════════════════════════════════════════
-   مزامنة WOW ← → حركاتي
-   Hook على دوال WOW الموجودة
-══════════════════════════════════════════════════════════════ */
-
-/* ── Hook: بعد حفظ الطلبية ── */
-const _origSaveOrderToSupabase_MO = saveOrderToSupabase;
-saveOrderToSupabase = async function(orderNum, items, note) {
-  const result = await _origSaveOrderToSupabase_MO(orderNum, items, note);
-
-  if (currentUser !== ADMIN_USER && result) {
-    /* جلب بيانات الطلبية المحفوظة للحصول على التاريخ والحالة */
-    const sb = await initSupabase();
-    let orderData = null;
-    if (sb) {
-      const { data } = await sb
-        .from('orders')
-        .select('created_at, status')
-        .eq('order_number', orderNum)
-        .maybeSingle();
-      orderData = data;
-    }
-    await saveOrderToUserInventory(orderNum, items, orderData);
-    showInvToast('Ürünler depoya eklendi ✓', 'success');
-  }
-
-  return result;
-};
-
-/* ── Hook: عند تغيير حالة الطلب من WOW (Admin) ── */
-const _origUpdateOrderStatus_MO =
-  typeof updateOrderStatus === 'function' ? updateOrderStatus : null;
-
-if (_origUpdateOrderStatus_MO) {
-  updateOrderStatus = async function(orderId, orderNum, newStatus, extra) {
-    const result = await _origUpdateOrderStatus_MO(orderId, orderNum, newStatus, extra);
-
-    /* تحديث حالة الطلب في مخزون المشتري */
-    const deliveryDate = newStatus === 'delivered'
-      ? new Date().toISOString()
-      : null;
-    await syncOrderStatusToInventory(orderNum, newStatus, deliveryDate);
-
-    return result;
-  };
-}
-
-/* ── Hook: عند حذف طلب من WOW ── */
-const _origDeleteOrder_MO =
-  typeof deleteOrder === 'function' ? deleteOrder : null;
-
-if (_origDeleteOrder_MO) {
-  deleteOrder = async function(orderId, orderNum) {
-    const result = await _origDeleteOrder_MO(orderId, orderNum);
-    await deleteOrderFromInventory(orderNum);
-    return result;
-  };
-}
-
-/* ── Hook: عند تعديل كميات الطلب ── */
-const _origUpdateOrderQty_MO =
-  typeof updateOrderQty === 'function' ? updateOrderQty : null;
-
-if (_origUpdateOrderQty_MO) {
-  updateOrderQty = async function(orderNum, productId, newQty) {
-    const result = await _origUpdateOrderQty_MO(orderNum, productId, newQty);
-
-    /* تحديث الكمية في مخزون المشتري */
-    const sb = await initSupabase();
-    if (sb && result) {
-      await sb.from('user_orders_inventory')
-        .update({
-          qty_purchased : newQty,
-          updated_at    : new Date().toISOString()
-        })
-        .eq('order_number', orderNum)
-        .eq('product_id', productId);
-
-      /* تحديث محلي */
-      const item = _myOrdersData.find(
-        i => i.order_number === orderNum && i.product_id === productId
-      );
-      if (item) {
-        item.qty_purchased = newQty;
-        const card = document.getElementById('myitem-' + item.id);
-        if (card && currentPage === 'myorders') {
-          const w = document.createElement('div');
-          w.innerHTML = buildMyItemCard(item);
-          card.replaceWith(w.firstElementChild);
-        }
-      }
-    }
-
-    return result;
-  };
-}
-
-/* ══════════════════════════════════════════════════════════════
-   ربط showPage
-══════════════════════════════════════════════════════════════ */
-const _origShowPage_MO = showPage;
-showPage = function(cat) {
-  if (cat === 'myorders') {
-    if (currentUser === ADMIN_USER || _currentUserData?._isAdmin) return;
-    currentPage = 'myorders';
-    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
-    const el = document.getElementById('nav-myorders');
-    if (el) el.classList.add('active');
-    filteredImages = [];
-    buildMyOrdersPage();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    appState = 'section';
-    pushState('section', { cat: 'myorders' });
-    return;
-  }
-  _origShowPage_MO(cat);
-};
-
-/* ══════════════════════════════════════════════════════════════
-   ربط enterSection
-══════════════════════════════════════════════════════════════ */
-const _origEnterSection_MO = enterSection;
-enterSection = function(cat) {
-  if (cat === 'myorders') {
-    if (currentUser === ADMIN_USER || _currentUserData?._isAdmin) return;
-    const hs = document.getElementById('homeScreen');
-    hs.style.transition = 'opacity 0.4s ease';
-    hs.style.opacity    = '0';
-    setTimeout(() => {
-      hs.style.display = 'none';
-      document.getElementById('mainSite').style.display = 'block';
-      showPage('myorders');
-    }, 400);
-    return;
-  }
-  _origEnterSection_MO(cat);
-};
-
-/* ══════════════════════════════════════════════════════════════
-   إضافة بطاقة "حركاتي" في الهوم
-══════════════════════════════════════════════════════════════ */
-const _origRenderUserHomeCards_MO = renderUserHomeCards;
-renderUserHomeCards = function(container) {
-  _origRenderUserHomeCards_MO(container);
-
-  if (document.getElementById('myOrdersHomeCard')) return;
-
-  const card = document.createElement('div');
-  card.id        = 'myOrdersHomeCard';
-  card.className = 'home-card';
-  card.style.cssText = `
-    animation:cardSlideIn 0.7s ease 0.9s both;
-    border-color:rgba(74,222,128,0.2);`;
-  card.onclick = () => enterSection('myorders');
-
-  card.innerHTML = `
-    <img class="home-card-img"
-         src="https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png"
-         alt="Hareketlerim" loading="lazy" draggable="false"
-         onerror="this.style.display='none'"/>
-    <div class="home-card-overlay"></div>
-    <div class="home-card-shine"></div>
-    <div class="home-card-count"
-         style="background:rgba(74,222,128,0.75);
-                border-color:rgba(74,222,128,0.5);
-                color:#fff;font-weight:900;">DEPO</div>
-    <div class="home-card-content">
-      <div class="home-card-num">05 — KİŞİSEL DEPO</div>
-      <div class="home-card-title">
-        HAREKETLERİM<span>& DEPOM</span>
-      </div>
-      <div class="home-card-desc">Satışlarım · Fiyatlarım · Baskı</div>
-      <div class="home-card-btn">
-        Depoma Git <i class="fas fa-warehouse"></i>
-      </div>
-    </div>`;
-
-  container.appendChild(card);
-};
-
-/* ══════════════════════════════════════════════════════════════
-   إضافة روابط الهيدر والموبايل
-══════════════════════════════════════════════════════════════ */
-(function addMyOrdersNavMO() {
-  setTimeout(() => {
-    /* ديسكتوب */
-    const navCapsule = document.querySelector('.nav-capsule');
-    if (navCapsule && !document.getElementById('nav-myorders')) {
-      const link = document.createElement('a');
-      link.id        = 'nav-myorders';
-      link.className = 'nav-link';
-      link.href      = '#';
-      link.style.display = 'none';
-      link.innerHTML = `<i class="fas fa-warehouse"></i> HAREKETLERİM`;
-      link.onclick   = e => { e.preventDefault(); showPage('myorders'); };
-      const ordersLink = document.getElementById('nav-orders');
-      if (ordersLink) navCapsule.insertBefore(link, ordersLink);
-      else navCapsule.appendChild(link);
-    }
-
-    /* موبايل */
-    const mobMenu = document.querySelector('.mobile-menu-inner');
-    if (mobMenu && !document.getElementById('mob-myorders')) {
-      const mobLink = document.createElement('a');
-      mobLink.id        = 'mob-myorders';
-      mobLink.href      = '#';
-      mobLink.style.display = 'none';
-      mobLink.innerHTML = `<i class="fas fa-warehouse"></i> HAREKETLERİM`;
-      mobLink.onclick   = e => {
-        e.preventDefault();
-        showPage('myorders');
-        closeMobileMenu();
-      };
-      const ordersLink = document.getElementById('mob-orders');
-      if (ordersLink) ordersLink.after(mobLink);
-      else mobMenu.appendChild(mobLink);
-    }
-  }, 600);
-})();
-
-/* ══════════════════════════════════════════════════════════════
-   تحديث updateAdminNavVisibility
-══════════════════════════════════════════════════════════════ */
-const _origUpdateAdminNav_MO = updateAdminNavVisibility;
-updateAdminNavVisibility = function() {
-  _origUpdateAdminNav_MO();
-  const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
-  ['nav-myorders', 'mob-myorders'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = isAdmin ? 'none' : '';
-  });
-};
-
-/* ══════════════════════════════════════════════════════════════
-   Realtime — تحديث لحظي
-══════════════════════════════════════════════════════════════ */
-async function subscribeMyOrdersRealtimeMO() {
-  if (currentUser === ADMIN_USER || _currentUserData?._isAdmin) return;
-  const sb = await initSupabase();
-  if (!sb) return;
-
-  /* ── 1. مخزون المستخدم (user_orders_inventory) ── */
-  sb.channel('my-inv-rt-' + currentUser)
-    .on('postgres_changes', {
-      event  : '*',
-      schema : 'public',
-      table  : 'user_orders_inventory',
-      filter : `username=eq.${currentUser}`
-    }, async payload => {
-      if (payload.eventType === 'UPDATE' && payload.new) {
-        const idx = _myOrdersData.findIndex(i => i.id === payload.new.id);
-        if (idx !== -1) {
-          _myOrdersData[idx] = { ..._myOrdersData[idx], ...payload.new };
-          if (currentPage === 'myorders') {
-            const card = document.getElementById('myitem-' + payload.new.id);
-            if (card) {
-              const w = document.createElement('div');
-              w.innerHTML = buildMyItemCard(_myOrdersData[idx]);
-              card.replaceWith(w.firstElementChild);
-            }
-            renderMyOrdersStats();
-          }
-        }
-      } else if (payload.eventType === 'DELETE' && payload.old) {
-        /* ★ حذف فوري من الواجهة ★ */
-        _myOrdersData = _myOrdersData.filter(i => i.id !== payload.old.id);
-        if (currentPage === 'myorders') {
-          const card = document.getElementById('myitem-' + payload.old.id);
-          if (card) {
-            card.style.transition = 'all 0.3s ease';
-            card.style.opacity    = '0';
-            card.style.transform  = 'scale(0.95)';
-            setTimeout(() => {
-              card.remove();
-              renderMyOrdersStats();
-            }, 300);
-          } else {
-            renderMyOrdersContent();
-          }
-        }
-      } else if (payload.eventType === 'INSERT' && payload.new) {
-        /* ★ إضافة فورية ★ */
-        _myOrdersData.unshift(payload.new);
-        if (currentPage === 'myorders') renderMyOrdersContent();
-      }
-    })
-    .subscribe();
-
-  /* ── 2. جدول orders — للحذف والتعديل من WOW ── */
-  sb.channel('orders-watch-' + currentUser)
-    .on('postgres_changes', {
-      event  : '*',
-      schema : 'public',
-      table  : 'orders',
-      filter : `username=eq.${currentUser}`
-    }, async payload => {
-
-      /* ★ حذف الطلب من WOW → احذفه فوراً من دابو ★ */
-      if (payload.eventType === 'DELETE' && payload.old) {
-        const orderNum = payload.old.order_number;
-        if (!orderNum) return;
-
-        /* إزالة كل عناصر هذا الطلب من المصفوفة المحلية */
-        const toRemove = _myOrdersData.filter(i => i.order_number === orderNum);
-        _myOrdersData  = _myOrdersData.filter(i => i.order_number !== orderNum);
-
-        if (currentPage === 'myorders') {
-          toRemove.forEach(item => {
-            const card = document.getElementById('myitem-' + item.id);
-            if (card) {
-              card.style.transition = 'all 0.3s ease';
-              card.style.opacity    = '0';
-              card.style.transform  = 'scale(0.95)';
-              setTimeout(() => card.remove(), 300);
-            }
-          });
-          setTimeout(() => renderMyOrdersStats(), 350);
-        }
-
-        /* حذف من قاعدة البيانات أيضاً */
-        await sb.from('user_orders_inventory')
-          .delete()
-          .eq('order_number', orderNum)
-          .eq('username', currentUser);
-      }
-
-      /* ★ تعديل الطلب من WOW → حدّث دابو فوراً ★ */
-      if (payload.eventType === 'UPDATE' && payload.new) {
-        const order    = payload.new;
-        const orderNum = order.order_number;
-        if (!orderNum) return;
-
-        const newStatus    = order.status;
-        const deliveryDate = newStatus === 'delivered'
-          ? (order.updated_at || new Date().toISOString())
-          : null;
-
-        /* تحديث الحالة في قاعدة البيانات */
-        const updateData = {
-          order_status : newStatus,
-          updated_at   : new Date().toISOString()
-        };
-        if (deliveryDate) updateData.delivery_date = deliveryDate;
-
-        await sb.from('user_orders_inventory')
-          .update(updateData)
-          .eq('order_number', orderNum)
-          .eq('username', currentUser);
-
-        /* تحديث المصفوفة المحلية فوراً */
-        let changed = false;
-        _myOrdersData.forEach(item => {
-          if (item.order_number === orderNum) {
-            item.order_status = newStatus;
-            if (deliveryDate) item.delivery_date = deliveryDate;
-            changed = true;
-          }
-        });
-
-        /* تحديث الكميات إذا تغيّرت items ★ */
-        if (order.items && Array.isArray(order.items)) {
-          order.items.forEach(orderItem => {
-            const inv = _myOrdersData.find(
-              i => i.order_number === orderNum &&
-                   i.product_id  === orderItem.id
-            );
-            if (inv && inv.qty_purchased !== orderItem.qty) {
-              inv.qty_purchased = orderItem.qty;
-              changed = true;
-
-              /* تحديث في DB أيضاً */
-              sb.from('user_orders_inventory')
-                .update({
-                  qty_purchased : orderItem.qty,
-                  updated_at    : new Date().toISOString()
-                })
-                .eq('order_number', orderNum)
-                .eq('product_id', orderItem.id)
-                .eq('username', currentUser)
-                .then(() => {});
-            }
-          });
-        }
-
-        /* إعادة رسم الصفحة إذا كانت مفتوحة */
-        if (changed && currentPage === 'myorders') {
-          _myOrdersData
-            .filter(i => i.order_number === orderNum)
-            .forEach(item => {
-              const card = document.getElementById('myitem-' + item.id);
-              if (card) {
-                const w = document.createElement('div');
-                w.innerHTML = buildMyItemCard(item);
-                card.replaceWith(w.firstElementChild);
-              }
-            });
-          renderMyOrdersStats();
-        }
-      }
-    })
-    .subscribe();
-
-  /* ── 3. سجل المبيعات ── */
-  sb.channel('my-sales-rt-' + currentUser)
-    .on('postgres_changes', {
-      event  : 'INSERT',
-      schema : 'public',
-      table  : 'user_sales_log',
-      filter : `username=eq.${currentUser}`
-    }, payload => {
-      if (payload.new?.inventory_id) {
-        delete _salesLogCache[payload.new.inventory_id];
-      }
-    })
-    .subscribe();
-}
-
-/* ══════════════════════════════════════════════════════════════
-   تهيئة بعد تسجيل الدخول
-══════════════════════════════════════════════════════════════ */
-const _masterFinishLogin_MO = finishLogin;
-finishLogin = function() {
-  _masterFinishLogin_MO();
-  setTimeout(async () => {
-    const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
-    if (!isAdmin) {
-      /* إظهار الروابط */
-      ['nav-myorders', 'mob-myorders'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.style.display = '';
-      });
-      /* تحميل مسبق وتفعيل Realtime */
-      await loadMyOrdersInventory();
-      subscribeMyOrdersRealtimeMO();
-    }
-  }, 1200);
-};
-/* ══════════════════════════════════════════════════════════════
-   ★ مزامنة حالة الطلب → user_orders_inventory (دابو) ★
-══════════════════════════════════════════════════════════════ */
-async function syncOrderStatusToUserInventory(orderNum, username, newStatus, deliveryDate) {
-  if (!orderNum || !username) {
-    console.warn('[Sync] orderNum أو username مفقود!', { orderNum, username });
+/* ── حفظ التعديلات ── */
+async function saveEditSaleMO(logId, itemId) {
+  const buyerName    = document.getElementById('editBuyerName')?.value.trim();
+  const buyerPhone   = document.getElementById('editBuyerPhone')?.value.trim()   || '';
+  const buyerAddress = document.getElementById('editBuyerAddress')?.value.trim() || '';
+  const qty          = parseInt(document.getElementById('editQty')?.value)        || 0;
+  const unitPrice    = parseFloat(document.getElementById('editUnitPrice')?.value) || 0;
+  const paidAmount   = parseFloat(document.getElementById('editPaidAmount')?.value) || 0;
+  const debtAmount   = parseFloat(document.getElementById('editDebtAmount')?.value) || 0;
+  const notes        = document.getElementById('editSaleNote')?.value.trim()      || '';
+
+  if (!buyerName) {
+    showInvToast('Müşteri adını girin!', 'error');
     return;
   }
 
+  const totalAmount = qty * unitPrice;
   const sb = await initSupabase();
   if (!sb) return;
 
   const updateData = {
-    order_status : newStatus,
-    updated_at   : new Date().toISOString()
+    buyer_name    : buyerName,
+    buyer_phone   : buyerPhone,
+    qty_sold      : qty,
+    sale_price    : unitPrice,
+    total_amount  : totalAmount,
+    paid_amount   : paidAmount,
+    remaining_debt: debtAmount,
+    notes         : notes
   };
 
-  if (newStatus === 'delivered' && deliveryDate) {
-    updateData.delivery_date = deliveryDate;
-  }
-
-  const { data, error } = await sb
-    .from('user_orders_inventory')
+  /* محاولة تحديث مع الأعمدة الجديدة */
+  const { error } = await sb
+    .from('user_sales_log')
     .update(updateData)
-    .eq('order_number', orderNum)
-    .eq('username', username)
-    .select(); // ← أضف هذا لرؤية ما تم تحديثه
+    .eq('id', logId);
 
   if (error) {
-    console.error('[Sync] فشل التحديث:', error.message);
-  } else {
-    console.log('[Sync] ✅ تم التحديث:', orderNum, '→', newStatus, '| صفوف:', data?.length);
+    /* Fallback بدون الأعمدة الجديدة */
+    await sb.from('user_sales_log').update({
+      buyer_name   : buyerName,
+      buyer_phone  : buyerPhone,
+      qty_sold     : qty,
+      sale_price   : unitPrice,
+      total_amount : totalAmount,
+      notes        : `[Düzenlendi] Adres:${buyerAddress} | Tahsil:${paidAmount}₺ | Kalan:${debtAmount}₺ | ${notes}`
+    }).eq('id', logId);
+  }
+
+  /* تحديث الـ cache */
+  if (_salesLogCache[itemId]) {
+    const idx = _salesLogCache[itemId].findIndex(l => l.id === logId);
+    if (idx !== -1) {
+      Object.assign(_salesLogCache[itemId][idx], {
+        buyer_name    : buyerName,
+        buyer_phone   : buyerPhone,
+        buyer_address : buyerAddress,
+        qty_sold      : qty,
+        sale_price    : unitPrice,
+        total_amount  : totalAmount,
+        paid_amount   : paidAmount,
+        remaining_debt: debtAmount,
+        notes
+      });
+    }
+  }
+
+  document.getElementById('editSaleModal')?.remove();
+  showInvToast('Satış kaydı güncellendi ✓', 'success');
+
+  /* إعادة فتح سجل الحركات */
+  const item = _myOrdersData.find(i => i.id === itemId);
+  if (item) {
+    delete _salesLogCache[itemId];
+    document.getElementById('salesLogMO')?.remove();
+    setTimeout(() => openSalesLogMO(itemId, item.product_title, item.product_img), 300);
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   طباعة الفاتورة الاحترافية
+══════════════════════════════════════════════════════════════ */
+function openInvoicePrintMO(log, item) {
+  /* إذا جاء كـ string من onclick */
+  if (typeof log === 'string') {
+    try { log = JSON.parse(log); } catch(e) { return; }
+  }
+
+  /* استخراج البيانات */
+  let paidAmt   = log.paid_amount    || log.total_amount || 0;
+  let debtAmt   = log.remaining_debt || 0;
+  let invNum    = log.invoice_number || '';
+  let buyerAddr = log.buyer_address  || '';
+
+  if (!invNum && log.notes) {
+    const m = log.notes.match(/\[([A-Z0-9\-]+)\]/);
+    if (m) invNum = m[1];
+  }
+  if (!debtAmt && log.notes) {
+    const m = log.notes.match(/Kalan:(\d+(?:\.\d+)?)₺/);
+    if (m) debtAmt = parseFloat(m[1]);
+  }
+  if (!paidAmt && log.notes) {
+    const m = log.notes.match(/Peşinat:(\d+(?:\.\d+)?)₺/);
+    if (m) paidAmt = parseFloat(m[1]);
+  }
+  if (!buyerAddr && log.notes) {
+    const m = log.notes.match(/Adres:([^|]+)/);
+    if (m) buyerAddr = m[1].trim();
+  }
+
+  const ps          = _myPrintSettings;
+  const companyName = ps.company_name  || _currentUserData?.company_name || '';
+  const phone       = ps.company_phone || _currentUserData?.phone        || '';
+  const logoUrl     = ps.logo_url      || '';
+  const footerNote  = ps.print_footer  || '';
+  const now         = new Date(log.sold_at || Date.now());
+  const dateStr     = now.toLocaleDateString('tr-TR',
+    { day:'2-digit', month:'long', year:'numeric' });
+  const hasDebt     = debtAmt > 0;
+
+  /* بناء HTML الفاتورة */
+  const invoiceHTML = `
+    <!DOCTYPE html>
+    <html lang="tr">
+    <head>
+      <meta charset="UTF-8"/>
+      <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+      <title>Fatura ${invNum}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap"
+            rel="stylesheet"/>
+      <style>
+        * { margin:0;padding:0;box-sizing:border-box; }
+        body {
+          font-family:'Montserrat',sans-serif;
+          background:#f8f8f8;
+          display:flex;align-items:center;justify-content:center;
+          min-height:100vh;padding:20px;
+        }
+        .invoice {
+          background:#fff;
+          width:100%;max-width:680px;
+          border-radius:12px;
+          box-shadow:0 8px 40px rgba(0,0,0,0.12);
+          overflow:hidden;
+        }
+        .inv-top-bar {
+          height:6px;
+          background:linear-gradient(90deg,#c9a84c,#f0d080,#c9a84c);
+        }
+        .inv-header {
+          background:#0f0f0f;
+          padding:24px 28px;
+          display:flex;align-items:center;
+          justify-content:space-between;flex-wrap:wrap;gap:16px;
+        }
+        .inv-company { display:flex;align-items:center;gap:14px; }
+        .inv-logo {
+          max-height:64px;max-width:150px;
+          object-fit:contain;border-radius:8px;
+        }
+        .inv-company-name {
+          font-size:22px;font-weight:900;
+          color:#c9a84c;letter-spacing:1px;
+        }
+        .inv-company-phone {
+          font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;
+        }
+        .inv-meta { text-align:right; }
+        .inv-meta-title {
+          font-size:28px;font-weight:900;
+          color:#fff;letter-spacing:2px;
+        }
+        .inv-meta-num {
+          font-size:12px;color:#c9a84c;margin-top:4px;letter-spacing:1px;
+        }
+        .inv-meta-date {
+          font-size:11px;color:rgba(255,255,255,0.4);margin-top:3px;
+        }
+        .inv-body { padding:28px; }
+        .inv-parties {
+          display:grid;grid-template-columns:1fr 1fr;
+          gap:20px;margin-bottom:28px;
+        }
+        .inv-party {
+          background:#f9f9f9;border-radius:10px;
+          padding:16px;border:1px solid #eee;
+        }
+        .inv-party-title {
+          font-size:9px;letter-spacing:2.5px;
+          color:#c9a84c;text-transform:uppercase;
+          font-weight:700;margin-bottom:10px;
+          display:flex;align-items:center;gap:6px;
+        }
+        .inv-party-name {
+          font-size:16px;font-weight:900;color:#1a1a1a;margin-bottom:5px;
+        }
+        .inv-party-detail {
+          font-size:11px;color:#666;margin-top:3px;
+          display:flex;align-items:center;gap:5px;
+        }
+        .inv-table {
+          width:100%;border-collapse:collapse;margin-bottom:24px;
+        }
+        .inv-table th {
+          background:#1a1a1a;color:#c9a84c;
+          font-size:10px;letter-spacing:1.5px;
+          text-transform:uppercase;padding:11px 13px;
+          text-align:left;
+        }
+        .inv-table th:last-child { text-align:right; }
+        .inv-table td {
+          padding:13px;border-bottom:1px solid #f0f0f0;
+          font-size:13px;color:#333;vertical-align:middle;
+        }
+        .inv-table td:last-child { text-align:right;font-weight:700; }
+        .inv-table tr:last-child td { border-bottom:none; }
+        .inv-table tr:hover td { background:#fafafa; }
+        .inv-product-img {
+          width:52px;height:40px;object-fit:cover;
+          border-radius:6px;border:1px solid #eee;
+          display:block;
+        }
+        .inv-totals {
+          margin-left:auto;width:280px;
+          background:#f9f9f9;border-radius:10px;
+          padding:16px;border:1px solid #eee;
+          margin-bottom:24px;
+        }
+        .inv-total-row {
+          display:flex;justify-content:space-between;
+          align-items:center;padding:6px 0;
+          border-bottom:1px solid #eee;font-size:13px;
+        }
+        .inv-total-row:last-child { border-bottom:none; }
+        .inv-total-row.grand {
+          font-size:16px;font-weight:900;
+          color:#1a1a1a;padding-top:10px;
+        }
+        .inv-total-row.paid { color:#16a34a; }
+        .inv-total-row.debt { color:#dc2626; }
+        .inv-status-badge {
+          display:inline-flex;align-items:center;gap:6px;
+          padding:6px 14px;border-radius:50px;
+          font-size:11px;font-weight:700;
+          margin-bottom:24px;
+        }
+        .inv-status-paid {
+          background:#dcfce7;color:#16a34a;border:1px solid #86efac;
+        }
+        .inv-status-partial {
+          background:#fef3c7;color:#d97706;border:1px solid #fde68a;
+        }
+        .inv-status-unpaid {
+          background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;
+        }
+        .inv-footer {
+          background:#0f0f0f;padding:16px 28px;
+          display:flex;align-items:center;justify-content:space-between;
+          flex-wrap:wrap;gap:10px;
+        }
+        .inv-footer-note {
+          font-size:10px;color:rgba(255,255,255,0.35);
+          font-style:italic;flex:1;
+        }
+        .inv-footer-brand {
+          font-size:11px;font-weight:700;
+          color:rgba(201,168,76,0.6);letter-spacing:1px;
+        }
+        .inv-bottom-bar {
+          height:5px;
+          background:linear-gradient(90deg,#c9a84c,#f0d080,#c9a84c);
+        }
+        @media print {
+          body { background:#fff;padding:0; }
+          .invoice { box-shadow:none;border-radius:0;max-width:100%; }
+          .no-print { display:none!important; }
+        }
+      </style>
+    </head>
+    <body>
+      <!-- أزرار الطباعة -->
+      <div class="no-print" style="
+        position:fixed;top:16px;right:16px;z-index:999;
+        display:flex;gap:8px;">
+        <button onclick="window.print()" style="
+          padding:10px 20px;border-radius:9px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:12px;font-weight:900;cursor:pointer;
+          display:flex;align-items:center;gap:7px;
+          box-shadow:0 4px 16px rgba(201,168,76,0.35);">
+          🖨️ YAZDIR
+        </button>
+        <button onclick="window.close()" style="
+          padding:10px 16px;border-radius:9px;
+          border:1px solid rgba(0,0,0,0.15);
+          background:#fff;color:#666;
+          font-family:'Montserrat',sans-serif;
+          font-size:12px;font-weight:700;cursor:pointer;">
+          ✕ KAPAT
+        </button>
+      </div>
+
+      <div class="invoice">
+        <div class="inv-top-bar"></div>
+
+        <!-- هيدر الفاتورة -->
+        <div class="inv-header">
+          <div class="inv-company">
+            ${logoUrl ? `<img src="${logoUrl}" class="inv-logo" alt="Logo"/>` : `
+            <div style="width:56px;height:56px;border-radius:12px;
+                 background:rgba(201,168,76,0.15);
+                 border:2px solid rgba(201,168,76,0.4);
+                 display:flex;align-items:center;justify-content:center;
+                 font-size:24px;">🏢</div>`}
+            <div>
+              <div class="inv-company-name">${companyName || 'Şirket Adı'}</div>
+              ${phone ? `<div class="inv-company-phone">📞 ${phone}</div>` : ''}
+            </div>
+          </div>
+          <div class="inv-meta">
+            <div class="inv-meta-title">FATURA</div>
+            ${invNum ? `<div class="inv-meta-num"># ${invNum}</div>` : ''}
+            <div class="inv-meta-date">📅 ${dateStr}</div>
+          </div>
+        </div>
+
+        <!-- جسم الفاتورة -->
+        <div class="inv-body">
+
+          <!-- المورد والمشتري -->
+          <div class="inv-parties">
+            <div class="inv-party">
+              <div class="inv-party-title">
+                <span>🏢</span> SATICI
+              </div>
+              <div class="inv-party-name">${companyName || 'Şirket Adı'}</div>
+              ${phone ? `<div class="inv-party-detail">📞 ${phone}</div>` : ''}
+            </div>
+            <div class="inv-party">
+              <div class="inv-party-title">
+                <span>👤</span> ALICI
+              </div>
+              <div class="inv-party-name">${log.buyer_name}</div>
+              ${log.buyer_phone ? `<div class="inv-party-detail">📞 ${log.buyer_phone}</div>` : ''}
+              ${buyerAddr ? `<div class="inv-party-detail">📍 ${buyerAddr}</div>` : ''}
+            </div>
+          </div>
+
+          <!-- شارة الحالة -->
+          <div class="inv-status-badge ${
+            !hasDebt ? 'inv-status-paid' :
+            paidAmt > 0 ? 'inv-status-partial' :
+            'inv-status-unpaid'
+          }">
+            ${!hasDebt ? '✅ TAM ÖDENDİ' :
+              paidAmt > 0 ? '⚠️ KISMİ ÖDEME' :
+              '❌ ÖDENMEDİ'}
+          </div>
+
+          <!-- جدول المنتجات -->
+          <table class="inv-table">
+            <thead>
+              <tr>
+                <th>GÖRSEL</th>
+                <th>ÜRÜN</th>
+                <th style="text-align:center;">ADET</th>
+                <th style="text-align:center;">BİRİM FİYAT</th>
+                <th>TOPLAM</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  ${log.product_img ? `
+                  <img src="${log.product_img}" class="inv-product-img"
+                       alt="${log.product_title}"
+                       onerror="this.style.display='none'"/>` : `
+                  <div style="width:52px;height:40px;border-radius:6px;
+                       background:#f0f0f0;display:flex;align-items:center;
+                       justify-content:center;font-size:18px;">📦</div>`}
+                </td>
+                <td>
+                  <div style="font-weight:700;color:#1a1a1a;font-size:14px;">
+                    ${log.product_title}
+                  </div>
+                </td>
+                <td style="text-align:center;font-weight:900;font-size:16px;color:#1a1a1a;">
+                  ${log.qty_sold}
+                </td>
+                <td style="text-align:center;color:#666;font-style:italic;">
+                  ${Number(log.sale_price).toLocaleString('tr-TR')} ₺
+                </td>
+                <td style="font-weight:900;font-size:15px;color:#c9a84c;">
+                  ${Number(log.total_amount).toLocaleString('tr-TR')} ₺
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- الإجماليات -->
+          <div style="display:flex;justify-content:flex-end;margin-bottom:24px;">
+            <div class="inv-totals">
+              <div class="inv-total-row">
+                <span style="color:#666;">Ara Toplam</span>
+                <span>${Number(log.total_amount).toLocaleString('tr-TR')} ₺</span>
+              </div>
+              <div class="inv-total-row paid">
+                <span>✅ Tahsil Edilen</span>
+                <span style="font-weight:700;">${Number(paidAmt).toLocaleString('tr-TR')} ₺</span>
+              </div>
+              ${hasDebt ? `
+              <div class="inv-total-row debt">
+                <span>⏳ Kalan Borç</span>
+                <span style="font-weight:700;">${Number(debtAmt).toLocaleString('tr-TR')} ₺</span>
+              </div>` : ''}
+              <div class="inv-total-row grand">
+                <span>GENEL TOPLAM</span>
+                <span style="color:#c9a84c;">${Number(log.total_amount).toLocaleString('tr-TR')} ₺</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- الملاحظة -->
+          ${footerNote || (log.notes && !log.notes.startsWith('[')) ? `
+          <div style="background:#f9f9f9;border-radius:10px;padding:14px;
+               border:1px solid #eee;margin-bottom:20px;">
+            <div style="font-size:9px;letter-spacing:2px;color:#c9a84c;
+                 font-weight:700;text-transform:uppercase;margin-bottom:6px;">
+              NOT
+            </div>
+            <div style="font-size:12px;color:#666;line-height:1.7;">
+              ${footerNote || log.notes}
+            </div>
+          </div>` : ''}
+
+          <!-- إمضاء -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:28px;">
+            <div style="border-top:2px solid #eee;padding-top:10px;text-align:center;">
+              <div style="font-size:10px;color:#999;letter-spacing:1.5px;text-transform:uppercase;">
+                SATICI İMZASI
+              </div>
+            </div>
+            <div style="border-top:2px solid #eee;padding-top:10px;text-align:center;">
+              <div style="font-size:10px;color:#999;letter-spacing:1.5px;text-transform:uppercase;">
+                ALICI İMZASI
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- تذييل الفاتورة -->
+        <div class="inv-footer">
+          <div class="inv-footer-note">
+            ${footerNote || 'Bu fatura bilgisayar ortamında düzenlenmiştir.'}
+          </div>
+          <div class="inv-footer-brand">
+            ${companyName || 'WOW MOBİLYA'}
+          </div>
+        </div>
+        <div class="inv-bottom-bar"></div>
+      </div>
+    </body>
+    </html>`;
+
+  /* فتح نافذة الطباعة */
+  const win = window.open('', '_blank', 'width=780,height=900');
+  if (!win) {
+    showInvToast('Popup engellendi! Tarayıcı ayarlarını kontrol edin.', 'error');
+    return;
+  }
+  win.document.write(invoiceHTML);
+  win.document.close();
+  win.focus();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   تحديث دالة updateSaleTotal للتوافق
+══════════════════════════════════════════════════════════════ */
+function updateSaleTotal() {
+  updateInvoiceTotals();
+}
+
 
 
 
