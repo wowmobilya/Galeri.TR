@@ -38156,35 +38156,7 @@ function printInvoice(data) {
   win.onload = () => setTimeout(() => win.print(), 600);
 }
 
-/* ══════════════════════════════════════════════════════════════
-   ★ SQL — جدول sale_payments (أضفه في Supabase)
-   أضف هذا في SQL Editor في Supabase:
-══════════════════════════════════════════════════════════════ */
-/*
-CREATE TABLE IF NOT EXISTS sale_payments (
-  id         BIGSERIAL PRIMARY KEY,
-  sale_id    BIGINT NOT NULL REFERENCES user_sales_log(id) ON DELETE CASCADE,
-  username   TEXT NOT NULL,
-  amount     NUMERIC NOT NULL DEFAULT 0,
-  method     TEXT DEFAULT 'nakit',
-  note       TEXT DEFAULT '',
-  paid_at    TIMESTAMPTZ DEFAULT NOW()
-);
-ALTER TABLE sale_payments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "sp_all" ON sale_payments FOR ALL USING (true) WITH CHECK (true);
-CREATE INDEX IF NOT EXISTS idx_sp_sale_id ON sale_payments(sale_id);
 
--- أعمدة إضافية في user_sales_log
-ALTER TABLE user_sales_log
-  ADD COLUMN IF NOT EXISTS buyer_address  TEXT DEFAULT '',
-  ADD COLUMN IF NOT EXISTS paid_amount    NUMERIC DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS remain_amount  NUMERIC DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS invoice_number TEXT DEFAULT '';
-
--- Realtime
-ALTER PUBLICATION supabase_realtime ADD TABLE sale_payments;
-*/
-/* ══ نهاية الكود ══ */
 
 
 
