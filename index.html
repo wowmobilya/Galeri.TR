@@ -30498,7 +30498,7 @@ function showMsgCtx(e, msgId, isMine, type) {
   const canDeleteForAll = diffMinutes <= 60;
   const isAdmin = currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin);
 
-  /* ── الخيارات بترتيب ثابت بدون تكرار ── */
+  /* ── الخيارات بترتيب ثابت ── */
   items.push(`<div class="ctx-i" id="ctx-reply" onclick="document.getElementById('chatCtxMenu')?.remove();startReply(${msgId})">
     <i class="fas fa-reply"></i> Yanıtla</div>`);
 
@@ -30525,7 +30525,6 @@ function showMsgCtx(e, msgId, isMine, type) {
   items.push(`<div class="ctx-i" id="ctx-select" onclick="document.getElementById('chatCtxMenu')?.remove();enterMultiSelect(${msgId})">
     <i class="fas fa-check-square"></i> Seç</div>`);
 
-  // إظهار زر التعديل إذا لم يمر 30 دقيقة (أو إذا كان أدمن)
   if (isMine && type === 'text' && msg?.message) {
     if (canEdit || isAdmin) {
       items.push(`<div class="ctx-i" id="ctx-edit" onclick="startEdit(${msgId})">
@@ -30534,11 +30533,9 @@ function showMsgCtx(e, msgId, isMine, type) {
   }
 
   if (isMine) {
-    // الحذف من عندي متاح دائماً
     items.push(`<div class="ctx-i danger" id="ctx-del-mine" onclick="deleteMsg(${msgId},'mine')">
       <i class="fas fa-trash-alt"></i> Benden Sil</div>`);
     
-    // الحذف للجميع متاح خلال ساعة واحدة فقط (أو إذا كان أدمن)
     if (canDeleteForAll || isAdmin) {
       items.push(`<div class="ctx-i danger" id="ctx-del-all" onclick="deleteMsg(${msgId},'all')">
         <i class="fas fa-trash-alt"></i> Herkesten Sil</div>`);
@@ -30551,16 +30548,46 @@ function showMsgCtx(e, msgId, isMine, type) {
   menu.innerHTML = items.join('');
   if (!items.length) return;
 
-  const x = e.clientX || e.touches?.[0]?.clientX || window.innerWidth / 2;
-  const y = e.clientY || e.touches?.[0]?.clientY || window.innerHeight / 2;
-  menu.style.left = Math.min(x, window.innerWidth - 195) + 'px';
-  menu.style.top  = Math.min(y, window.innerHeight - 320) + 'px';
+  /* ── ★ التعديل الجديد لمنع القطش من الأسفل أو الجوانب ★ ── */
+  
+  // 1. إخفاء القائمة مؤقتاً لحين حساب أبعادها الحقيقية
+  menu.style.visibility = 'hidden';
   document.body.appendChild(menu);
 
+  // 2. استخدام requestAnimationFrame لضمان رسم المتصفح للقائمة وحساب أبعادها
+  requestAnimationFrame(() => {
+    const menuWidth = menu.offsetWidth;
+    const menuHeight = menu.offsetHeight;
+
+    let x = e.clientX || e.touches?.[0]?.clientX || window.innerWidth / 2;
+    let y = e.clientY || e.touches?.[0]?.clientY || window.innerHeight / 2;
+
+    // منع خروج القائمة من الحافة اليمنى للشاشة
+    if (x + menuWidth > window.innerWidth - 15) {
+      x = window.innerWidth - menuWidth - 15;
+    }
+
+    // منع خروج القائمة من الحافة السفلية (منع القطش)
+    if (y + menuHeight > window.innerHeight - 15) {
+      // إذا لم تكن هناك مساحة بالأسفل، نعرض القائمة "فوق" المؤشر بدلاً من تحته
+      y = y - menuHeight;
+      
+      // حماية إضافية: إذا كانت الشاشة صغيرة جداً وخرجت من الأعلى، نثبتها في الأعلى
+      if (y < 15) y = 15;
+    }
+
+    // تطبيق الإحداثيات الجديدة وإظهار القائمة
+    menu.style.left = x + 'px';
+    menu.style.top  = y + 'px';
+    menu.style.visibility = 'visible';
+  });
+
+  // إغلاق القائمة عند الضغط في أي مكان آخر
   setTimeout(() => {
     document.addEventListener('click', () => document.getElementById('chatCtxMenu')?.remove(), { once:true });
   }, 80);
 }
+
 
 function copyMsgText(text) {
   navigator.clipboard?.writeText(text)
