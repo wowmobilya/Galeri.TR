@@ -28519,41 +28519,52 @@ body.ctx-menu-open #chatMsgsArea > div:not(.msg-highlight-active) {
 
 
 
-/* ── تأثير القفز للرسالة (البحث / النجمة / الرد) مثل واتساب ── */
-.wa-jump-highlight {
+/* ── التمييز المشترك (القائمة المنسدلة + القفز للرسائل) ── */
+.msg-highlight-active,
+.msg-jump-active {
   position: relative;
-  z-index: 100 !important;
-  animation: waJumpScale 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  z-index: 100000 !important;
 }
 
-/* خلفية الوميض التي تظهر خلف الرسالة */
-.wa-jump-highlight::before {
+/* خلفية التظليل الذهبية */
+.msg-highlight-active::before,
+.msg-jump-active::before {
   content: '';
   position: absolute;
-  inset: -4px -12px;
-  background: rgba(201, 168, 76, 0.25); /* لون ذهبي شفاف للوميض */
-  border-radius: 14px;
-  z-index: -1;
+  inset: -2px -8px;
+  border-radius: 12px;
   pointer-events: none;
-  animation: waJumpBgFade 2s ease-out forwards;
+  z-index: -1;
 }
 
-/* حركة تكبير خفيفة للرسالة */
-@keyframes waJumpScale {
-  0%, 15% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+/* أنيميشن القائمة المنسدلة (تظليل ثابت) */
+.msg-highlight-active::before {
+  background: rgba(201, 168, 76, 0.18);
+  animation: waHighlightIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-/* تلاشي لون الوميض تدريجياً */
-@keyframes waJumpBgFade {
-  0%, 15% { opacity: 1; }
-  100% { opacity: 0; }
+/* أنيميشن القفز للرسالة (يومض ويختفي برفق) */
+.msg-jump-active::before {
+  background: rgba(201, 168, 76, 0.35);
+  animation: waJumpAnim 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-/* تعتيم باقي الرسائل في المحادثة للتركيز على الرسالة المقصودة */
-body.is-jumping #chatMsgsArea > div:not(.wa-jump-highlight) {
-  opacity: 0.4;
+@keyframes waHighlightIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes waJumpAnim {
+  0%, 15% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
+/* تعتيم باقي المحادثة للتركيز على الرسالة المقصودة */
+body.ctx-menu-open #chatMsgsArea > div:not(.msg-highlight-active),
+body.is-jumping #chatMsgsArea > div:not(.msg-jump-active) {
+  opacity: 0.35 !important;
   transition: opacity 0.4s ease;
+  pointer-events: none;
 }
 
 
@@ -30841,21 +30852,27 @@ function jumpToMessage(msgId) {
   // 1. التمرير السلس للرسالة لتكون في منتصف الشاشة
   el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   
-  // 2. إزالة الكلاسات إذا كانت موجودة (لإعادة تشغيل الأنيميشن إذا تم النقر مرتين)
-  el.classList.remove('wa-jump-highlight');
+  // 2. تنظيف أي تأثيرات سابقة (في حال نقر المستخدم بسرعة على عدة رسائل)
+  document.querySelectorAll('.msg-jump-active').forEach(item => item.classList.remove('msg-jump-active'));
   document.body.classList.remove('is-jumping');
-  void el.offsetWidth; // Trigger Reflow لإجبار المتصفح على إعادة الحساب
   
-  // 3. إضافة كلاس التمييز للرسالة وكلاس التعتيم للشاشة
-  el.classList.add('wa-jump-highlight');
+  // 3. إجبار المتصفح على إعادة الرسم (Reflow) لضمان عمل الأنيميشن
+  void el.offsetWidth; 
+  
+  // 4. تفعيل تأثير التظليل والتعتيم
+  el.classList.add('msg-jump-active');
   document.body.classList.add('is-jumping');
   
-  // 4. إزالة التأثيرات بعد انتهاء الأنيميشن (بعد ثانيتين) لتعود المحادثة لطبيعتها
-  setTimeout(() => {
-    if (el) el.classList.remove('wa-jump-highlight');
+  // 5. تنظيف المؤقت السابق
+  if (window._jumpTimeout) clearTimeout(window._jumpTimeout);
+  
+  // 6. إزالة التأثير بعد ثانيتين لتعود المحادثة لطبيعتها
+  window._jumpTimeout = setTimeout(() => {
+    if (el) el.classList.remove('msg-jump-active');
     document.body.classList.remove('is-jumping');
   }, 2000);
 }
+
 
 
 /* ══════════════════════════════════════════════════════════════
