@@ -34260,6 +34260,9 @@ if (isCancelled) {
 /* ══════════════════════════════════════════════════════════════
    نافذة تسجيل البيع
 ══════════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════════════
+   نافذة تسجيل البيع (محدثة لدعم العنوان والدفعة)
+══════════════════════════════════════════════════════════════ */
 function openSaleModalMO(itemId) {
   const item = _myOrdersData.find(i => i.id === itemId);
   if (!item) return;
@@ -34279,350 +34282,131 @@ function openSaleModalMO(itemId) {
 
   modal.innerHTML = `
     <div class="sale-modal-box">
-      <!-- Handle -->
-      <div style="display:flex;align-items:center;justify-content:center;
-           padding:10px 0 4px;">
-        <div style="width:40px;height:4px;background:rgba(255,255,255,0.15);
-             border-radius:4px;"></div>
+      <div style="display:flex;align-items:center;justify-content:center;padding:10px 0 4px;">
+        <div style="width:40px;height:4px;background:rgba(255,255,255,0.15);border-radius:4px;"></div>
       </div>
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#4ade80 30%,#86efac 50%,#4ade80 70%,transparent);"></div>
 
-      <!-- الخط الأخضر -->
-      <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#4ade80 30%,#86efac 50%,#4ade80 70%,transparent);"></div>
-
-      <!-- هيدر -->
-      <div style="padding:14px 18px 12px;display:flex;align-items:center;
-           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+      <div style="padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
         <div style="display:flex;align-items:center;gap:11px;min-width:0;">
-          ${item.product_img ? `
-          <img src="${item.product_img}"
-               style="width:46px;height:36px;object-fit:cover;
-                      border-radius:8px;border:1px solid rgba(255,255,255,0.08);
-                      flex-shrink:0;"
-               draggable="false"
-               onerror="this.style.display='none'"/>` : `
-          <div style="width:46px;height:36px;border-radius:8px;flex-shrink:0;
-               background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);
-               display:flex;align-items:center;justify-content:center;
-               color:#4ade80;font-size:16px;">
-            <i class="fas fa-handshake"></i>
-          </div>`}
+          ${item.product_img ? `<img src="${item.product_img}" style="width:46px;height:36px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.08);flex-shrink:0;" draggable="false"/>` : `<div style="width:46px;height:36px;border-radius:8px;flex-shrink:0;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);display:flex;align-items:center;justify-content:center;color:#4ade80;font-size:16px;"><i class="fas fa-handshake"></i></div>`}
           <div style="min-width:0;">
-            <div style="font-size:8px;letter-spacing:3px;
-                 color:rgba(74,222,128,0.6);text-transform:uppercase;margin-bottom:2px;">
-              SATIŞ KAYDI
-            </div>
-            <div style="font-size:14px;font-weight:900;color:#fff;
-                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                 max-width:210px;">
-              ${item.product_title}
-            </div>
+            <div style="font-size:8px;letter-spacing:3px;color:rgba(74,222,128,0.6);text-transform:uppercase;margin-bottom:2px;">SATIŞ KAYDI & FATURA</div>
+            <div style="font-size:14px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px;">${item.product_title}</div>
           </div>
         </div>
-        <button onclick="document.getElementById('saleModalMO').remove()"
-          style="width:32px;height:32px;border-radius:8px;flex-shrink:0;
-          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
-          color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
-          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
-          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
-          <i class="fas fa-times"></i>
-        </button>
+        <button onclick="document.getElementById('saleModalMO').remove()" style="width:32px;height:32px;border-radius:8px;flex-shrink:0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.25s;"><i class="fas fa-times"></i></button>
       </div>
 
-      <!-- الجسم -->
-      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:13px;">
-
-        <!-- المخزون المتاح -->
-        <div style="
-          display:flex;align-items:center;justify-content:space-between;
-          padding:10px 14px;border-radius:11px;
-          background:rgba(74,222,128,0.06);
-          border:1px solid rgba(74,222,128,0.15);">
-          <span style="font-size:10px;color:rgba(255,255,255,0.4);
-               display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-warehouse" style="color:#4ade80;"></i>
-            Satılabilir Stok
-          </span>
-          <span style="font-size:18px;font-weight:900;color:#4ade80;">
-            ${remain} <span style="font-size:11px;color:rgba(74,222,128,0.5);">adet</span>
-          </span>
+      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:13px;max-height:75vh;overflow-y:auto;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-radius:11px;background:rgba(74,222,128,0.06);border:1px solid rgba(74,222,128,0.15);">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:6px;"><i class="fas fa-warehouse" style="color:#4ade80;"></i> Satılabilir Stok</span>
+          <span style="font-size:18px;font-weight:900;color:#4ade80;">${remain} <span style="font-size:11px;color:rgba(74,222,128,0.5);">adet</span></span>
         </div>
 
-        <!-- اسم المشتري -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;
-               display:flex;align-items:center;gap:5px;">
-            <i class="fas fa-user" style="color:rgba(74,222,128,0.5);"></i>
-            MÜŞTERİ ADI *
-          </label>
-          <input type="text" id="saleBuyerName"
-            placeholder="Müşteri adı soyadı"
-            autocomplete="off"
-            style="
-              width:100%;padding:12px 13px;
-              background:rgba(255,255,255,0.04);
-              border:1.5px solid rgba(74,222,128,0.2);
-              border-radius:10px;color:#fff;
-              font-family:'Montserrat',sans-serif;
-              font-size:14px;font-weight:600;
-              outline:none;transition:all 0.3s;
-              -webkit-user-select:text;user-select:text;
-              box-sizing:border-box;"
-            onfocus="this.style.borderColor='#4ade80'"
-            onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-user" style="color:rgba(74,222,128,0.5);"></i> MÜŞTERİ ADI *</label>
+          <input type="text" id="saleBuyerName" placeholder="Müşteri adı soyadı" style="width:100%;padding:12px 13px;background:rgba(255,255,255,0.04);border:1.5px solid rgba(74,222,128,0.2);border-radius:10px;color:#fff;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:600;outline:none;transition:all 0.3s;-webkit-user-select:text;user-select:text;box-sizing:border-box;"/>
         </div>
 
-        <!-- الهاتف (اختياري) -->
-        <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;
-               display:flex;align-items:center;gap:5px;">
-            <i class="fas fa-phone" style="color:rgba(74,222,128,0.5);"></i>
-            TELEFON
-            <span style="font-size:8px;color:rgba(255,255,255,0.15);
-                 font-weight:400;">(İsteğe Bağlı)</span>
-          </label>
-          <input type="tel" id="saleBuyerPhone"
-            placeholder="+90 XXX XXX XX XX"
-            inputmode="tel"
-            style="
-              width:100%;padding:12px 13px;
-              background:rgba(255,255,255,0.04);
-              border:1px solid rgba(74,222,128,0.15);
-              border-radius:10px;color:#fff;
-              font-family:'Montserrat',sans-serif;
-              font-size:13px;outline:none;transition:all 0.3s;
-              -webkit-user-select:text;user-select:text;
-              box-sizing:border-box;"
-            onfocus="this.style.borderColor='#4ade80'"
-            onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"/>
-        </div>
-
-        <!-- الكمية + السعر -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-
-          <!-- الكمية -->
           <div>
-            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-                 text-transform:uppercase;font-weight:700;margin-bottom:6px;
-                 display:flex;align-items:center;gap:5px;">
-              <i class="fas fa-sort-numeric-up"
-                 style="color:rgba(74,222,128,0.5);"></i>
-              MİKTAR
-            </label>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-phone" style="color:rgba(74,222,128,0.5);"></i> TELEFON</label>
+            <input type="tel" id="saleBuyerPhone" placeholder="+90 XXX..." style="width:100%;padding:12px 13px;background:rgba(255,255,255,0.04);border:1px solid rgba(74,222,128,0.15);border-radius:10px;color:#fff;font-family:'Montserrat',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"/>
+          </div>
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-map-marker-alt" style="color:rgba(74,222,128,0.5);"></i> ADRES</label>
+            <input type="text" id="saleBuyerAddress" placeholder="İl / İlçe / Mahalle" style="width:100%;padding:12px 13px;background:rgba(255,255,255,0.04);border:1px solid rgba(74,222,128,0.15);border-radius:10px;color:#fff;font-family:'Montserrat',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"/>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-sort-numeric-up" style="color:rgba(74,222,128,0.5);"></i> MİKTAR</label>
             <div style="display:flex;align-items:center;gap:6px;">
-              <button onclick="changeSaleQty(-1)" style="
-                width:32px;height:42px;border-radius:8px;flex-shrink:0;
-                border:1px solid rgba(239,68,68,0.3);
-                background:rgba(239,68,68,0.1);color:#ef4444;
-                font-size:16px;font-weight:700;cursor:pointer;
-                display:flex;align-items:center;justify-content:center;
-                transition:all 0.2s;"
-                onmouseover="this.style.background='rgba(239,68,68,0.2)'"
-                onmouseout="this.style.background='rgba(239,68,68,0.1)'">−</button>
-              <input type="number" id="saleQty"
-                value="1" min="1" max="${remain}"
-                inputmode="numeric"
-                oninput="updateSaleTotal()"
-                style="
-                  flex:1;padding:10px 6px;text-align:center;
-                  background:rgba(255,255,255,0.04);
-                  border:1px solid rgba(74,222,128,0.2);
-                  border-radius:8px;color:#fff;
-                  font-family:'Montserrat',sans-serif;
-                  font-size:16px;font-weight:900;
-                  outline:none;-webkit-user-select:text;user-select:text;
-                  box-sizing:border-box;"
-                onfocus="this.style.borderColor='#4ade80'"
-                onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
-              <button onclick="changeSaleQty(+1,${remain})" style="
-                width:32px;height:42px;border-radius:8px;flex-shrink:0;
-                border:1px solid rgba(74,222,128,0.3);
-                background:rgba(74,222,128,0.1);color:#4ade80;
-                font-size:16px;font-weight:700;cursor:pointer;
-                display:flex;align-items:center;justify-content:center;
-                transition:all 0.2s;"
-                onmouseover="this.style.background='rgba(74,222,128,0.2)'"
-                onmouseout="this.style.background='rgba(74,222,128,0.1)'">+</button>
+              <button onclick="changeSaleQty(-1)" style="width:32px;height:42px;border-radius:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#ef4444;font-size:16px;font-weight:700;cursor:pointer;">−</button>
+              <input type="number" id="saleQty" value="1" min="1" max="${remain}" oninput="updateSaleTotal()" style="flex:1;padding:10px 6px;text-align:center;background:rgba(255,255,255,0.04);border:1px solid rgba(74,222,128,0.2);border-radius:8px;color:#fff;font-family:'Montserrat',sans-serif;font-size:16px;font-weight:900;outline:none;box-sizing:border-box;"/>
+              <button onclick="changeSaleQty(+1,${remain})" style="width:32px;height:42px;border-radius:8px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);color:#4ade80;font-size:16px;font-weight:700;cursor:pointer;">+</button>
             </div>
           </div>
-
-          <!-- السعر -->
           <div>
-            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-                 text-transform:uppercase;font-weight:700;margin-bottom:6px;
-                 display:flex;align-items:center;gap:5px;">
-              <i class="fas fa-lira-sign"
-                 style="color:rgba(201,168,76,0.5);"></i>
-              BİRİM FİYAT
-            </label>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-lira-sign" style="color:rgba(201,168,76,0.5);"></i> BİRİM FİYAT</label>
             <div style="position:relative;">
-              <input type="number" id="salePriceUnit"
-                value="${defaultPrice}"
-                placeholder="0"
-                inputmode="decimal"
-                oninput="updateSaleTotal()"
-                style="
-                  width:100%;padding:10px 30px 10px 12px;
-                  background:rgba(255,255,255,0.04);
-                  border:1px solid rgba(201,168,76,0.2);
-                  border-radius:8px;color:#fff;
-                  font-family:'Montserrat',sans-serif;
-                  font-size:15px;font-weight:700;
-                  outline:none;transition:all 0.3s;
-                  -webkit-user-select:text;user-select:text;
-                  box-sizing:border-box;"
-                onfocus="this.style.borderColor='#c9a84c'"
-                onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
-              <span style="position:absolute;right:10px;top:50%;
-                   transform:translateY(-50%);font-size:13px;font-weight:900;
-                   color:rgba(201,168,76,0.5);pointer-events:none;">₺</span>
+              <input type="number" id="salePriceUnit" value="${defaultPrice}" placeholder="0" oninput="updateSaleTotal()" style="width:100%;padding:10px 30px 10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.2);border-radius:8px;color:#fff;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:700;outline:none;box-sizing:border-box;"/>
+              <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:900;color:rgba(201,168,76,0.5);">₺</span>
             </div>
           </div>
         </div>
 
-        <!-- الإجمالي -->
-        <div style="
-          display:flex;align-items:center;justify-content:space-between;
-          padding:11px 14px;border-radius:11px;
-          background:rgba(201,168,76,0.06);
-          border:1px solid rgba(201,168,76,0.15);">
-          <span style="font-size:10px;color:rgba(255,255,255,0.4);
-               display:flex;align-items:center;gap:6px;">
-            <i class="fas fa-receipt" style="color:#c9a84c;"></i>
-            Toplam Tutar
-          </span>
-          <span id="saleTotalDisplay"
-                style="font-size:clamp(16px,4vw,20px);font-weight:900;
-                       background:linear-gradient(135deg,#c9a84c,#f0d080);
-                       -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                       background-clip:text;">
-            — ₺
-          </span>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-radius:11px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.15);">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:6px;"><i class="fas fa-receipt" style="color:#c9a84c;"></i> Toplam Tutar</span>
+          <span id="saleTotalDisplay" style="font-size:clamp(16px,4vw,20px);font-weight:900;background:linear-gradient(135deg,#c9a84c,#f0d080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">— ₺</span>
         </div>
 
-        <!-- ملاحظة -->
+        <!-- الدفعة الأولى -->
         <div>
-          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
-               text-transform:uppercase;font-weight:700;margin-bottom:6px;
-               display:flex;align-items:center;gap:5px;">
-            <i class="fas fa-sticky-note"
-               style="color:rgba(74,222,128,0.5);"></i>
-            NOT
-            <span style="font-size:8px;color:rgba(255,255,255,0.15);
-                 font-weight:400;">(İsteğe Bağlı)</span>
-          </label>
-          <textarea id="saleNotes"
-            placeholder="Ödeme şekli, teslimat notu vb..."
-            rows="2"
-            style="
-              width:100%;padding:10px 13px;
-              background:rgba(255,255,255,0.04);
-              border:1px solid rgba(74,222,128,0.15);
-              border-radius:10px;color:#fff;
-              font-family:'Montserrat',sans-serif;
-              font-size:12px;outline:none;resize:none;
-              -webkit-user-select:text;user-select:text;
-              transition:all 0.3s;box-sizing:border-box;"
-            onfocus="this.style.borderColor='#4ade80'"
-            onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"></textarea>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-money-bill-wave" style="color:#60a5fa;"></i> ALINAN ÖDEME (PEŞİNAT)</label>
+          <div style="position:relative;">
+            <input type="number" id="salePaidAmount" placeholder="0" oninput="updateSaleTotal()" style="width:100%;padding:10px 30px 10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(96,165,250,0.3);border-radius:8px;color:#fff;font-family:'Montserrat',sans-serif;font-size:15px;font-weight:700;outline:none;box-sizing:border-box;"/>
+            <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:13px;font-weight:900;color:rgba(96,165,250,0.5);">₺</span>
+          </div>
+          <div id="saleRemainingDisplay" style="font-size:10px;color:#fbbf24;margin-top:6px;font-weight:700;text-align:right;">Kalan: 0 ₺</div>
         </div>
 
-        <!-- أزرار -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);text-transform:uppercase;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:5px;"><i class="fas fa-sticky-note" style="color:rgba(74,222,128,0.5);"></i> NOT (İsteğe Bağlı)</label>
+          <textarea id="saleNotes" placeholder="Teslimat notu vb..." rows="2" style="width:100%;padding:10px 13px;background:rgba(255,255,255,0.04);border:1px solid rgba(74,222,128,0.15);border-radius:10px;color:#fff;font-family:'Montserrat',sans-serif;font-size:12px;outline:none;resize:none;box-sizing:border-box;"></textarea>
+        </div>
+
         <div style="display:flex;gap:10px;">
-          <button onclick="document.getElementById('saleModalMO').remove()" style="
-            flex:1;padding:13px;border-radius:11px;
-            border:1px solid rgba(255,255,255,0.1);
-            background:rgba(255,255,255,0.04);
-            color:rgba(255,255,255,0.4);
-            font-family:'Montserrat',sans-serif;
-            font-size:11px;font-weight:700;letter-spacing:1px;
-            cursor:pointer;transition:all 0.25s;"
-            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
-            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
-            İPTAL
-          </button>
-          <button onclick="confirmSaleMO(${itemId})" style="
-            flex:2;padding:13px;border-radius:11px;border:none;
-            background:linear-gradient(135deg,#16a34a,#4ade80);
-            color:#fff;font-family:'Montserrat',sans-serif;
-            font-size:11px;font-weight:900;letter-spacing:2px;
-            cursor:pointer;transition:all 0.25s;
-            display:flex;align-items:center;justify-content:center;gap:7px;"
-            onmouseover="this.style.transform='translateY(-2px)'"
-            onmouseout="this.style.transform=''">
-            <i class="fas fa-check"></i> SATIŞI KAYDET
-          </button>
+          <button onclick="document.getElementById('saleModalMO').remove()" style="flex:1;padding:13px;border-radius:11px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.4);font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">İPTAL</button>
+          <button onclick="confirmSaleMO(${itemId})" style="flex:2;padding:13px;border-radius:11px;border:none;background:linear-gradient(135deg,#16a34a,#4ade80);color:#fff;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;"><i class="fas fa-check"></i> SATIŞI KAYDET</button>
         </div>
       </div>
     </div>`;
 
   document.body.appendChild(modal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.remove();
-  });
-
-  updateSaleTotal();
-  setTimeout(() => document.getElementById('saleBuyerName')?.focus(), 350);
-}
-
-/* ── تغيير كمية البيع ── */
-function changeSaleQty(delta, max) {
-  const inp = document.getElementById('saleQty');
-  if (!inp) return;
-  const cur = parseInt(inp.value) || 1;
-  const newVal = Math.max(1, Math.min(max || 9999, cur + delta));
-  inp.value = newVal;
   updateSaleTotal();
 }
 
-/* ── تحديث الإجمالي ── */
-function updateSaleTotal() {
-  const qty   = parseInt(document.getElementById('saleQty')?.value)       || 0;
+// تحديث دالة updateSaleTotal لحساب المتبقي
+const oldUpdateSaleTotal = updateSaleTotal;
+updateSaleTotal = function() {
+  oldUpdateSaleTotal();
+  const qty   = parseInt(document.getElementById('saleQty')?.value) || 0;
   const price = parseFloat(document.getElementById('salePriceUnit')?.value) || 0;
   const total = qty * price;
-  const el    = document.getElementById('saleTotalDisplay');
-  if (el) {
-    el.textContent = total > 0
-      ? Number(total).toLocaleString('tr-TR') + ' ₺'
-      : '— ₺';
+  const paid  = parseFloat(document.getElementById('salePaidAmount')?.value) || 0;
+  const remain = Math.max(0, total - paid);
+  
+  const remainEl = document.getElementById('saleRemainingDisplay');
+  if (remainEl) {
+    remainEl.textContent = `Kalan: ${Number(remain).toLocaleString('tr-TR')} ₺`;
+    remainEl.style.color = remain > 0 ? '#ef4444' : '#4ade80';
   }
-}
+};
 
-/* ── تأكيد البيع وحفظه ── */
 async function confirmSaleMO(itemId) {
   const item = _myOrdersData.find(i => i.id === itemId);
   if (!item) return;
 
   const buyerName  = document.getElementById('saleBuyerName')?.value.trim();
   const buyerPhone = document.getElementById('saleBuyerPhone')?.value.trim() || '';
+  const buyerAddress = document.getElementById('saleBuyerAddress')?.value.trim() || '';
   const qty        = parseInt(document.getElementById('saleQty')?.value) || 0;
   const unitPrice  = parseFloat(document.getElementById('salePriceUnit')?.value) || 0;
+  const paidAmount = parseFloat(document.getElementById('salePaidAmount')?.value) || 0;
   const notes      = document.getElementById('saleNotes')?.value.trim() || '';
 
-  /* التحقق */
-  if (!buyerName) {
-    showInvToast('Müşteri adını girin!', 'error');
-    document.getElementById('saleBuyerName')?.focus();
-    return;
-  }
-  if (qty < 1) {
-    showInvToast('Miktar en az 1 olmalı!', 'error');
-    return;
-  }
-  const remain = (item.qty_purchased||0) - (item.qty_sold||0);
-  if (qty > remain) {
-    showInvToast(`Maksimum ${remain} adet satabilirsiniz!`, 'error');
-    return;
-  }
+  if (!buyerName) { showInvToast('Müşteri adını girin!', 'error'); return; }
+  if (qty < 1) { showInvToast('Miktar en az 1 olmalı!', 'error'); return; }
 
   const totalAmount = qty * unitPrice;
+  const paymentHistory = paidAmount > 0 ? [{ date: new Date().toISOString(), amount: paidAmount }] : [];
+
   const sb = await initSupabase();
   if (!sb) return;
 
-  /* 1. إضافة سجل البيع */
   const { data: saleRow, error: saleErr } = await sb
     .from('user_sales_log')
     .insert([{
@@ -34632,31 +34416,29 @@ async function confirmSaleMO(itemId) {
       product_img   : item.product_img || '',
       buyer_name    : buyerName,
       buyer_phone   : buyerPhone,
+      buyer_address : buyerAddress,
       qty_sold      : qty,
       sale_price    : unitPrice,
       total_amount  : totalAmount,
+      paid_amount   : paidAmount,
+      payment_history: paymentHistory,
       notes         : notes,
       sold_at       : new Date().toISOString()
     }])
-    .select()
-    .single();
+    .select().single();
 
   if (saleErr) { showInvToast('Kayıt hatası!', 'error'); return; }
 
-  /* 2. تحديث qty_sold في المخزون */
   const newSold = (item.qty_sold||0) + qty;
-  await sb.from('user_orders_inventory')
-    .update({ qty_sold: newSold, updated_at: new Date().toISOString() })
-    .eq('id', itemId);
+  await sb.from('user_orders_inventory').update({ qty_sold: newSold }).eq('id', itemId);
 
-  /* 3. تحديث محلي */
   item.qty_sold = newSold;
-  if (_salesLogCache[itemId]) {
-    _salesLogCache[itemId].unshift(saleRow);
-  }
+  if (_salesLogCache[itemId]) _salesLogCache[itemId].unshift(saleRow);
 
   document.getElementById('saleModalMO')?.remove();
-  showInvToast(`${qty} adet — ${buyerName} ✓`, 'success');
+  showInvToast('Satış kaydedildi ✓', 'success');
+  renderMyOrdersContent();
+}
 
   /* إعادة رسم البطاقة */
   const card = document.getElementById('myitem-' + itemId);
@@ -34669,274 +34451,278 @@ async function confirmSaleMO(itemId) {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   نافذة سجل الحركات لكل موديل
+   نافذة سجل الحركات (محدثة لدعم الفواتير والدفعات)
 ══════════════════════════════════════════════════════════════ */
 async function openSalesLogMO(itemId, productTitle, productImg) {
   document.getElementById('salesLogMO')?.remove();
 
-  /* تحميل السجلات */
   let logs = _salesLogCache[itemId];
   if (!logs) {
     const sb = await initSupabase();
     if (!sb) return;
-    const { data } = await sb
-      .from('user_sales_log')
-      .select('*')
-      .eq('inventory_id', itemId)
-      .order('sold_at', { ascending: false });
+    const { data } = await sb.from('user_sales_log').select('*').eq('inventory_id', itemId).order('sold_at', { ascending: false });
     logs = data || [];
     _salesLogCache[itemId] = logs;
   }
 
-  const item        = _myOrdersData.find(i => i.id === itemId);
-  const totalSoldQ  = logs.reduce((s,l) => s + (l.qty_sold||0), 0);
-  const totalRev    = logs.reduce((s,l) => s + (l.total_amount||0), 0);
+  const item = _myOrdersData.find(i => i.id === itemId);
+  const totalSoldQ = logs.reduce((s,l) => s + (l.qty_sold||0), 0);
+  const totalRev   = logs.reduce((s,l) => s + (l.total_amount||0), 0);
 
-// ✅ صحيح
-const modal = document.createElement('div');
-modal.id = 'salesLogMO';
-modal.className = 'sales-log-modal';
-
+  const modal = document.createElement('div');
+  modal.id = 'salesLogMO';
+  modal.className = 'sales-log-modal';
 
   modal.innerHTML = `
     <div class="sales-log-inner">
-
-      <!-- الخط الأزرق -->
-      <div style="height:3px;background:linear-gradient(90deg,
-        transparent,#60a5fa 30%,#93c5fd 50%,#60a5fa 70%,transparent);
-        flex-shrink:0;"></div>
-
-      <!-- هيدر -->
-      <div style="padding:14px 18px 12px;display:flex;align-items:center;
-           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);
-           flex-shrink:0;">
+      <div style="height:3px;background:linear-gradient(90deg,transparent,#60a5fa 30%,#93c5fd 50%,#60a5fa 70%,transparent);flex-shrink:0;"></div>
+      <div style="padding:14px 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:11px;min-width:0;">
-          ${productImg ? `
-          <img src="${productImg}"
-               style="width:46px;height:36px;object-fit:cover;
-                      border-radius:8px;border:1px solid rgba(255,255,255,0.08);
-                      flex-shrink:0;"
-               draggable="false"
-               onerror="this.style.display='none'"/>` : `
-          <div style="width:46px;height:36px;border-radius:8px;flex-shrink:0;
-               background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);
-               display:flex;align-items:center;justify-content:center;
-               color:#60a5fa;font-size:16px;">
-            <i class="fas fa-chart-bar"></i>
-          </div>`}
+          ${productImg ? `<img src="${productImg}" style="width:46px;height:36px;object-fit:cover;border-radius:8px;border:1px solid rgba(255,255,255,0.08);flex-shrink:0;" draggable="false"/>` : `<div style="width:46px;height:36px;border-radius:8px;flex-shrink:0;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);display:flex;align-items:center;justify-content:center;color:#60a5fa;font-size:16px;"><i class="fas fa-chart-bar"></i></div>`}
           <div style="min-width:0;">
-            <div style="font-size:8px;letter-spacing:3px;
-                 color:rgba(96,165,250,0.6);text-transform:uppercase;margin-bottom:2px;">
-              SATIŞ HAREKETLERİ
-            </div>
-            <div style="font-size:14px;font-weight:900;color:#fff;
-                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                 max-width:200px;">
-              ${productTitle}
-            </div>
+            <div style="font-size:8px;letter-spacing:3px;color:rgba(96,165,250,0.6);text-transform:uppercase;margin-bottom:2px;">SATIŞ & FATURALAR</div>
+            <div style="font-size:14px;font-weight:900;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;">${productTitle}</div>
           </div>
         </div>
-        <button onclick="document.getElementById('salesLogMO').remove()"
-          style="width:32px;height:32px;border-radius:8px;flex-shrink:0;
-          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
-          color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
-          display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
-          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
-          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
-          <i class="fas fa-times"></i>
-        </button>
+        <button onclick="document.getElementById('salesLogMO').remove()" style="width:32px;height:32px;border-radius:8px;flex-shrink:0;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.25s;"><i class="fas fa-times"></i></button>
       </div>
 
-      <!-- ملخص الإحصائيات -->
-      <div style="
-        display:grid;grid-template-columns:repeat(3,1fr);
-        gap:0;border-bottom:1px solid rgba(255,255,255,0.05);
-        flex-shrink:0;">
-        ${[
-          { icon:'fa-receipt',    color:'#60a5fa', val:logs.length,                              lbl:'İşlem Sayısı'  },
-          { icon:'fa-boxes',      color:'#4ade80', val:totalSoldQ,                               lbl:'Toplam Satılan'},
-          { icon:'fa-lira-sign',  color:'#c9a84c', val:Number(totalRev).toLocaleString('tr-TR')+'₺', lbl:'Toplam Gelir'  },
-        ].map(s => `
-          <div style="padding:12px 8px;text-align:center;
-               border-right:1px solid rgba(255,255,255,0.05);">
-            <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
-                 color:${s.color};line-height:1;margin-bottom:3px;">
-              ${s.val}
-            </div>
-            <div style="font-size:8px;color:rgba(255,255,255,0.25);
-                 text-transform:uppercase;letter-spacing:0.8px;">
-              ${s.lbl}
-            </div>
-          </div>`).join('')}
-      </div>
-
-      <!-- قائمة السجلات -->
-      <div style="flex:1;overflow-y:auto;padding:12px 14px 20px;
-           display:flex;flex-direction:column;gap:8px;">
-
+      <div style="flex:1;overflow-y:auto;padding:12px 14px 20px;display:flex;flex-direction:column;gap:12px;">
         ${logs.length === 0 ? `
-        <div style="text-align:center;padding:50px 20px;
-             color:rgba(255,255,255,0.15);">
-          <i class="fas fa-chart-bar"
-             style="font-size:36px;display:block;margin-bottom:12px;
-                    color:rgba(96,165,250,0.1);"></i>
-          <p style="font-size:12px;letter-spacing:1.5px;">
-            Henüz satış hareketi yok
-          </p>
-        </div>` :
-
+        <div style="text-align:center;padding:50px 20px;color:rgba(255,255,255,0.15);">
+          <i class="fas fa-file-invoice" style="font-size:36px;display:block;margin-bottom:12px;color:rgba(96,165,250,0.1);"></i>
+          <p style="font-size:12px;letter-spacing:1.5px;">Henüz fatura/satış yok</p>
+        </div>` : 
         logs.map(log => {
-          const soldDate = new Date(log.sold_at);
-          const dateStr  = soldDate.toLocaleDateString('tr-TR', {
-            day:'2-digit', month:'short', year:'numeric'
-          });
-          const timeStr  = soldDate.toLocaleTimeString('tr-TR', {
-            hour:'2-digit', minute:'2-digit'
-          });
-          const initials = (log.buyer_name || '?')
-            .split(' ')
-            .slice(0,2)
-            .map(w => w[0]?.toUpperCase() || '')
-            .join('');
+          const soldDate = new Date(log.sold_at).toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
+          const remainAmount = (log.total_amount || 0) - (log.paid_amount || 0);
+          const isPaid = remainAmount <= 0;
 
           return `
-            <div class="sale-log-card" id="salelog-${log.id}">
-
-              <!-- الأفاتار -->
-              <div class="sale-log-avatar">${initials}</div>
-
-              <!-- التفاصيل -->
-              <div style="flex:1;min-width:0;">
-                <div style="display:flex;align-items:center;
-                     justify-content:space-between;gap:8px;margin-bottom:4px;">
-                  <div style="font-size:clamp(12px,3.5vw,14px);
-                       font-weight:900;color:#fff;
-                       white-space:nowrap;overflow:hidden;
-                       text-overflow:ellipsis;">
-                    ${log.buyer_name}
-                  </div>
-                  <div style="font-size:clamp(13px,3.5vw,15px);
-                       font-weight:900;flex-shrink:0;
-                       background:linear-gradient(135deg,#c9a84c,#f0d080);
-                       -webkit-background-clip:text;
-                       -webkit-text-fill-color:transparent;
-                       background-clip:text;">
-                    ${log.total_amount > 0
-                      ? Number(log.total_amount).toLocaleString('tr-TR') + ' ₺'
-                      : '—'}
+            <div class="sale-log-card" id="salelog-${log.id}" style="flex-direction:column;gap:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;">
+                <div>
+                  <div style="font-size:14px;font-weight:900;color:#fff;margin-bottom:4px;">${log.buyer_name}</div>
+                  <div style="font-size:10px;color:rgba(255,255,255,0.4);display:flex;gap:8px;flex-wrap:wrap;">
+                    ${log.buyer_phone ? `<span><i class="fas fa-phone" style="color:#60a5fa;"></i> ${log.buyer_phone}</span>` : ''}
+                    ${log.buyer_address ? `<span><i class="fas fa-map-marker-alt" style="color:#f59e0b;"></i> ${log.buyer_address}</span>` : ''}
                   </div>
                 </div>
-
-                <div style="display:flex;align-items:center;
-                     gap:8px;flex-wrap:wrap;margin-bottom:4px;">
-                  <!-- الكمية -->
-                  <span style="
-                    padding:2px 8px;border-radius:50px;
-                    background:rgba(74,222,128,0.1);
-                    border:1px solid rgba(74,222,128,0.2);
-                    font-size:9px;font-weight:700;color:#4ade80;
-                    font-family:'Montserrat',sans-serif;">
-                    <i class="fas fa-boxes" style="margin-right:3px;"></i>
-                    ${log.qty_sold} adet
-                  </span>
-                  <!-- سعر الوحدة -->
-                  ${log.sale_price > 0 ? `
-                  <span style="
-                    padding:2px 8px;border-radius:50px;
-                    background:rgba(201,168,76,0.08);
-                    border:1px solid rgba(201,168,76,0.15);
-                    font-size:9px;font-weight:700;
-                    color:rgba(201,168,76,0.7);
-                    font-family:'Montserrat',sans-serif;">
-                    ${Number(log.sale_price).toLocaleString('tr-TR')} ₺/adet
-                  </span>` : ''}
-                  <!-- الهاتف -->
-                  ${log.buyer_phone ? `
-                  <a href="tel:${log.buyer_phone}" style="
-                    padding:2px 8px;border-radius:50px;
-                    background:rgba(96,165,250,0.08);
-                    border:1px solid rgba(96,165,250,0.15);
-                    font-size:9px;font-weight:700;color:#60a5fa;
-                    font-family:'Montserrat',sans-serif;
-                    text-decoration:none;display:inline-flex;
-                    align-items:center;gap:3px;">
-                    <i class="fas fa-phone"></i>
-                    ${log.buyer_phone}
-                  </a>` : ''}
+                <div style="text-align:right;">
+                  <div style="font-size:15px;font-weight:900;color:#c9a84c;">${Number(log.total_amount).toLocaleString('tr-TR')} ₺</div>
+                  <div style="font-size:9px;color:rgba(255,255,255,0.3);">${log.qty_sold} adet x ${Number(log.sale_price).toLocaleString('tr-TR')} ₺</div>
                 </div>
+              </div>
 
-                <!-- التاريخ + الملاحظة -->
-                <div style="display:flex;align-items:center;
-                     justify-content:space-between;gap:6px;flex-wrap:wrap;">
-                  <span style="font-size:9px;color:rgba(255,255,255,0.2);
-                       display:flex;align-items:center;gap:4px;">
-                    <i class="fas fa-clock"
-                       style="color:rgba(255,255,255,0.1);"></i>
-                    ${dateStr} — ${timeStr}
-                  </span>
-                  <!-- زر حذف السجل -->
-                  <button onclick="deleteSaleLogMO(${log.id},${itemId})"
-                    style="
-                      padding:2px 8px;border-radius:6px;
-                      background:rgba(239,68,68,0.06);
-                      border:1px solid rgba(239,68,68,0.12);
-                      color:rgba(239,68,68,0.4);font-size:9px;
-                      font-family:'Montserrat',sans-serif;
-                      cursor:pointer;transition:all 0.2s;"
-                    onmouseover="this.style.background='rgba(239,68,68,0.15)';
-                                 this.style.color='#ef4444'"
-                    onmouseout="this.style.background='rgba(239,68,68,0.06)';
-                                this.style.color='rgba(239,68,68,0.4)'">
-                    <i class="fas fa-trash-alt"></i>
-                  </button>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:rgba(0,0,0,0.2);border-radius:8px;margin-top:4px;">
+                <div style="font-size:10px;color:#4ade80;font-weight:700;">Ödenen: ${Number(log.paid_amount || 0).toLocaleString('tr-TR')} ₺</div>
+                <div style="font-size:10px;color:${isPaid ? '#4ade80' : '#ef4444'};font-weight:700;">
+                  ${isPaid ? '<i class="fas fa-check-double"></i> Ödendi' : `Kalan: ${Number(remainAmount).toLocaleString('tr-TR')} ₺`}
                 </div>
+              </div>
 
-                <!-- الملاحظة -->
-                ${log.notes ? `
-                <div style="
-                  margin-top:6px;padding:6px 10px;
-                  background:rgba(255,255,255,0.025);
-                  border:1px solid rgba(255,255,255,0.05);
-                  border-radius:7px;
-                  font-size:10px;color:rgba(255,255,255,0.35);
-                  font-style:italic;line-height:1.5;">
-                  <i class="fas fa-quote-left"
-                     style="font-size:8px;margin-right:4px;
-                            color:rgba(255,255,255,0.15);"></i>
-                  ${log.notes}
-                </div>` : ''}
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
+                <button onclick="printBuyerInvoiceMO(${log.id}, ${itemId})" style="flex:1;padding:6px;border-radius:6px;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);color:#60a5fa;font-size:10px;font-weight:700;cursor:pointer;"><i class="fas fa-print"></i> Fatura</button>
+                ${!isPaid ? `<button onclick="addPaymentToSaleMO(${log.id}, ${itemId})" style="flex:1;padding:6px;border-radius:6px;background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.2);color:#4ade80;font-size:10px;font-weight:700;cursor:pointer;"><i class="fas fa-lira-sign"></i> Tahsilat</button>` : ''}
+                <button onclick="editSaleMO(${log.id}, ${itemId})" style="padding:6px 10px;border-radius:6px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);color:#c9a84c;font-size:10px;cursor:pointer;"><i class="fas fa-edit"></i></button>
+                <button onclick="deleteSaleLogMO(${log.id},${itemId})" style="padding:6px 10px;border-radius:6px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444;font-size:10px;cursor:pointer;"><i class="fas fa-trash"></i></button>
               </div>
             </div>`;
         }).join('')}
       </div>
-
-      <!-- زر إضافة بيع جديد من داخل السجل -->
-      ${item && item.order_status === 'delivered' &&
-        ((item.qty_purchased||0) - (item.qty_sold||0)) > 0 ? `
-      <div style="padding:12px 14px;border-top:1px solid rgba(255,255,255,0.05);
-           flex-shrink:0;">
-        <button onclick="document.getElementById('salesLogMO').remove();
-                         openSaleModalMO(${itemId});" style="
-          width:100%;padding:13px;border-radius:11px;border:none;
-          background:linear-gradient(135deg,#16a34a,#4ade80);
-          color:#fff;font-family:'Montserrat',sans-serif;
-          font-size:11px;font-weight:900;letter-spacing:2px;
-          cursor:pointer;transition:all 0.25s;
-          display:flex;align-items:center;justify-content:center;gap:8px;"
-          onmouseover="this.style.transform='translateY(-2px)'"
-          onmouseout="this.style.transform=''">
-          <i class="fas fa-plus"></i> YENİ SATIŞ EKLE
-        </button>
-      </div>` : ''}
-
     </div>`;
-
   document.body.appendChild(modal);
-  modal.addEventListener('click', e => {
-    if (e.target === modal) modal.remove();
-  });
 }
 
+
+
+
+
+
+
+/* ══════════════════════════════════════════════════════════════
+   إضافة دفعة لاحقة (Tahsilat)
+══════════════════════════════════════════════════════════════ */
+async function addPaymentToSaleMO(logId, itemId) {
+  const log = _salesLogCache[itemId]?.find(l => l.id === logId);
+  if (!log) return;
+
+  const remain = (log.total_amount || 0) - (log.paid_amount || 0);
+  const amountStr = prompt(`Müşteri: ${log.buyer_name}\nKalan Bakiye: ${remain} ₺\n\nAlınan yeni ödeme miktarını girin:`, remain);
+  
+  if (!amountStr) return;
+  const amount = parseFloat(amountStr);
+  if (isNaN(amount) || amount <= 0 || amount > remain) {
+    showInvToast('Geçersiz miktar!', 'error');
+    return;
+  }
+
+  const newPaid = (log.paid_amount || 0) + amount;
+  const history = log.payment_history || [];
+  history.push({ date: new Date().toISOString(), amount: amount });
+
+  const sb = await initSupabase();
+  const { error } = await sb.from('user_sales_log').update({
+    paid_amount: newPaid,
+    payment_history: history
+  }).eq('id', logId);
+
+  if (error) {
+    showInvToast('Hata oluştu!', 'error');
+    return;
+  }
+
+  log.paid_amount = newPaid;
+  log.payment_history = history;
+  showInvToast('Ödeme eklendi ✓', 'success');
+  
+  // إعادة فتح النافذة لتحديث البيانات
+  openSalesLogMO(itemId, log.product_title, log.product_img);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   تعديل الفاتورة (Düzenle)
+══════════════════════════════════════════════════════════════ */
+async function editSaleMO(logId, itemId) {
+  const log = _salesLogCache[itemId]?.find(l => l.id === logId);
+  if (!log) return;
+
+  const newName = prompt("Müşteri Adı:", log.buyer_name);
+  if (newName === null) return;
+  const newPhone = prompt("Telefon:", log.buyer_phone || '');
+  const newAddress = prompt("Adres:", log.buyer_address || '');
+
+  const sb = await initSupabase();
+  const { error } = await sb.from('user_sales_log').update({
+    buyer_name: newName.trim(),
+    buyer_phone: newPhone?.trim() || '',
+    buyer_address: newAddress?.trim() || ''
+  }).eq('id', logId);
+
+  if (error) {
+    showInvToast('Güncelleme hatası!', 'error');
+    return;
+  }
+
+  log.buyer_name = newName;
+  log.buyer_phone = newPhone;
+  log.buyer_address = newAddress;
+  showInvToast('Fatura güncellendi ✓', 'success');
+  openSalesLogMO(itemId, log.product_title, log.product_img);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   طباعة فاتورة الزبون (Müşteri Faturası)
+══════════════════════════════════════════════════════════════ */
+function printBuyerInvoiceMO(logId, itemId) {
+  const log = _salesLogCache[itemId]?.find(l => l.id === logId);
+  const ps = _myPrintSettings;
+  if (!log) return;
+
+  const companyName = ps.company_name || _currentUserData?.company_name || 'Şirket Adı';
+  const logoUrl = ps.logo_url || '';
+  const dateStr = new Date(log.sold_at).toLocaleDateString('tr-TR');
+  const remain = (log.total_amount || 0) - (log.paid_amount || 0);
+
+  const win = window.open('', '_blank', 'width=800,height=900');
+  win.document.write(`
+    <html>
+    <head>
+      <title>Fatura - ${log.buyer_name}</title>
+      <style>
+        body { font-family: 'Arial', sans-serif; color: #333; padding: 40px; }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid #c9a84c; padding-bottom: 20px; margin-bottom: 30px; }
+        .logo { max-height: 80px; max-width: 200px; }
+        .company-info { text-align: right; }
+        .invoice-title { font-size: 28px; color: #c9a84c; font-weight: bold; margin-bottom: 5px; }
+        .details { display: flex; justify-content: space-between; margin-bottom: 40px; }
+        .box { background: #f9f9f9; padding: 15px; border-radius: 8px; width: 45%; border: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th { background: #111; color: #c9a84c; padding: 12px; text-align: left; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        .totals { width: 40%; float: right; }
+        .tot-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+        .tot-row.grand { font-size: 18px; font-weight: bold; color: #111; border-top: 2px solid #c9a84c; padding-top: 12px; }
+        .tot-row.paid { color: #16a34a; }
+        .tot-row.remain { color: #ef4444; font-weight: bold; }
+        .footer { clear: both; margin-top: 60px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #eee; padding-top: 20px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div>
+          ${logoUrl ? `<img src="${logoUrl}" class="logo"/>` : `<h2 style="color:#111;">${companyName}</h2>`}
+        </div>
+        <div class="company-info">
+          <div class="invoice-title">SATIŞ FATURASI</div>
+          <div>Tarih: <strong>${dateStr}</strong></div>
+          <div>Fatura No: <strong>#INV-${log.id}</strong></div>
+        </div>
+      </div>
+
+      <div class="details">
+        <div class="box">
+          <h4 style="margin-top:0; color:#c9a84c;">Müşteri Bilgileri:</h4>
+          <strong>${log.buyer_name}</strong><br>
+          ${log.buyer_phone ? `Tel: ${log.buyer_phone}<br>` : ''}
+          ${log.buyer_address ? `Adres: ${log.buyer_address}` : ''}
+        </div>
+        <div class="box">
+          <h4 style="margin-top:0; color:#c9a84c;">Firma Bilgileri:</h4>
+          <strong>${companyName}</strong><br>
+          ${ps.company_phone ? `Tel: ${ps.company_phone}<br>` : ''}
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Ürün Açıklaması</th>
+            <th style="text-align:center;">Miktar</th>
+            <th style="text-align:right;">Birim Fiyat</th>
+            <th style="text-align:right;">Toplam</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>${log.product_title}</td>
+            <td style="text-align:center;">${log.qty_sold}</td>
+            <td style="text-align:right;">${Number(log.sale_price).toLocaleString('tr-TR')} ₺</td>
+            <td style="text-align:right;">${Number(log.total_amount).toLocaleString('tr-TR')} ₺</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="totals">
+        <div class="tot-row grand">
+          <span>Genel Toplam:</span>
+          <span>${Number(log.total_amount).toLocaleString('tr-TR')} ₺</span>
+        </div>
+        <div class="tot-row paid">
+          <span>Ödenen (Peşinat):</span>
+          <span>${Number(log.paid_amount || 0).toLocaleString('tr-TR')} ₺</span>
+        </div>
+        <div class="tot-row remain">
+          <span>Kalan Bakiye:</span>
+          <span>${Number(remain).toLocaleString('tr-TR')} ₺</span>
+        </div>
+      </div>
+
+      <div class="footer">
+        ${log.notes ? `<p><strong>Not:</strong> ${log.notes}</p>` : ''}
+        ${ps.print_footer ? `<p>${ps.print_footer}</p>` : ''}
+        <p>Bizi tercih ettiğiniz için teşekkür ederiz.</p>
+      </div>
+      <script>setTimeout(() => window.print(), 500);</script>
+    </body>
+    </html>
+  `);
+  win.document.close();
+}
+
+
+
+  
 /* ══════════════════════════════════════════════════════════════
    حذف سجل بيع واحد
 ══════════════════════════════════════════════════════════════ */
