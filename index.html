@@ -10799,62 +10799,54 @@ openOrderPdfModal = function() {
 };
 
 
+/* ── إضافة زر "طلبيتي" في الهيدر ── */
+(function addMyOrderBtn() {
+  /* ننتظر تحميل DOM */
+  document.addEventListener('DOMContentLoaded', () => {}, { once:true });
+  
+  setTimeout(() => {
+    /* زر ديسكتوب */
+    const navTools = document.querySelector('.nav-tools');
+    if (navTools && !document.getElementById('myOrderBtn')) {
+      const btn = document.createElement('button');
+      btn.id        = 'myOrderBtn';
+      btn.className = 'nav-icon-btn';
+      btn.title     = 'Siparişlerim';
+      btn.style.display = 'none';
+      btn.innerHTML = `
+        <i class="fas fa-box"></i>
+        <span id="myOrderDot" style="
+          position:absolute;top:-4px;right:-4px;
+          width:8px;height:8px;border-radius:50%;
+          background:#fbbf24;
+          border:2px solid rgba(8,8,8,0.96);
+        "></span>`;
+      btn.onclick = () => showPage('myorders');
+      
+      /* أضفه قبل زر الصوت */
+      const audioBtn = document.getElementById('audioNavBtn');
+      if (audioBtn) navTools.insertBefore(btn, audioBtn);
+      else navTools.appendChild(btn);
+    }
 
-
-
-
-  /* ── إضافة زر "طلبيتي" في الهيدر ── */
-function injectMyOrderBtn() {
-  /* زر ديسكتوب */
-  const navTools = document.querySelector('.nav-tools');
-  if (navTools && !document.getElementById('myOrderBtn')) {
-    const btn = document.createElement('button');
-    btn.id        = 'myOrderBtn';
-    btn.className = 'nav-icon-btn';
-    btn.title     = 'Siparişlerim';
-    btn.style.display = 'none';
-    btn.innerHTML = `
-      <i class="fas fa-box"></i>
-      <span id="myOrderDot" style="
-        position:absolute;top:-4px;right:-4px;
-        width:8px;height:8px;border-radius:50%;
-        background:#fbbf24;
-        border:2px solid rgba(8,8,8,0.96);
-      "></span>`;
-    btn.onclick = () => showPage('myorders');
-    
-    /* أضفه قبل زر الصوت */
-    const audioBtn = document.getElementById('audioNavBtn');
-    if (audioBtn) navTools.insertBefore(btn, audioBtn);
-    else navTools.appendChild(btn);
-  }
-
-  /* زر موبايل في القائمة */
-  const mobMenu = document.querySelector('.mobile-menu-inner');
-  if (mobMenu && !document.getElementById('mobMyOrderBtn')) {
-    const mobBtn = document.createElement('a');
-    mobBtn.id        = 'mobMyOrderBtn';
-    mobBtn.href      = '#';
-    mobBtn.style.display = 'none';
-    mobBtn.innerHTML = `<i class="fas fa-box"></i> SİPARİŞLERİM`;
-    mobBtn.onclick   = (e) => {
-      e.preventDefault();
-      showPage('myorders');
-      closeMobileMenu();
-    };
-    const divider = mobMenu.querySelector('.mob-divider');
-    if (divider) mobMenu.insertBefore(mobBtn, divider.nextSibling);
-    else mobMenu.appendChild(mobBtn);
-  }
-}
-
-/* استدعاء دالة الحقن بشكل آمن لضمان عدم اختفاء الزر */
-document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(injectMyOrderBtn, 500);
-});
-/* استدعاءات احتياطية لضمان ظهور الزر حتى لو تأخر تحميل الصفحة */
-setTimeout(injectMyOrderBtn, 1500);
-setTimeout(injectMyOrderBtn, 3000);
+    /* زر موبايل في القائمة */
+    const mobMenu = document.querySelector('.mobile-menu-inner');
+    if (mobMenu && !document.getElementById('mobMyOrderBtn')) {
+      const mobBtn = document.createElement('a');
+      mobBtn.id        = 'mobMyOrderBtn';
+      mobBtn.href      = '#';
+      mobBtn.style.display = 'none';
+      mobBtn.innerHTML = `<i class="fas fa-box"></i> SİPARİŞLERİM`;
+      mobBtn.onclick   = (e) => {
+        e.preventDefault();
+        showPage('myorders');
+        closeMobileMenu();
+      };
+      const divider = mobMenu.querySelector('.mob-divider');
+      if (divider) mobMenu.insertBefore(mobBtn, divider.nextSibling);
+    }
+  }, 500);
+})();
 
 /* ── تحديث nav عند دخول mainSite ── */
 const _origEnterSection2 = enterSection;
@@ -10863,9 +10855,6 @@ enterSection = function(cat) {
     updateAdminNavVisibility();
     /* إظهار زر "طلبيتي" للمستخدمين العاديين */
     if (currentUser && currentUser !== ADMIN_USER) {
-      /* نتأكد من حقن الزر أولاً في حال تم مسحه */
-      injectMyOrderBtn(); 
-      
       const btn    = document.getElementById('myOrderBtn');
       const mobBtn = document.getElementById('mobMyOrderBtn');
       if (btn)    btn.style.display    = 'flex';
@@ -18862,7 +18851,7 @@ function renderUserHomeCards(container) {
     ? _homeCards
     : getStaticCards();
 
-  let html = cards
+  container.innerHTML = cards
     .filter(c => c.is_active !== false
               && c.section_key !== 'admin'
               && c.section_key !== 'settings'
@@ -18872,28 +18861,7 @@ function renderUserHomeCards(container) {
               && c.section_key !== 'user_preview')
     .map((card, idx) => buildHomeCardHTML(card, idx))
     .join('');
-
-  /* ★ إضافة بطاقة "حركاتي / Siparişlerim" في الصفحة الرئيسية ★ */
-  html += `
-    <div class="myorders-home-card" onclick="enterSection('myorders')">
-      <div style="padding: 16px; display: flex; align-items: center; gap: 14px; height: 100%; box-sizing: border-box;">
-        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); display: flex; align-items: center; justify-content: center; color: #4ade80; font-size: 20px; flex-shrink: 0;">
-          <i class="fas fa-box-open"></i>
-        </div>
-        <div style="flex: 1;">
-          <div style="font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 4px;">SİPARİŞLERİM</div>
-          <div style="font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.4;">Sipariş durumunu ve detaylarını takip et</div>
-        </div>
-        <div style="width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4ade80, #22c55e); display: flex; align-items: center; justify-content: center; color: #0a0a0a; font-size: 11px;">
-          <i class="fas fa-arrow-right"></i>
-        </div>
-      </div>
-    </div>
-  `;
-
-  container.innerHTML = html;
 }
-
 
 /* ─────────────────────────────────────────
    بطاقات الـ WOW (Admin)
@@ -36027,6 +35995,62 @@ finishLogin = function() {
 /* ══════════════════════════════════════════════════════════════
    ★ نهاية نظام الفواتير والأقساط — اكتمل بنجاح ✓ ★
 ══════════════════════════════════════════════════════════════ */
+/* ============================================================
+   ★ استعادة بطاقة "حركاتي v2" (نظام الفواتير) في الصفحة الرئيسية ★
+============================================================ */
+(function restoreHareketlerimCard() {
+  setTimeout(() => {
+    const homeCards = document.querySelector('.home-cards');
+    // إذا لم تكن شبكة الكروت موجودة أو البطاقة مضافة مسبقاً، نتوقف
+    if (!homeCards || document.getElementById('homeHareketlerimCard')) return;
+
+    const card = document.createElement('div');
+    card.id = 'homeHareketlerimCard';
+    card.className = 'myorders-home-card';
+    card.style.display = 'none'; // سيتم التحكم بظهوره برمجياً
+    card.onclick = () => enterSection('myorders'); // يوجه لقسم حركاتي
+
+    card.innerHTML = `
+      <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; height: 100%; box-sizing: border-box; background: linear-gradient(135deg, rgba(74,222,128,0.05), transparent);">
+        <div>
+          <div style="font-size:10px; letter-spacing:3px; color:#4ade80; font-weight:700; margin-bottom:6px;">
+            <i class="fas fa-file-invoice-dollar" style="margin-right:5px;"></i> SATIŞ & FATURA
+          </div>
+          <div style="font-size:22px; font-weight:900; color:#fff; margin-bottom:4px;">
+            Hareketlerim
+          </div>
+          <div style="font-size:11px; color:rgba(255,255,255,0.4); line-height: 1.5;">
+            Satışları yönet, fatura kes ve ödemeleri takip et
+          </div>
+        </div>
+        <div style="width:48px; height:48px; border-radius:12px; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); display:flex; align-items:center; justify-content:center; color:#4ade80; font-size:20px; flex-shrink:0; transition: transform 0.3s;">
+          <i class="fas fa-arrow-right"></i>
+        </div>
+      </div>
+    `;
+
+    // إضافة البطاقة إلى الصفحة الرئيسية
+    homeCards.appendChild(card);
+  }, 800);
+})();
+
+/* ── تحديث دالة إظهار الهوم لضمان عرض البطاقة ── */
+const _origShowHomeScreen_hareket = showHomeScreen;
+showHomeScreen = function() {
+  _origShowHomeScreen_hareket();
+  
+  setTimeout(() => {
+    // التحقق مما إذا كان المستخدم الحالي هو الأدمن
+    const isAdmin = currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin);
+    const hareketCard = document.getElementById('homeHareketlerimCard');
+    
+    if (hareketCard) {
+      // إظهار البطاقة للمشتري فقط. 
+      // (إذا أردت إظهارها للأدمن أيضاً، قم بتغيير السطر التالي إلى: hareketCard.style.display = 'block';)
+      hareketCard.style.display = !isAdmin ? 'block' : 'none'; 
+    }
+  }, 150);
+};
 
 
 
