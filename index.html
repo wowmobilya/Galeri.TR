@@ -30486,6 +30486,17 @@ function showMsgCtx(e, msgId, isMine, type) {
   menu.id     = 'chatCtxMenu';
   const items = [];
   const msg   = _chatMessages.find(m => m.id === msgId);
+  if (!msg) return;
+
+  // حساب الوقت المنقضي منذ إرسال الرسالة بالدقائق
+  const now = Date.now();
+  const msgTime = new Date(msg.created_at).getTime();
+  const diffMinutes = (now - msgTime) / (1000 * 60);
+
+  // تحديد الصلاحيات
+  const canEdit = diffMinutes <= 30;
+  const canDeleteForAll = diffMinutes <= 60;
+  const isAdmin = currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin);
 
   /* ── الخيارات بترتيب ثابت بدون تكرار ── */
   items.push(`<div class="ctx-i" id="ctx-reply" onclick="document.getElementById('chatCtxMenu')?.remove();startReply(${msgId})">
@@ -30514,19 +30525,25 @@ function showMsgCtx(e, msgId, isMine, type) {
   items.push(`<div class="ctx-i" id="ctx-select" onclick="document.getElementById('chatCtxMenu')?.remove();enterMultiSelect(${msgId})">
     <i class="fas fa-check-square"></i> Seç</div>`);
 
+  // إظهار زر التعديل إذا لم يمر 30 دقيقة (أو إذا كان أدمن)
   if (isMine && type === 'text' && msg?.message) {
-    items.push(`<div class="ctx-i" id="ctx-edit" onclick="startEdit(${msgId})">
-      <i class="fas fa-pen"></i> Düzenle</div>`);
+    if (canEdit || isAdmin) {
+      items.push(`<div class="ctx-i" id="ctx-edit" onclick="startEdit(${msgId})">
+        <i class="fas fa-pen"></i> Düzenle</div>`);
+    }
   }
 
   if (isMine) {
+    // الحذف من عندي متاح دائماً
     items.push(`<div class="ctx-i danger" id="ctx-del-mine" onclick="deleteMsg(${msgId},'mine')">
       <i class="fas fa-trash-alt"></i> Benden Sil</div>`);
-    if (currentUser === ADMIN_USER) {
+    
+    // الحذف للجميع متاح خلال ساعة واحدة فقط (أو إذا كان أدمن)
+    if (canDeleteForAll || isAdmin) {
       items.push(`<div class="ctx-i danger" id="ctx-del-all" onclick="deleteMsg(${msgId},'all')">
         <i class="fas fa-trash-alt"></i> Herkesten Sil</div>`);
     }
-  } else if (currentUser === ADMIN_USER) {
+  } else if (isAdmin) {
     items.push(`<div class="ctx-i danger" id="ctx-del-admin" onclick="deleteMsg(${msgId},'all')">
       <i class="fas fa-trash-alt"></i> Sil (Admin)</div>`);
   }
@@ -30556,6 +30573,18 @@ function startEdit(msgId) {
   document.getElementById('chatCtxMenu')?.remove();
   const msg = _chatMessages.find(m => m.id === msgId);
   if (!msg) return;
+
+  // تحقق إضافي للوقت
+  const now = Date.now();
+  const msgTime = new Date(msg.created_at).getTime();
+  const diffMinutes = (now - msgTime) / (1000 * 60);
+  const isAdmin = currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin);
+
+  if (diffMinutes > 30 && !isAdmin) {
+    showInvToast('Mesajı düzenleme süresi (30 dk) doldu!', 'error');
+    return;
+  }
+
   _editingMsgId  = msgId;
   _editingScope  = 'group';
   const inp  = document.getElementById('chatTextInput');
@@ -30566,6 +30595,7 @@ function startEdit(msgId) {
   if (prev) prev.textContent = (msg.message || '').substring(0, 55);
   updateInputBtns();
 }
+
 
 function cancelEdit() {
   _editingMsgId = null; _editingScope = null;
@@ -30595,15 +30625,32 @@ async function saveEdit(newText) {
 
 async function deleteMsg(msgId, mode) {
   document.getElementById('chatCtxMenu')?.remove();
+  
+  const msg = _chatMessages.find(m => m.id === msgId);
+  if (!msg) return;
+
+  // تحقق إضافي للوقت عند الحذف للجميع
+  const now = Date.now();
+  const msgTime = new Date(msg.created_at).getTime();
+  const diffMinutes = (now - msgTime) / (1000 * 60);
+  const isAdmin = currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin);
+
+  if (mode === 'all' && diffMinutes > 60 && !isAdmin) {
+    showInvToast('Herkesten silme süresi (1 saat) doldu!', 'error');
+    return;
+  }
+
   const confirmed = await showChatConfirm(
     mode === 'all' ? 'Bu mesaj herkesten silinsin mi?' : 'Bu mesaj sizden silinsin mi?'
   );
   if (!confirmed) return;
+  
   const sb = await initSupabase(); if (!sb) return;
   await sb.from(GRP_MSGS)
     .update({ is_deleted:true, deleted_by:currentUser })
     .eq('id', msgId)
     .eq(mode === 'mine' ? 'from_user' : 'id', mode === 'mine' ? currentUser : msgId);
+    
   const el = document.getElementById('msg-' + msgId);
   if (el) {
     el.style.transition = 'all .28s ease';
@@ -30611,6 +30658,7 @@ async function deleteMsg(msgId, mode) {
     el.style.transform  = 'scale(.92)';
     setTimeout(() => el.remove(), 270);
   }
+  
   const idx = _chatMessages.findIndex(m => m.id === msgId);
   if (idx !== -1) _chatMessages.splice(idx, 1);
   showInvToast('Mesaj silindi ✓', 'success');
