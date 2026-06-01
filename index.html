@@ -3035,6 +3035,469 @@ body.wow-mode .mobile-menu {
   align-items: center;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   ★ CSS — نظام الفواتير في حركاتي ★
+══════════════════════════════════════════════════════════════ */
+
+/* ── بطاقة الفاتورة ── */
+.invoice-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+.invoice-card:hover {
+  border-color: rgba(201,168,76,0.3);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+/* ── هيدر الفاتورة ── */
+.invoice-header {
+  padding: 12px 14px;
+  background: rgba(201,168,76,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.invoice-num {
+  font-size: 11px;
+  font-weight: 900;
+  color: #c9a84c;
+  letter-spacing: 1px;
+  font-family: 'Montserrat', sans-serif;
+}
+.invoice-date {
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  font-family: 'Montserrat', sans-serif;
+}
+
+/* ── جسم الفاتورة ── */
+.invoice-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── معلومات الزبون ── */
+.invoice-customer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+}
+.invoice-customer-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(201,168,76,0.18), rgba(201,168,76,0.04));
+  border: 1.5px solid rgba(201,168,76,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  color: #c9a84c;
+  flex-shrink: 0;
+  font-weight: 900;
+  font-family: 'Montserrat', sans-serif;
+}
+.invoice-customer-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+}
+.invoice-customer-phone {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 2px;
+  font-family: 'Montserrat', sans-serif;
+}
+.invoice-customer-address {
+  font-size: 10px;
+  color: rgba(201,168,76,0.5);
+  margin-top: 2px;
+  font-family: 'Montserrat', sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── ملخص المبالغ ── */
+.invoice-amounts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (max-width: 400px) {
+  .invoice-amounts { grid-template-columns: 1fr 1fr; }
+}
+.invoice-amount-card {
+  padding: 10px 8px;
+  border-radius: 10px;
+  text-align: center;
+  border: 1px solid;
+}
+.invoice-amount-card.total {
+  background: rgba(201,168,76,0.08);
+  border-color: rgba(201,168,76,0.2);
+}
+.invoice-amount-card.paid {
+  background: rgba(74,222,128,0.08);
+  border-color: rgba(74,222,128,0.2);
+}
+.invoice-amount-card.remaining {
+  background: rgba(239,68,68,0.08);
+  border-color: rgba(239,68,68,0.2);
+}
+.invoice-amount-card.zero-remaining {
+  background: rgba(74,222,128,0.08);
+  border-color: rgba(74,222,128,0.2);
+}
+.invoice-amount-lbl {
+  font-size: 8px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  margin-bottom: 4px;
+  font-family: 'Montserrat', sans-serif;
+}
+.invoice-amount-val {
+  font-size: clamp(12px, 3.5vw, 15px);
+  font-weight: 900;
+  font-family: 'Montserrat', sans-serif;
+  line-height: 1;
+}
+.invoice-amount-card.total .invoice-amount-lbl  { color: rgba(201,168,76,0.6); }
+.invoice-amount-card.total .invoice-amount-val  { color: #c9a84c; }
+.invoice-amount-card.paid  .invoice-amount-lbl  { color: rgba(74,222,128,0.6); }
+.invoice-amount-card.paid  .invoice-amount-val  { color: #4ade80; }
+.invoice-amount-card.remaining .invoice-amount-lbl { color: rgba(239,68,68,0.6); }
+.invoice-amount-card.remaining .invoice-amount-val { color: #ef4444; }
+.invoice-amount-card.zero-remaining .invoice-amount-lbl { color: rgba(74,222,128,0.6); }
+.invoice-amount-card.zero-remaining .invoice-amount-val { color: #4ade80; }
+
+/* ── قائمة الدفعات ── */
+.payment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.payment-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 9px;
+  transition: all 0.2s;
+}
+.payment-row:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1);
+}
+.payment-row-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(201,168,76,0.12);
+  border: 1px solid rgba(201,168,76,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 900;
+  color: #c9a84c;
+  flex-shrink: 0;
+  font-family: 'Montserrat', sans-serif;
+}
+.payment-row-info { flex: 1; min-width: 0; }
+.payment-row-amount {
+  font-size: clamp(12px, 3.5vw, 14px);
+  font-weight: 900;
+  color: #4ade80;
+  font-family: 'Montserrat', sans-serif;
+  white-space: nowrap;
+}
+.payment-row-date {
+  font-size: 9px;
+  color: rgba(255,255,255,0.25);
+  font-family: 'Montserrat', sans-serif;
+  margin-top: 1px;
+}
+.payment-row-method {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  white-space: nowrap;
+}
+.payment-row-method.cash {
+  background: rgba(74,222,128,0.1);
+  border: 1px solid rgba(74,222,128,0.2);
+  color: #4ade80;
+}
+.payment-row-method.transfer {
+  background: rgba(96,165,250,0.1);
+  border: 1px solid rgba(96,165,250,0.2);
+  color: #60a5fa;
+}
+.payment-row-method.card {
+  background: rgba(167,139,250,0.1);
+  border: 1px solid rgba(167,139,250,0.2);
+  color: #a78bfa;
+}
+.payment-row-method.other {
+  background: rgba(251,191,36,0.1);
+  border: 1px solid rgba(251,191,36,0.2);
+  color: #fbbf24;
+}
+
+/* ── شريط تقدم الدفع ── */
+.payment-progress-wrap {
+  margin: 4px 0;
+}
+.payment-progress-track {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+.payment-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  position: relative;
+  overflow: hidden;
+}
+.payment-progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; width: 60%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shimmer 2s infinite;
+  left: -60%;
+}
+@keyframes shimmer { 0%{left:-60%} 100%{left:120%} }
+.payment-progress-pct {
+  font-size: 9px;
+  color: rgba(255,255,255,0.3);
+  text-align: right;
+  margin-top: 3px;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+}
+
+/* ── أزرار الفاتورة ── */
+.invoice-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 14px 12px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  background: rgba(0,0,0,0.15);
+}
+.inv-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 9px;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.inv-action-btn.add-payment {
+  background: rgba(74,222,128,0.1);
+  border-color: rgba(74,222,128,0.3);
+  color: #4ade80;
+}
+.inv-action-btn.add-payment:hover { background: rgba(74,222,128,0.2); }
+.inv-action-btn.print-inv {
+  background: rgba(201,168,76,0.1);
+  border-color: rgba(201,168,76,0.3);
+  color: #c9a84c;
+}
+.inv-action-btn.print-inv:hover { background: rgba(201,168,76,0.2); }
+.inv-action-btn.edit-inv {
+  background: rgba(96,165,250,0.1);
+  border-color: rgba(96,165,250,0.25);
+  color: #60a5fa;
+}
+.inv-action-btn.edit-inv:hover { background: rgba(96,165,250,0.2); }
+.inv-action-btn.delete-inv {
+  background: rgba(239,68,68,0.07);
+  border-color: rgba(239,68,68,0.18);
+  color: rgba(239,68,68,0.6);
+  margin-left: auto;
+}
+.inv-action-btn.delete-inv:hover {
+  background: rgba(239,68,68,0.15);
+  color: #ef4444;
+}
+
+/* ── نافذة إنشاء/تعديل الفاتورة ── */
+.invoice-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(18px);
+  padding: 0;
+}
+@media (min-width: 600px) {
+  .invoice-modal-overlay {
+    align-items: center;
+    padding: 16px;
+  }
+}
+.invoice-modal-box {
+  width: 100%;
+  max-width: 100%;
+  background: linear-gradient(145deg, #0d0d0d, #141414);
+  border: 1px solid rgba(201,168,76,0.25);
+  border-radius: 22px 22px 0 0;
+  border-bottom: none;
+  max-height: 94dvh;
+  overflow-y: auto;
+  animation: sheetUpMO 0.38s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  box-shadow: 0 -10px 60px rgba(0,0,0,0.7);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (min-width: 600px) {
+  .invoice-modal-box {
+    max-width: 520px;
+    border-radius: 22px;
+    border-bottom: 1px solid rgba(201,168,76,0.25);
+    animation: devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    padding-bottom: 0;
+  }
+}
+.invoice-modal-box::-webkit-scrollbar { width: 3px; }
+.invoice-modal-box::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.3); border-radius: 4px;
+}
+
+/* ── تبويبات نافذة الفاتورة ── */
+.inv-tabs {
+  display: flex;
+  gap: 0;
+  background: rgba(0,0,0,0.3);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.inv-tab {
+  flex: 1;
+  padding: 11px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  font-family: 'Montserrat', sans-serif;
+  letter-spacing: 0.5px;
+  text-align: center;
+  cursor: pointer;
+  color: rgba(255,255,255,0.3);
+  border-bottom: 2px solid transparent;
+  transition: all 0.25s;
+}
+.inv-tab.active {
+  color: #c9a84c;
+  border-bottom-color: #c9a84c;
+  background: rgba(201,168,76,0.05);
+}
+
+/* ── قسم الدفعات في النافذة ── */
+.payment-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  position: relative;
+}
+.payment-entry-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.payment-entry-num {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(201,168,76,0.6);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-family: 'Montserrat', sans-serif;
+}
+.payment-entry-del {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.2);
+  color: rgba(239,68,68,0.6);
+  font-size: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+.payment-entry-del:hover {
+  background: rgba(239,68,68,0.2);
+  color: #ef4444;
+}
+
+/* ── بطاقة حركاتي في الهوم ── */
+.myorders-home-card-new {
+  grid-column: 1 / -1;
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(74,222,128,0.2);
+  background: var(--dark3);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  height: 90px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  animation: cardSlideIn 0.7s ease 0.9s both;
+}
+.myorders-home-card-new:hover {
+  transform: translateY(-3px);
+  border-color: rgba(74,222,128,0.5);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+@media (min-width: 900px) {
+  .myorders-home-card-new {
+    grid-column: span 1;
+    height: 200px;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 0;
+  }
+}
 
 
 
@@ -33664,6 +34127,2406 @@ const ORDER_STATUS_MAP = {
   cancelled     : { label:'İptal Edildi',   icon:'fa-times-circle',   cls:'status-cancelled'     },
 };
 
+
+
+
+
+
+
+/* ══════════════════════════════════════════════════════════════
+   ★ نظام الفواتير الكامل — Invoice System ★
+══════════════════════════════════════════════════════════════ */
+
+/* ── متغيرات الفواتير ── */
+let _invoicesData    = [];
+let _invoicesLoaded  = false;
+let _editingInvoice  = null;   /* الفاتورة التي تُعدَّل حالياً */
+
+/* ── طرق الدفع ── */
+const PAYMENT_METHODS = {
+  cash     : { label:'Nakit',     icon:'fa-money-bill-wave', cls:'cash'     },
+  transfer : { label:'Havale/EFT',icon:'fa-university',      cls:'transfer' },
+  card     : { label:'Kart',      icon:'fa-credit-card',     cls:'card'     },
+  other    : { label:'Diğer',     icon:'fa-ellipsis-h',      cls:'other'    },
+};
+
+/* ══════════════════════════════════════════════════════════════
+   تحميل الفواتير
+══════════════════════════════════════════════════════════════ */
+async function loadInvoices() {
+  const sb = await initSupabase();
+  if (!sb || !currentUser || currentUser === ADMIN_USER) return;
+
+  const { data, error } = await sb
+    .from('customer_invoices')
+    .select('*')
+    .eq('username', currentUser)
+    .eq('is_deleted', false)
+    .order('created_at', { ascending: false });
+
+  if (!error) {
+    _invoicesData   = data || [];
+    _invoicesLoaded = true;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   بناء صفحة الفواتير (تبويب داخل حركاتي)
+══════════════════════════════════════════════════════════════ */
+function buildInvoicesTab() {
+  const listEl = document.getElementById('invoicesTabContent');
+  if (!listEl) return;
+
+  if (!_invoicesData.length) {
+    listEl.innerHTML = `
+      <div class="myorders-empty" style="padding:50px 20px;">
+        <div style="width:70px;height:70px;border-radius:18px;
+             background:rgba(201,168,76,0.07);
+             border:1px solid rgba(201,168,76,0.12);
+             display:flex;align-items:center;justify-content:center;
+             margin:0 auto 16px;">
+          <i class="fas fa-file-invoice"
+             style="font-size:28px;color:rgba(201,168,76,0.25);"></i>
+        </div>
+        <p style="font-size:13px;font-weight:700;
+             color:rgba(255,255,255,0.3);margin-bottom:8px;">
+          Henüz fatura yok
+        </p>
+        <small style="font-size:10px;color:rgba(255,255,255,0.12);">
+          Yeni fatura oluşturmak için + butonuna basın
+        </small>
+        <button onclick="openInvoiceModal(null)" style="
+          margin-top:20px;padding:11px 24px;border-radius:12px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:900;letter-spacing:1.5px;cursor:pointer;
+          display:flex;align-items:center;gap:7px;
+          transition:all 0.25s;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform=''">
+          <i class="fas fa-plus"></i> YENİ FATURA
+        </button>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = _invoicesData.map(inv => buildInvoiceCard(inv)).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   بناء بطاقة فاتورة واحدة
+══════════════════════════════════════════════════════════════ */
+function buildInvoiceCard(inv) {
+  const payments    = Array.isArray(inv.payments) ? inv.payments : [];
+  const totalAmount = inv.total_amount || 0;
+  const totalPaid   = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const remaining   = Math.max(0, totalAmount - totalPaid);
+  const paidPct     = totalAmount > 0
+    ? Math.min(100, Math.round((totalPaid / totalAmount) * 100)) : 0;
+  const isPaid      = remaining <= 0 && totalAmount > 0;
+  const dateStr     = new Date(inv.created_at).toLocaleDateString('tr-TR', {
+    day:'2-digit', month:'short', year:'numeric'
+  });
+  const initials    = (inv.customer_name || '?')
+    .split(' ').slice(0,2).map(w => w[0]?.toUpperCase() || '').join('');
+
+  /* شارة حالة الدفع */
+  const payStatusBadge = isPaid
+    ? `<span style="padding:3px 9px;border-radius:50px;font-size:8px;font-weight:900;
+         background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);
+         color:#4ade80;font-family:'Montserrat',sans-serif;">
+         <i class="fas fa-check-circle"></i> TAM ÖDENDİ
+       </span>`
+    : totalPaid > 0
+    ? `<span style="padding:3px 9px;border-radius:50px;font-size:8px;font-weight:900;
+         background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);
+         color:#fbbf24;font-family:'Montserrat',sans-serif;">
+         <i class="fas fa-clock"></i> KISMİ ÖDEME
+       </span>`
+    : `<span style="padding:3px 9px;border-radius:50px;font-size:8px;font-weight:900;
+         background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);
+         color:#ef4444;font-family:'Montserrat',sans-serif;">
+         <i class="fas fa-times-circle"></i> ÖDENMEDİ
+       </span>`;
+
+  /* آخر 3 دفعات */
+  const recentPayments = payments.slice(-3).reverse();
+
+  return `
+    <div class="invoice-card" id="invoice-${inv.id}">
+
+      <!-- هيدر الفاتورة -->
+      <div class="invoice-header">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span class="invoice-num">
+            <i class="fas fa-file-invoice"
+               style="margin-right:4px;font-size:10px;"></i>
+            ${inv.invoice_number || '—'}
+          </span>
+          <span class="invoice-date">${dateStr}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${payStatusBadge}
+        </div>
+      </div>
+
+      <!-- جسم الفاتورة -->
+      <div class="invoice-body">
+
+        <!-- معلومات الزبون -->
+        <div class="invoice-customer">
+          <div class="invoice-customer-avatar">${initials}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="invoice-customer-name">
+              ${inv.customer_name || '—'}
+            </div>
+            ${inv.customer_phone ? `
+            <div class="invoice-customer-phone">
+              <i class="fas fa-phone"
+                 style="font-size:8px;margin-right:3px;"></i>
+              ${inv.customer_phone}
+            </div>` : ''}
+            ${inv.customer_address ? `
+            <div class="invoice-customer-address">
+              <i class="fas fa-map-marker-alt"
+                 style="font-size:8px;"></i>
+              ${inv.customer_address}
+            </div>` : ''}
+          </div>
+          ${inv.product_title ? `
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:9px;color:rgba(255,255,255,0.2);
+                 letter-spacing:1px;text-transform:uppercase;
+                 font-family:'Montserrat',sans-serif;margin-bottom:2px;">
+              ÜRÜN
+            </div>
+            <div style="font-size:11px;font-weight:700;color:rgba(201,168,76,0.7);
+                 font-family:'Montserrat',sans-serif;max-width:100px;
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${inv.product_title}
+            </div>
+          </div>` : ''}
+        </div>
+
+        <!-- ملخص المبالغ -->
+        <div class="invoice-amounts">
+          <div class="invoice-amount-card total">
+            <div class="invoice-amount-lbl">TOPLAM</div>
+            <div class="invoice-amount-val">
+              ${Number(totalAmount).toLocaleString('tr-TR')} ₺
+            </div>
+          </div>
+          <div class="invoice-amount-card paid">
+            <div class="invoice-amount-lbl">ÖDENEN</div>
+            <div class="invoice-amount-val">
+              ${Number(totalPaid).toLocaleString('tr-TR')} ₺
+            </div>
+          </div>
+          <div class="invoice-amount-card ${isPaid ? 'zero-remaining' : 'remaining'}">
+            <div class="invoice-amount-lbl">KALAN</div>
+            <div class="invoice-amount-val">
+              ${isPaid ? '✓ 0' : Number(remaining).toLocaleString('tr-TR')} ₺
+            </div>
+          </div>
+        </div>
+
+        <!-- شريط تقدم الدفع -->
+        <div class="payment-progress-wrap">
+          <div class="payment-progress-track">
+            <div class="payment-progress-fill"
+                 style="width:${paidPct}%;
+                        background:${isPaid
+                          ? 'linear-gradient(90deg,#4ade80,#86efac)'
+                          : paidPct > 50
+                          ? 'linear-gradient(90deg,#fbbf24,#fde68a)'
+                          : 'linear-gradient(90deg,#ef4444,#fca5a5)'};">
+            </div>
+          </div>
+          <div class="payment-progress-pct">${paidPct}% ödendi</div>
+        </div>
+
+        <!-- آخر الدفعات -->
+        ${recentPayments.length > 0 ? `
+        <div>
+          <div style="font-size:8px;letter-spacing:2px;
+               color:rgba(255,255,255,0.2);font-weight:700;
+               text-transform:uppercase;margin-bottom:7px;
+               font-family:'Montserrat',sans-serif;
+               display:flex;align-items:center;justify-content:space-between;">
+            <span><i class="fas fa-history"
+                     style="color:rgba(201,168,76,0.4);margin-right:5px;"></i>
+              SON ÖDEMELER</span>
+            ${payments.length > 3 ? `
+            <span style="color:rgba(201,168,76,0.5);">
+              +${payments.length - 3} daha
+            </span>` : ''}
+          </div>
+          <div class="payment-list">
+            ${recentPayments.map((p, idx) => {
+              const method = PAYMENT_METHODS[p.method] || PAYMENT_METHODS.other;
+              const pDate  = p.date
+                ? new Date(p.date).toLocaleDateString('tr-TR',
+                    { day:'2-digit', month:'short' })
+                : '—';
+              return `
+                <div class="payment-row">
+                  <div class="payment-row-num">
+                    ${payments.length - idx}
+                  </div>
+                  <div class="payment-row-info">
+                    <div style="display:flex;align-items:center;
+                         gap:6px;flex-wrap:wrap;">
+                      <span class="payment-row-amount">
+                        +${Number(p.amount||0).toLocaleString('tr-TR')} ₺
+                      </span>
+                      <span class="payment-row-method ${method.cls}">
+                        <i class="fas ${method.icon}"
+                           style="font-size:8px;margin-right:3px;"></i>
+                        ${method.label}
+                      </span>
+                    </div>
+                    <div class="payment-row-date">
+                      ${pDate}
+                      ${p.note ? ` — ${p.note}` : ''}
+                    </div>
+                  </div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''}
+
+        <!-- ملاحظة الفاتورة -->
+        ${inv.notes ? `
+        <div style="padding:8px 10px;background:rgba(255,255,255,0.02);
+             border:1px solid rgba(255,255,255,0.05);border-radius:8px;
+             font-size:10px;color:rgba(255,255,255,0.3);
+             font-family:'Montserrat',sans-serif;line-height:1.5;">
+          <i class="fas fa-sticky-note"
+             style="color:rgba(201,168,76,0.35);margin-right:5px;"></i>
+          ${inv.notes}
+        </div>` : ''}
+      </div>
+
+      <!-- أزرار الإجراءات -->
+      <div class="invoice-actions">
+        ${!isPaid ? `
+        <button class="inv-action-btn add-payment"
+          onclick="openAddPaymentModal('${inv.id}')">
+          <i class="fas fa-plus-circle"></i> Ödeme Ekle
+        </button>` : ''}
+        <button class="inv-action-btn print-inv"
+          onclick="printInvoiceMO('${inv.id}')">
+          <i class="fas fa-print"></i> Fatura Yazdır
+        </button>
+        <button class="inv-action-btn edit-inv"
+          onclick="openInvoiceModal('${inv.id}')">
+          <i class="fas fa-edit"></i> Düzenle
+        </button>
+        <button class="inv-action-btn delete-inv"
+          onclick="deleteInvoiceMO('${inv.id}')">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>`;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   نافذة إنشاء/تعديل الفاتورة
+══════════════════════════════════════════════════════════════ */
+async function openInvoiceModal(invoiceId) {
+  _editingInvoice = null;
+  let inv = null;
+
+  if (invoiceId) {
+    inv = _invoicesData.find(i => String(i.id) === String(invoiceId));
+    _editingInvoice = inv;
+  }
+
+  const isEdit     = !!inv;
+  const payments   = inv ? (Array.isArray(inv.payments) ? inv.payments : []) : [];
+  const invNum     = inv?.invoice_number
+    || 'FAT-' + Date.now().toString().slice(-6);
+
+  document.getElementById('invoiceModalMO')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'invoiceModalMO';
+  modal.className = 'invoice-modal-overlay';
+
+  modal.innerHTML = `
+    <div class="invoice-modal-box">
+
+      <!-- Handle -->
+      <div style="display:flex;align-items:center;justify-content:center;
+           padding:10px 0 4px;">
+        <div style="width:40px;height:4px;background:rgba(255,255,255,0.15);
+             border-radius:4px;"></div>
+      </div>
+
+      <!-- الخط الذهبي -->
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+      <!-- هيدر -->
+      <div style="padding:14px 18px 12px;display:flex;align-items:center;
+           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+          <div style="width:40px;height:40px;border-radius:11px;flex-shrink:0;
+               background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);
+               display:flex;align-items:center;justify-content:center;
+               color:#c9a84c;font-size:17px;">
+            <i class="fas fa-file-invoice"></i>
+          </div>
+          <div style="min-width:0;">
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:2px;">
+              ${isEdit ? 'FATURA DÜZENLE' : 'YENİ FATURA'}
+            </div>
+            <div style="font-size:14px;font-weight:900;color:#fff;">
+              ${isEdit ? inv.invoice_number : invNum}
+            </div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('invoiceModalMO').remove()"
+          style="width:32px;height:32px;border-radius:8px;flex-shrink:0;
+          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+          color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- التبويبات -->
+      <div class="inv-tabs">
+        <div class="inv-tab active" id="invTab1"
+             onclick="switchInvTab(1)">
+          <i class="fas fa-user" style="margin-right:5px;"></i>
+          Müşteri Bilgileri
+        </div>
+        <div class="inv-tab" id="invTab2"
+             onclick="switchInvTab(2)">
+          <i class="fas fa-money-bill-wave" style="margin-right:5px;"></i>
+          Ödemeler
+          <span id="invPayCount" style="
+            margin-left:5px;background:rgba(74,222,128,0.15);
+            border:1px solid rgba(74,222,128,0.3);color:#4ade80;
+            border-radius:50px;padding:1px 6px;font-size:8px;font-weight:900;">
+            ${payments.length}
+          </span>
+        </div>
+      </div>
+
+      <!-- تبويب 1: معلومات الزبون -->
+      <div id="invTabContent1" style="padding:16px 18px;
+           display:flex;flex-direction:column;gap:13px;">
+
+        <!-- رقم الفاتورة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-hashtag" style="color:rgba(201,168,76,0.5);"></i>
+            FATURA NO
+          </label>
+          <input type="text" id="invNumInput"
+            value="${isEdit ? inv.invoice_number : invNum}"
+            placeholder="FAT-XXXXXX"
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1.5px solid rgba(201,168,76,0.2);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:13px;font-weight:700;
+            outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;
+            box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        </div>
+
+        <!-- اسم الزبون -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-user" style="color:rgba(74,222,128,0.5);"></i>
+            MÜŞTERİ ADI *
+          </label>
+          <input type="text" id="invCustomerName"
+            value="${isEdit ? (inv.customer_name||'') : ''}"
+            placeholder="Müşteri adı soyadı"
+            autocomplete="off"
+            style="width:100%;padding:12px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1.5px solid rgba(74,222,128,0.2);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:14px;font-weight:600;
+            outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;
+            box-sizing:border-box;"
+            onfocus="this.style.borderColor='#4ade80'"
+            onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+        </div>
+
+        <!-- الهاتف -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-phone" style="color:rgba(74,222,128,0.5);"></i>
+            TELEFON
+          </label>
+          <input type="tel" id="invCustomerPhone"
+            value="${isEdit ? (inv.customer_phone||'') : ''}"
+            placeholder="+90 XXX XXX XX XX"
+            inputmode="tel"
+            style="width:100%;padding:12px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(74,222,128,0.15);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:13px;outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;
+            box-sizing:border-box;"
+            onfocus="this.style.borderColor='#4ade80'"
+            onfocusout="this.style.borderColor='rgba(74,222,128,0.15)'"/>
+        </div>
+
+        <!-- العنوان -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-map-marker-alt"
+               style="color:rgba(74,222,128,0.5);"></i>
+            ADRES
+            <span style="font-size:8px;color:rgba(255,255,255,0.15);
+                 font-weight:400;">(İsteğe Bağlı)</span>
+          </label>
+          <textarea id="invCustomerAddress"
+            placeholder="Teslimat adresi..."
+            rows="2"
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(74,222,128,0.12);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;resize:none;
+            -webkit-user-select:text;user-select:text;
+            transition:all 0.3s;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#4ade80'"
+            onfocusout="this.style.borderColor='rgba(74,222,128,0.12)'"
+          >${isEdit ? (inv.customer_address||'') : ''}</textarea>
+        </div>
+
+        <!-- اسم المنتج -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-box" style="color:rgba(201,168,76,0.5);"></i>
+            ÜRÜN / HİZMET
+          </label>
+          <input type="text" id="invProductTitle"
+            value="${isEdit ? (inv.product_title||'') : ''}"
+            placeholder="Ürün veya hizmet adı"
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.18);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:13px;outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;
+            box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.18)'"/>
+        </div>
+
+        <!-- المبلغ الإجمالي -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-lira-sign"
+               style="color:rgba(201,168,76,0.5);"></i>
+            TOPLAM TUTAR *
+          </label>
+          <div style="position:relative;">
+            <input type="number" id="invTotalAmount"
+              value="${isEdit ? (inv.total_amount||'') : ''}"
+              placeholder="0"
+              inputmode="decimal"
+              oninput="updateInvSummary()"
+              style="width:100%;padding:13px 46px 13px 14px;
+              background:rgba(255,255,255,0.04);
+              border:1.5px solid rgba(201,168,76,0.2);
+              border-radius:11px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:clamp(14px,4vw,16px);font-weight:700;
+              outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;
+              box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c';
+                       this.style.boxShadow='0 0 20px rgba(201,168,76,0.12)';"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)';
+                          this.style.boxShadow='none';"/>
+            <span style="position:absolute;right:14px;top:50%;
+                 transform:translateY(-50%);font-size:15px;font-weight:900;
+                 color:rgba(201,168,76,0.6);pointer-events:none;">₺</span>
+          </div>
+        </div>
+
+        <!-- ملاحظة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-sticky-note"
+               style="color:rgba(201,168,76,0.5);"></i>
+            NOT
+          </label>
+          <textarea id="invNotes"
+            placeholder="Fatura notu..."
+            rows="2"
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.15);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;resize:none;
+            -webkit-user-select:text;user-select:text;
+            transition:all 0.3s;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.15)'"
+          >${isEdit ? (inv.notes||'') : ''}</textarea>
+        </div>
+
+        <!-- ملخص -->
+        <div id="invSummaryBox" style="
+          display:flex;align-items:center;justify-content:space-between;
+          padding:11px 14px;border-radius:11px;
+          background:rgba(201,168,76,0.06);
+          border:1px solid rgba(201,168,76,0.15);">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);
+               display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-receipt" style="color:#c9a84c;"></i>
+            Fatura Özeti
+          </span>
+          <span id="invSummaryText"
+                style="font-size:clamp(14px,4vw,17px);font-weight:900;
+                       background:linear-gradient(135deg,#c9a84c,#f0d080);
+                       -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                       background-clip:text;">
+            ${isEdit && inv.total_amount
+              ? Number(inv.total_amount).toLocaleString('tr-TR') + ' ₺'
+              : '— ₺'}
+          </span>
+        </div>
+
+        <!-- زر الحفظ -->
+        <button onclick="saveInvoiceMO()" style="
+          width:100%;padding:14px;border-radius:12px;border:none;
+          background:linear-gradient(135deg,#c9a84c,#f0d080);
+          color:#0a0a0a;font-family:'Montserrat',sans-serif;
+          font-size:12px;font-weight:900;letter-spacing:2px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:8px;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform=''">
+          <i class="fas fa-save"></i>
+          ${isEdit ? 'GÜNCELLE' : 'FATURA OLUŞTUR'}
+        </button>
+      </div>
+
+      <!-- تبويب 2: الدفعات -->
+      <div id="invTabContent2"
+           style="padding:16px 18px;display:none;flex-direction:column;gap:12px;">
+
+        <!-- ملخص الدفعات -->
+        <div id="invPaySummary"></div>
+
+        <!-- قائمة الدفعات -->
+        <div id="invPaymentsList"
+             style="display:flex;flex-direction:column;gap:8px;">
+          ${payments.length === 0 ? `
+          <div style="text-align:center;padding:30px 20px;
+               color:rgba(255,255,255,0.15);">
+            <i class="fas fa-money-bill-wave"
+               style="font-size:32px;display:block;margin-bottom:10px;
+                      color:rgba(74,222,128,0.12);"></i>
+            <p style="font-size:11px;letter-spacing:1.5px;">
+              Henüz ödeme yok
+            </p>
+          </div>` :
+          payments.map((p, idx) => buildPaymentEntryHTML(p, idx)).join('')}
+        </div>
+
+        <!-- زر إضافة دفعة -->
+        <button onclick="addPaymentEntry()" style="
+          width:100%;padding:12px;border-radius:11px;
+          border:1px dashed rgba(74,222,128,0.3);
+          background:rgba(74,222,128,0.05);
+          color:#4ade80;font-family:'Montserrat',sans-serif;
+          font-size:11px;font-weight:700;letter-spacing:1.5px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:8px;"
+          onmouseover="this.style.background='rgba(74,222,128,0.1)';
+                       this.style.borderColor='rgba(74,222,128,0.5)'"
+          onmouseout="this.style.background='rgba(74,222,128,0.05)';
+                      this.style.borderColor='rgba(74,222,128,0.3)'">
+          <i class="fas fa-plus-circle"></i> YENİ ÖDEME EKLE
+        </button>
+
+        <!-- زر حفظ الدفعات -->
+        <button onclick="saveInvoicePayments()" style="
+          width:100%;padding:14px;border-radius:12px;border:none;
+          background:linear-gradient(135deg,#16a34a,#4ade80);
+          color:#fff;font-family:'Montserrat',sans-serif;
+          font-size:12px;font-weight:900;letter-spacing:2px;
+          cursor:pointer;transition:all 0.25s;
+          display:flex;align-items:center;justify-content:center;gap:8px;"
+          onmouseover="this.style.transform='translateY(-2px)'"
+          onmouseout="this.style.transform=''">
+          <i class="fas fa-save"></i> ÖDEMELERİ KAYDET
+        </button>
+      </div>
+
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.remove();
+  });
+
+  /* تحديث ملخص الدفعات */
+  if (isEdit) updateInvPaySummary(inv);
+  setTimeout(() => {
+    document.getElementById('invCustomerName')?.focus();
+    updateInvSummary();
+  }, 350);
+}
+
+/* ── بناء HTML صف دفعة واحدة ── */
+function buildPaymentEntryHTML(p, idx) {
+  const methodOptions = Object.entries(PAYMENT_METHODS).map(([k, v]) =>
+    `<option value="${k}" ${p.method === k ? 'selected' : ''}>${v.label}</option>`
+  ).join('');
+
+  return `
+    <div class="payment-entry" id="payentry-${idx}">
+      <div class="payment-entry-header">
+        <span class="payment-entry-num">
+          ÖDEME ${idx + 1}
+        </span>
+        <button class="payment-entry-del"
+          onclick="removePaymentEntry(${idx})">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <!-- المبلغ -->
+        <div>
+          <label style="font-size:8px;letter-spacing:1.5px;
+               color:rgba(255,255,255,0.25);text-transform:uppercase;
+               font-weight:700;margin-bottom:5px;display:block;">
+            TUTAR *
+          </label>
+          <div style="position:relative;">
+            <input type="number" class="pay-amount"
+              value="${p.amount || ''}"
+              placeholder="0"
+              inputmode="decimal"
+              oninput="recalcPaySummary()"
+              style="width:100%;padding:10px 30px 10px 11px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(74,222,128,0.2);
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;
+              font-size:14px;font-weight:700;
+              outline:none;-webkit-user-select:text;user-select:text;
+              transition:border-color 0.3s;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#4ade80'"
+              onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+            <span style="position:absolute;right:9px;top:50%;
+                 transform:translateY(-50%);font-size:12px;
+                 color:rgba(74,222,128,0.5);pointer-events:none;
+                 font-weight:900;">₺</span>
+          </div>
+        </div>
+        <!-- طريقة الدفع -->
+        <div>
+          <label style="font-size:8px;letter-spacing:1.5px;
+               color:rgba(255,255,255,0.25);text-transform:uppercase;
+               font-weight:700;margin-bottom:5px;display:block;">
+            YÖNTEM
+          </label>
+          <select class="pay-method"
+            style="width:100%;padding:10px 11px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;cursor:pointer;
+            -webkit-appearance:none;appearance:none;
+            box-sizing:border-box;">
+            ${methodOptions}
+          </select>
+        </div>
+      </div>
+      <!-- التاريخ + الملاحظة -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div>
+          <label style="font-size:8px;letter-spacing:1.5px;
+               color:rgba(255,255,255,0.25);text-transform:uppercase;
+               font-weight:700;margin-bottom:5px;display:block;">
+            TARİH
+          </label>
+          <input type="date" class="pay-date"
+            value="${p.date || new Date().toISOString().split('T')[0]}"
+            style="width:100%;padding:10px 11px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;
+            -webkit-user-select:text;user-select:text;
+            transition:border-color 0.3s;box-sizing:border-box;
+            color-scheme:dark;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+        </div>
+        <div>
+          <label style="font-size:8px;letter-spacing:1.5px;
+               color:rgba(255,255,255,0.25);text-transform:uppercase;
+               font-weight:700;margin-bottom:5px;display:block;">
+            NOT
+          </label>
+          <input type="text" class="pay-note"
+            value="${p.note || ''}"
+            placeholder="Ödeme notu..."
+            style="width:100%;padding:10px 11px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:12px;outline:none;
+            -webkit-user-select:text;user-select:text;
+            transition:border-color 0.3s;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ── تبديل التبويبات ── */
+function switchInvTab(num) {
+  [1, 2].forEach(n => {
+    const tab     = document.getElementById('invTab' + n);
+    const content = document.getElementById('invTabContent' + n);
+    if (!tab || !content) return;
+    if (n === num) {
+      tab.classList.add('active');
+      content.style.display = 'flex';
+    } else {
+      tab.classList.remove('active');
+      content.style.display = 'none';
+    }
+  });
+  if (num === 2) recalcPaySummary();
+}
+
+/* ── تحديث ملخص المبلغ ── */
+function updateInvSummary() {
+  const val = parseFloat(document.getElementById('invTotalAmount')?.value) || 0;
+  const el  = document.getElementById('invSummaryText');
+  if (el) {
+    el.textContent = val > 0
+      ? Number(val).toLocaleString('tr-TR') + ' ₺'
+      : '— ₺';
+  }
+}
+
+/* ── تحديث ملخص الدفعات ── */
+function recalcPaySummary() {
+  const entries  = document.querySelectorAll('.payment-entry');
+  let totalPaid  = 0;
+  entries.forEach(e => {
+    const amt = parseFloat(e.querySelector('.pay-amount')?.value) || 0;
+    totalPaid += amt;
+  });
+
+  const totalAmount = parseFloat(
+    document.getElementById('invTotalAmount')?.value ||
+    (_editingInvoice?.total_amount || 0)
+  ) || 0;
+
+  const remaining = Math.max(0, totalAmount - totalPaid);
+  const pct       = totalAmount > 0
+    ? Math.min(100, Math.round((totalPaid / totalAmount) * 100)) : 0;
+
+  const summaryEl = document.getElementById('invPaySummary');
+  if (!summaryEl) return;
+
+  summaryEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);
+         gap:8px;margin-bottom:4px;">
+      <div style="padding:10px 8px;text-align:center;border-radius:10px;
+           background:rgba(201,168,76,0.08);
+           border:1px solid rgba(201,168,76,0.2);">
+        <div style="font-size:8px;letter-spacing:1.5px;
+             color:rgba(201,168,76,0.6);text-transform:uppercase;
+             font-weight:700;margin-bottom:4px;
+             font-family:'Montserrat',sans-serif;">TOPLAM</div>
+        <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
+             color:#c9a84c;font-family:'Montserrat',sans-serif;">
+          ${Number(totalAmount).toLocaleString('tr-TR')} ₺
+        </div>
+      </div>
+      <div style="padding:10px 8px;text-align:center;border-radius:10px;
+           background:rgba(74,222,128,0.08);
+           border:1px solid rgba(74,222,128,0.2);">
+        <div style="font-size:8px;letter-spacing:1.5px;
+             color:rgba(74,222,128,0.6);text-transform:uppercase;
+             font-weight:700;margin-bottom:4px;
+             font-family:'Montserrat',sans-serif;">ÖDENEN</div>
+        <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
+             color:#4ade80;font-family:'Montserrat',sans-serif;">
+          ${Number(totalPaid).toLocaleString('tr-TR')} ₺
+        </div>
+      </div>
+      <div style="padding:10px 8px;text-align:center;border-radius:10px;
+           background:${remaining <= 0
+             ? 'rgba(74,222,128,0.08)' : 'rgba(239,68,68,0.08)'};
+           border:1px solid ${remaining <= 0
+             ? 'rgba(74,222,128,0.2)' : 'rgba(239,68,68,0.2)'};">
+        <div style="font-size:8px;letter-spacing:1.5px;
+             color:${remaining <= 0
+               ? 'rgba(74,222,128,0.6)' : 'rgba(239,68,68,0.6)'};
+             text-transform:uppercase;font-weight:700;margin-bottom:4px;
+             font-family:'Montserrat',sans-serif;">KALAN</div>
+        <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
+             color:${remaining <= 0 ? '#4ade80' : '#ef4444'};
+             font-family:'Montserrat',sans-serif;">
+          ${remaining <= 0 ? '✓ 0' : Number(remaining).toLocaleString('tr-TR')} ₺
+        </div>
+      </div>
+    </div>
+    <!-- شريط التقدم -->
+    <div style="height:6px;background:rgba(255,255,255,0.06);
+         border-radius:6px;overflow:hidden;margin-bottom:4px;">
+      <div style="height:100%;width:${pct}%;border-radius:6px;
+           background:${pct >= 100
+             ? 'linear-gradient(90deg,#4ade80,#86efac)'
+             : pct >= 50
+             ? 'linear-gradient(90deg,#fbbf24,#fde68a)'
+             : 'linear-gradient(90deg,#ef4444,#fca5a5)'};
+           transition:width 0.4s ease;"></div>
+    </div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.25);
+         text-align:right;font-family:'Montserrat',sans-serif;
+         font-weight:700;">${pct}% ödendi</div>`;
+}
+
+/* ── تحديث ملخص الدفعات عند فتح النافذة ── */
+function updateInvPaySummary(inv) {
+  const payments    = Array.isArray(inv?.payments) ? inv.payments : [];
+  const totalAmount = inv?.total_amount || 0;
+  const totalPaid   = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const remaining   = Math.max(0, totalAmount - totalPaid);
+  const pct         = totalAmount > 0
+    ? Math.min(100, Math.round((totalPaid / totalAmount) * 100)) : 0;
+
+  const summaryEl = document.getElementById('invPaySummary');
+  if (!summaryEl) return;
+
+  summaryEl.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);
+         gap:8px;margin-bottom:4px;">
+      <div style="padding:10px 8px;text-align:center;border-radius:10px;
+           background:rgba(201,168,76,0.08);
+           border:1px solid rgba(201,168,76,0.2);">
+        <div style="font-size:8px;letter-spacing:1.5px;
+             color:rgba(201,168,76,0.6);text-transform:uppercase;
+             font-weight:700;margin-bottom:4px;
+             font-family:'Montserrat',sans-serif;">TOPLAM</div>
+        <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
+             color:#c9a84c;font-family:'Montserrat',sans-serif;">
+          ${Number(totalAmount).toLocaleString('tr-TR')} ₺
+        </div>
+      </div>
+      <div style="padding:10px 8px;text-align:center;border-radius:10px;
+           background:rgba(74,222,128,0.08);
+           border:1px solid rgba(74,222,128,0.2);">
+        <div style="font-size:8px;letter-spacing:1.5px;
+             color:rgba(74,222,128,0.6);text-transform:uppercase;
+             font-weight:700;margin-bottom:4px;
+             font-family:'Montserrat',sans-serif;">ÖDENEN</div>
+        <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
+             color:#4ade80;font-family:'Montserrat',sans-serif;">
+          ${Number(totalPaid).toLocaleString('tr-TR')} ₺
+        </div>
+      </div>
+      <div style="padding:10px 8px;text-align:center;border-radius:10px;
+           background:${remaining <= 0
+             ? 'rgba(74,222,128,0.08)' : 'rgba(239,68,68,0.08)'};
+           border:1px solid ${remaining <= 0
+             ? 'rgba(74,222,128,0.2)' : 'rgba(239,68,68,0.2)'};">
+        <div style="font-size:8px;letter-spacing:1.5px;
+             color:${remaining <= 0
+               ? 'rgba(74,222,128,0.6)' : 'rgba(239,68,68,0.6)'};
+             text-transform:uppercase;font-weight:700;margin-bottom:4px;
+             font-family:'Montserrat',sans-serif;">KALAN</div>
+        <div style="font-size:clamp(13px,3.5vw,16px);font-weight:900;
+             color:${remaining <= 0 ? '#4ade80' : '#ef4444'};
+             font-family:'Montserrat',sans-serif;">
+          ${remaining <= 0 ? '✓ 0' : Number(remaining).toLocaleString('tr-TR')} ₺
+        </div>
+      </div>
+    </div>
+    <div style="height:6px;background:rgba(255,255,255,0.06);
+         border-radius:6px;overflow:hidden;margin-bottom:4px;">
+      <div style="height:100%;width:${pct}%;border-radius:6px;
+           background:${pct >= 100
+             ? 'linear-gradient(90deg,#4ade80,#86efac)'
+             : pct >= 50
+             ? 'linear-gradient(90deg,#fbbf24,#fde68a)'
+             : 'linear-gradient(90deg,#ef4444,#fca5a5)'};
+           transition:width 0.4s ease;"></div>
+    </div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.25);
+         text-align:right;font-family:'Montserrat',sans-serif;
+         font-weight:700;">${pct}% ödendi</div>`;
+}
+
+/* ── إضافة صف دفعة جديد ── */
+function addPaymentEntry() {
+  const list = document.getElementById('invPaymentsList');
+  if (!list) return;
+
+  /* إزالة رسالة "لا توجد دفعات" إن وجدت */
+  const emptyMsg = list.querySelector('[style*="text-align:center"]');
+  if (emptyMsg) emptyMsg.remove();
+
+  const idx = list.querySelectorAll('.payment-entry').length;
+  const div = document.createElement('div');
+  div.innerHTML = buildPaymentEntryHTML({
+    amount : '',
+    method : 'cash',
+    date   : new Date().toISOString().split('T')[0],
+    note   : ''
+  }, idx);
+
+  list.appendChild(div.firstElementChild);
+
+  /* تحديث عداد التبويب */
+  const countEl = document.getElementById('invPayCount');
+  if (countEl) countEl.textContent = list.querySelectorAll('.payment-entry').length;
+
+  /* تمرير للأسفل */
+  setTimeout(() => {
+    list.lastElementChild?.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    list.lastElementChild?.querySelector('.pay-amount')?.focus();
+  }, 100);
+
+  recalcPaySummary();
+}
+
+/* ── حذف صف دفعة ── */
+function removePaymentEntry(idx) {
+  const entry = document.getElementById('payentry-' + idx);
+  if (!entry) return;
+
+  entry.style.transition = 'all 0.25s ease';
+  entry.style.opacity    = '0';
+  entry.style.transform  = 'scale(0.95)';
+  setTimeout(() => {
+    entry.remove();
+    /* إعادة ترقيم الصفوف */
+    const list = document.getElementById('invPaymentsList');
+    if (!list) return;
+    list.querySelectorAll('.payment-entry').forEach((el, i) => {
+      el.id = 'payentry-' + i;
+      const numEl = el.querySelector('.payment-entry-num');
+      if (numEl) numEl.textContent = 'ÖDEME ' + (i + 1);
+      const delBtn = el.querySelector('.payment-entry-del');
+      if (delBtn) delBtn.setAttribute('onclick', `removePaymentEntry(${i})`);
+    });
+
+    const countEl = document.getElementById('invPayCount');
+    if (countEl) countEl.textContent = list.querySelectorAll('.payment-entry').length;
+
+    if (!list.querySelectorAll('.payment-entry').length) {
+      list.innerHTML = `
+        <div style="text-align:center;padding:30px 20px;
+             color:rgba(255,255,255,0.15);">
+          <i class="fas fa-money-bill-wave"
+             style="font-size:32px;display:block;margin-bottom:10px;
+                    color:rgba(74,222,128,0.12);"></i>
+          <p style="font-size:11px;letter-spacing:1.5px;">
+            Henüz ödeme yok
+          </p>
+        </div>`;
+    }
+    recalcPaySummary();
+  }, 250);
+}
+
+/* ── جمع بيانات الدفعات من النموذج ── */
+function collectPaymentsFromForm() {
+  const entries  = document.querySelectorAll('.payment-entry');
+  const payments = [];
+  entries.forEach(entry => {
+    const amount = parseFloat(entry.querySelector('.pay-amount')?.value) || 0;
+    if (amount <= 0) return; /* تجاهل الصفوف الفارغة */
+    payments.push({
+      amount : amount,
+      method : entry.querySelector('.pay-method')?.value || 'cash',
+      date   : entry.querySelector('.pay-date')?.value   || new Date().toISOString().split('T')[0],
+      note   : entry.querySelector('.pay-note')?.value.trim() || ''
+    });
+  });
+  return payments;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   نافذة إضافة دفعة سريعة (من بطاقة الفاتورة)
+══════════════════════════════════════════════════════════════ */
+function openAddPaymentModal(invoiceId) {
+  const inv = _invoicesData.find(i => String(i.id) === String(invoiceId));
+  if (!inv) return;
+
+  const payments    = Array.isArray(inv.payments) ? inv.payments : [];
+  const totalAmount = inv.total_amount || 0;
+  const totalPaid   = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const remaining   = Math.max(0, totalAmount - totalPaid);
+
+  document.getElementById('quickPayModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'quickPayModal';
+  modal.className = 'sale-modal-overlay';
+
+  const methodOptions = Object.entries(PAYMENT_METHODS).map(([k, v]) =>
+    `<option value="${k}">${v.label}</option>`
+  ).join('');
+
+  modal.innerHTML = `
+    <div class="sale-modal-box">
+      <div style="display:flex;align-items:center;justify-content:center;
+           padding:10px 0 4px;">
+        <div style="width:40px;height:4px;background:rgba(255,255,255,0.15);
+             border-radius:4px;"></div>
+      </div>
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#4ade80 30%,#86efac 50%,#4ade80 70%,transparent);"></div>
+
+      <div style="padding:14px 18px 12px;display:flex;align-items:center;
+           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:11px;min-width:0;">
+          <div style="width:40px;height:40px;border-radius:11px;flex-shrink:0;
+               background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);
+               display:flex;align-items:center;justify-content:center;
+               color:#4ade80;font-size:17px;">
+            <i class="fas fa-plus-circle"></i>
+          </div>
+          <div style="min-width:0;">
+            <div style="font-size:8px;letter-spacing:3px;
+                 color:rgba(74,222,128,0.6);text-transform:uppercase;margin-bottom:2px;">
+              HIZLI ÖDEME
+            </div>
+            <div style="font-size:14px;font-weight:900;color:#fff;
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                 max-width:200px;">
+              ${inv.customer_name || inv.invoice_number}
+            </div>
+          </div>
+        </div>
+        <button onclick="document.getElementById('quickPayModal').remove()"
+          style="width:32px;height:32px;border-radius:8px;flex-shrink:0;
+          background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);
+          color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div style="padding:16px 18px 20px;display:flex;flex-direction:column;gap:13px;">
+
+        <!-- الرصيد المتبقي -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+             padding:10px 14px;border-radius:11px;
+             background:${remaining <= 0
+               ? 'rgba(74,222,128,0.06)' : 'rgba(239,68,68,0.06)'};
+             border:1px solid ${remaining <= 0
+               ? 'rgba(74,222,128,0.15)' : 'rgba(239,68,68,0.15)'};">
+          <span style="font-size:10px;color:rgba(255,255,255,0.4);
+               display:flex;align-items:center;gap:6px;">
+            <i class="fas fa-balance-scale"
+               style="color:${remaining <= 0 ? '#4ade80' : '#ef4444'};"></i>
+            Kalan Bakiye
+          </span>
+          <span style="font-size:clamp(15px,4vw,18px);font-weight:900;
+               color:${remaining <= 0 ? '#4ade80' : '#ef4444'};
+               font-family:'Montserrat',sans-serif;">
+            ${remaining <= 0 ? '✓ TAM ÖDENDİ' : Number(remaining).toLocaleString('tr-TR') + ' ₺'}
+          </span>
+        </div>
+
+        ${remaining <= 0 ? `
+        <div style="text-align:center;padding:20px;color:rgba(74,222,128,0.5);
+             font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;">
+          <i class="fas fa-check-circle" style="font-size:28px;display:block;
+             margin-bottom:10px;"></i>
+          Bu fatura tamamen ödenmiş!
+        </div>` : `
+
+        <!-- المبلغ -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-lira-sign" style="color:rgba(74,222,128,0.5);"></i>
+            ÖDEME TUTARI *
+          </label>
+          <div style="display:flex;gap:8px;margin-bottom:6px;">
+            <!-- زر "الكل" -->
+            <button onclick="
+              document.getElementById('qpAmount').value = ${remaining};
+              updateQpTotal();"
+              style="padding:8px 12px;border-radius:9px;
+              border:1px solid rgba(74,222,128,0.3);
+              background:rgba(74,222,128,0.08);
+              color:#4ade80;font-family:'Montserrat',sans-serif;
+              font-size:9px;font-weight:700;cursor:pointer;
+              white-space:nowrap;transition:all 0.2s;flex-shrink:0;"
+              onmouseover="this.style.background='rgba(74,222,128,0.18)'"
+              onmouseout="this.style.background='rgba(74,222,128,0.08)'">
+              Tümü<br/>
+              <span style="font-size:10px;font-weight:900;">
+                ${Number(remaining).toLocaleString('tr-TR')} ₺
+              </span>
+            </button>
+            <!-- زر "نصف" -->
+            <button onclick="
+              document.getElementById('qpAmount').value = ${Math.ceil(remaining/2)};
+              updateQpTotal();"
+              style="padding:8px 12px;border-radius:9px;
+              border:1px solid rgba(251,191,36,0.3);
+              background:rgba(251,191,36,0.08);
+              color:#fbbf24;font-family:'Montserrat',sans-serif;
+              font-size:9px;font-weight:700;cursor:pointer;
+              white-space:nowrap;transition:all 0.2s;flex-shrink:0;"
+              onmouseover="this.style.background='rgba(251,191,36,0.18)'"
+              onmouseout="this.style.background='rgba(251,191,36,0.08)'">
+              Yarısı<br/>
+              <span style="font-size:10px;font-weight:900;">
+                ${Number(Math.ceil(remaining/2)).toLocaleString('tr-TR')} ₺
+              </span>
+            </button>
+            <!-- حقل المبلغ -->
+            <div style="position:relative;flex:1;">
+              <input type="number" id="qpAmount"
+                placeholder="0"
+                inputmode="decimal"
+                oninput="updateQpTotal()"
+                style="width:100%;padding:12px 34px 12px 12px;
+                background:rgba(255,255,255,0.04);
+                border:1.5px solid rgba(74,222,128,0.2);
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:clamp(14px,4vw,16px);font-weight:700;
+                outline:none;transition:all 0.3s;
+                -webkit-user-select:text;user-select:text;
+                box-sizing:border-box;"
+                onfocus="this.style.borderColor='#4ade80'"
+                onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+              <span style="position:absolute;right:10px;top:50%;
+                   transform:translateY(-50%);font-size:13px;font-weight:900;
+                   color:rgba(74,222,128,0.5);pointer-events:none;">₺</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- طريقة الدفع -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-credit-card"
+               style="color:rgba(74,222,128,0.5);"></i>
+            ÖDEME YÖNTEMİ
+          </label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            ${Object.entries(PAYMENT_METHODS).map(([k, v]) => `
+              <button onclick="selectQpMethod('${k}',this)"
+                id="qpmethod-${k}"
+                style="flex:1;min-width:70px;padding:9px 8px;border-radius:9px;
+                border:1px solid ${k === 'cash'
+                  ? 'rgba(74,222,128,0.4)' : 'rgba(255,255,255,0.1)'};
+                background:${k === 'cash'
+                  ? 'rgba(74,222,128,0.12)' : 'rgba(255,255,255,0.04)'};
+                color:${k === 'cash' ? '#4ade80' : 'rgba(255,255,255,0.35)'};
+                font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;
+                cursor:pointer;transition:all 0.2s;text-align:center;">
+                <i class="fas ${v.icon}" style="display:block;font-size:14px;
+                   margin-bottom:4px;"></i>
+                ${v.label}
+              </button>`).join('')}
+          </div>
+          <input type="hidden" id="qpMethodVal" value="cash"/>
+        </div>
+
+        <!-- التاريخ -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-calendar-alt"
+               style="color:rgba(74,222,128,0.5);"></i>
+            ÖDEME TARİHİ
+          </label>
+          <input type="date" id="qpDate"
+            value="${new Date().toISOString().split('T')[0]}"
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:13px;outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;
+            box-sizing:border-box;color-scheme:dark;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(255,255,255,0.1)'"/>
+        </div>
+
+        <!-- ملاحظة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;
+               display:flex;align-items:center;gap:5px;">
+            <i class="fas fa-sticky-note"
+               style="color:rgba(74,222,128,0.5);"></i>
+            NOT
+          </label>
+          <input type="text" id="qpNote"
+            placeholder="Ödeme notu (isteğe bağlı)"
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(74,222,128,0.12);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            font-size:13px;outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;
+            box-sizing:border-box;"
+            onfocus="this.style.borderColor='#4ade80'"
+            onfocusout="this.style.borderColor='rgba(74,222,128,0.12)'"/>
+        </div>
+
+        <!-- الإجمالي بعد الدفع -->
+        <div id="qpResultBox" style="
+          display:none;padding:11px 14px;border-radius:11px;
+          background:rgba(74,222,128,0.06);
+          border:1px solid rgba(74,222,128,0.15);">
+        </div>
+
+        <!-- أزرار -->
+        <div style="display:flex;gap:10px;">
+          <button onclick="document.getElementById('quickPayModal').remove()" style="
+            flex:1;padding:13px;border-radius:11px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            İPTAL
+          </button>
+          <button onclick="confirmQuickPayment('${invoiceId}')" style="
+            flex:2;padding:13px;border-radius:11px;border:none;
+            background:linear-gradient(135deg,#16a34a,#4ade80);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:2px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:7px;"
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">
+            <i class="fas fa-check"></i> ÖDEMEYİ KAYDET
+          </button>
+        </div>`}
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.remove();
+  });
+  setTimeout(() => document.getElementById('qpAmount')?.focus(), 350);
+}
+
+/* ── اختيار طريقة الدفع ── */
+function selectQpMethod(method, btn) {
+  document.querySelectorAll('[id^="qpmethod-"]').forEach(b => {
+    b.style.borderColor = 'rgba(255,255,255,0.1)';
+    b.style.background  = 'rgba(255,255,255,0.04)';
+    b.style.color       = 'rgba(255,255,255,0.35)';
+  });
+  const colors = {
+    cash:'#4ade80', transfer:'#60a5fa',
+    card:'#a78bfa', other:'#fbbf24'
+  };
+  const c = colors[method] || '#c9a84c';
+  btn.style.borderColor = `${c}60`;
+  btn.style.background  = `${c}18`;
+  btn.style.color       = c;
+  const inp = document.getElementById('qpMethodVal');
+  if (inp) inp.value = method;
+}
+
+/* ── تحديث نتيجة الدفع السريع ── */
+function updateQpTotal() {
+  /* لا شيء هنا — الحساب يتم عند الحفظ */
+}
+
+/* ── تأكيد الدفع السريع ── */
+async function confirmQuickPayment(invoiceId) {
+  const amount = parseFloat(document.getElementById('qpAmount')?.value) || 0;
+  const method = document.getElementById('qpMethodVal')?.value || 'cash';
+  const date   = document.getElementById('qpDate')?.value
+    || new Date().toISOString().split('T')[0];
+  const note   = document.getElementById('qpNote')?.value.trim() || '';
+
+  if (amount <= 0) {
+    showInvToast('Lütfen geçerli bir tutar girin!', 'error');
+    document.getElementById('qpAmount')?.focus();
+    return;
+  }
+
+  const inv = _invoicesData.find(i => String(i.id) === String(invoiceId));
+  if (!inv) return;
+
+  const payments = Array.isArray(inv.payments) ? [...inv.payments] : [];
+  payments.push({ amount, method, date, note });
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from('customer_invoices')
+    .update({
+      payments   : payments,
+      updated_at : new Date().toISOString()
+    })
+    .eq('id', invoiceId);
+
+  if (error) { showInvToast('Kayıt hatası!', 'error'); return; }
+
+  /* تحديث محلي */
+  inv.payments = payments;
+
+  document.getElementById('quickPayModal')?.remove();
+
+  const totalPaid  = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const remaining  = Math.max(0, (inv.total_amount || 0) - totalPaid);
+  const methodInfo = PAYMENT_METHODS[method] || PAYMENT_METHODS.other;
+
+  showInvToast(
+    `${Number(amount).toLocaleString('tr-TR')} ₺ ${methodInfo.label} ödeme kaydedildi ✓`,
+    'success'
+  );
+
+  /* إعادة رسم بطاقة الفاتورة */
+  const card = document.getElementById('invoice-' + invoiceId);
+  if (card) {
+    const w = document.createElement('div');
+    w.innerHTML = buildInvoiceCard(inv);
+    card.replaceWith(w.firstElementChild);
+  }
+
+  if (remaining <= 0) {
+    setTimeout(() => showInvToast('🎉 Fatura tamamen ödendi!', 'success'), 500);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   حفظ الفاتورة (إنشاء أو تعديل)
+══════════════════════════════════════════════════════════════ */
+async function saveInvoiceMO() {
+  const invNum      = document.getElementById('invNumInput')?.value.trim();
+  const custName    = document.getElementById('invCustomerName')?.value.trim();
+  const custPhone   = document.getElementById('invCustomerPhone')?.value.trim() || '';
+  const custAddress = document.getElementById('invCustomerAddress')?.value.trim() || '';
+  const productTitle= document.getElementById('invProductTitle')?.value.trim() || '';
+  const totalAmount = parseFloat(document.getElementById('invTotalAmount')?.value) || 0;
+  const notes       = document.getElementById('invNotes')?.value.trim() || '';
+
+  if (!custName) {
+    showInvToast('Müşteri adını girin!', 'error');
+    document.getElementById('invCustomerName')?.focus();
+    return;
+  }
+  if (totalAmount <= 0) {
+    showInvToast('Toplam tutarı girin!', 'error');
+    document.getElementById('invTotalAmount')?.focus();
+    return;
+  }
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const isEdit   = !!_editingInvoice;
+  const payments = isEdit
+    ? (Array.isArray(_editingInvoice.payments) ? _editingInvoice.payments : [])
+    : [];
+
+  const invoiceData = {
+    username         : currentUser,
+    invoice_number   : invNum || 'FAT-' + Date.now().toString().slice(-6),
+    customer_name    : custName,
+    customer_phone   : custPhone,
+    customer_address : custAddress,
+    product_title    : productTitle,
+    total_amount     : totalAmount,
+    payments         : payments,
+    notes            : notes,
+    is_deleted       : false,
+    updated_at       : new Date().toISOString()
+  };
+
+  let error, data;
+
+  if (isEdit) {
+    ({ error, data } = await sb
+      .from('customer_invoices')
+      .update(invoiceData)
+      .eq('id', _editingInvoice.id)
+      .select()
+      .single());
+  } else {
+    invoiceData.created_at = new Date().toISOString();
+    ({ error, data } = await sb
+      .from('customer_invoices')
+      .insert([invoiceData])
+      .select()
+      .single());
+  }
+
+  if (error) {
+    showInvToast('Kayıt hatası: ' + error.message, 'error');
+    return;
+  }
+
+  /* تحديث محلي */
+  if (isEdit) {
+    const idx = _invoicesData.findIndex(i => i.id === _editingInvoice.id);
+    if (idx !== -1) _invoicesData[idx] = data;
+  } else {
+    _invoicesData.unshift(data);
+  }
+
+  document.getElementById('invoiceModalMO')?.remove();
+  showInvToast(
+    isEdit ? 'Fatura güncellendi ✓' : 'Fatura oluşturuldu ✓',
+    'success'
+  );
+
+  /* إعادة رسم قائمة الفواتير */
+  buildInvoicesTab();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   حفظ الدفعات من نافذة التعديل
+══════════════════════════════════════════════════════════════ */
+async function saveInvoicePayments() {
+  if (!_editingInvoice) return;
+
+  const payments = collectPaymentsFromForm();
+  const sb       = await initSupabase();
+  if (!sb) return;
+
+  const { error } = await sb
+    .from('customer_invoices')
+    .update({
+      payments   : payments,
+      updated_at : new Date().toISOString()
+    })
+    .eq('id', _editingInvoice.id);
+
+  if (error) { showInvToast('Kayıt hatası!', 'error'); return; }
+
+  /* تحديث محلي */
+  const idx = _invoicesData.findIndex(i => i.id === _editingInvoice.id);
+  if (idx !== -1) _invoicesData[idx].payments = payments;
+  _editingInvoice.payments = payments;
+
+  /* تحديث عداد التبويب */
+  const countEl = document.getElementById('invPayCount');
+  if (countEl) countEl.textContent = payments.length;
+
+  showInvToast('Ödemeler kaydedildi ✓', 'success');
+  document.getElementById('invoiceModalMO')?.remove();
+  buildInvoicesTab();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   حذف فاتورة
+══════════════════════════════════════════════════════════════ */
+async function deleteInvoiceMO(invoiceId) {
+  const ok = await showChatConfirm('Bu fatura silinsin mi?');
+  if (!ok) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const card = document.getElementById('invoice-' + invoiceId);
+  if (card) {
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity    = '0';
+    card.style.transform  = 'scale(0.96)';
+  }
+
+  const { error } = await sb
+    .from('customer_invoices')
+    .update({ is_deleted:true, updated_at:new Date().toISOString() })
+    .eq('id', invoiceId);
+
+  if (error) {
+    if (card) { card.style.opacity='1'; card.style.transform='scale(1)'; }
+    showInvToast('Silme hatası!', 'error');
+    return;
+  }
+
+  _invoicesData = _invoicesData.filter(i => String(i.id) !== String(invoiceId));
+
+  if (card) {
+    card.style.maxHeight    = card.offsetHeight + 'px';
+    card.style.overflow     = 'hidden';
+    requestAnimationFrame(() => {
+      card.style.transition   = 'all 0.4s ease';
+      card.style.maxHeight    = '0';
+      card.style.opacity      = '0';
+      card.style.marginBottom = '0';
+      card.style.border       = 'none';
+      setTimeout(() => { card.remove(); buildInvoicesTab(); }, 420);
+    });
+  }
+  showInvToast('Fatura silindi ✓', 'success');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   طباعة الفاتورة
+══════════════════════════════════════════════════════════════ */
+function printInvoiceMO(invoiceId) {
+  const inv = _invoicesData.find(i => String(i.id) === String(invoiceId));
+  if (!inv) return;
+
+  const ps          = _myPrintSettings;
+  const payments    = Array.isArray(inv.payments) ? inv.payments : [];
+  const totalAmount = inv.total_amount || 0;
+  const totalPaid   = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const remaining   = Math.max(0, totalAmount - totalPaid);
+  const isPaid      = remaining <= 0 && totalAmount > 0;
+  const now         = new Date();
+  const dateStr     = now.toLocaleDateString('tr-TR', {
+    day:'2-digit', month:'long', year:'numeric'
+  });
+  const invDate     = inv.created_at
+    ? new Date(inv.created_at).toLocaleDateString('tr-TR', {
+        day:'2-digit', month:'long', year:'numeric'
+      })
+    : dateStr;
+
+  const payRows = payments.map((p, idx) => {
+    const method  = PAYMENT_METHODS[p.method] || PAYMENT_METHODS.other;
+    const pDate   = p.date
+      ? new Date(p.date).toLocaleDateString('tr-TR',
+          { day:'2-digit', month:'short', year:'numeric' })
+      : '—';
+    return `
+      <tr style="background:${idx%2===0?'#fffdf5':'#fffff8'};">
+        <td style="padding:8px 10px;border:1px solid #e0d0a0;
+             text-align:center;font-weight:700;color:#c9a84c;">
+          ${idx+1}
+        </td>
+        <td style="padding:8px 10px;border:1px solid #e0d0a0;
+             font-weight:900;color:#16a34a;text-align:center;">
+          ${Number(p.amount||0).toLocaleString('tr-TR')} ₺
+        </td>
+        <td style="padding:8px 10px;border:1px solid #e0d0a0;text-align:center;">
+          ${method.label}
+        </td>
+        <td style="padding:8px 10px;border:1px solid #e0d0a0;text-align:center;
+             color:#666;">${pDate}</td>
+        <td style="padding:8px 10px;border:1px solid #e0d0a0;
+             color:#888;font-style:italic;">${p.note||'—'}</td>
+      </tr>`;
+  }).join('');
+
+  const printHTML = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Fatura — ${inv.invoice_number}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap"
+        rel="stylesheet"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'Montserrat',sans-serif;background:#fff;color:#1a1a1a;}
+    @page{size:A4;margin:12mm 10mm;}
+    @media print{
+      body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    }
+  </style>
+</head>
+<body>
+
+  <!-- خط ذهبي علوي -->
+  <div style="height:5px;background:linear-gradient(90deg,
+    transparent,#c9a84c 20%,#f0d080 50%,#c9a84c 80%,transparent);"></div>
+
+  <!-- هيدر الفاتورة -->
+  <div style="background:#0f0f0f;padding:18px 22px;
+       display:flex;align-items:center;justify-content:space-between;
+       gap:14px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:12px;">
+      ${ps.logo_url ? `
+      <img src="${ps.logo_url}" alt="Logo"
+           style="max-height:60px;max-width:140px;object-fit:contain;
+                  border-radius:8px;display:block;"
+           onerror="this.style.display='none'"/>` : `
+      <div style="width:52px;height:52px;border-radius:11px;
+           background:rgba(201,168,76,0.15);
+           border:2px solid rgba(201,168,76,0.4);
+           display:flex;align-items:center;justify-content:center;
+           font-size:22px;color:#c9a84c;">🏢</div>`}
+      <div>
+        <div style="font-size:20px;font-weight:900;color:#c9a84c;
+             letter-spacing:1px;line-height:1.2;">
+          ${ps.company_name || 'Şirket Adı'}
+        </div>
+        ${ps.company_phone ? `
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:4px;">
+          📞 ${ps.company_phone}
+        </div>` : ''}
+      </div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:22px;font-weight:900;color:#fff;
+           letter-spacing:2px;margin-bottom:4px;">FATURA</div>
+      <div style="font-size:13px;font-weight:700;color:#c9a84c;">
+        ${inv.invoice_number}
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px;">
+        📅 ${invDate}
+      </div>
+    </div>
+  </div>
+
+  <!-- خط ذهبي -->
+  <div style="height:3px;background:linear-gradient(90deg,
+    transparent,#c9a84c 20%,#f0d080 50%,#c9a84c 80%,transparent);"></div>
+
+  <!-- معلومات الزبون -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;
+       border-bottom:2px solid #e8d5a0;">
+    <div style="padding:16px 18px;border-right:1px solid #e8d5a0;">
+      <div style="font-size:8px;letter-spacing:3px;color:#c9a84c;
+           font-weight:700;text-transform:uppercase;margin-bottom:8px;">
+        MÜŞTERİ BİLGİLERİ
+      </div>
+      <div style="font-size:16px;font-weight:900;color:#1a1a1a;
+           margin-bottom:4px;">${inv.customer_name || '—'}</div>
+      ${inv.customer_phone ? `
+      <div style="font-size:12px;color:#666;margin-bottom:3px;">
+        📞 ${inv.customer_phone}
+      </div>` : ''}
+      ${inv.customer_address ? `
+      <div style="font-size:11px;color:#888;line-height:1.5;">
+        📍 ${inv.customer_address}
+      </div>` : ''}
+    </div>
+    <div style="padding:16px 18px;">
+      <div style="font-size:8px;letter-spacing:3px;color:#c9a84c;
+           font-weight:700;text-transform:uppercase;margin-bottom:8px;">
+        ÜRÜN / HİZMET
+      </div>
+      <div style="font-size:15px;font-weight:700;color:#1a1a1a;
+           margin-bottom:8px;">${inv.product_title || '—'}</div>
+      ${inv.notes ? `
+      <div style="font-size:11px;color:#888;font-style:italic;
+           line-height:1.5;border-left:2px solid #c9a84c;padding-left:8px;">
+        ${inv.notes}
+      </div>` : ''}
+    </div>
+  </div>
+
+  <!-- ملخص المبالغ -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);
+       gap:0;border-bottom:2px solid #e8d5a0;">
+    <div style="padding:14px 16px;text-align:center;
+         background:#fffdf0;border-right:1px solid #e8d5a0;">
+      <div style="font-size:8px;letter-spacing:2px;color:#c9a84c;
+           font-weight:700;text-transform:uppercase;margin-bottom:5px;">
+        TOPLAM TUTAR
+      </div>
+      <div style="font-size:22px;font-weight:900;color:#c9a84c;">
+        ${Number(totalAmount).toLocaleString('tr-TR')} ₺
+      </div>
+    </div>
+    <div style="padding:14px 16px;text-align:center;
+         background:#f0fdf4;border-right:1px solid #e8d5a0;">
+      <div style="font-size:8px;letter-spacing:2px;color:#16a34a;
+           font-weight:700;text-transform:uppercase;margin-bottom:5px;">
+        ÖDENEN
+      </div>
+      <div style="font-size:22px;font-weight:900;color:#16a34a;">
+        ${Number(totalPaid).toLocaleString('tr-TR')} ₺
+      </div>
+    </div>
+    <div style="padding:14px 16px;text-align:center;
+         background:${isPaid?'#f0fdf4':'#fef2f2'};">
+      <div style="font-size:8px;letter-spacing:2px;
+           color:${isPaid?'#16a34a':'#dc2626'};
+           font-weight:700;text-transform:uppercase;margin-bottom:5px;">
+        KALAN BAKIYE
+      </div>
+      <div style="font-size:22px;font-weight:900;
+           color:${isPaid?'#16a34a':'#dc2626'};">
+        ${isPaid ? '✓ TAM ÖDENDİ' : Number(remaining).toLocaleString('tr-TR') + ' ₺'}
+      </div>
+    </div>
+  </div>
+
+  <!-- جدول الدفعات -->
+  ${payments.length > 0 ? `
+  <div style="padding:16px 18px;">
+    <div style="font-size:9px;letter-spacing:3px;color:#c9a84c;
+         font-weight:700;text-transform:uppercase;margin-bottom:10px;">
+      ÖDEME GEÇMİŞİ
+    </div>
+    <table style="width:100%;border-collapse:collapse;
+           border:1px solid #e0d0a0;">
+      <thead>
+        <tr style="background:#1a1a1a;">
+          <th style="padding:8px 10px;border:1px solid #333;
+               color:#c9a84c;font-size:9px;letter-spacing:1.5px;
+               text-align:center;width:32px;">#</th>
+          <th style="padding:8px 10px;border:1px solid #333;
+               color:#4ade80;font-size:9px;letter-spacing:1.5px;
+               text-align:center;">TUTAR</th>
+          <th style="padding:8px 10px;border:1px solid #333;
+               color:#c9a84c;font-size:9px;letter-spacing:1.5px;
+               text-align:center;">YÖNTEM</th>
+          <th style="padding:8px 10px;border:1px solid #333;
+               color:#c9a84c;font-size:9px;letter-spacing:1.5px;
+               text-align:center;">TARİH</th>
+          <th style="padding:8px 10px;border:1px solid #333;
+               color:#c9a84c;font-size:9px;letter-spacing:1.5px;">NOT</th>
+        </tr>
+      </thead>
+      <tbody>${payRows}</tbody>
+    </table>
+  </div>` : `
+  <div style="padding:20px 18px;text-align:center;
+       color:#aaa;font-size:12px;font-style:italic;">
+    Henüz ödeme kaydı bulunmuyor
+  </div>`}
+
+  <!-- التذييل -->
+  <div style="height:3px;background:linear-gradient(90deg,
+    transparent,#c9a84c 20%,#f0d080 50%,#c9a84c 80%,transparent);
+    margin-top:16px;"></div>
+  <div style="background:#0f0f0f;padding:10px 22px;
+       display:flex;align-items:center;justify-content:space-between;
+       flex-wrap:wrap;gap:8px;">
+    <div style="font-size:9px;color:rgba(201,168,76,0.6);
+         letter-spacing:1.5px;font-style:italic;">
+      ${ps.company_name ? ps.company_name + ' — ' : ''}Fatura Tarihi: ${invDate}
+    </div>
+    <div style="font-size:9px;color:rgba(255,255,255,0.2);
+         letter-spacing:1px;">
+      Baskı: ${dateStr}
+    </div>
+  </div>
+  ${ps.print_footer ? `
+  <div style="padding:8px 18px;background:#f9f5e8;
+       border-top:1px solid #e8d5a0;font-size:10px;
+       color:#8B6914;text-align:center;font-style:italic;">
+    ${ps.print_footer}
+  </div>` : ''}
+  <div style="height:4px;background:linear-gradient(90deg,
+    transparent,#c9a84c 20%,#f0d080 50%,#c9a84c 80%,transparent);"></div>
+
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  if (!win) {
+    showInvToast('Popup engellendi! Tarayıcı ayarlarını kontrol edin.', 'error');
+    return;
+  }
+  win.document.write(printHTML);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 700);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   تحديث buildMyOrdersPage لإضافة تبويب الفواتير
+══════════════════════════════════════════════════════════════ */
+const _origBuildMyOrdersPage_INV = buildMyOrdersPage;
+buildMyOrdersPage = async function() {
+
+  document.getElementById('pageContent').innerHTML = `
+    <div class="myorders-page page-transition">
+
+      <!-- Banner -->
+      <div class="section-banner">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+          <button class="section-back-btn" onclick="goHome()">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div style="min-width:0;">
+            <div class="section-banner-tag">✦ KİŞİSEL DEPO</div>
+            <div class="section-banner-title"
+                 style="font-size:clamp(18px,5vw,34px);">
+              HAREKETLERİM
+            </div>
+            <div class="section-banner-count" id="myOrdersCount">
+              Yükleniyor...
+            </div>
+            <div class="section-banner-line"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;">
+          <button onclick="openInvoiceModal(null)" style="
+            padding:9px 14px;border-radius:9px;border:none;
+            background:linear-gradient(135deg,#16a34a,#4ade80);
+            color:#fff;font-family:'Montserrat',sans-serif;
+            font-size:10px;font-weight:900;letter-spacing:1px;
+            cursor:pointer;display:flex;align-items:center;gap:6px;
+            transition:all 0.25s;white-space:nowrap;"
+            title="Yeni Fatura"
+            onmouseover="this.style.transform='translateY(-2px)'"
+            onmouseout="this.style.transform=''">
+            <i class="fas fa-file-invoice"></i>
+            <span style="display:none;" id="newInvBtnText">YENİ FATURA</span>
+          </button>
+          <button onclick="openMyPrintSettings()" style="
+            width:36px;height:36px;border-radius:9px;
+            border:1px solid rgba(201,168,76,0.3);
+            background:rgba(201,168,76,0.08);
+            color:#c9a84c;font-size:14px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:all 0.25s;"
+            title="Ayarlar"
+            onmouseover="this.style.background='rgba(201,168,76,0.18)'"
+            onmouseout="this.style.background='rgba(201,168,76,0.08)'">
+            <i class="fas fa-cog"></i>
+          </button>
+          <button onclick="printMyInventory()" style="
+            width:36px;height:36px;border-radius:9px;border:none;
+            background:linear-gradient(135deg,#c9a84c,#f0d080);
+            color:#0a0a0a;font-size:14px;cursor:pointer;
+            display:flex;align-items:center;justify-content:center;
+            transition:all 0.25s;"
+            title="Depo Raporu Yazdır"
+            onmouseover="this.style.transform='scale(1.08)'"
+            onmouseout="this.style.transform='scale(1)'">
+            <i class="fas fa-print"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ التبويبات الرئيسية ══ -->
+      <div style="
+        display:flex;background:#0a0a0a;
+        border-bottom:1px solid rgba(255,255,255,0.06);
+        position:sticky;top:0;z-index:100;">
+        <button id="mainTab1" onclick="switchMainTab(1)" style="
+          flex:1;padding:13px 8px;background:none;border:none;
+          color:#c9a84c;font-size:clamp(10px,2.5vw,12px);font-weight:700;
+          font-family:'Montserrat',sans-serif;cursor:pointer;
+          border-bottom:2px solid #c9a84c;
+          display:flex;align-items:center;justify-content:center;gap:6px;
+          transition:all 0.25s;">
+          <i class="fas fa-warehouse"></i>
+          <span>Depom</span>
+          <span id="mainTab1Badge" style="
+            background:rgba(201,168,76,0.15);
+            border:1px solid rgba(201,168,76,0.3);
+            color:#c9a84c;border-radius:50px;
+            padding:1px 6px;font-size:9px;font-weight:900;">
+            ${_myOrdersData.length}
+          </span>
+        </button>
+        <button id="mainTab2" onclick="switchMainTab(2)" style="
+          flex:1;padding:13px 8px;background:none;border:none;
+          color:rgba(255,255,255,0.35);font-size:clamp(10px,2.5vw,12px);
+          font-weight:700;font-family:'Montserrat',sans-serif;cursor:pointer;
+          border-bottom:2px solid transparent;
+          display:flex;align-items:center;justify-content:center;gap:6px;
+          transition:all 0.25s;">
+          <i class="fas fa-file-invoice"></i>
+          <span>Faturalarım</span>
+          <span id="mainTab2Badge" style="
+            background:rgba(74,222,128,0.1);
+            border:1px solid rgba(74,222,128,0.25);
+            color:#4ade80;border-radius:50px;
+            padding:1px 6px;font-size:9px;font-weight:900;">
+            ${_invoicesData.length}
+          </span>
+        </button>
+      </div>
+
+      <!-- ══ محتوى التبويب 1: الديبو ══ -->
+      <div id="mainTabContent1">
+        <!-- إحصائيات -->
+        <div class="myorders-stats-grid" id="myOrdersStats"></div>
+
+        <!-- فلاتر -->
+        <div class="myorders-filter-bar">
+          <div class="myorders-search-wrap">
+            <i class="fas fa-search"></i>
+            <input type="text" class="myorders-search-inp"
+              id="myOrdersSearch"
+              placeholder="Ürün veya sipariş ara..."
+              oninput="filterMyOrders(this.value)"
+              autocomplete="off"/>
+          </div>
+          <select class="myorders-filter-sel"
+            id="myOrdersFilter"
+            onchange="filterMyOrders()">
+            <option value="all">Tümü</option>
+            <option value="delivered">Teslim Edildi</option>
+            <option value="manufacturing">Üretimde</option>
+            <option value="ready">Hazır</option>
+            <option value="pending">Beklemede</option>
+            <option value="cancelled">İptal</option>
+            <option value="in_stock">Stokta Var</option>
+            <option value="sold_out">Tükendi</option>
+          </select>
+        </div>
+
+        <!-- القائمة -->
+        <div class="myorders-list" id="myOrdersList">
+          <div style="text-align:center;padding:50px 20px;">
+            <i class="fas fa-spinner fa-spin"
+               style="font-size:26px;color:rgba(201,168,76,0.4);"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ محتوى التبويب 2: الفواتير ══ -->
+      <div id="mainTabContent2" style="display:none;">
+
+        <!-- شريط بحث الفواتير -->
+        <div style="
+          padding:12px 14px;
+          background:var(--dark4);
+          border-bottom:1px solid rgba(255,255,255,0.04);
+          display:flex;gap:8px;align-items:center;flex-wrap:wrap;
+          position:sticky;top:0;z-index:99;">
+          <div style="position:relative;flex:1;min-width:140px;">
+            <i class="fas fa-search" style="
+              position:absolute;left:10px;top:50%;
+              transform:translateY(-50%);
+              color:rgba(74,222,128,0.5);font-size:12px;
+              pointer-events:none;"></i>
+            <input type="text"
+              id="invoiceSearch"
+              placeholder="Müşteri veya fatura no ara..."
+              oninput="filterInvoices(this.value)"
+              autocomplete="off"
+              style="
+                width:100%;padding:9px 10px 9px 30px;
+                background:rgba(255,255,255,0.04);
+                border:1px solid rgba(74,222,128,0.2);
+                border-radius:9px;color:#fff;
+                font-family:'Montserrat',sans-serif;
+                font-size:12px;outline:none;
+                -webkit-user-select:text;user-select:text;
+                transition:border-color 0.3s;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#4ade80'"
+              onfocusout="this.style.borderColor='rgba(74,222,128,0.2)'"/>
+          </div>
+          <select id="invoiceStatusFilter"
+            onchange="filterInvoices()"
+            style="
+              padding:9px 10px;border-radius:9px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(255,255,255,0.1);
+              color:#fff;font-family:'Montserrat',sans-serif;
+              font-size:11px;outline:none;cursor:pointer;
+              max-width:130px;">
+            <option value="all">Tümü</option>
+            <option value="paid">Tam Ödendi</option>
+            <option value="partial">Kısmi Ödeme</option>
+            <option value="unpaid">Ödenmedi</option>
+          </select>
+        </div>
+
+        <!-- إحصائيات الفواتير -->
+        <div id="invoicesStatsBar" style="
+          display:grid;grid-template-columns:repeat(3,1fr);
+          gap:0;border-bottom:1px solid rgba(255,255,255,0.05);">
+        </div>
+
+        <!-- قائمة الفواتير -->
+        <div style="padding:12px 14px 80px;" id="invoicesTabContent">
+          <div style="text-align:center;padding:40px;">
+            <i class="fas fa-spinner fa-spin"
+               style="font-size:24px;color:rgba(74,222,128,0.4);"></i>
+          </div>
+        </div>
+      </div>
+
+    </div>`;
+
+  /* تحميل البيانات */
+  if (!_myOrdersLoaded)  await loadMyOrdersInventory();
+  if (!_invoicesLoaded)  await loadInvoices();
+
+  renderMyOrdersContent();
+  buildInvoicesTab();
+  renderInvoicesStats();
+
+  /* إظهار نص زر الفاتورة على الشاشات الكبيرة */
+  if (window.innerWidth >= 480) {
+    const btnText = document.getElementById('newInvBtnText');
+    if (btnText) btnText.style.display = '';
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   تبديل التبويبات الرئيسية
+══════════════════════════════════════════════════════════════ */
+function switchMainTab(num) {
+  [1, 2].forEach(n => {
+    const tab     = document.getElementById('mainTab' + n);
+    const content = document.getElementById('mainTabContent' + n);
+    if (!tab || !content) return;
+
+    if (n === num) {
+      tab.style.color       = '#c9a84c';
+      tab.style.borderBottom= '2px solid #c9a84c';
+      content.style.display = 'block';
+    } else {
+      tab.style.color       = 'rgba(255,255,255,0.35)';
+      tab.style.borderBottom= '2px solid transparent';
+      content.style.display = 'none';
+    }
+  });
+
+  /* تحديث عدادات التبويبات */
+  const b1 = document.getElementById('mainTab1Badge');
+  const b2 = document.getElementById('mainTab2Badge');
+  if (b1) b1.textContent = _myOrdersData.length;
+  if (b2) b2.textContent = _invoicesData.length;
+
+  if (num === 2) {
+    renderInvoicesStats();
+    buildInvoicesTab();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   إحصائيات الفواتير
+══════════════════════════════════════════════════════════════ */
+function renderInvoicesStats() {
+  const statsEl = document.getElementById('invoicesStatsBar');
+  if (!statsEl) return;
+
+  const total   = _invoicesData.length;
+  const paid    = _invoicesData.filter(inv => {
+    const payments = Array.isArray(inv.payments) ? inv.payments : [];
+    const totalPaid = payments.reduce((s,p) => s+(p.amount||0), 0);
+    return totalPaid >= (inv.total_amount||0) && (inv.total_amount||0) > 0;
+  }).length;
+  const unpaid  = _invoicesData.filter(inv => {
+    const payments = Array.isArray(inv.payments) ? inv.payments : [];
+    const totalPaid = payments.reduce((s,p) => s+(p.amount||0), 0);
+    return totalPaid < (inv.total_amount||0);
+  }).length;
+
+  const totalRevenue = _invoicesData.reduce((s, inv) => {
+    const payments = Array.isArray(inv.payments) ? inv.payments : [];
+    return s + payments.reduce((ps,p) => ps+(p.amount||0), 0);
+  }, 0);
+
+  statsEl.innerHTML = [
+    { icon:'fa-file-invoice', color:'#c9a84c', bg:'rgba(201,168,76,0.08)',
+      val:total,   lbl:'Toplam Fatura' },
+    { icon:'fa-check-circle', color:'#4ade80', bg:'rgba(74,222,128,0.08)',
+      val:paid,    lbl:'Tam Ödendi' },
+    { icon:'fa-lira-sign',    color:'#c9a84c', bg:'rgba(201,168,76,0.06)',
+      val:Number(totalRevenue).toLocaleString('tr-TR') + ' ₺',
+      lbl:'Toplam Tahsilat' },
+  ].map((s,i) => `
+    <div style="padding:12px 8px;text-align:center;
+         background:${s.bg};
+         border-right:${i<2?'1px solid rgba(255,255,255,0.05)':'none'};">
+      <div style="font-size:clamp(14px,4vw,18px);font-weight:900;
+           color:${s.color};line-height:1;margin-bottom:3px;
+           font-family:'Montserrat',sans-serif;">
+        ${s.val}
+      </div>
+      <div style="font-size:8px;color:rgba(255,255,255,0.25);
+           text-transform:uppercase;letter-spacing:0.8px;
+           font-family:'Montserrat',sans-serif;">
+        ${s.lbl}
+      </div>
+    </div>`).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   فلترة الفواتير
+══════════════════════════════════════════════════════════════ */
+function filterInvoices(searchVal) {
+  const q = (searchVal !== undefined
+    ? searchVal
+    : (document.getElementById('invoiceSearch')?.value || '')
+  ).toLowerCase().trim();
+
+  const statusFilter = document.getElementById('invoiceStatusFilter')?.value || 'all';
+
+  const filtered = _invoicesData.filter(inv => {
+    const matchQ = !q
+      || (inv.customer_name||'').toLowerCase().includes(q)
+      || (inv.invoice_number||'').toLowerCase().includes(q)
+      || (inv.product_title||'').toLowerCase().includes(q)
+      || (inv.customer_phone||'').includes(q);
+
+    const payments  = Array.isArray(inv.payments) ? inv.payments : [];
+    const totalPaid = payments.reduce((s,p) => s+(p.amount||0), 0);
+    const remaining = Math.max(0, (inv.total_amount||0) - totalPaid);
+    const isPaid    = remaining <= 0 && (inv.total_amount||0) > 0;
+
+    const matchS =
+      statusFilter === 'all'     ? true :
+      statusFilter === 'paid'    ? isPaid :
+      statusFilter === 'partial' ? (totalPaid > 0 && !isPaid) :
+      statusFilter === 'unpaid'  ? (totalPaid <= 0) :
+      true;
+
+    return matchQ && matchS;
+  });
+
+  const listEl = document.getElementById('invoicesTabContent');
+  if (!listEl) return;
+
+  if (!filtered.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:50px 20px;
+           color:rgba(255,255,255,0.15);">
+        <i class="fas fa-search"
+           style="font-size:36px;display:block;margin-bottom:12px;
+                  color:rgba(74,222,128,0.1);"></i>
+        <p style="font-size:12px;letter-spacing:1.5px;">
+          Sonuç bulunamadı
+        </p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(inv => buildInvoiceCard(inv)).join('');
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SQL — جدول customer_invoices (أضفه في Supabase)
+══════════════════════════════════════════════════════════════ */
+/*
+CREATE TABLE IF NOT EXISTS customer_invoices (
+  id               BIGSERIAL PRIMARY KEY,
+  username         TEXT NOT NULL,
+  invoice_number   TEXT NOT NULL DEFAULT '',
+  customer_name    TEXT NOT NULL DEFAULT '',
+  customer_phone   TEXT DEFAULT '',
+  customer_address TEXT DEFAULT '',
+  product_title    TEXT DEFAULT '',
+  total_amount     NUMERIC DEFAULT 0,
+  payments         JSONB DEFAULT '[]'::jsonb,
+  notes            TEXT DEFAULT '',
+  is_deleted       BOOLEAN DEFAULT false,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE customer_invoices ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ci_all" ON customer_invoices FOR ALL USING (true) WITH CHECK (true);
+CREATE INDEX IF NOT EXISTS idx_ci_username   ON customer_invoices(username);
+CREATE INDEX IF NOT EXISTS idx_ci_is_deleted ON customer_invoices(is_deleted);
+CREATE INDEX IF NOT EXISTS idx_ci_created    ON customer_invoices(created_at DESC);
+
+-- Realtime
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime' AND tablename = 'customer_invoices'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE customer_invoices;
+  END IF;
+END;
+$$;
+*/
+
+/* ══════════════════════════════════════════════════════════════
+   Realtime للفواتير
+══════════════════════════════════════════════════════════════ */
+async function subscribeInvoicesRealtime() {
+  if (currentUser === ADMIN_USER || _currentUserData?._isAdmin) return;
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  sb.channel('invoices-rt-' + currentUser)
+    .on('postgres_changes', {
+      event  : '*',
+      schema : 'public',
+      table  : 'customer_invoices',
+      filter : `username=eq.${currentUser}`
+    }, async payload => {
+      if (payload.eventType === 'INSERT' && payload.new) {
+        _invoicesData.unshift(payload.new);
+      } else if (payload.eventType === 'UPDATE' && payload.new) {
+        if (payload.new.is_deleted) {
+          _invoicesData = _invoicesData.filter(
+            i => i.id !== payload.new.id
+          );
+        } else {
+          const idx = _invoicesData.findIndex(i => i.id === payload.new.id);
+          if (idx !== -1) _invoicesData[idx] = payload.new;
+          else _invoicesData.unshift(payload.new);
+        }
+      } else if (payload.eventType === 'DELETE' && payload.old) {
+        _invoicesData = _invoicesData.filter(
+          i => i.id !== payload.old.id
+        );
+      }
+
+      /* تحديث الواجهة إذا كانت مفتوحة */
+      if (currentPage === 'myorders') {
+        const b2 = document.getElementById('mainTab2Badge');
+        if (b2) b2.textContent = _invoicesData.length;
+        renderInvoicesStats();
+        /* إعادة رسم قائمة الفواتير فقط إذا كان التبويب مفتوحاً */
+        const tab2 = document.getElementById('mainTabContent2');
+        if (tab2 && tab2.style.display !== 'none') {
+          buildInvoicesTab();
+        }
+      }
+    })
+    .subscribe();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Hook: تفعيل Realtime بعد تسجيل الدخول
+══════════════════════════════════════════════════════════════ */
+const _masterFinishLogin_INV = finishLogin;
+finishLogin = function() {
+  _masterFinishLogin_INV();
+  setTimeout(async () => {
+    const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
+    if (!isAdmin) {
+      await loadInvoices();
+      subscribeInvoicesRealtime();
+    }
+  }, 1500);
+};
+
+/* ══════════════════════════════════════════════════════════════
+   زر دخول مباشر من الصفحة الرئيسية
+══════════════════════════════════════════════════════════════ */
+const _origRenderUserHomeCards_INV = renderUserHomeCards;
+renderUserHomeCards = function(container) {
+  _origRenderUserHomeCards_INV(container);
+
+  /* إزالة البطاقة القديمة إن وجدت */
+  document.getElementById('myOrdersHomeCard')?.remove();
+
+  const card = document.createElement('div');
+  card.id        = 'myOrdersHomeCard';
+  card.className = 'home-card';
+  card.style.cssText = `
+    animation:cardSlideIn 0.7s ease 0.95s both;
+    border-color:rgba(74,222,128,0.2);`;
+  card.onclick = () => enterSection('myorders');
+
+  card.innerHTML = `
+    <img class="home-card-img"
+         src="https://static.wixstatic.com/media/42e4ec_8d4e6ca411db4107957248517ed332a4~mv2.png/v1/fill/w_1400,h_718,al_c,q_90,enc_avif,quality_auto/WhatsApp%20G%C3%B6rsel%202024-09-21%20saat%2018_edited.png"
+         alt="Hareketlerim" loading="lazy" draggable="false"
+         onerror="this.style.display='none'"/>
+    <div class="home-card-overlay"></div>
+    <div class="home-card-shine"></div>
+    <div class="home-card-count" style="
+      background:rgba(74,222,128,0.75);
+      border-color:rgba(74,222,128,0.5);
+      color:#fff;font-weight:900;">
+      DEPO
+    </div>
+    <div class="home-card-content">
+      <div class="home-card-num">05 — KİŞİSEL DEPO</div>
+      <div class="home-card-title">
+        HAREKETLERİM<span>& FATURALARIM</span>
+      </div>
+      <div class="home-card-desc">
+        Satışlar · Faturalar · Ödemeler · Baskı
+      </div>
+      <div class="home-card-btn">
+        Depoma Git <i class="fas fa-warehouse"></i>
+      </div>
+    </div>`;
+
+  container.appendChild(card);
+};
+
+/* ══════════════════════════════════════════════════════════════
+   تحديث updateAdminNavVisibility لإخفاء زر الفاتورة عن الأدمن
+══════════════════════════════════════════════════════════════ */
+const _origUpdateAdminNav_INV = updateAdminNavVisibility;
+updateAdminNavVisibility = function() {
+  _origUpdateAdminNav_INV();
+  /* زر "حركاتي" يُخفى للأدمن تلقائياً من خلال الـ hook الموجود */
+};
+
+/* ══════════════════════════════════════════════════════════════
+   CSS إضافي لإظهار نص زر الفاتورة على الشاشات الكبيرة
+══════════════════════════════════════════════════════════════ */
+(function injectInvBtnStyle() {
+  if (document.getElementById('invBtnStyle')) return;
+  const st = document.createElement('style');
+  st.id = 'invBtnStyle';
+  st.textContent = `
+    @media (min-width: 480px) {
+      #newInvBtnText { display: inline !important; }
+    }
+    /* تحسين تبويبات الصفحة الرئيسية */
+    #mainTab1, #mainTab2 {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #mainTab1:active, #mainTab2:active {
+      opacity: 0.7;
+    }
+  `;
+  document.head.appendChild(st);
+})();
+
+
+
+
+
+
+
+
+  
 /* ══════════════════════════════════════════════════════════════
    تحميل البيانات
 ══════════════════════════════════════════════════════════════ */
