@@ -36119,9 +36119,9 @@ showPage = function(cat) {
 // 5. حقن الزر بقوة في الصفحة الرئيسية (مضاد للمسح)
 (function forceInjectHareketlerimBtn() {
   function injectCard() {
-    // كود بطاقة الزر
+    // كود بطاقة الزر (تم تصحيح onclick إلى enterSection)
     const cardHTML = `
-    <div id="hareketlerimUniversalCard" class="myorders-home-card" onclick="showPage('hareketlerim')" style="grid-column: 1 / -1; position: relative; border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid rgba(74,222,128,0.3); background: linear-gradient(145deg, #0f1710, #0a0f0a); transition: transform 0.3s ease, box-shadow 0.3s ease; height: 110px; margin-top: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+    <div id="hareketlerimUniversalCard" class="myorders-home-card" onclick="enterSection('hareketlerim')" style="grid-column: 1 / -1; position: relative; border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid rgba(74,222,128,0.3); background: linear-gradient(145deg, #0f1710, #0a0f0a); transition: transform 0.3s ease, box-shadow 0.3s ease; height: 110px; margin-top: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
       <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; height: 100%; box-sizing: border-box; background: linear-gradient(135deg, rgba(74,222,128,0.08), transparent);">
         <div>
           <div style="font-size:10px; letter-spacing:3px; color:#4ade80; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
@@ -36153,15 +36153,13 @@ showPage = function(cat) {
     }
   }
 
-  // استخدام مراقب التغيرات لضمان بقاء الزر حتى لو قام Supabase بتحديث الشاشة
+  // استخدام مراقب التغيرات لضمان بقاء الزر
   const observer = new MutationObserver(injectCard);
   observer.observe(document.body, { childList: true, subtree: true });
   
   // فحص احتياطي كل ثانية
   setInterval(injectCard, 1000);
 })();
-
-
 
 
 
