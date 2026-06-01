@@ -3603,11 +3603,6 @@ body.wow-mode .mobile-menu {
   <i class="fas fa-shield-alt"></i> PANEL
 </a>
 
-<a class="nav-link" id="nav-myorders" href="#" onclick="showPage('myorders');return false;" style="display:none;">
-  <i class="fas fa-chart-line"></i> HAREKETLERİM
-</a>
-
-      
     </div>
     <div class="nav-tools">
   <button class="nav-icon-btn" onclick="openDevModal()" data-tip="Yazılım & Tasarım">
@@ -3676,13 +3671,6 @@ body.wow-mode .mobile-menu {
   <i class="fas fa-shield-alt"></i> SİPARİŞ PANELİ
 </a>
 
-
-<a href="#" id="mob-myorders" onclick="showPage('myorders');closeMobileMenu();return false;" style="display:none;">
-  <i class="fas fa-chart-line"></i> HAREKETLERİM
-</a>
-
-  
-      
       <div class="mob-divider"></div>
       <div class="mob-tools-row">
         <button class="mob-tool-btn mob-tool-dev" onclick="openDevModal();closeMobileMenu();">
@@ -10811,54 +10799,62 @@ openOrderPdfModal = function() {
 };
 
 
-/* ── إضافة زر "طلبيتي" في الهيدر ── */
-(function addMyOrderBtn() {
-  /* ننتظر تحميل DOM */
-  document.addEventListener('DOMContentLoaded', () => {}, { once:true });
-  
-  setTimeout(() => {
-    /* زر ديسكتوب */
-    const navTools = document.querySelector('.nav-tools');
-    if (navTools && !document.getElementById('myOrderBtn')) {
-      const btn = document.createElement('button');
-      btn.id        = 'myOrderBtn';
-      btn.className = 'nav-icon-btn';
-      btn.title     = 'Siparişlerim';
-      btn.style.display = 'none';
-      btn.innerHTML = `
-        <i class="fas fa-box"></i>
-        <span id="myOrderDot" style="
-          position:absolute;top:-4px;right:-4px;
-          width:8px;height:8px;border-radius:50%;
-          background:#fbbf24;
-          border:2px solid rgba(8,8,8,0.96);
-        "></span>`;
-      btn.onclick = () => showPage('myorders');
-      
-      /* أضفه قبل زر الصوت */
-      const audioBtn = document.getElementById('audioNavBtn');
-      if (audioBtn) navTools.insertBefore(btn, audioBtn);
-      else navTools.appendChild(btn);
-    }
 
-    /* زر موبايل في القائمة */
-    const mobMenu = document.querySelector('.mobile-menu-inner');
-    if (mobMenu && !document.getElementById('mobMyOrderBtn')) {
-      const mobBtn = document.createElement('a');
-      mobBtn.id        = 'mobMyOrderBtn';
-      mobBtn.href      = '#';
-      mobBtn.style.display = 'none';
-      mobBtn.innerHTML = `<i class="fas fa-box"></i> SİPARİŞLERİM`;
-      mobBtn.onclick   = (e) => {
-        e.preventDefault();
-        showPage('myorders');
-        closeMobileMenu();
-      };
-      const divider = mobMenu.querySelector('.mob-divider');
-      if (divider) mobMenu.insertBefore(mobBtn, divider.nextSibling);
-    }
-  }, 500);
-})();
+
+
+
+  /* ── إضافة زر "طلبيتي" في الهيدر ── */
+function injectMyOrderBtn() {
+  /* زر ديسكتوب */
+  const navTools = document.querySelector('.nav-tools');
+  if (navTools && !document.getElementById('myOrderBtn')) {
+    const btn = document.createElement('button');
+    btn.id        = 'myOrderBtn';
+    btn.className = 'nav-icon-btn';
+    btn.title     = 'Siparişlerim';
+    btn.style.display = 'none';
+    btn.innerHTML = `
+      <i class="fas fa-box"></i>
+      <span id="myOrderDot" style="
+        position:absolute;top:-4px;right:-4px;
+        width:8px;height:8px;border-radius:50%;
+        background:#fbbf24;
+        border:2px solid rgba(8,8,8,0.96);
+      "></span>`;
+    btn.onclick = () => showPage('myorders');
+    
+    /* أضفه قبل زر الصوت */
+    const audioBtn = document.getElementById('audioNavBtn');
+    if (audioBtn) navTools.insertBefore(btn, audioBtn);
+    else navTools.appendChild(btn);
+  }
+
+  /* زر موبايل في القائمة */
+  const mobMenu = document.querySelector('.mobile-menu-inner');
+  if (mobMenu && !document.getElementById('mobMyOrderBtn')) {
+    const mobBtn = document.createElement('a');
+    mobBtn.id        = 'mobMyOrderBtn';
+    mobBtn.href      = '#';
+    mobBtn.style.display = 'none';
+    mobBtn.innerHTML = `<i class="fas fa-box"></i> SİPARİŞLERİM`;
+    mobBtn.onclick   = (e) => {
+      e.preventDefault();
+      showPage('myorders');
+      closeMobileMenu();
+    };
+    const divider = mobMenu.querySelector('.mob-divider');
+    if (divider) mobMenu.insertBefore(mobBtn, divider.nextSibling);
+    else mobMenu.appendChild(mobBtn);
+  }
+}
+
+/* استدعاء دالة الحقن بشكل آمن لضمان عدم اختفاء الزر */
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(injectMyOrderBtn, 500);
+});
+/* استدعاءات احتياطية لضمان ظهور الزر حتى لو تأخر تحميل الصفحة */
+setTimeout(injectMyOrderBtn, 1500);
+setTimeout(injectMyOrderBtn, 3000);
 
 /* ── تحديث nav عند دخول mainSite ── */
 const _origEnterSection2 = enterSection;
@@ -10867,6 +10863,9 @@ enterSection = function(cat) {
     updateAdminNavVisibility();
     /* إظهار زر "طلبيتي" للمستخدمين العاديين */
     if (currentUser && currentUser !== ADMIN_USER) {
+      /* نتأكد من حقن الزر أولاً في حال تم مسحه */
+      injectMyOrderBtn(); 
+      
       const btn    = document.getElementById('myOrderBtn');
       const mobBtn = document.getElementById('mobMyOrderBtn');
       if (btn)    btn.style.display    = 'flex';
@@ -18863,7 +18862,7 @@ function renderUserHomeCards(container) {
     ? _homeCards
     : getStaticCards();
 
-  container.innerHTML = cards
+  let html = cards
     .filter(c => c.is_active !== false
               && c.section_key !== 'admin'
               && c.section_key !== 'settings'
@@ -18873,7 +18872,28 @@ function renderUserHomeCards(container) {
               && c.section_key !== 'user_preview')
     .map((card, idx) => buildHomeCardHTML(card, idx))
     .join('');
+
+  /* ★ إضافة بطاقة "حركاتي / Siparişlerim" في الصفحة الرئيسية ★ */
+  html += `
+    <div class="myorders-home-card" onclick="enterSection('myorders')">
+      <div style="padding: 16px; display: flex; align-items: center; gap: 14px; height: 100%; box-sizing: border-box;">
+        <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(74,222,128,0.15); border: 1px solid rgba(74,222,128,0.3); display: flex; align-items: center; justify-content: center; color: #4ade80; font-size: 20px; flex-shrink: 0;">
+          <i class="fas fa-box-open"></i>
+        </div>
+        <div style="flex: 1;">
+          <div style="font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 4px;">SİPARİŞLERİM</div>
+          <div style="font-size: 10px; color: rgba(255,255,255,0.4); line-height: 1.4;">Sipariş durumunu ve detaylarını takip et</div>
+        </div>
+        <div style="width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(135deg, #4ade80, #22c55e); display: flex; align-items: center; justify-content: center; color: #0a0a0a; font-size: 11px;">
+          <i class="fas fa-arrow-right"></i>
+        </div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
+
 
 /* ─────────────────────────────────────────
    بطاقات الـ WOW (Admin)
@@ -36364,4 +36384,4 @@ function findCurrentUser() {
 
   
 </body>
-</html>             
+</html>
