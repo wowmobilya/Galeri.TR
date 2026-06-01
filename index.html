@@ -28487,6 +28487,38 @@ const CHAT_INPUT_EMOJIS = [
     border-radius:20px;padding:4px 12px;
   }
 
+
+
+/* ── تأثير التحديد والتمييز مثل واتساب ── */
+.msg-highlight-active {
+  position: relative;
+  z-index: 100000 !important;
+}
+.msg-highlight-active::before {
+  content: '';
+  position: absolute;
+  inset: -2px -8px;
+  background: rgba(201, 168, 76, 0.18); /* لون التظليل الذهبي الشفاف */
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: -1;
+  animation: waHighlightIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+@keyframes waHighlightIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* تعتيم باقي المحادثة للتركيز على الرسالة المحددة */
+body.ctx-menu-open #chatMsgsArea > div:not(.msg-highlight-active) {
+  opacity: 0.4;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+
+
+  
   /* ── قائمة المحادثات ── */
   .cl-item {
     display:flex;align-items:center;gap:12px;padding:12px 15px;
@@ -30488,17 +30520,15 @@ function showMsgCtx(e, msgId, isMine, type) {
   const msg   = _chatMessages.find(m => m.id === msgId);
   if (!msg) return;
 
-  // حساب الوقت المنقضي منذ إرسال الرسالة بالدقائق
   const now = Date.now();
   const msgTime = new Date(msg.created_at).getTime();
   const diffMinutes = (now - msgTime) / (1000 * 60);
 
-  // تحديد الصلاحيات
   const canEdit = diffMinutes <= 30;
   const canDeleteForAll = diffMinutes <= 60;
   const isAdmin = currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin);
 
-  /* ── الخيارات بترتيب ثابت ── */
+  /* ── الخيارات ── */
   items.push(`<div class="ctx-i" id="ctx-reply" onclick="document.getElementById('chatCtxMenu')?.remove();startReply(${msgId})">
     <i class="fas fa-reply"></i> Yanıtla</div>`);
 
@@ -30548,13 +30578,16 @@ function showMsgCtx(e, msgId, isMine, type) {
   menu.innerHTML = items.join('');
   if (!items.length) return;
 
-  /* ── ★ التعديل الجديد لمنع القطش من الأسفل أو الجوانب ★ ── */
-  
-  // 1. إخفاء القائمة مؤقتاً لحين حساب أبعادها الحقيقية
+  /* ── ★ التمييز البصري للرسالة (مثل واتساب) ★ ── */
+  const msgEl = document.getElementById('msg-' + msgId);
+  if (msgEl) {
+    msgEl.classList.add('msg-highlight-active');
+    document.body.classList.add('ctx-menu-open'); // لتعتيم باقي المحادثة
+  }
+
   menu.style.visibility = 'hidden';
   document.body.appendChild(menu);
 
-  // 2. استخدام requestAnimationFrame لضمان رسم المتصفح للقائمة وحساب أبعادها
   requestAnimationFrame(() => {
     const menuWidth = menu.offsetWidth;
     const menuHeight = menu.offsetHeight;
@@ -30562,29 +30595,24 @@ function showMsgCtx(e, msgId, isMine, type) {
     let x = e.clientX || e.touches?.[0]?.clientX || window.innerWidth / 2;
     let y = e.clientY || e.touches?.[0]?.clientY || window.innerHeight / 2;
 
-    // منع خروج القائمة من الحافة اليمنى للشاشة
-    if (x + menuWidth > window.innerWidth - 15) {
-      x = window.innerWidth - menuWidth - 15;
-    }
-
-    // منع خروج القائمة من الحافة السفلية (منع القطش)
+    if (x + menuWidth > window.innerWidth - 15) x = window.innerWidth - menuWidth - 15;
     if (y + menuHeight > window.innerHeight - 15) {
-      // إذا لم تكن هناك مساحة بالأسفل، نعرض القائمة "فوق" المؤشر بدلاً من تحته
       y = y - menuHeight;
-      
-      // حماية إضافية: إذا كانت الشاشة صغيرة جداً وخرجت من الأعلى، نثبتها في الأعلى
       if (y < 15) y = 15;
     }
 
-    // تطبيق الإحداثيات الجديدة وإظهار القائمة
     menu.style.left = x + 'px';
     menu.style.top  = y + 'px';
     menu.style.visibility = 'visible';
   });
 
-  // إغلاق القائمة عند الضغط في أي مكان آخر
+  /* ── إزالة التمييز عند إغلاق القائمة ── */
   setTimeout(() => {
-    document.addEventListener('click', () => document.getElementById('chatCtxMenu')?.remove(), { once:true });
+    document.addEventListener('click', () => {
+      document.getElementById('chatCtxMenu')?.remove();
+      if (msgEl) msgEl.classList.remove('msg-highlight-active');
+      document.body.classList.remove('ctx-menu-open');
+    }, { once:true });
   }, 80);
 }
 
