@@ -34440,15 +34440,7 @@ async function confirmSaleMO(itemId) {
   renderMyOrdersContent();
 }
 
-  /* إعادة رسم البطاقة */
-  const card = document.getElementById('myitem-' + itemId);
-  if (card) {
-    const w = document.createElement('div');
-    w.innerHTML = buildMyItemCard(item);
-    card.replaceWith(w.firstElementChild);
-  }
-  renderMyOrdersStats();
-}
+ 
 
 /* ══════════════════════════════════════════════════════════════
    نافذة سجل الحركات (محدثة لدعم الفواتير والدفعات)
