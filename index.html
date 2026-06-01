@@ -35996,50 +35996,170 @@ finishLogin = function() {
    ★ نهاية نظام الفواتير والأقساط — اكتمل بنجاح ✓ ★
 ══════════════════════════════════════════════════════════════ */
 /* ============================================================
-   ★ استعادة بطاقة "حركاتي v2" بشكل دائم (تجاوز التحديث الديناميكي) ★
+   ★ استعادة قسم حركاتي v2 بالكامل (الزر + الصفحة + البيانات) ★
 ============================================================ */
-// نقوم بتعديل دالة رسم بطاقات المستخدم الأساسية
-const _origRenderUserHomeCards_hareket = renderUserHomeCards;
+let _myOrdersData = [];
+let _salesLogCache = {};
 
-renderUserHomeCards = function(container) {
-  // 1. استدعاء الدالة الأصلية لرسم الكروت القادمة من قاعدة البيانات
-  _origRenderUserHomeCards_hareket(container);
+// 1. دالة بناء صفحة حركاتي
+async function buildHareketlerimPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition">
+      <div class="section-banner">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <button class="section-back-btn" onclick="goHome()" title="Ana Sayfaya Dön">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div>
+            <div class="section-banner-tag">✦ SATIŞ & FATURA</div>
+            <div class="section-banner-title">
+              HAREKETLERİM <span class="accent">v2</span>
+            </div>
+            <div class="section-banner-count" id="hareketStats">Yükleniyor...</div>
+            <div class="section-banner-line"></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding:18px 22px 40px;" id="hareketlerimList">
+        <div style="text-align:center;padding:40px;">
+          <i class="fas fa-spinner fa-spin" style="font-size:28px;color:rgba(74,222,128,0.4);"></i>
+        </div>
+      </div>
+    </div>`;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  // جلب بيانات مخزون المشتري
+  const { data, error } = await sb
+    .from('user_orders_inventory')
+    .select('*')
+    .eq('username', currentUser)
+    .order('created_at', { ascending: false });
+
+  const listEl = document.getElementById('hareketlerimList');
+  if (error || !data || data.length === 0) {
+    if (listEl) listEl.innerHTML = `
+      <div style="text-align:center;padding:60px 20px;color:rgba(255,255,255,0.2);">
+        <i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:16px;color:rgba(74,222,128,0.15);"></i>
+        <p style="font-size:13px;letter-spacing:2px;">Henüz envanterinizde ürün yok</p>
+      </div>`;
+    return;
+  }
+
+  _myOrdersData = data;
+  renderMyOrdersStats();
   
-  // 2. حقن بطاقة "حركاتي" بشكل دائم في نهاية القائمة
-  const hareketCardHTML = `
-    <div class="myorders-home-card" onclick="enterSection('myorders')" style="animation: cardSlideIn 0.7s ease 0.9s both; cursor: pointer;">
-      <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; height: 100%; box-sizing: border-box; background: linear-gradient(135deg, rgba(74,222,128,0.05), transparent);">
-        <div>
-          <div style="font-size:10px; letter-spacing:3px; color:#4ade80; font-weight:700; margin-bottom:6px;">
-            <i class="fas fa-file-invoice-dollar" style="margin-right:5px;"></i> SATIŞ & FATURA
-          </div>
-          <div style="font-size:22px; font-weight:900; color:#fff; margin-bottom:4px;">
-            Hareketlerim
-          </div>
-          <div style="font-size:11px; color:rgba(255,255,255,0.4); line-height: 1.5;">
-            Satışları yönet, fatura kes ve ödemeleri takip et
+  if (listEl) {
+    listEl.innerHTML = _myOrdersData.map(item => buildMyItemCard(item)).join('');
+  }
+  
+  if (typeof refreshSalesBadgesMO === 'function') {
+    setTimeout(refreshSalesBadgesMO, 500);
+  }
+}
+
+// 2. دالة بناء بطاقة المنتج داخل قسم حركاتي
+function buildMyItemCard(item) {
+  const remain = (item.qty_purchased || 0) - (item.qty_sold || 0);
+  const isDelivered = item.order_status === 'delivered' || item.order_status === 'ready';
+  
+  return `
+    <div id="myitem-${item.id}" style="background:rgba(255,255,255,0.025); border:1px solid rgba(255,255,255,0.05); border-radius:14px; margin-bottom:14px; overflow:hidden;">
+      <div style="display:flex; gap:12px; padding:14px;">
+        <div class="myitem-img-wrap" style="position:relative; width:80px; height:80px; flex-shrink:0; border-radius:10px; overflow:hidden; border:1px solid rgba(255,255,255,0.1);">
+          <img src="${item.product_img}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'"/>
+        </div>
+        <div style="flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;">
+          <div style="font-size:14px; font-weight:900; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px;">${item.product_title}</div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.4); margin-bottom:8px;">Sipariş No: ${item.order_number}</div>
+          <div style="display:flex; gap:10px; font-size:11px;">
+            <span style="color:#4ade80; font-weight:700;"><i class="fas fa-box"></i> Alınan: ${item.qty_purchased}</span>
+            <span style="color:#fbbf24; font-weight:700;"><i class="fas fa-shopping-cart"></i> Satılan: ${item.qty_sold}</span>
+            <span style="color:#60a5fa; font-weight:700;"><i class="fas fa-warehouse"></i> Kalan: ${remain}</span>
           </div>
         </div>
-        <div style="width:48px; height:48px; border-radius:12px; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); display:flex; align-items:center; justify-content:center; color:#4ade80; font-size:20px; flex-shrink:0; transition: transform 0.3s;"
-             onmouseover="this.style.transform='translateX(4px)'"
-             onmouseout="this.style.transform='translateX(0)'">
-          <i class="fas fa-arrow-right"></i>
-        </div>
+      </div>
+      <div style="padding:10px 14px; background:rgba(0,0,0,0.2); border-top:1px solid rgba(255,255,255,0.04); display:flex; gap:8px;">
+        <button onclick="openSalesLogMO(${item.id}, '${item.product_title.replace(/'/g,"\\'")}', '${item.product_img}')" style="flex:1; padding:10px; border-radius:8px; border:1px solid rgba(96,165,250,0.3); background:rgba(96,165,250,0.1); color:#60a5fa; font-weight:700; font-size:11px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fas fa-list"></i> Hareketler
+        </button>
+        <button onclick="openSaleModalMO(${item.id})" ${(!isDelivered || remain <= 0) ? 'disabled' : ''} style="flex:1; padding:10px; border-radius:8px; border:none; background:${(!isDelivered || remain <= 0) ? 'rgba(255,255,255,0.1)' : 'linear-gradient(135deg,#16a34a,#4ade80)'}; color:${(!isDelivered || remain <= 0) ? 'rgba(255,255,255,0.3)' : '#fff'}; font-weight:900; font-size:11px; cursor:${(!isDelivered || remain <= 0) ? 'not-allowed' : 'pointer'}; display:flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fas fa-plus"></i> YENİ SATIŞ
+        </button>
       </div>
     </div>
   `;
-  
-  // إضافتها إلى الحاوية دون مسح ما تم رسمه
-  container.insertAdjacentHTML('beforeend', hareketCardHTML);
+}
+
+// 3. دالة الإحصائيات
+function renderMyOrdersStats() {
+  const el = document.getElementById('hareketStats');
+  if (!el) return;
+  const totalBought = _myOrdersData.reduce((s, i) => s + (i.qty_purchased || 0), 0);
+  const totalSold   = _myOrdersData.reduce((s, i) => s + (i.qty_sold || 0), 0);
+  el.textContent = `Toplam: ${totalBought} Alınan | ${totalSold} Satılan`;
+}
+
+// 4. ربط القسم بنظام التنقل
+const _origShowPage_hareket = showPage;
+showPage = function(cat) {
+  if (cat === 'hareketlerim') {
+    currentPage = 'hareketlerim';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    buildHareketlerimPage();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    appState = 'section';
+    pushState('section', { cat:'hareketlerim' });
+    return;
+  }
+  _origShowPage_hareket(cat);
 };
 
-// فرض إعادة رسم الشاشة فوراً لتطبيق التعديل دون الحاجة لتحديث الصفحة
-setTimeout(() => {
-  if (typeof renderHomeCards === 'function') {
-    renderHomeCards();
-  }
-}, 500);
+// 5. حقن الزر بقوة في الصفحة الرئيسية (مضاد للمسح)
+(function forceInjectHareketlerimBtn() {
+  function injectCard() {
+    // كود بطاقة الزر
+    const cardHTML = `
+    <div id="hareketlerimUniversalCard" class="myorders-home-card" onclick="showPage('hareketlerim')" style="grid-column: 1 / -1; position: relative; border-radius: 14px; overflow: hidden; cursor: pointer; border: 1px solid rgba(74,222,128,0.3); background: linear-gradient(145deg, #0f1710, #0a0f0a); transition: transform 0.3s ease, box-shadow 0.3s ease; height: 110px; margin-top: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4);">
+      <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; height: 100%; box-sizing: border-box; background: linear-gradient(135deg, rgba(74,222,128,0.08), transparent);">
+        <div>
+          <div style="font-size:10px; letter-spacing:3px; color:#4ade80; font-weight:700; margin-bottom:6px; display:flex; align-items:center; gap:5px;">
+            <i class="fas fa-file-invoice-dollar"></i> SATIŞ & FATURA
+          </div>
+          <div style="font-size:22px; font-weight:900; color:#fff; margin-bottom:4px; font-family:'Montserrat',sans-serif;">
+            Hareketlerim v2
+          </div>
+          <div style="font-size:11px; color:rgba(255,255,255,0.5); line-height: 1.5; font-family:'Montserrat',sans-serif;">
+            Satışları yönet, fatura kes ve ödemeleri takip et
+          </div>
+        </div>
+        <div style="width:48px; height:48px; border-radius:12px; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); display:flex; align-items:center; justify-content:center; color:#4ade80; font-size:20px; flex-shrink:0;">
+          <i class="fas fa-arrow-right"></i>
+        </div>
+      </div>
+    </div>`;
 
+    // حقن في شبكة المستخدم العادي
+    const userGrid = document.querySelector('.home-cards');
+    if (userGrid && !document.getElementById('hareketlerimUniversalCard')) {
+      userGrid.insertAdjacentHTML('beforeend', cardHTML);
+    }
+
+    // حقن في شبكة الإدارة (WOW) لضمان ظهوره لك أيضاً أثناء الفحص
+    const adminGrid = document.getElementById('adminAccHomeGrid');
+    if (adminGrid && !document.getElementById('hareketlerimUniversalCard')) {
+      adminGrid.insertAdjacentHTML('beforeend', cardHTML);
+    }
+  }
+
+  // استخدام مراقب التغيرات لضمان بقاء الزر حتى لو قام Supabase بتحديث الشاشة
+  const observer = new MutationObserver(injectCard);
+  observer.observe(document.body, { childList: true, subtree: true });
+  
+  // فحص احتياطي كل ثانية
+  setInterval(injectCard, 1000);
+})();
 
 
 
