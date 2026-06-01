@@ -28518,6 +28518,47 @@ body.ctx-menu-open #chatMsgsArea > div:not(.msg-highlight-active) {
 
 
 
+
+/* ── تأثير القفز للرسالة (البحث / النجمة / الرد) مثل واتساب ── */
+.wa-jump-highlight {
+  position: relative;
+  z-index: 100 !important;
+  animation: waJumpScale 2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* خلفية الوميض التي تظهر خلف الرسالة */
+.wa-jump-highlight::before {
+  content: '';
+  position: absolute;
+  inset: -4px -12px;
+  background: rgba(201, 168, 76, 0.25); /* لون ذهبي شفاف للوميض */
+  border-radius: 14px;
+  z-index: -1;
+  pointer-events: none;
+  animation: waJumpBgFade 2s ease-out forwards;
+}
+
+/* حركة تكبير خفيفة للرسالة */
+@keyframes waJumpScale {
+  0%, 15% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+/* تلاشي لون الوميض تدريجياً */
+@keyframes waJumpBgFade {
+  0%, 15% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* تعتيم باقي الرسائل في المحادثة للتركيز على الرسالة المقصودة */
+body.is-jumping #chatMsgsArea > div:not(.wa-jump-highlight) {
+  opacity: 0.4;
+  transition: opacity 0.4s ease;
+}
+
+
+  
+
   
   /* ── قائمة المحادثات ── */
   .cl-item {
@@ -30792,13 +30833,30 @@ function buildReplyQuoteHTML(msg) {
 
 function jumpToMessage(msgId) {
   const el = document.getElementById('msg-' + msgId);
-  if (!el) { showInvToast('Mesaj bulunamadı', 'info'); return; }
-  el.scrollIntoView({ behavior:'smooth', block:'center' });
-  el.classList.remove('jump-highlight');
-  void el.offsetWidth;
-  el.classList.add('jump-highlight');
-  setTimeout(() => el.classList.remove('jump-highlight'), 1700);
+  if (!el) { 
+    showInvToast('Mesaj bulunamadı', 'info'); 
+    return; 
+  }
+  
+  // 1. التمرير السلس للرسالة لتكون في منتصف الشاشة
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  
+  // 2. إزالة الكلاسات إذا كانت موجودة (لإعادة تشغيل الأنيميشن إذا تم النقر مرتين)
+  el.classList.remove('wa-jump-highlight');
+  document.body.classList.remove('is-jumping');
+  void el.offsetWidth; // Trigger Reflow لإجبار المتصفح على إعادة الحساب
+  
+  // 3. إضافة كلاس التمييز للرسالة وكلاس التعتيم للشاشة
+  el.classList.add('wa-jump-highlight');
+  document.body.classList.add('is-jumping');
+  
+  // 4. إزالة التأثيرات بعد انتهاء الأنيميشن (بعد ثانيتين) لتعود المحادثة لطبيعتها
+  setTimeout(() => {
+    if (el) el.classList.remove('wa-jump-highlight');
+    document.body.classList.remove('is-jumping');
+  }, 2000);
 }
+
 
 /* ══════════════════════════════════════════════════════════════
    Swipe Reply
