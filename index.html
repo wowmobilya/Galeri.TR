@@ -35996,21 +35996,18 @@ finishLogin = function() {
    ★ نهاية نظام الفواتير والأقساط — اكتمل بنجاح ✓ ★
 ══════════════════════════════════════════════════════════════ */
 /* ============================================================
-   ★ استعادة بطاقة "حركاتي v2" (نظام الفواتير) في الصفحة الرئيسية ★
+   ★ استعادة بطاقة "حركاتي v2" بشكل دائم (تجاوز التحديث الديناميكي) ★
 ============================================================ */
-(function restoreHareketlerimCard() {
-  setTimeout(() => {
-    const homeCards = document.querySelector('.home-cards');
-    // إذا لم تكن شبكة الكروت موجودة أو البطاقة مضافة مسبقاً، نتوقف
-    if (!homeCards || document.getElementById('homeHareketlerimCard')) return;
+// نقوم بتعديل دالة رسم بطاقات المستخدم الأساسية
+const _origRenderUserHomeCards_hareket = renderUserHomeCards;
 
-    const card = document.createElement('div');
-    card.id = 'homeHareketlerimCard';
-    card.className = 'myorders-home-card';
-    card.style.display = 'none'; // سيتم التحكم بظهوره برمجياً
-    card.onclick = () => enterSection('myorders'); // يوجه لقسم حركاتي
-
-    card.innerHTML = `
+renderUserHomeCards = function(container) {
+  // 1. استدعاء الدالة الأصلية لرسم الكروت القادمة من قاعدة البيانات
+  _origRenderUserHomeCards_hareket(container);
+  
+  // 2. حقن بطاقة "حركاتي" بشكل دائم في نهاية القائمة
+  const hareketCardHTML = `
+    <div class="myorders-home-card" onclick="enterSection('myorders')" style="animation: cardSlideIn 0.7s ease 0.9s both; cursor: pointer;">
       <div style="padding: 20px; display: flex; align-items: center; justify-content: space-between; height: 100%; box-sizing: border-box; background: linear-gradient(135deg, rgba(74,222,128,0.05), transparent);">
         <div>
           <div style="font-size:10px; letter-spacing:3px; color:#4ade80; font-weight:700; margin-bottom:6px;">
@@ -36023,34 +36020,26 @@ finishLogin = function() {
             Satışları yönet, fatura kes ve ödemeleri takip et
           </div>
         </div>
-        <div style="width:48px; height:48px; border-radius:12px; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); display:flex; align-items:center; justify-content:center; color:#4ade80; font-size:20px; flex-shrink:0; transition: transform 0.3s;">
+        <div style="width:48px; height:48px; border-radius:12px; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); display:flex; align-items:center; justify-content:center; color:#4ade80; font-size:20px; flex-shrink:0; transition: transform 0.3s;"
+             onmouseover="this.style.transform='translateX(4px)'"
+             onmouseout="this.style.transform='translateX(0)'">
           <i class="fas fa-arrow-right"></i>
         </div>
       </div>
-    `;
-
-    // إضافة البطاقة إلى الصفحة الرئيسية
-    homeCards.appendChild(card);
-  }, 800);
-})();
-
-/* ── تحديث دالة إظهار الهوم لضمان عرض البطاقة ── */
-const _origShowHomeScreen_hareket = showHomeScreen;
-showHomeScreen = function() {
-  _origShowHomeScreen_hareket();
+    </div>
+  `;
   
-  setTimeout(() => {
-    // التحقق مما إذا كان المستخدم الحالي هو الأدمن
-    const isAdmin = currentUser === ADMIN_USER || (typeof _currentUserData !== 'undefined' && _currentUserData?._isAdmin);
-    const hareketCard = document.getElementById('homeHareketlerimCard');
-    
-    if (hareketCard) {
-      // إظهار البطاقة للمشتري فقط. 
-      // (إذا أردت إظهارها للأدمن أيضاً، قم بتغيير السطر التالي إلى: hareketCard.style.display = 'block';)
-      hareketCard.style.display = !isAdmin ? 'block' : 'none'; 
-    }
-  }, 150);
+  // إضافتها إلى الحاوية دون مسح ما تم رسمه
+  container.insertAdjacentHTML('beforeend', hareketCardHTML);
 };
+
+// فرض إعادة رسم الشاشة فوراً لتطبيق التعديل دون الحاجة لتحديث الصفحة
+setTimeout(() => {
+  if (typeof renderHomeCards === 'function') {
+    renderHomeCards();
+  }
+}, 500);
+
 
 
 
