@@ -3054,6 +3054,7 @@ body.wow-mode .mobile-menu {
   background: #0a0a0a;
   height: clamp(200px, 45vw, 460px);
   flex-shrink: 0;
+  border-radius: 18px; /* ← هذا السطر فقط */
 }
 
 /* ── Track ── */
@@ -3062,6 +3063,7 @@ body.wow-mode .mobile-menu {
   height: 100%;
   transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
+  align-items: stretch; /* ← إضافة */
 }
 
 /* ── شريحة واحدة ── */
@@ -3071,6 +3073,8 @@ body.wow-mode .mobile-menu {
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
+  display: flex;          /* ← إضافة */
+  flex-direction: column; /* ← إضافة */
 }
 
 /* ── الصورة ── */
@@ -3083,7 +3087,11 @@ body.wow-mode .mobile-menu {
   -webkit-user-drag: none;
   transform: scale(1.06);
   transition: transform 7s ease;
+  position: absolute; /* ← إضافة */
+  top: 0;             /* ← إضافة */
+  left: 0;            /* ← إضافة */
 }
+
 .hs-slide.hs-active .hs-img {
   transform: scale(1);
 }
