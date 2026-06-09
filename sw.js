@@ -1,4 +1,4 @@
-const VERSION    = 'v37';
+const VERSION    = 'v38';
 const CACHE_NAME = `wow-mobilya-${VERSION}`;
 const CORE_ASSETS = ['./', './index.html'];
 
