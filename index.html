@@ -36997,16 +36997,26 @@ function hsBuild() {
                    _currentUserData?._isAdmin);
   if (isAdmin) return;
 
-  /* إزالة القديم */
-  document.getElementById('heroSliderWrap')?.remove();
+/* نجد homeInner */
+const homeInner = document.querySelector('#homeScreen .home-inner');
+if (!homeInner) return;
 
-  /* نجد homeScreen */
-  const homeInner = document.querySelector('#homeScreen .home-inner');
-  if (!homeInner) return;
-
-  /* إنشاء الحاوية */
-  const wrap = document.createElement('div');
+/* استخدام الـ placeholder الموجود أو إنشاء جديد */
+let wrap = document.getElementById('heroSliderWrap');
+if (!wrap) {
+  wrap = document.createElement('div');
   wrap.id = 'heroSliderWrap';
+  const homeCards = homeInner.querySelector('.home-cards');
+  if (homeCards) {
+    homeInner.insertBefore(wrap, homeCards);
+  } else {
+    homeInner.appendChild(wrap);
+  }
+}
+/* مسح المحتوى القديم وإعادة البناء في نفس المكان */
+wrap.innerHTML = '';
+wrap.style.cssText = '';
+
 
   if (!_hsData.length) {
     wrap.innerHTML = `<div class="hs-empty">— KOLEKSİYON —</div>`;
@@ -37177,16 +37187,51 @@ function hsResetProgress() {
 ══════════════════════════════════════════════════════════════ */
 const _origShowHomeScreen_hs = showHomeScreen;
 showHomeScreen = function() {
+  /* أولاً: أخفِ homeInner مؤقتاً لمنع الوميض */
+  const homeInner = document.querySelector('#homeScreen .home-inner');
+  if (homeInner) homeInner.style.visibility = 'hidden';
+
   _origShowHomeScreen_hs();
 
-  /* حقن السلايدر بعد رسم الصفحة */
-  setTimeout(() => {
-    const isAdmin = currentUser === ADMIN_USER ||
-                    (typeof _currentUserData !== 'undefined' &&
-                     _currentUserData?._isAdmin);
-    if (!isAdmin) hsBuild();
-  }, 120);
+  const isAdmin = currentUser === ADMIN_USER ||
+                  (typeof _currentUserData !== 'undefined' &&
+                   _currentUserData?._isAdmin);
+
+  if (!isAdmin) {
+    /* حقن السلايدر فوراً بدون setTimeout */
+    const inner = document.querySelector('#homeScreen .home-inner');
+    if (inner) {
+      /* إزالة القديم */
+      document.getElementById('heroSliderWrap')?.remove();
+
+      /* إنشاء placeholder بنفس الارتفاع فوراً لحجز المكان */
+      const placeholder = document.createElement('div');
+      placeholder.id = 'heroSliderWrap';
+      placeholder.style.cssText = `
+        width:100%;
+        height:clamp(200px, 45vw, 460px);
+        background:#0a0a0a;
+        flex-shrink:0;`;
+
+      const homeCards = inner.querySelector('.home-cards');
+      if (homeCards) {
+        inner.insertBefore(placeholder, homeCards);
+      } else {
+        inner.appendChild(placeholder);
+      }
+
+      /* إظهار الصفحة فوراً بعد حجز المكان */
+      inner.style.visibility = 'visible';
+
+      /* بناء محتوى السلايدر الحقيقي */
+      hsBuild();
+    }
+  } else {
+    /* للأدمن: إظهار مباشر */
+    if (homeInner) homeInner.style.visibility = 'visible';
+  }
 };
+
 
 /* ══════════════════════════════════════════════════════════════
    إيقاف السلايدر عند مغادرة الهوم
