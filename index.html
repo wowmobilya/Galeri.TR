@@ -3042,6 +3042,349 @@ body.wow-mode .mobile-menu {
 
 
 
+/* =====================================================
+   HERO SLIDER — سلايدر الصفحة الرئيسية للمشتري
+===================================================== */
+#heroSliderSection {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  background: #0a0a0a;
+  /* الارتفاع يتكيف مع الشاشة */
+  height: clamp(180px, 40vw, 420px);
+}
+
+.hero-slider-track {
+  display: flex;
+  height: 100%;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.hero-slide {
+  min-width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.hero-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  transition: transform 8s ease;
+  transform: scale(1.05);
+}
+
+.hero-slide.active .hero-slide-img {
+  transform: scale(1);
+}
+
+/* تدرج علوي وسفلي */
+.hero-slide-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom,
+      rgba(0,0,0,0.25) 0%,
+      transparent 35%,
+      transparent 50%,
+      rgba(0,0,0,0.75) 100%);
+  pointer-events: none;
+}
+
+/* محتوى النص */
+.hero-slide-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: clamp(14px, 3vw, 28px) clamp(16px, 4vw, 36px);
+  z-index: 2;
+  animation: slideContentIn 0.5s ease 0.2s both;
+  opacity: 0;
+}
+
+.hero-slide.active .hero-slide-content {
+  animation: slideContentIn 0.5s ease 0.15s forwards;
+}
+
+@keyframes slideContentIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.hero-slide-tag {
+  font-size: clamp(8px, 1.5vw, 10px);
+  letter-spacing: 3px;
+  color: rgba(201,168,76,0.8);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.hero-slide-tag::before {
+  content: '';
+  width: 24px;
+  height: 2px;
+  background: #c9a84c;
+  border-radius: 2px;
+}
+
+.hero-slide-title {
+  font-size: clamp(18px, 5vw, 42px);
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 2px;
+  line-height: 1.1;
+  margin-bottom: 4px;
+  text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+}
+
+.hero-slide-subtitle {
+  font-size: clamp(11px, 2.5vw, 18px);
+  font-weight: 700;
+  background: linear-gradient(135deg, #c9a84c, #f0d080);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: 3px;
+  margin-bottom: 8px;
+}
+
+.hero-slide-desc {
+  font-size: clamp(10px, 1.8vw, 13px);
+  color: rgba(255,255,255,0.55);
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+  max-width: 400px;
+}
+
+.hero-slide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(8px, 1.5vw, 12px) clamp(16px, 3vw, 24px);
+  background: linear-gradient(135deg, #c9a84c, #f0d080);
+  border: none;
+  border-radius: 50px;
+  color: #0a0a0a;
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(9px, 1.5vw, 11px);
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 20px rgba(201,168,76,0.4);
+}
+
+.hero-slide-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(201,168,76,0.5);
+}
+
+/* ── أزرار التنقل ── */
+.hero-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: clamp(32px, 5vw, 44px);
+  height: clamp(32px, 5vw, 44px);
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.8);
+  font-size: clamp(12px, 2vw, 16px);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hero-nav-btn:hover {
+  background: rgba(201,168,76,0.3);
+  border-color: rgba(201,168,76,0.5);
+  color: #fff;
+}
+
+.hero-nav-prev { left: clamp(8px, 2vw, 16px); }
+.hero-nav-next { right: clamp(8px, 2vw, 16px); }
+
+/* ── النقاط ── */
+.hero-dots {
+  position: absolute;
+  bottom: clamp(10px, 2vw, 18px);
+  right: clamp(14px, 3vw, 28px);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.hero-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  padding: 0;
+}
+
+.hero-dot.active {
+  background: #c9a84c;
+  width: 20px;
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(201,168,76,0.6);
+}
+
+/* ── شريط التقدم ── */
+.hero-progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #c9a84c, #f0d080);
+  z-index: 10;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 8px rgba(201,168,76,0.5);
+}
+
+/* ── حالة فارغة ── */
+.hero-slider-empty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0a0a0a, #111);
+  color: rgba(255,255,255,0.15);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  letter-spacing: 3px;
+}
+
+/* ── Swipe Touch ── */
+#heroSliderSection {
+  touch-action: pan-y;
+}
+
+/* ── موبايل ── */
+@media (max-width: 768px) {
+  #heroSliderSection {
+    height: clamp(160px, 55vw, 260px);
+  }
+  .hero-nav-btn { display: none; }
+}
+
+@media (max-width: 480px) {
+  #heroSliderSection {
+    height: clamp(150px, 60vw, 220px);
+  }
+  .hero-slide-desc { display: none; }
+}
+
+/* =====================================================
+   نافذة إدارة السلايدر (WOW فقط)
+===================================================== */
+#sliderManagerModal {
+  position: fixed; inset: 0; z-index: 8000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(18px);
+  padding: 16px;
+}
+#sliderManagerModal.active { display: flex; }
+
+.slider-mgr-box {
+  width: 100%; max-width: 580px;
+  max-height: 92vh;
+  border-radius: 22px;
+  background: linear-gradient(145deg, #0f0f0f, #161616);
+  border: 1px solid rgba(201,168,76,0.25);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8);
+  animation: devModalIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+
+.slider-mgr-box::-webkit-scrollbar { width: 3px; }
+.slider-mgr-box::-webkit-scrollbar-thumb {
+  background: rgba(201,168,76,0.3); border-radius: 4px;
+}
+
+/* بطاقة سلايد في القائمة */
+.slider-item-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.25s;
+  flex-wrap: wrap;
+}
+.slider-item-card:hover {
+  background: rgba(201,168,76,0.04);
+  border-color: rgba(201,168,76,0.15);
+}
+.slider-item-thumb {
+  width: 72px; height: 50px;
+  object-fit: cover; border-radius: 9px;
+  border: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+}
+.slider-item-info { flex: 1; min-width: 0; }
+.slider-item-title {
+  font-size: 13px; font-weight: 900; color: #fff;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.slider-item-sub {
+  font-size: 9px; color: rgba(201,168,76,0.6);
+  letter-spacing: 1.5px; margin-top: 2px; text-transform: uppercase;
+}
+.slider-item-actions {
+  display: flex; gap: 6px; flex-shrink: 0;
+}
+.slider-action-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.35);
+  font-size: 12px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.slider-action-btn.edit:hover {
+  background: rgba(96,165,250,0.15);
+  border-color: rgba(96,165,250,0.35);
+  color: #60a5fa;
+}
+.slider-action-btn.del:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
+  color: #ef4444;
+}
+.slider-action-btn.up:hover,
+.slider-action-btn.dn:hover {
+  background: rgba(201,168,76,0.15);
+  border-color: rgba(201,168,76,0.35);
+  color: var(--gold);
+}
 
 
     
@@ -36572,6 +36915,1079 @@ async function syncOrderStatusToUserInventory(orderNum, username, newStatus, del
 
 
 
+/* ============================================================
+   ★ HERO SLIDER SYSTEM — نظام السلايدر الرئيسي ★
+============================================================ */
+
+const SLIDER_TABLE = 'hero_slider';
+let _sliderData    = [];
+let _sliderIdx     = 0;
+let _sliderTimer   = null;
+let _sliderPaused  = false;
+let _sliderSpeed   = 4000;   /* مدة كل شريحة بالمللي ثانية */
+let _sliderAuto    = true;
+let _sliderProgress = 0;
+let _sliderProgressTimer = null;
+let _sliderTouchStartX = 0;
+let _sliderEditingId   = null;
+
+/* ══════════════════════════════════════════════════════════════
+   تحميل البيانات من Supabase
+══════════════════════════════════════════════════════════════ */
+async function loadSliderData() {
+  const sb = await initSupabase();
+  if (!sb) return;
+  const { data } = await sb
+    .from(SLIDER_TABLE)
+    .select('*')
+    .eq('is_active', true)
+    .order('order_num', { ascending: true });
+  _sliderData = data || [];
+}
+
+/* ══════════════════════════════════════════════════════════════
+   بناء HTML السلايدر
+══════════════════════════════════════════════════════════════ */
+function buildHeroSlider() {
+  const section = document.getElementById('heroSliderSection');
+  if (!section) return;
+
+  if (!_sliderData.length) {
+    section.innerHTML = `
+      <div class="hero-slider-empty">
+        <span>— KOLEKSİYON —</span>
+      </div>`;
+    return;
+  }
+
+  const slidesHtml = _sliderData.map((slide, idx) => `
+    <div class="hero-slide ${idx === 0 ? 'active' : ''}"
+         id="heroSlide-${slide.id}"
+         data-idx="${idx}">
+      <img class="hero-slide-img"
+           src="${slide.image_url}"
+           alt="${slide.title || ''}"
+           draggable="false"
+           loading="${idx === 0 ? 'eager' : 'lazy'}"
+           onerror="this.style.display='none'"/>
+      <div class="hero-slide-overlay"></div>
+      <div class="hero-slide-content">
+        ${slide.subtitle ? `<div class="hero-slide-tag">${slide.subtitle}</div>` : ''}
+        ${slide.title    ? `<div class="hero-slide-title">${slide.title}</div>` : ''}
+        ${slide.description ? `<div class="hero-slide-desc">${slide.description}</div>` : ''}
+        ${slide.link_section ? `
+        <button class="hero-slide-btn"
+          onclick="event.stopPropagation();enterSection('${slide.link_section}')">
+          <i class="fas fa-arrow-right"></i>
+          Koleksiyonu Gör
+        </button>` : ''}
+      </div>
+    </div>`).join('');
+
+  const dotsHtml = _sliderData.map((_, idx) => `
+    <button class="hero-dot ${idx === 0 ? 'active' : ''}"
+            onclick="goToSlide(${idx})"
+            aria-label="Slide ${idx + 1}"></button>`
+  ).join('');
+
+  section.innerHTML = `
+    <div class="hero-slider-track" id="heroSliderTrack">
+      ${slidesHtml}
+    </div>
+    ${_sliderData.length > 1 ? `
+    <button class="hero-nav-btn hero-nav-prev" onclick="prevSlide()">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <button class="hero-nav-btn hero-nav-next" onclick="nextSlide()">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+    <div class="hero-dots" id="heroDots">${dotsHtml}</div>
+    <div class="hero-progress-bar" id="heroProgressBar" style="width:0%"></div>
+    ` : ''}`;
+
+  /* Touch Swipe */
+  section.addEventListener('touchstart', e => {
+    _sliderTouchStartX = e.touches[0].clientX;
+    _sliderPaused = true;
+  }, { passive: true });
+
+  section.addEventListener('touchend', e => {
+    const diff = _sliderTouchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? nextSlide() : prevSlide();
+    }
+    _sliderPaused = false;
+  }, { passive: true });
+
+  /* Pause on hover */
+  section.addEventListener('mouseenter', () => { _sliderPaused = true; });
+  section.addEventListener('mouseleave', () => { _sliderPaused = false; });
+
+  _sliderIdx = 0;
+  startSliderAuto();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   التنقل
+══════════════════════════════════════════════════════════════ */
+function goToSlide(idx) {
+  if (!_sliderData.length) return;
+  _sliderIdx = (idx + _sliderData.length) % _sliderData.length;
+  updateSliderUI();
+  resetSliderProgress();
+}
+
+function nextSlide() { goToSlide(_sliderIdx + 1); }
+function prevSlide() { goToSlide(_sliderIdx - 1); }
+
+function updateSliderUI() {
+  const track = document.getElementById('heroSliderTrack');
+  if (!track) return;
+
+  track.style.transform = `translateX(-${_sliderIdx * 100}%)`;
+
+  /* تحديث الشرائح */
+  track.querySelectorAll('.hero-slide').forEach((slide, i) => {
+    slide.classList.toggle('active', i === _sliderIdx);
+  });
+
+  /* تحديث النقاط */
+  document.querySelectorAll('.hero-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === _sliderIdx);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════════
+   التشغيل التلقائي + شريط التقدم
+══════════════════════════════════════════════════════════════ */
+function startSliderAuto() {
+  stopSliderAuto();
+  if (!_sliderAuto || _sliderData.length <= 1) return;
+
+  _sliderProgress = 0;
+  const step = 100 / (_sliderSpeed / 50);   /* تحديث كل 50ms */
+
+  _sliderProgressTimer = setInterval(() => {
+    if (_sliderPaused) return;
+    _sliderProgress += step;
+    const bar = document.getElementById('heroProgressBar');
+    if (bar) bar.style.width = Math.min(_sliderProgress, 100) + '%';
+
+    if (_sliderProgress >= 100) {
+      _sliderProgress = 0;
+      nextSlide();
+    }
+  }, 50);
+}
+
+function stopSliderAuto() {
+  clearInterval(_sliderTimer);
+  clearInterval(_sliderProgressTimer);
+  _sliderTimer = null;
+  _sliderProgressTimer = null;
+}
+
+function resetSliderProgress() {
+  _sliderProgress = 0;
+  const bar = document.getElementById('heroProgressBar');
+  if (bar) bar.style.width = '0%';
+  startSliderAuto();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   حقن السلايدر في صفحة المشتري
+══════════════════════════════════════════════════════════════ */
+function injectHeroSlider() {
+  /* لا يظهر للـ WOW */
+  const isAdmin = currentUser === ADMIN_USER || _currentUserData?._isAdmin;
+  if (isAdmin) return;
+
+  const pageContent = document.getElementById('pageContent');
+  if (!pageContent) return;
+
+  /* إزالة القديم إن وجد */
+  document.getElementById('heroSliderSection')?.remove();
+
+  const sliderDiv = document.createElement('div');
+  sliderDiv.id = 'heroSliderSection';
+  pageContent.insertBefore(sliderDiv, pageContent.firstChild);
+
+  buildHeroSlider();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Hook على showPage لحقن السلايدر
+══════════════════════════════════════════════════════════════ */
+const _origShowPage_slider = showPage;
+showPage = function(cat) {
+  _origShowPage_slider(cat);
+
+  /* حقن السلايدر في صفحات المنتجات فقط */
+  const sliderPages = ['orta', 'tv', 'dresuar', 'orders'];
+  if (sliderPages.includes(cat)) {
+    setTimeout(() => injectHeroSlider(), 80);
+  } else {
+    /* إيقاف السلايدر عند مغادرة الصفحة */
+    stopSliderAuto();
+    document.getElementById('heroSliderSection')?.remove();
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   ★ نافذة إدارة السلايدر (WOW فقط) ★
+══════════════════════════════════════════════════════════════ */
+async function openSliderManager() {
+  /* إنشاء النافذة إذا لم تكن موجودة */
+  if (!document.getElementById('sliderManagerModal')) {
+    const modal = document.createElement('div');
+    modal.id = 'sliderManagerModal';
+    modal.innerHTML = `
+      <div class="slider-mgr-box">
+        <!-- خط ذهبي -->
+        <div style="height:3px;background:linear-gradient(90deg,
+          transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);
+          flex-shrink:0;"></div>
+
+        <!-- هيدر -->
+        <div style="padding:16px 20px 14px;flex-shrink:0;
+             display:flex;align-items:center;justify-content:space-between;
+             border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:42px;height:42px;border-radius:12px;
+                 background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+                 border:1px solid rgba(201,168,76,0.3);
+                 display:flex;align-items:center;justify-content:center;
+                 color:#c9a84c;font-size:18px;">
+              <i class="fas fa-images"></i>
+            </div>
+            <div>
+              <div style="font-size:8px;letter-spacing:3px;
+                   color:rgba(201,168,76,0.55);text-transform:uppercase;margin-bottom:3px;">
+                ANA SAYFA
+              </div>
+              <div style="font-size:16px;font-weight:900;color:#fff;">
+                Slider Yönetimi
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button onclick="openSliderEditModal(null)" style="
+              padding:8px 14px;border-radius:9px;border:none;
+              background:linear-gradient(135deg,#c9a84c,#f0d080);
+              color:#0a0a0a;font-family:'Montserrat',sans-serif;
+              font-size:10px;font-weight:900;letter-spacing:1.5px;
+              cursor:pointer;display:flex;align-items:center;gap:6px;
+              transition:all 0.25s;"
+              onmouseover="this.style.transform='translateY(-2px)'"
+              onmouseout="this.style.transform=''">
+              <i class="fas fa-plus"></i> YENİ SLIDE
+            </button>
+            <div onclick="closeSliderManager()" style="
+              width:32px;height:32px;background:rgba(255,255,255,0.04);
+              border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+              color:rgba(255,255,255,0.3);font-size:14px;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;
+              transition:all 0.25s;"
+              onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+              onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+              <i class="fas fa-times"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- إعدادات السرعة -->
+        <div style="padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.04);
+             flex-shrink:0;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-tachometer-alt" style="color:rgba(201,168,76,0.5);font-size:13px;"></i>
+            <span style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+                 font-weight:700;text-transform:uppercase;">HIZLI GEÇİŞ</span>
+          </div>
+          <select id="sliderSpeedSelect" onchange="updateSliderSpeed(this.value)" style="
+            background:rgba(255,255,255,0.04);border:1px solid rgba(201,168,76,0.2);
+            border-radius:8px;color:#fff;padding:7px 12px;
+            font-family:'Montserrat',sans-serif;font-size:11px;
+            outline:none;cursor:pointer;">
+            <option value="2000">Çok Hızlı (2s)</option>
+            <option value="3000">Hızlı (3s)</option>
+            <option value="4000" selected>Normal (4s)</option>
+            <option value="6000">Yavaş (6s)</option>
+            <option value="8000">Çok Yavaş (8s)</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+            <input type="checkbox" id="sliderAutoCheck" checked
+              onchange="toggleSliderAuto(this.checked)"
+              style="width:16px;height:16px;accent-color:#c9a84c;cursor:pointer;"/>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4);font-weight:600;">
+              Otomatik
+            </span>
+          </label>
+        </div>
+
+        <!-- قائمة الشرائح -->
+        <div style="flex:1;overflow-y:auto;padding:14px 18px;
+             scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.3) transparent;"
+             id="sliderItemsList">
+          <div style="text-align:center;padding:30px;">
+            <i class="fas fa-spinner fa-spin"
+               style="font-size:22px;color:rgba(201,168,76,0.4);"></i>
+          </div>
+        </div>
+
+        <!-- فوتر -->
+        <div style="padding:12px 18px 16px;border-top:1px solid rgba(255,255,255,0.05);
+             flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-size:9px;color:rgba(255,255,255,0.2);
+               display:flex;align-items:center;gap:6px;">
+            <div style="width:7px;height:7px;border-radius:50%;
+                 background:rgba(74,222,128,0.6);animation:iconPulse 2s infinite;"></div>
+            Değişiklikler anında uygulanır
+          </div>
+          <button onclick="closeSliderManager()" style="
+            padding:9px 20px;border-radius:9px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1.5px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            KAPAT
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => {
+      if (e.target === modal) closeSliderManager();
+    });
+  }
+
+  document.getElementById('sliderManagerModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+
+  /* تحديث قيمة السرعة في الـ select */
+  const sel = document.getElementById('sliderSpeedSelect');
+  if (sel) sel.value = String(_sliderSpeed);
+  const chk = document.getElementById('sliderAutoCheck');
+  if (chk) chk.checked = _sliderAuto;
+
+  await refreshSliderList();
+}
+
+function closeSliderManager() {
+  document.getElementById('sliderManagerModal')?.classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+/* ── تحديث قائمة الشرائح ── */
+async function refreshSliderList() {
+  const listEl = document.getElementById('sliderItemsList');
+  if (!listEl) return;
+
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  const { data } = await sb
+    .from(SLIDER_TABLE)
+    .select('*')
+    .order('order_num', { ascending: true });
+
+  const allSlides = data || [];
+
+  if (!allSlides.length) {
+    listEl.innerHTML = `
+      <div style="text-align:center;padding:40px;color:rgba(255,255,255,0.2);">
+        <i class="fas fa-images" style="font-size:36px;display:block;
+           margin-bottom:14px;color:rgba(201,168,76,0.15);"></i>
+        <p style="font-size:12px;letter-spacing:2px;">Henüz slide yok</p>
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = allSlides.map((slide, idx) => `
+    <div class="slider-item-card" id="slidercard-${slide.id}">
+      <div style="font-size:11px;font-weight:900;color:rgba(201,168,76,0.7);
+           width:22px;text-align:center;flex-shrink:0;">${slide.order_num}</div>
+      <img class="slider-item-thumb"
+           src="${slide.image_url || 'https://placehold.co/72x50/1a1a1a/c9a84c?text=W'}"
+           alt="${slide.title || ''}"
+           draggable="false"
+           onerror="this.src='https://placehold.co/72x50/1a1a1a/c9a84c?text=W'"/>
+      <div class="slider-item-info">
+        <div class="slider-item-title">${slide.title || '—'}</div>
+        <div class="slider-item-sub">
+          ${slide.subtitle || ''} ${slide.link_section ? '· ' + slide.link_section : ''}
+        </div>
+        <div style="margin-top:4px;">
+          <span style="
+            padding:2px 8px;border-radius:50px;font-size:8px;font-weight:700;
+            background:${slide.is_active ? 'rgba(74,222,128,0.1)' : 'rgba(239,68,68,0.1)'};
+            border:1px solid ${slide.is_active ? 'rgba(74,222,128,0.25)' : 'rgba(239,68,68,0.25)'};
+            color:${slide.is_active ? '#4ade80' : '#ef4444'};">
+            ${slide.is_active ? 'Aktif' : 'Pasif'}
+          </span>
+        </div>
+      </div>
+      <div class="slider-item-actions">
+        <button class="slider-action-btn up"
+                onclick="moveSlide(${slide.id},-1)"
+                ${idx === 0 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}
+                title="Yukarı">
+          <i class="fas fa-chevron-up"></i>
+        </button>
+        <button class="slider-action-btn dn"
+                onclick="moveSlide(${slide.id},+1)"
+                ${idx === allSlides.length-1 ? 'disabled style="opacity:0.3;cursor:not-allowed;"' : ''}
+                title="Aşağı">
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <button class="slider-action-btn edit"
+                onclick="openSliderEditModal(${slide.id})"
+                title="Düzenle">
+          <i class="fas fa-edit"></i>
+        </button>
+        <button class="slider-action-btn del"
+                onclick="deleteSlide(${slide.id})"
+                title="Sil">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+/* ── تحريك شريحة ── */
+async function moveSlide(slideId, dir) {
+  const sb = await initSupabase();
+  if (!sb) return;
+  const { data: all } = await sb
+    .from(SLIDER_TABLE)
+    .select('id, order_num')
+    .order('order_num', { ascending: true });
+  if (!all) return;
+  const idx  = all.findIndex(s => s.id === slideId);
+  const swap = idx + dir;
+  if (idx === -1 || swap < 0 || swap >= all.length) return;
+  await Promise.all([
+    sb.from(SLIDER_TABLE).update({ order_num: all[swap].order_num }).eq('id', all[idx].id),
+    sb.from(SLIDER_TABLE).update({ order_num: all[idx].order_num }).eq('id', all[swap].id),
+  ]);
+  await refreshSliderList();
+  await reloadAndRebuildSlider();
+  showInvToast('Sıralama güncellendi ✓', 'success');
+}
+
+/* ── حذف شريحة ── */
+async function deleteSlide(slideId) {
+  const ok = await showDeleteConfirm();
+  if (!ok) return;
+  const sb = await initSupabase();
+  if (!sb) return;
+  await sb.from(SLIDER_TABLE).delete().eq('id', slideId);
+  await refreshSliderList();
+  await reloadAndRebuildSlider();
+  showInvToast('Slide silindi ✓', 'success');
+}
+
+/* ── إعادة تحميل وبناء السلايدر ── */
+async function reloadAndRebuildSlider() {
+  await loadSliderData();
+  buildHeroSlider();
+}
+
+/* ── تحديث السرعة ── */
+function updateSliderSpeed(val) {
+  _sliderSpeed = parseInt(val);
+  resetSliderProgress();
+  showInvToast('Hız güncellendi ✓', 'success');
+}
+
+/* ── تفعيل/إيقاف التلقائي ── */
+function toggleSliderAuto(val) {
+  _sliderAuto = val;
+  if (val) startSliderAuto();
+  else stopSliderAuto();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   نافذة إضافة/تعديل شريحة
+══════════════════════════════════════════════════════════════ */
+async function openSliderEditModal(slideId) {
+  _sliderEditingId = slideId;
+  document.getElementById('sliderEditModal')?.remove();
+
+  let existing = null;
+  if (slideId) {
+    const sb = await initSupabase();
+    if (sb) {
+      const { data } = await sb
+        .from(SLIDER_TABLE).select('*').eq('id', slideId).single();
+      existing = data;
+    }
+  }
+
+  const modal = document.createElement('div');
+  modal.id = 'sliderEditModal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9000;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.92);backdrop-filter:blur(20px);
+    padding:16px;`;
+
+  modal.innerHTML = `
+    <div style="
+      width:100%;max-width:500px;max-height:92vh;overflow-y:auto;
+      background:linear-gradient(145deg,#0f0f0f,#1a1a1a);
+      border:1px solid rgba(201,168,76,0.25);border-radius:22px;
+      box-shadow:0 40px 80px rgba(0,0,0,0.9);
+      animation:devModalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      scrollbar-width:thin;scrollbar-color:rgba(201,168,76,0.3) transparent;">
+
+      <div style="height:3px;background:linear-gradient(90deg,
+        transparent,#c9a84c 30%,#f0d080 50%,#c9a84c 70%,transparent);"></div>
+
+      <div style="padding:16px 20px 14px;display:flex;align-items:center;
+           justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:11px;
+               background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);
+               display:flex;align-items:center;justify-content:center;
+               color:#c9a84c;font-size:16px;">
+            <i class="fas fa-image"></i>
+          </div>
+          <div>
+            <div style="font-size:8px;letter-spacing:3px;color:rgba(201,168,76,0.55);
+                 text-transform:uppercase;margin-bottom:2px;">SLIDE DÜZENLE</div>
+            <div style="font-size:15px;font-weight:900;color:#fff;">
+              ${slideId ? 'Slide Düzenle' : 'Yeni Slide Ekle'}
+            </div>
+          </div>
+        </div>
+        <div onclick="document.getElementById('sliderEditModal').remove()" style="
+          width:30px;height:30px;background:rgba(255,255,255,0.04);
+          border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+          color:rgba(255,255,255,0.3);font-size:13px;cursor:pointer;
+          display:flex;align-items:center;justify-content:center;transition:all 0.25s;"
+          onmouseover="this.style.background='rgba(255,70,70,0.1)';this.style.color='#ff6b6b';"
+          onmouseout="this.style.background='rgba(255,255,255,0.04)';this.style.color='rgba(255,255,255,0.3)';">
+          <i class="fas fa-times"></i>
+        </div>
+      </div>
+
+      <div style="padding:18px 20px 22px;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- معاينة الصورة -->
+        <div id="slideImgPreviewWrap" style="${existing?.image_url ? '' : 'display:none;'}
+             margin-bottom:4px;">
+          <img id="slideImgPreview"
+               src="${existing?.image_url || ''}"
+               style="width:100%;max-height:140px;object-fit:cover;
+                      border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+                      display:block;"/>
+        </div>
+
+        <!-- رابط الصورة -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            <i class="fas fa-image" style="color:rgba(201,168,76,0.5);margin-right:5px;"></i>
+            GÖRSEL URL *
+          </label>
+          <input type="url" id="slideImageUrl"
+            value="${existing?.image_url || ''}"
+            placeholder="https://... (Görsel URL)"
+            oninput="onSlideImgInput(this.value)"
+            style="width:100%;padding:12px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1.5px solid rgba(201,168,76,0.2);
+            border-radius:10px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          <!-- رفع من الجهاز -->
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <label style="flex:1;cursor:pointer;">
+              <input type="file" accept="image/*"
+                onchange="handleSlideFileUpload(this)" style="display:none;"/>
+              <div style="padding:9px 8px;border-radius:8px;
+                   border:1px solid rgba(201,168,76,0.2);
+                   background:rgba(201,168,76,0.06);
+                   color:rgba(201,168,76,0.7);
+                   font-family:'Montserrat',sans-serif;
+                   font-size:9px;font-weight:700;letter-spacing:1px;
+                   text-align:center;transition:all 0.25s;
+                   display:flex;align-items:center;justify-content:center;gap:6px;"
+                   onmouseover="this.style.background='rgba(201,168,76,0.14)'"
+                   onmouseout="this.style.background='rgba(201,168,76,0.06)'">
+                <i class="fas fa-images"></i> GALERİ
+              </div>
+            </label>
+            <label style="flex:1;cursor:pointer;">
+              <input type="file" accept="image/*" capture="environment"
+                onchange="handleSlideFileUpload(this)" style="display:none;"/>
+              <div style="padding:9px 8px;border-radius:8px;
+                   border:1px solid rgba(96,165,250,0.2);
+                   background:rgba(96,165,250,0.06);
+                   color:rgba(96,165,250,0.7);
+                   font-family:'Montserrat',sans-serif;
+                   font-size:9px;font-weight:700;letter-spacing:1px;
+                   text-align:center;transition:all 0.25s;
+                   display:flex;align-items:center;justify-content:center;gap:6px;"
+                   onmouseover="this.style.background='rgba(96,165,250,0.14)'"
+                   onmouseout="this.style.background='rgba(96,165,250,0.06)'">
+                <i class="fas fa-camera"></i> KAMERA
+              </div>
+            </label>
+          </div>
+          <div id="slideUploadProgress" style="display:none;margin-top:8px;">
+            <div style="height:4px;background:rgba(255,255,255,0.06);
+                 border-radius:4px;overflow:hidden;">
+              <div id="slideUploadBar" style="height:100%;width:0%;
+                   background:linear-gradient(90deg,#c9a84c,#f0d080);
+                   border-radius:4px;transition:width 0.3s ease;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- العنوان -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+                 text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+              BAŞLIK
+            </label>
+            <input type="text" id="slideTitle"
+              value="${existing?.title || ''}"
+              placeholder="Örn: YENİ KOLEKSİYON"
+              style="width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;
+              outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          </div>
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+                 text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+              ALT BAŞLIK
+            </label>
+            <input type="text" id="slideSubtitle"
+              value="${existing?.subtitle || ''}"
+              placeholder="Örn: 2026 SEZONU"
+              style="width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;font-size:12px;
+              outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          </div>
+        </div>
+
+        <!-- الوصف -->
+        <div>
+          <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+               text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+            AÇIKLAMA
+          </label>
+          <input type="text" id="slideDesc"
+            value="${existing?.description || ''}"
+            placeholder="Kısa açıklama..."
+            style="width:100%;padding:11px 13px;
+            background:rgba(255,255,255,0.04);
+            border:1px solid rgba(201,168,76,0.2);
+            border-radius:9px;color:#fff;
+            font-family:'Montserrat',sans-serif;font-size:12px;
+            outline:none;transition:all 0.3s;
+            -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+            onfocus="this.style.borderColor='#c9a84c'"
+            onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+        </div>
+
+        <!-- القسم المرتبط + الترتيب -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+                 text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+              BAĞLANTI
+            </label>
+            <select id="slideLinkSection" style="
+              width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;font-size:12px;
+              outline:none;cursor:pointer;-webkit-appearance:none;">
+              <option value="">Bağlantı Yok</option>
+              <option value="orta"    ${existing?.link_section==='orta'    ?'selected':''}>Orta Sehpa</option>
+              <option value="tv"      ${existing?.link_section==='tv'      ?'selected':''}>TV Ünitesi</option>
+              <option value="dresuar" ${existing?.link_section==='dresuar' ?'selected':''}>Dresuar</option>
+              <option value="orders"  ${existing?.link_section==='orders'  ?'selected':''}>Sipariş Ver</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:9px;letter-spacing:2px;color:rgba(255,255,255,0.3);
+                 text-transform:uppercase;font-weight:700;margin-bottom:6px;display:block;">
+              SIRA NO
+            </label>
+            <input type="number" id="slideOrderNum"
+              value="${existing?.order_num ?? 0}"
+              min="0" max="99"
+              style="width:100%;padding:11px 13px;
+              background:rgba(255,255,255,0.04);
+              border:1px solid rgba(201,168,76,0.2);
+              border-radius:9px;color:#fff;
+              font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;
+              outline:none;transition:all 0.3s;
+              -webkit-user-select:text;user-select:text;box-sizing:border-box;"
+              onfocus="this.style.borderColor='#c9a84c'"
+              onfocusout="this.style.borderColor='rgba(201,168,76,0.2)'"/>
+          </div>
+        </div>
+
+        <!-- الحالة -->
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;
+             padding:11px 14px;border-radius:10px;
+             background:rgba(255,255,255,0.025);
+             border:1px solid rgba(255,255,255,0.06);">
+          <input type="checkbox" id="slideIsActive"
+            ${(existing?.is_active ?? true) ? 'checked' : ''}
+            style="width:18px;height:18px;accent-color:#c9a84c;cursor:pointer;"/>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#fff;">Aktif</div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.3);margin-top:1px;">
+              Pasif yapılırsa sliderde görünmez
+            </div>
+          </div>
+        </label>
+
+        <!-- أزرار -->
+        <div style="display:flex;gap:10px;margin-top:4px;">
+          <button onclick="document.getElementById('sliderEditModal').remove()" style="
+            flex:1;padding:13px;border-radius:10px;
+            border:1px solid rgba(255,255,255,0.1);
+            background:rgba(255,255,255,0.04);
+            color:rgba(255,255,255,0.4);
+            font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:700;letter-spacing:1px;
+            cursor:pointer;transition:all 0.25s;"
+            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
+            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
+            İPTAL
+          </button>
+          <button onclick="saveSlide()" id="slideSaveBtn" style="
+            flex:2;padding:13px;border-radius:10px;border:none;
+            background:linear-gradient(135deg,#c9a84c,#f0d080);
+            color:#0a0a0a;font-family:'Montserrat',sans-serif;
+            font-size:11px;font-weight:900;letter-spacing:2px;
+            cursor:pointer;transition:all 0.25s;
+            display:flex;align-items:center;justify-content:center;gap:7px;"
+            onmouseover="this.style.transform='translateY(-2px)';
+                         this.style.boxShadow='0 8px 24px rgba(201,168,76,0.35)'"
+            onmouseout="this.style.transform='';this.style.boxShadow=''">
+            <i class="fas fa-save"></i> KAYDET
+          </button>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => {
+    if (e.target === modal) modal.remove();
+  });
+}
+
+/* ── معاينة صورة الشريحة ── */
+function onSlideImgInput(val) {
+  const wrap    = document.getElementById('slideImgPreviewWrap');
+  const preview = document.getElementById('slideImgPreview');
+  if (!wrap || !preview) return;
+  if (val.trim()) {
+    preview.src        = val.trim();
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+/* ── رفع صورة للشريحة ── */
+async function handleSlideFileUpload(input) {
+  const file = input.files?.[0];
+  if (!file || !file.type.startsWith('image/')) return;
+
+  const progressWrap = document.getElementById('slideUploadProgress');
+  const progressBar  = document.getElementById('slideUploadBar');
+  if (progressWrap) progressWrap.style.display = 'block';
+
+  const updateProg = pct => {
+    if (progressBar) progressBar.style.width = pct + '%';
+  };
+  updateProg(20);
+
+  try {
+    const sb  = await initSupabase();
+    if (!sb) throw new Error('Bağlantı yok');
+    updateProg(45);
+
+    const ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
+    const path = `slider/${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+
+    const { error } = await sb.storage
+      .from('home-images')
+      .upload(path, file, {
+        cacheControl:'3600', upsert:false, contentType:file.type
+      });
+    if (error) throw error;
+
+    updateProg(85);
+    const { data: urlData } = sb.storage.from('home-images').getPublicUrl(path);
+    const publicUrl = urlData?.publicUrl;
+    updateProg(100);
+
+    const urlInp = document.getElementById('slideImageUrl');
+    if (urlInp) urlInp.value = publicUrl;
+    onSlideImgInput(publicUrl);
+
+    showInvToast('Görsel yüklendi ✓', 'success');
+    setTimeout(() => {
+      if (progressWrap) progressWrap.style.display = 'none';
+      updateProg(0);
+    }, 1500);
+
+  } catch(e) {
+    console.error('[Slide Upload]', e);
+    if (progressWrap) progressWrap.style.display = 'none';
+    updateProg(0);
+
+    /* احتياط: معاينة محلية */
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const urlInp = document.getElementById('slideImageUrl');
+      if (urlInp) urlInp.value = ev.target.result;
+      onSlideImgInput(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+    showInvToast('Storage hatası — URL kullanın', 'error');
+  }
+  input.value = '';
+}
+
+/* ── حفظ الشريحة في Supabase ── */
+async function saveSlide() {
+  const imageUrl   = document.getElementById('slideImageUrl')?.value.trim();
+  const title      = document.getElementById('slideTitle')?.value.trim()    || '';
+  const subtitle   = document.getElementById('slideSubtitle')?.value.trim() || '';
+  const desc       = document.getElementById('slideDesc')?.value.trim()     || '';
+  const linkSec    = document.getElementById('slideLinkSection')?.value     || '';
+  const orderNum   = parseInt(document.getElementById('slideOrderNum')?.value) || 0;
+  const isActive   = document.getElementById('slideIsActive')?.checked ?? true;
+  const btn        = document.getElementById('slideSaveBtn');
+
+  if (!imageUrl) {
+    showInvToast('Lütfen bir görsel URL girin!', 'error');
+    document.getElementById('slideImageUrl')?.focus();
+    return;
+  }
+
+  if (btn) {
+    btn.disabled  = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+  }
+
+  const sb = await initSupabase();
+  if (!sb) {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save"></i> KAYDET'; }
+    showInvToast('Bağlantı hatası!', 'error');
+    return;
+  }
+
+  try {
+    const rowData = {
+      image_url    : imageUrl,
+      title        : title,
+      subtitle     : subtitle,
+      description  : desc,
+      link_section : linkSec,
+      order_num    : orderNum,
+      is_active    : isActive,
+      updated_at   : new Date().toISOString(),
+    };
+
+    let error;
+    if (_sliderEditingId) {
+      ({ error } = await sb
+        .from(SLIDER_TABLE)
+        .update(rowData)
+        .eq('id', _sliderEditingId));
+    } else {
+      ({ error } = await sb
+        .from(SLIDER_TABLE)
+        .insert([rowData]));
+    }
+
+    if (error) throw error;
+
+    showInvToast(
+      _sliderEditingId ? 'Slide güncellendi ✓' : 'Yeni slide eklendi ✓',
+      'success'
+    );
+
+    document.getElementById('sliderEditModal')?.remove();
+    await refreshSliderList();
+    await reloadAndRebuildSlider();
+
+  } catch(e) {
+    console.error('[Slide Save]', e);
+    showInvToast('Kayıt hatası: ' + (e.message || String(e)), 'error');
+  } finally {
+    if (btn) {
+      btn.disabled  = false;
+      btn.innerHTML = '<i class="fas fa-save"></i> KAYDET';
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Realtime — تحديث السلايدر لحظياً
+══════════════════════════════════════════════════════════════ */
+async function subscribeSliderRealtime() {
+  const sb = await initSupabase();
+  if (!sb) return;
+
+  sb.channel('hero-slider-live')
+    .on('postgres_changes', {
+      event  : '*',
+      schema : 'public',
+      table  : SLIDER_TABLE
+    }, async () => {
+      await reloadAndRebuildSlider();
+      /* تحديث قائمة الإدارة إذا كانت مفتوحة */
+      if (document.getElementById('sliderManagerModal')
+          ?.classList.contains('active')) {
+        await refreshSliderList();
+      }
+    })
+    .subscribe();
+}
+
+/* ══════════════════════════════════════════════════════════════
+   إضافة زر "Slider Yönetimi" في صفحة الإعدادات
+══════════════════════════════════════════════════════════════ */
+const _origBuildSettingsPage_slider = buildSettingsPage;
+buildSettingsPage = function() {
+  _origBuildSettingsPage_slider();
+
+  /* إضافة بطاقة السلايدر في قسم "ANA SAYFA YÖNETİMİ" */
+  const firstGrid = document.querySelector(
+    '#pageContent [style*="grid-template-columns:1fr 1fr"]'
+  );
+  if (!firstGrid) return;
+
+  const card = document.createElement('div');
+  card.onclick = () => openSliderManager();
+  card.style.cssText = `
+    background:rgba(255,255,255,0.025);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:12px;padding:13px 14px;
+    cursor:pointer;transition:all 0.25s ease;
+    display:flex;align-items:center;gap:11px;`;
+  card.onmouseover = function() {
+    this.style.background   = 'rgba(201,168,76,0.06)';
+    this.style.borderColor  = 'rgba(201,168,76,0.25)';
+    this.style.transform    = 'translateY(-2px)';
+  };
+  card.onmouseout = function() {
+    this.style.background   = 'rgba(255,255,255,0.025)';
+    this.style.borderColor  = 'rgba(255,255,255,0.07)';
+    this.style.transform    = '';
+  };
+  card.innerHTML = `
+    <div style="
+      width:36px;height:36px;flex-shrink:0;border-radius:10px;
+      background:linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.04));
+      border:1px solid rgba(201,168,76,0.3);
+      display:flex;align-items:center;justify-content:center;
+      color:#c9a84c;font-size:15px;">
+      <i class="fas fa-images"></i>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:12px;font-weight:900;color:#fff;margin-bottom:2px;">
+        Slider Yönetimi
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.28);
+           letter-spacing:0.5px;line-height:1.4;">
+        Slayt ekle · düzenle · sırala · hız ayarla
+      </div>
+    </div>
+    <i class="fas fa-chevron-right"
+       style="color:rgba(201,168,76,0.35);font-size:11px;flex-shrink:0;"></i>`;
+
+  firstGrid.appendChild(card);
+};
+
+/* ══════════════════════════════════════════════════════════════
+   إضافة زر السلايدر في بطاقات الهوم الإدارية
+══════════════════════════════════════════════════════════════ */
+const _origHandleAdminCardClick_slider = handleAdminCardClick;
+handleAdminCardClick = function(sectionKey) {
+  if (sectionKey === 'slider_manager') {
+    openSliderManager();
+    return;
+  }
+  _origHandleAdminCardClick_slider(sectionKey);
+};
+
+/* ══════════════════════════════════════════════════════════════
+   تهيئة السلايدر بعد تسجيل الدخول
+══════════════════════════════════════════════════════════════ */
+const _masterFinishLogin_slider = finishLogin;
+finishLogin = function() {
+  _masterFinishLogin_slider();
+
+  setTimeout(async () => {
+    /* تحميل بيانات السلايدر لجميع المستخدمين */
+    await loadSliderData();
+    subscribeSliderRealtime();
+  }, 800);
+};
+
+/* ══════════════════════════════════════════════════════════════
+   إيقاف السلايدر عند الخروج من الصفحة
+══════════════════════════════════════════════════════════════ */
+const _origGoHome_slider = goHome;
+goHome = function() {
+  stopSliderAuto();
+  document.getElementById('heroSliderSection')?.remove();
+  _origGoHome_slider();
+};
+
+/* ══════════════════════════════════════════════════════════════
+   تصدير الدوال العامة
+══════════════════════════════════════════════════════════════ */
+window.goToSlide          = goToSlide;
+window.nextSlide          = nextSlide;
+window.prevSlide          = prevSlide;
+window.openSliderManager  = openSliderManager;
+window.closeSliderManager = closeSliderManager;
+window.openSliderEditModal= openSliderEditModal;
+window.saveSlide          = saveSlide;
+window.deleteSlide        = deleteSlide;
+window.moveSlide          = moveSlide;
+window.updateSliderSpeed  = updateSliderSpeed;
+window.toggleSliderAuto   = toggleSliderAuto;
+window.onSlideImgInput    = onSlideImgInput;
+window.handleSlideFileUpload = handleSlideFileUpload;
+
+/* ══════════════════════════════════════════════════════════════
+   ★ HERO SLIDER SYSTEM — اكتمل بنجاح ✓
+══════════════════════════════════════════════════════════════ */
 
 
 
