@@ -37066,7 +37066,13 @@ function hsBuild() {
     <div class="hs-progress" id="hsProgress"></div>` : ''}`;
 
   /* أدخل السلايدر في أول homeInner */
-  homeInner.insertBefore(wrap, homeInner.firstChild);
+/* أدخل السلايدر بعد اللوجو والنص — قبل home-cards مباشرة */
+const homeCards = homeInner.querySelector('.home-cards');
+if (homeCards) {
+  homeInner.insertBefore(wrap, homeCards);
+} else {
+  homeInner.appendChild(wrap);
+}
 
   /* Swipe */
   wrap.addEventListener('touchstart', e => {
