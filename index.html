@@ -36991,103 +36991,86 @@ async function hsLoad() {
    بناء السلايدر في homeScreen
 ══════════════════════════════════════════════════════════════ */
 function hsBuild() {
-  /* يظهر فقط للمشتري العادي */
   const isAdmin = currentUser === ADMIN_USER ||
                   (typeof _currentUserData !== 'undefined' &&
                    _currentUserData?._isAdmin);
   if (isAdmin) return;
 
-/* نجد homeInner */
-const homeInner = document.querySelector('#homeScreen .home-inner');
-if (!homeInner) return;
+  const homeInner = document.querySelector('#homeScreen .home-inner');
+  if (!homeInner) return;
 
-/* استخدام الـ placeholder الموجود أو إنشاء جديد */
-let wrap = document.getElementById('heroSliderWrap');
-if (!wrap) {
-  wrap = document.createElement('div');
+  /* إزالة القديم */
+  document.getElementById('heroSliderWrap')?.remove();
+
+  const wrap = document.createElement('div');
   wrap.id = 'heroSliderWrap';
+
+  /* بناء المحتوى في الذاكرة أولاً */
+  if (!_hsData.length) {
+    wrap.innerHTML = `<div class="hs-empty">— KOLEKSİYON —</div>`;
+  } else {
+    const slidesHtml = _hsData.map((s, i) => `
+      <div class="hs-slide ${i === 0 ? 'hs-active' : ''}"
+           id="hs-slide-${s.id}" data-idx="${i}">
+        <img class="hs-img"
+             src="${s.image_url}"
+             alt="${s.title || ''}"
+             draggable="false"
+             loading="${i === 0 ? 'eager' : 'lazy'}"
+             onerror="this.style.opacity='0.3'"/>
+        <div class="hs-overlay"></div>
+        <div class="hs-content">
+          ${s.subtitle ? `<div class="hs-tag">${s.subtitle}</div>` : ''}
+          ${s.title    ? `<div class="hs-title">${s.title}</div>` : ''}
+          ${s.description ? `<div class="hs-desc">${s.description}</div>` : ''}
+          ${s.price ? `
+          <div class="hs-price-wrap">
+            <i class="hs-price-icon">₺</i>
+            <span class="hs-price-label">FİYAT</span>
+            <span class="hs-price-amount">${s.price}</span>
+          </div>` : ''}
+          ${s.link_section ? `
+          <button class="hs-btn"
+            onclick="hsGoSection('${s.link_section}')">
+            <i class="fas fa-arrow-right"></i>
+            Koleksiyonu Gör
+          </button>` : ''}
+        </div>
+      </div>`).join('');
+
+    const dotsHtml = _hsData.length > 1
+      ? _hsData.map((_, i) => `
+          <button class="hs-dot ${i === 0 ? 'hs-dot-active' : ''}"
+                  onclick="hsGo(${i})"
+                  aria-label="Slide ${i+1}"></button>`
+        ).join('')
+      : '';
+
+    wrap.innerHTML = `
+      <div class="hs-track" id="hsTrack">${slidesHtml}</div>
+      ${_hsData.length > 1 ? `
+      <button class="hs-arrow hs-arrow-prev" onclick="hsPrev()">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <button class="hs-arrow hs-arrow-next" onclick="hsNext()">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      <div class="hs-dots" id="hsDots">${dotsHtml}</div>
+      <div class="hs-progress" id="hsProgress"></div>` : ''}`;
+  }
+
+  /* إدخال في المكان الصحيح دفعة واحدة */
   const homeCards = homeInner.querySelector('.home-cards');
   if (homeCards) {
     homeInner.insertBefore(wrap, homeCards);
   } else {
     homeInner.appendChild(wrap);
   }
-}
-/* مسح المحتوى القديم وإعادة البناء في نفس المكان */
-wrap.innerHTML = '';
-wrap.style.cssText = '';
-
-
-  if (!_hsData.length) {
-    wrap.innerHTML = `<div class="hs-empty">— KOLEKSİYON —</div>`;
-    homeInner.insertBefore(wrap, homeInner.firstChild);
-    return;
-  }
-
-  /* بناء الشرائح */
-  const slidesHtml = _hsData.map((s, i) => `
-    <div class="hs-slide ${i === 0 ? 'hs-active' : ''}"
-         id="hs-slide-${s.id}" data-idx="${i}">
-      <img class="hs-img"
-           src="${s.image_url}"
-           alt="${s.title || ''}"
-           draggable="false"
-           loading="${i === 0 ? 'eager' : 'lazy'}"
-           onerror="this.style.opacity='0.3'"/>
-      <div class="hs-overlay"></div>
-      <div class="hs-content">
-        ${s.subtitle ? `<div class="hs-tag">${s.subtitle}</div>` : ''}
-        ${s.title    ? `<div class="hs-title">${s.title}</div>` : ''}
-        ${s.description ? `<div class="hs-desc">${s.description}</div>` : ''}
-        ${s.price ? `
-        <div class="hs-price-wrap">
-          <i class="hs-price-icon">₺</i>
-          <span class="hs-price-label">FİYAT</span>
-          <span class="hs-price-amount">${s.price}</span>
-        </div>` : ''}
-        ${s.link_section ? `
-        <button class="hs-btn"
-          onclick="hsGoSection('${s.link_section}')">
-          <i class="fas fa-arrow-right"></i>
-          Koleksiyonu Gör
-        </button>` : ''}
-      </div>
-    </div>`).join('');
-
-  /* بناء النقاط */
-  const dotsHtml = _hsData.length > 1
-    ? _hsData.map((_, i) => `
-        <button class="hs-dot ${i === 0 ? 'hs-dot-active' : ''}"
-                onclick="hsGo(${i})"
-                aria-label="Slide ${i+1}"></button>`
-      ).join('')
-    : '';
-
-  wrap.innerHTML = `
-    <div class="hs-track" id="hsTrack">${slidesHtml}</div>
-    ${_hsData.length > 1 ? `
-    <button class="hs-arrow hs-arrow-prev" onclick="hsPrev()">
-      <i class="fas fa-chevron-left"></i>
-    </button>
-    <button class="hs-arrow hs-arrow-next" onclick="hsNext()">
-      <i class="fas fa-chevron-right"></i>
-    </button>
-    <div class="hs-dots" id="hsDots">${dotsHtml}</div>
-    <div class="hs-progress" id="hsProgress"></div>` : ''}`;
-
-  /* أدخل السلايدر في أول homeInner */
-/* أدخل السلايدر بعد اللوجو والنص — قبل home-cards مباشرة */
-const homeCards = homeInner.querySelector('.home-cards');
-if (homeCards) {
-  homeInner.insertBefore(wrap, homeCards);
-} else {
-  homeInner.appendChild(wrap);
-}
 
   /* Swipe */
   wrap.addEventListener('touchstart', e => {
-    _hsTouchX  = e.touches[0].clientX;
-    _hsPaused  = true;
+    _hsTouchX = e.touches[0].clientX;
+    _hsPaused = true;
   }, { passive: true });
 
   wrap.addEventListener('touchend', e => {
@@ -37096,13 +37079,13 @@ if (homeCards) {
     _hsPaused = false;
   }, { passive: true });
 
-  /* Pause on hover */
   wrap.addEventListener('mouseenter', () => { _hsPaused = true;  });
   wrap.addEventListener('mouseleave', () => { _hsPaused = false; });
 
   _hsIdx = 0;
   hsStartAuto();
 }
+
 
 /* ── الانتقال لقسم ── */
 function hsGoSection(sectionKey) {
@@ -37187,50 +37170,18 @@ function hsResetProgress() {
 ══════════════════════════════════════════════════════════════ */
 const _origShowHomeScreen_hs = showHomeScreen;
 showHomeScreen = function() {
-  /* أولاً: أخفِ homeInner مؤقتاً لمنع الوميض */
-  const homeInner = document.querySelector('#homeScreen .home-inner');
-  if (homeInner) homeInner.style.visibility = 'hidden';
-
+  /* تشغيل الأصل */
   _origShowHomeScreen_hs();
 
   const isAdmin = currentUser === ADMIN_USER ||
                   (typeof _currentUserData !== 'undefined' &&
                    _currentUserData?._isAdmin);
+  if (isAdmin) return;
 
-  if (!isAdmin) {
-    /* حقن السلايدر فوراً بدون setTimeout */
-    const inner = document.querySelector('#homeScreen .home-inner');
-    if (inner) {
-      /* إزالة القديم */
-      document.getElementById('heroSliderWrap')?.remove();
-
-      /* إنشاء placeholder بنفس الارتفاع فوراً لحجز المكان */
-      const placeholder = document.createElement('div');
-      placeholder.id = 'heroSliderWrap';
-      placeholder.style.cssText = `
-        width:100%;
-        height:clamp(200px, 45vw, 460px);
-        background:#0a0a0a;
-        flex-shrink:0;`;
-
-      const homeCards = inner.querySelector('.home-cards');
-      if (homeCards) {
-        inner.insertBefore(placeholder, homeCards);
-      } else {
-        inner.appendChild(placeholder);
-      }
-
-      /* إظهار الصفحة فوراً بعد حجز المكان */
-      inner.style.visibility = 'visible';
-
-      /* بناء محتوى السلايدر الحقيقي */
-      hsBuild();
-    }
-  } else {
-    /* للأدمن: إظهار مباشر */
-    if (homeInner) homeInner.style.visibility = 'visible';
-  }
+  /* البيانات جاهزة من finishLogin — بناء فوري */
+  hsBuild();
 };
+
 
 
 /* ══════════════════════════════════════════════════════════════
@@ -38096,26 +38047,15 @@ buildSettingsPage = function() {
    تهيئة بعد تسجيل الدخول
 ══════════════════════════════════════════════════════════════ */
 const _masterFinishLogin_hs = finishLogin;
-finishLogin = function() {
+finishLogin = async function() {
+  /* تحميل بيانات السلايدر أولاً قبل أي شيء */
+  await hsLoad();
+  hsSubscribeRealtime();
+
+  /* ثم تسجيل الدخول الطبيعي */
   _masterFinishLogin_hs();
-
-  setTimeout(async () => {
-    /* تحميل البيانات لجميع المستخدمين */
-    await hsLoad();
-
-    /* الاشتراك في Realtime */
-    hsSubscribeRealtime();
-
-    /* بناء السلايدر للمشتري فقط */
-    const isAdmin = currentUser === ADMIN_USER ||
-                    (typeof _currentUserData !== 'undefined' &&
-                     _currentUserData?._isAdmin);
-    if (!isAdmin) {
-      /* تأخير بسيط لضمان رسم homeScreen أولاً */
-      setTimeout(() => hsBuild(), 200);
-    }
-  }, 900);
 };
+
 
 /* ══════════════════════════════════════════════════════════════
    إيقاف السلايدر عند مغادرة الهوم
