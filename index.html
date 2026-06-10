@@ -3417,11 +3417,9 @@ body.wow-mode .mobile-menu {
   border-top: 1px solid rgba(255,255,255,0.07);
 }
 
+
 /* =====================================================
-   موبايل — تصميم محكم لا يغطي الصورة
-===================================================== */
-/* =====================================================
-   موبايل — نصوص كاملة + توزيع محكم
+   موبايل — نصوص كاملة + سعر وزر جنب بعض
 ===================================================== */
 @media (max-width: 900px) {
   #heroSliderWrap {
@@ -3430,7 +3428,6 @@ body.wow-mode .mobile-menu {
     cursor: default;
   }
 
-  /* تدرج من الأسفل يغطي ثلث الصورة فقط */
   .hs-overlay {
     background: linear-gradient(
       to top,
@@ -3441,7 +3438,6 @@ body.wow-mode .mobile-menu {
     );
   }
 
-  /* المحتوى — عمود كامل في الأسفل */
   .hs-content {
     width: 100%;
     top: auto;
@@ -3459,7 +3455,6 @@ body.wow-mode .mobile-menu {
     transform: translateY(0);
   }
 
-  /* Tag — ظاهر بحجم أصغر */
   .hs-tag {
     display: inline-flex;
     font-size: 8px;
@@ -3467,11 +3462,8 @@ body.wow-mode .mobile-menu {
     margin-bottom: 6px;
   }
 
-  .hs-tag::before {
-    width: 16px;
-  }
+  .hs-tag::before { width: 16px; }
 
-  /* العنوان — واضح وبارز */
   .hs-title {
     font-size: clamp(18px, 5.5vw, 28px);
     margin-bottom: 5px;
@@ -3480,7 +3472,6 @@ body.wow-mode .mobile-menu {
     width: 100%;
   }
 
-  /* الوصف — ظاهر بحجم أصغر */
   .hs-desc {
     display: block;
     font-size: clamp(9px, 2.5vw, 12px);
@@ -3490,11 +3481,20 @@ body.wow-mode .mobile-menu {
     max-width: 100%;
   }
 
-  /* السعر — حجم مناسب */
+  /* ── صف السعر + الزر جنب بعض ── */
+  .hs-bottom-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+  }
+
   .hs-price-wrap {
     padding: 5px 12px;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     gap: 7px;
+    flex-shrink: 0;
   }
 
   .hs-price-label {
@@ -3507,21 +3507,19 @@ body.wow-mode .mobile-menu {
     font-size: clamp(14px, 4vw, 18px);
   }
 
-  .hs-price-icon {
-    font-size: 10px;
-  }
+  .hs-price-icon { font-size: 10px; }
 
-  /* الزر — عرض كامل */
   .hs-btn {
-    padding: 10px 20px;
+    padding: 10px 16px;
     font-size: clamp(9px, 2.8vw, 11px);
     letter-spacing: 2px;
     gap: 8px;
-    width: 100%;
+    width: auto;
+    flex: 1;           /* يأخذ المساحة المتبقية */
     justify-content: center;
+    margin-bottom: 0;
   }
 
-  /* النقاط */
   .hs-dots {
     bottom: 16px;
     left: 50%;
@@ -3540,10 +3538,7 @@ body.wow-mode .mobile-menu {
     height: clamp(240px, 75vw, 360px);
     border-radius: 12px;
   }
-
-  .hs-title {
-    font-size: clamp(16px, 5vw, 22px);
-  }
+  .hs-title { font-size: clamp(16px, 5vw, 22px); }
 }
 
 @media (max-width: 400px) {
@@ -37242,7 +37237,7 @@ function hsBuild() {
 
   const total = _hsData.length;
 
-  const slidesHtml = _hsData.map((s, i) => `
+const slidesHtml = _hsData.map((s, i) => `
     <div class="hs-slide ${i === 0 ? 'hs-active' : ''}"
          id="hs-slide-${s.id}" data-idx="${i}">
       <img class="hs-img"
@@ -37256,18 +37251,22 @@ function hsBuild() {
         ${s.subtitle    ? `<div class="hs-tag">${s.subtitle}</div>` : ''}
         ${s.title       ? `<div class="hs-title">${s.title}</div>` : ''}
         ${s.description ? `<div class="hs-desc">${s.description}</div>` : ''}
-        ${s.price ? `
-        <div class="hs-price-wrap">
-          <i class="hs-price-icon">₺</i>
-          <span class="hs-price-label">FİYAT</span>
-          <span class="hs-price-amount">${s.price}</span>
+        ${(s.price || s.link_section) ? `
+        <div class="hs-bottom-row">
+          ${s.price ? `
+          <div class="hs-price-wrap">
+            <i class="hs-price-icon">₺</i>
+            <span class="hs-price-label">FİYAT</span>
+            <span class="hs-price-amount">${s.price}</span>
+          </div>` : ''}
+          ${s.link_section ? `
+          <button class="hs-btn" onclick="hsGoSection('${s.link_section}')">
+            <i class="fas fa-arrow-right"></i> Koleksiyonu Gör
+          </button>` : ''}
         </div>` : ''}
-        ${s.link_section ? `
-        <button class="hs-btn" onclick="hsGoSection('${s.link_section}')">
-          <i class="fas fa-arrow-right"></i> Koleksiyonu Gör
-        </button>` : ''}
       </div>
     </div>`).join('');
+
 
   const dotsHtml = total > 1
     ? _hsData.map((_, i) => `
