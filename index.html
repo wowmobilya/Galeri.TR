@@ -38582,7 +38582,6 @@ function buildAccountingPage() {
           <div style="
             font-size:12px;font-weight:900;color:#fff;
             font-family:'Montserrat',sans-serif;
-            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
           ">Muhasebe Sistemi</div>
           <div style="
             font-size:8px;color:rgba(255,255,255,0.3);
@@ -38590,7 +38589,6 @@ function buildAccountingPage() {
           ">Gelir · Gider · Fatura · Raporlar</div>
         </div>
 
-        <!-- شارة حالة الاتصال -->
         <div style="
           display:flex;align-items:center;gap:5px;
           padding:3px 10px;border-radius:50px;
@@ -38610,29 +38608,56 @@ function buildAccountingPage() {
         </div>
       </div>
 
-      <!-- iframe يملأ كل المساحة المتبقية -->
+      <!-- ★ iframe يملأ كل المساحة مع scroll داخلي -->
       <iframe
         id="accountingFrame"
         src="./accounting.html"
         style="
           flex: 1;
           width: 100%;
-          height: 0;
+          min-height: 0;
+          height: calc(100vh - 46px);
           border: none;
           background: #0a0a0a;
           display: block;
+          overflow: auto;
         "
+        scrolling="yes"
         allow="clipboard-read; clipboard-write"
         loading="lazy"
       ></iframe>
     </div>`;
 
-  /* إخفاء header و footer الرئيسيين لتوفير المساحة */
+  /* إخفاء header و footer الرئيسيين */
   const header = document.getElementById('header');
   const footer = document.querySelector('footer');
   if (header) header.style.display = 'none';
   if (footer) footer.style.display = 'none';
+
+  /* ★ إصلاح الـ scroll داخل iframe بعد التحميل */
+  const frame = document.getElementById('accountingFrame');
+  if (frame) {
+    frame.onload = () => {
+      try {
+        const doc = frame.contentDocument || frame.contentWindow.document;
+        /* إزالة overflow:hidden من body الداخلي */
+        if (doc && doc.body) {
+          doc.body.style.overflow   = 'auto';
+          doc.body.style.height     = 'auto';
+          doc.body.style.minHeight  = '100vh';
+        }
+        /* إزالة overflow:hidden من html */
+        if (doc && doc.documentElement) {
+          doc.documentElement.style.overflow  = 'auto';
+          doc.documentElement.style.height    = 'auto';
+        }
+      } catch(e) {
+        /* same-origin فقط */
+      }
+    };
+  }
 }
+
 
 
   
