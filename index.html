@@ -3418,125 +3418,36 @@ body.wow-mode .mobile-menu {
 }
 
 /* =====================================================
-   موبايل — تصميم مقسّم (صورة فوق + محتوى تحت)
+   موبايل
 ===================================================== */
 @media (max-width: 900px) {
-
   #heroSliderWrap {
-    height: auto;           /* ← لا ارتفاع ثابت */
+    height: clamp(180px, 55vw, 320px);
     border-radius: 14px;
     cursor: default;
-    overflow: visible;      /* ← مهم للمحتوى تحت */
-    background: transparent;
-    box-shadow: none;
   }
 
-  .hs-track {
-    flex-direction: row;    /* يبقى أفقي للسلايد */
-    height: auto;
-    align-items: flex-start;
-  }
-
-  .hs-slide {
-    height: auto;
-    flex-direction: column;
-    min-width: 100%;
-  }
-
-  /* ── الصورة: نسبة ثابتة ── */
-  .hs-slide::before {
-    content: '';
-    display: block;
-    padding-top: 56%;       /* نسبة 16:9 تقريباً */
-  }
-
-  .hs-img {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 56%;  /* نفس نسبة الصورة */
-    object-fit: cover;
-    border-radius: 14px 14px 0 0;
-    transform: scale(1);
-    transition: none;
-  }
-
-  .hs-slide.hs-active .hs-img {
-    transform: scale(1);
-  }
-
-  /* ── إخفاء الـ overlay في الموبايل ── */
+  /* موبايل: تدرج من الأسفل بدل اليسار */
   .hs-overlay {
-    display: none;
+    background:
+      linear-gradient(
+        to top,
+        rgba(0,0,0,0.82) 0%,
+        rgba(0,0,0,0.25) 55%,
+        transparent 100%
+      );
   }
 
-  /* ── المحتوى: تحت الصورة ── */
+  /* موبايل: المحتوى في الأسفل كامل العرض */
   .hs-content {
-    position: relative;     /* ← خروج من absolute */
-    top: auto; left: auto;
     width: 100%;
-    padding: 14px 16px 16px;
-    background: #111;
-    border-radius: 0 0 14px 14px;
-    border: 1px solid rgba(255,255,255,0.06);
-    border-top: none;
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none;
-    margin-top: 56%;        /* يبدأ بعد الصورة */
+    top: auto;
+    transform: translateY(14px);
+    padding: clamp(14px, 4vw, 22px);
   }
 
-  /* إخفاء animation في الموبايل */
   .hs-slide.hs-active .hs-content {
-    opacity: 1;
-    transform: none;
-  }
-
-  .hs-title {
-    font-size: clamp(15px, 4.5vw, 22px);
-    margin-bottom: 4px;
-    letter-spacing: 1px;
-  }
-
-  .hs-tag {
-    font-size: 9px;
-    letter-spacing: 3px;
-    margin-bottom: 6px;
-  }
-
-  .hs-desc {
-    display: block;         /* ← يظهر في الموبايل */
-    font-size: clamp(10px, 2.8vw, 13px);
-    margin-bottom: 10px;
-    max-width: 100%;
-    color: rgba(255,255,255,0.5);
-  }
-
-  .hs-price-wrap {
-    margin-bottom: 12px;
-  }
-
-  .hs-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 12px 20px;
-    font-size: 10px;
-  }
-
-  /* ── النقاط فوق المحتوى ── */
-  .hs-dots {
-    position: relative;
-    bottom: auto;
-    left: auto;
-    transform: none;
-    justify-content: center;
-    padding: 10px 0 2px;
-    background: #111;
-    border-radius: 0;
-  }
-
-  /* ── شريط التقدم ── */
-  .hs-progress {
-    border-radius: 0;
+    transform: translateY(0);
   }
 
   .hs-arrow   { display: none; }
@@ -3544,35 +3455,16 @@ body.wow-mode .mobile-menu {
 }
 
 @media (max-width: 600px) {
-  .hs-slide::before {
-    padding-top: 60%;
-  }
-  .hs-img {
-    height: 60%;
-  }
-  .hs-content {
-    margin-top: 60%;
-  }
   #heroSliderWrap {
+    height: clamp(160px, 60vw, 240px);
     border-radius: 12px;
   }
-  .hs-img {
-    border-radius: 12px 12px 0 0;
-  }
-  .hs-content {
-    border-radius: 0 0 12px 12px;
-  }
+  .hs-desc { display: none; }
 }
 
 @media (max-width: 400px) {
-  .hs-slide::before {
-    padding-top: 65%;
-  }
-  .hs-img {
-    height: 65%;
-  }
-  .hs-content {
-    margin-top: 65%;
+  #heroSliderWrap {
+    height: clamp(150px, 65vw, 210px);
   }
 }
 
