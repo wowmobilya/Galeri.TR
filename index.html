@@ -3649,6 +3649,21 @@ body.wow-mode .mobile-menu {
 
 
     
+/* ── صفحة المحاسبة الداخلية ── */
+#accountingFrame {
+  display: block;
+  min-height: calc(100vh - 120px);
+}
+
+body.wow-mode #accountingFrame {
+  min-height: 100vh;
+}
+
+
+
+
+
+
     
     
     
@@ -19839,9 +19854,10 @@ function handleAdminCardClick(sectionKey) {
       break;
 
     // ★ أضف هذا الـ case هنا ★
-    case 'accounting_external':
-      window.open('./accounting.html', '_blank');
-      break;
+case 'accounting_external':
+  enterSection('accounting');
+  break;
+
 
     default:
       enterSection(sectionKey);
@@ -22273,6 +22289,24 @@ showPage = function(cat) {
   _origShowPage_for_settings(cat);
 };
 
+/* ════════════════════════════════════════════════════
+   ★ صفحة المحاسبة الداخلية
+════════════════════════════════════════════════════ */
+const _origShowPage_accounting = showPage;
+showPage = function(cat) {
+  if (cat === 'accounting') {
+    if (currentUser !== ADMIN_USER && !_currentUserData?._isAdmin) return;
+    currentPage = 'accounting';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    filteredImages = [];
+    buildAccountingPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    appState = 'section';
+    pushState('section', { cat: 'accounting' });
+    return;
+  }
+  _origShowPage_accounting(cat);
+};
 
 
 
@@ -36849,6 +36883,26 @@ enterSection = function(cat) {
   _origEnterSection_MO(cat);
 };
 
+
+
+const _origEnterSection_accounting = enterSection;
+enterSection = function(cat) {
+  if (cat === 'accounting') {
+    const hs = document.getElementById('homeScreen');
+    hs.style.transition = 'opacity 0.4s ease';
+    hs.style.opacity    = '0';
+    setTimeout(() => {
+      hs.style.display = 'none';
+      document.getElementById('mainSite').style.display = 'block';
+      document.body.classList.add('wow-mode');
+      showPage('accounting');
+    }, 400);
+    return;
+  }
+  _origEnterSection_accounting(cat);
+};
+
+  
 /* ══════════════════════════════════════════════════════════════
    إضافة بطاقة "حركاتي" في الهوم
 ══════════════════════════════════════════════════════════════ */
@@ -38367,7 +38421,7 @@ buildSettingsPage = function() {
   // ★ أضف هذا الكود هنا مباشرة — بطاقة المحاسبة ★
   // ════════════════════════════════════════════
   const accCard = document.createElement('div');
-  accCard.onclick = () => window.open('./accounting.html', '_blank');
+accCard.onclick = () => enterSection('accounting');
   accCard.style.cssText = `
     background:rgba(16,185,129,0.04);
     border:1px solid rgba(16,185,129,0.15);
@@ -38477,6 +38531,62 @@ window.hsHandleUpload = hsHandleUpload;
 
 
 
+
+
+function buildAccountingPage() {
+  /* تحميل محتوى accounting.html داخل iframe */
+  document.getElementById('pageContent').innerHTML = `
+    <div class="page-transition" style="height:calc(100vh - var(--header-h));
+         display:flex;flex-direction:column;overflow:hidden;">
+
+      <!-- شريط العودة -->
+      <div style="
+        flex-shrink:0;
+        padding:10px 16px;
+        background:rgba(10,10,10,0.97);
+        border-bottom:1px solid rgba(201,168,76,0.15);
+        display:flex;align-items:center;gap:12px;">
+        <button class="section-back-btn" onclick="goHome()" title="Ana Sayfaya Dön">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div style="display:flex;align-items:center;gap:9px;">
+          <div style="
+            width:32px;height:32px;border-radius:9px;
+            background:rgba(16,185,129,0.12);
+            border:1px solid rgba(16,185,129,0.3);
+            display:flex;align-items:center;justify-content:center;
+            color:#10b981;font-size:14px;">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:900;color:#fff;">
+              Muhasebe Sistemi
+            </div>
+            <div style="font-size:9px;color:rgba(255,255,255,0.3);
+                 letter-spacing:1px;">
+              Gelir · Gider · Fatura · Raporlar
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- الـ iframe يحمل accounting.html -->
+      <iframe
+        id="accountingFrame"
+        src="./accounting.html"
+        style="
+          flex:1;
+          width:100%;
+          border:none;
+          background:#0a0a0a;
+        "
+        allow="clipboard-read; clipboard-write"
+        loading="lazy">
+      </iframe>
+    </div>`;
+}
+
+  
 
 
 
