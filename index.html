@@ -3418,37 +3418,93 @@ body.wow-mode .mobile-menu {
 }
 
 /* =====================================================
-   موبايل
+   موبايل — تصميم محكم لا يغطي الصورة
 ===================================================== */
 @media (max-width: 900px) {
   #heroSliderWrap {
-    height: clamp(180px, 55vw, 320px);
+    height: clamp(200px, 58vw, 340px);
     border-radius: 14px;
     cursor: default;
   }
 
-  /* موبايل: تدرج من الأسفل بدل اليسار */
+  /* تدرج خفيف فقط في الأسفل */
   .hs-overlay {
-    background:
-      linear-gradient(
-        to top,
-        rgba(0,0,0,0.82) 0%,
-        rgba(0,0,0,0.25) 55%,
-        transparent 100%
-      );
+    background: linear-gradient(
+      to top,
+      rgba(0,0,0,0.75) 0%,
+      rgba(0,0,0,0.15) 40%,
+      transparent 70%
+    );
   }
 
-  /* موبايل: المحتوى في الأسفل كامل العرض */
+  /* المحتوى في الأسفل فقط — مضغوط */
   .hs-content {
     width: 100%;
     top: auto;
-    transform: translateY(14px);
-    padding: clamp(14px, 4vw, 22px);
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 10px 14px 38px 14px;
+    transform: translateY(10px);
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 6px;
   }
 
   .hs-slide.hs-active .hs-content {
     transform: translateY(0);
   }
+
+  /* Tag — مخفي في الموبايل */
+  .hs-tag { display: none; }
+
+  /* العنوان — صغير وفي سطر واحد */
+  .hs-title {
+    font-size: clamp(13px, 4.2vw, 18px);
+    margin-bottom: 0;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: 1px;
+  }
+
+  /* الوصف — مخفي */
+  .hs-desc { display: none; }
+
+  /* السعر — صغير وبجانب الزر */
+  .hs-price-wrap {
+    padding: 4px 10px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  .hs-price-label { display: none; }
+
+  .hs-price-amount {
+    font-size: clamp(12px, 3.5vw, 16px);
+  }
+
+  /* الزر — صغير وبجانب السعر */
+  .hs-btn {
+    padding: 6px 14px;
+    font-size: clamp(8px, 2.8vw, 10px);
+    letter-spacing: 1.5px;
+    gap: 6px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+
+  /* النقاط — فوق المحتوى في المنتصف */
+  .hs-dots {
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .hs-dot { width: 6px; height: 6px; }
+  .hs-dot.hs-dot-active { width: 18px; }
 
   .hs-arrow   { display: none; }
   .hs-counter { display: none; }
@@ -3456,15 +3512,14 @@ body.wow-mode .mobile-menu {
 
 @media (max-width: 600px) {
   #heroSliderWrap {
-    height: clamp(160px, 60vw, 240px);
+    height: clamp(180px, 60vw, 260px);
     border-radius: 12px;
   }
-  .hs-desc { display: none; }
 }
 
 @media (max-width: 400px) {
   #heroSliderWrap {
-    height: clamp(150px, 65vw, 210px);
+    height: clamp(160px, 65vw, 220px);
   }
 }
 
