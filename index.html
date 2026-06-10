@@ -3509,16 +3509,19 @@ body.wow-mode .mobile-menu {
 
   .hs-price-icon { font-size: 10px; }
 
-  .hs-btn {
-    padding: 10px 16px;
-    font-size: clamp(9px, 2.8vw, 11px);
-    letter-spacing: 2px;
-    gap: 8px;
-    width: auto;
-    flex: 1;           /* يأخذ المساحة المتبقية */
-    justify-content: center;
-    margin-bottom: 0;
-  }
+ /* الزر — نفس حجم السعر تماماً */
+.hs-btn {
+  padding: 5px 12px;        /* نفس padding السعر */
+  font-size: 8px;           /* نفس حجم خط السعر */
+  letter-spacing: 1.5px;
+  gap: 6px;
+  width: auto;
+  flex: 1;
+  justify-content: center;
+  margin-bottom: 0;
+  height: auto;             /* يتكيف مع المحتوى */
+}
+
 
   .hs-dots {
     bottom: 16px;
