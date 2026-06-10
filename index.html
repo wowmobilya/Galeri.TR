@@ -6385,6 +6385,12 @@ function goHome() {
   ms.style.opacity    = '0';
 
   setTimeout(() => {
+    // ★ إعادة إظهار header و footer عند الرجوع من المحاسبة
+    const header = document.getElementById('header');
+    const footer = document.querySelector('footer');
+    if (header) header.style.display = '';
+    if (footer) footer.style.display = '';
+
     // 1. إزالة كلاس wow-mode هنا (بعد أن تختفي الصفحة تماماً)
     document.body.classList.remove('wow-mode');
     
@@ -6404,6 +6410,7 @@ function goHome() {
     if (typeof updateBulkBar === 'function') updateBulkBar();
   }, 350);
 }
+
 
 function goHomeFromBack(){
   const ms = document.getElementById('mainSite');
@@ -38534,57 +38541,99 @@ window.hsHandleUpload = hsHandleUpload;
 
 
 function buildAccountingPage() {
-  /* تحميل محتوى accounting.html داخل iframe */
   document.getElementById('pageContent').innerHTML = `
-    <div class="page-transition" style="height:calc(100vh - var(--header-h));
-         display:flex;flex-direction:column;overflow:hidden;">
-
-      <!-- شريط العودة -->
+    <div style="
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: #0a0a0a;
+      z-index: 500;
+    ">
+      <!-- شريط العودة المضغوط -->
       <div style="
-        flex-shrink:0;
-        padding:10px 16px;
-        background:rgba(10,10,10,0.97);
-        border-bottom:1px solid rgba(201,168,76,0.15);
-        display:flex;align-items:center;gap:12px;">
-        <button class="section-back-btn" onclick="goHome()" title="Ana Sayfaya Dön">
+        flex-shrink: 0;
+        height: 46px;
+        padding: 0 14px;
+        background: rgba(10,10,10,0.98);
+        border-bottom: 1px solid rgba(16,185,129,0.2);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      ">
+        <button class="section-back-btn"
+                onclick="goHome()"
+                style="width:32px;height:32px;"
+                title="Ana Sayfaya Dön">
           <i class="fas fa-arrow-left"></i>
         </button>
-        <div style="display:flex;align-items:center;gap:9px;">
+
+        <div style="
+          width:28px;height:28px;border-radius:8px;
+          background:rgba(16,185,129,0.12);
+          border:1px solid rgba(16,185,129,0.3);
+          display:flex;align-items:center;justify-content:center;
+          color:#10b981;font-size:13px;flex-shrink:0;
+        ">
+          <i class="fas fa-chart-line"></i>
+        </div>
+
+        <div style="flex:1;min-width:0;">
           <div style="
-            width:32px;height:32px;border-radius:9px;
-            background:rgba(16,185,129,0.12);
-            border:1px solid rgba(16,185,129,0.3);
-            display:flex;align-items:center;justify-content:center;
-            color:#10b981;font-size:14px;">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <div>
-            <div style="font-size:13px;font-weight:900;color:#fff;">
-              Muhasebe Sistemi
-            </div>
-            <div style="font-size:9px;color:rgba(255,255,255,0.3);
-                 letter-spacing:1px;">
-              Gelir · Gider · Fatura · Raporlar
-            </div>
-          </div>
+            font-size:12px;font-weight:900;color:#fff;
+            font-family:'Montserrat',sans-serif;
+            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+          ">Muhasebe Sistemi</div>
+          <div style="
+            font-size:8px;color:rgba(255,255,255,0.3);
+            letter-spacing:1px;font-family:'Montserrat',sans-serif;
+          ">Gelir · Gider · Fatura · Raporlar</div>
+        </div>
+
+        <!-- شارة حالة الاتصال -->
+        <div style="
+          display:flex;align-items:center;gap:5px;
+          padding:3px 10px;border-radius:50px;
+          background:rgba(16,185,129,0.08);
+          border:1px solid rgba(16,185,129,0.2);
+          flex-shrink:0;
+        ">
+          <div style="
+            width:6px;height:6px;border-radius:50%;
+            background:#10b981;
+            animation:iconPulse 2s infinite;
+          "></div>
+          <span style="
+            font-size:9px;font-weight:700;color:#10b981;
+            font-family:'Montserrat',sans-serif;letter-spacing:1px;
+          ">CANLI</span>
         </div>
       </div>
 
-      <!-- الـ iframe يحمل accounting.html -->
+      <!-- iframe يملأ كل المساحة المتبقية -->
       <iframe
         id="accountingFrame"
         src="./accounting.html"
         style="
-          flex:1;
-          width:100%;
-          border:none;
-          background:#0a0a0a;
+          flex: 1;
+          width: 100%;
+          height: 0;
+          border: none;
+          background: #0a0a0a;
+          display: block;
         "
         allow="clipboard-read; clipboard-write"
-        loading="lazy">
-      </iframe>
+        loading="lazy"
+      ></iframe>
     </div>`;
+
+  /* إخفاء header و footer الرئيسيين لتوفير المساحة */
+  const header = document.getElementById('header');
+  const footer = document.querySelector('footer');
+  if (header) header.style.display = 'none';
+  if (footer) footer.style.display = 'none';
 }
+
 
   
 
