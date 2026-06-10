@@ -1193,8 +1193,220 @@
       .page-body { padding: 0 !important; }
       body { background: #fff !important; color: #000 !important; }
     }
+
+
+
+
+
+
+
+
+/* ══════════════════════════════════════════════════════
+   RESPONSIVE ACCOUNTING — Mobile First Complete Fix
+══════════════════════════════════════════════════════ */
+
+/* ── تحسين الـ Layout الأساسي ── */
+@media (max-width: 768px) {
+
+  /* إخفاء الـ Sidebar وتحويله لـ Drawer */
+  .sidebar {
+    width: 280px !important;
+    transform: translateX(100%) !important;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.5);
+  }
+  .sidebar.open {
+    transform: translateX(0) !important;
+  }
+
+  /* الـ Main Content يأخذ كل العرض */
+  .main-content {
+    margin-left: 0 !important;
+  }
+
+  /* الهيدر العلوي */
+  .top-header {
+    padding: 0 12px !important;
+    height: 56px !important;
+  }
+
+  .page-title  { font-size: 14px !important; }
+  .page-subtitle { display: none; }
+
+  /* إخفاء نص الزر على الشاشات الصغيرة */
+  .back-to-main-btn span { display: none; }
+  .back-to-main-btn {
+    padding: 8px 12px !important;
+    min-width: 36px;
+  }
+
+  /* صفحة المحتوى */
+  .page-body {
+    padding: 12px !important;
+  }
+
+  /* ── بطاقات الإحصائيات ── */
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+    margin-bottom: 16px !important;
+  }
+
+  .stat-card { padding: 14px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-icon  { width: 38px !important; height: 38px !important; }
+
+  /* ── الشبكات الثنائية → عمود واحد ── */
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── الجداول ── */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 520px; }
+  thead th { font-size: 8px !important; padding: 8px 10px !important; }
+  td { padding: 10px !important; font-size: 11px !important; }
+
+  /* ── شريط الفلاتر ── */
+  .filter-bar {
+    padding: 10px 12px !important;
+    gap: 7px !important;
+  }
+  .search-wrap { min-width: 140px !important; }
+  .filter-select { font-size: 10px !important; padding: 7px 8px !important; }
+
+  /* ── Modal ── */
+  .modal-box {
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 95vh !important;
+  }
+  .modal-overlay {
+    align-items: flex-end !important;
+    padding: 0 !important;
+  }
+  .form-grid, .form-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Tabs ── */
+  .tab-btn { font-size: 9px !important; padding: 7px 8px !important; }
+
+  /* ── أزرار ── */
+  .btn { font-size: 10px !important; padding: 8px 12px !important; }
+  .btn-sm { padding: 5px 9px !important; font-size: 9px !important; }
+
+  /* ── Section Header ── */
+  .section-header { flex-direction: column !important; align-items: flex-start !important; }
+  .section-actions { width: 100% !important; justify-content: flex-end !important; }
+
+  /* ── Card Header ── */
+  .card-header { padding: 14px 14px 10px !important; }
+  .card-body   { padding: 14px !important; }
+
+  /* ── فواتير Grid ── */
+  #invoiceGrid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Toast ── */
+  #accToast {
+    width: 90vw !important;
+    font-size: 11px !important;
+    padding: 10px 16px !important;
+  }
+}
+
+/* ── تابلت (600px - 900px) ── */
+@media (min-width: 600px) and (max-width: 900px) {
+
+  .sidebar {
+    width: 240px !important;
+    transform: translateX(100%) !important;
+  }
+  .sidebar.open { transform: translateX(0) !important; }
+  .main-content { margin-left: 0 !important; }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .page-body { padding: 16px !important; }
+
+  [style*="grid-template-columns:1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  .modal-box { max-width: 480px !important; }
+}
+
+/* ── شاشات صغيرة جداً (≤ 380px) ── */
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .stat-value { font-size: 18px !important; }
+  .page-title { font-size: 13px !important; }
+  .top-header { height: 52px !important; }
+
+  .btn span { display: none; }
+  .btn i    { margin: 0 !important; }
+}
+
+/* ── iPhone Safe Area ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .modal-overlay.active .modal-box {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  #accToast {
+    bottom: calc(28px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+/* ── تحسين اللمس ── */
+@media (hover: none) and (pointer: coarse) {
+  .btn, .nav-item, .tab-btn {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .form-input, .form-select, .form-textarea {
+    font-size: 16px !important; /* يمنع zoom على iOS */
+  }
+  .search-input { font-size: 16px !important; }
+  .filter-select { font-size: 16px !important; }
+}
+
+/* ── تحسين الـ Chart على الموبايل ── */
+@media (max-width: 600px) {
+  .chart-container { height: 160px !important; }
+  .chart-bar-wrap  { gap: 4px !important; }
+  .chart-label     { font-size: 8px !important; }
+  .chart-legend    { gap: 10px !important; }
+}
+
+/* ── تحسين الـ Sidebar Navigation ── */
+@media (max-width: 900px) {
+  .nav-item {
+    padding: 12px 14px !important;
+    font-size: 13px !important;
+  }
+  .nav-section-label { font-size: 9px !important; }
+  .sidebar-logo { padding: 18px 16px 14px !important; }
+  .sidebar-logo-text .brand { font-size: 12px !important; }
+}
+
+
+    
+
+
+
+    
   </style>
 </head>
+  
 <body data-theme="dark">
 
 <!-- ══════════════════════════════════════════════════
@@ -4052,6 +4264,143 @@ async function subscribeAccRealtime() {
 
   console.log('[WOW Accounting] ✅ Sistem hazır');
 })();
+
+
+
+
+
+
+
+/* ══════════════════════════════════════════════════
+   MOBILE MODAL FIX — Sheet من الأسفل على الموبايل
+══════════════════════════════════════════════════ */
+function openModalMobile(modalId) {
+  const modal = document.getElementById(modalId);
+  if (!modal) return;
+
+  if (window.innerWidth <= 768) {
+    /* على الموبايل: Sheet من الأسفل */
+    modal.style.alignItems    = 'flex-end';
+    modal.style.padding       = '0';
+    const box = modal.querySelector('.modal-box');
+    if (box) {
+      box.style.borderRadius = '20px 20px 0 0';
+      box.style.maxHeight    = '95vh';
+      box.style.width        = '100%';
+      box.style.maxWidth     = '100%';
+      box.style.paddingBottom = 'env(safe-area-inset-bottom, 0px)';
+    }
+  } else {
+    /* كمبيوتر: وسط الشاشة */
+    modal.style.alignItems = 'center';
+    modal.style.padding    = '16px';
+    const box = modal.querySelector('.modal-box');
+    if (box) {
+      box.style.borderRadius = '20px';
+      box.style.maxHeight    = '90vh';
+      box.style.width        = '';
+      box.style.maxWidth     = '560px';
+    }
+  }
+
+  modal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+/* تطبيق على الدوال الموجودة */
+const _origOpenTxModal = openTxModal;
+openTxModal = function(editId) {
+  _origOpenTxModal(editId);
+  openModalMobile('txModal');
+};
+
+const _origOpenInvoiceModal = openInvoiceModal;
+openInvoiceModal = function() {
+  _origOpenInvoiceModal();
+  openModalMobile('invoiceModal');
+};
+
+const _origOpenCustomerModal = openCustomerModal;
+openCustomerModal = function() {
+  _origOpenCustomerModal();
+  openModalMobile('customerModal');
+};
+
+/* ══════════════════════════════════════════════════
+   SWIPE DOWN لإغلاق Modal على الموبايل
+══════════════════════════════════════════════════ */
+(function initModalSwipe() {
+  let startY = 0;
+
+  document.addEventListener('touchstart', e => {
+    const modal = e.target.closest('.modal-overlay.active');
+    const header = e.target.closest('.modal-header');
+    if (modal && header) startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!startY) return;
+    const box = document.querySelector('.modal-overlay.active .modal-box');
+    if (!box) return;
+    const diff = e.touches[0].clientY - startY;
+    if (diff > 0 && window.innerWidth <= 768) {
+      box.style.transform  = `translateY(${diff * 0.5}px)`;
+      box.style.transition = 'none';
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', e => {
+    if (!startY) return;
+    const diff = e.changedTouches[0].clientY - startY;
+    const box  = document.querySelector('.modal-overlay.active .modal-box');
+    if (box) {
+      box.style.transform  = '';
+      box.style.transition = '';
+    }
+    if (diff > 100 && window.innerWidth <= 768) {
+      /* إغلاق كل المودالات المفتوحة */
+      ['txModal','invoiceModal','customerModal','catModal'].forEach(id => {
+        closeModal(id);
+      });
+    }
+    startY = 0;
+  }, { passive: true });
+})();
+
+/* ══════════════════════════════════════════════════
+   تحسين الجداول على الموبايل — بطاقات بدل صفوف
+══════════════════════════════════════════════════ */
+function applyMobileTableView() {
+  if (window.innerWidth > 600) return;
+
+  /* تحويل جدول المعاملات لبطاقات */
+  const txTable = document.getElementById('txTable');
+  if (txTable && txTable.closest('.table-wrap')) {
+    txTable.closest('.table-wrap').style.overflowX = 'auto';
+  }
+}
+
+/* تطبيق عند تغيير حجم الشاشة */
+window.addEventListener('resize', () => {
+  applyMobileTableView();
+  /* إعادة تهيئة المودال المفتوح */
+  const openModal = document.querySelector('.modal-overlay.active');
+  if (openModal) openModalMobile(openModal.id);
+});
+
+/* تطبيق أولي */
+applyMobileTableView();
+
+
+
+
+
+
+
+
+
+
+  
 </script>
 
 </body>
