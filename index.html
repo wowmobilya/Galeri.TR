@@ -3043,38 +3043,44 @@ body.wow-mode .mobile-menu {
 
 
 /* =====================================================
-   HERO SLIDER — الصفحة الرئيسية للمشتري فقط
+   HERO SLIDER — نسخة محسّنة كمبيوتر + هاتف
 ===================================================== */
 
-/* ── الحاوية الرئيسية ── */
 #heroSliderWrap {
   width: 100%;
   position: relative;
   overflow: hidden;
   background: #0a0a0a;
-  height: clamp(200px, 45vw, 460px);
+  border-radius: 18px;
   flex-shrink: 0;
-  border-radius: 18px; /* ← هذا السطر فقط */
+  height: clamp(200px, 38vw, 560px);
+  cursor: grab;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  margin-bottom: 0;
+}
+
+#heroSliderWrap:active {
+  cursor: grabbing;
 }
 
 /* ── Track ── */
 .hs-track {
   display: flex;
   height: 100%;
-  transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   will-change: transform;
-  align-items: stretch; /* ← إضافة */
+  align-items: stretch;
 }
 
-/* ── شريحة واحدة ── */
+/* ── شريحة ── */
 .hs-slide {
   min-width: 100%;
   height: 100%;
   position: relative;
   overflow: hidden;
   flex-shrink: 0;
-  display: flex;          /* ← إضافة */
-  flex-direction: column; /* ← إضافة */
+  display: flex;
+  flex-direction: column;
 }
 
 /* ── الصورة ── */
@@ -3085,62 +3091,76 @@ body.wow-mode .mobile-menu {
   display: block;
   pointer-events: none;
   -webkit-user-drag: none;
+  position: absolute;
+  top: 0;
+  left: 0;
   transform: scale(1.06);
-  transition: transform 7s ease;
-  position: absolute; /* ← إضافة */
-  top: 0;             /* ← إضافة */
-  left: 0;            /* ← إضافة */
+  transition: transform 8s ease;
+  will-change: transform;
 }
 
 .hs-slide.hs-active .hs-img {
   transform: scale(1);
 }
 
-/* ── التدرج ── */
+/* ── التدرج — كمبيوتر: من اليسار | موبايل: من الأسفل ── */
 .hs-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(0,0,0,0.55) 0%,
-    rgba(0,0,0,0.15) 50%,
-    rgba(0,0,0,0.6) 100%
-  );
+  background:
+    linear-gradient(
+      to right,
+      rgba(0,0,0,0.78) 0%,
+      rgba(0,0,0,0.35) 55%,
+      rgba(0,0,0,0.08) 100%
+    ),
+    linear-gradient(
+      to top,
+      rgba(0,0,0,0.65) 0%,
+      transparent 55%
+    );
   pointer-events: none;
+  z-index: 1;
 }
 
-/* ── المحتوى ── */
+/* ── المحتوى — يسار الشاشة في الكمبيوتر ── */
 .hs-content {
   position: absolute;
   bottom: 0;
   left: 0;
-  right: 0;
-  padding: clamp(16px, 3.5vw, 36px) clamp(18px, 4vw, 44px);
+  top: 0;
+  width: 58%;
+  padding: clamp(20px, 3.5vw, 54px) clamp(22px, 4vw, 60px);
   z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 0.5s ease 0.15s, transform 0.5s ease 0.15s;
+  transform: translateX(-22px);
+  transition: opacity 0.6s ease 0.2s, transform 0.6s ease 0.2s;
 }
+
 .hs-slide.hs-active .hs-content {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(0);
 }
 
 /* Tag */
 .hs-tag {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  font-size: clamp(8px, 1.4vw, 10px);
-  letter-spacing: 3px;
+  gap: 8px;
+  font-size: clamp(8px, 0.85vw, 11px);
+  letter-spacing: 4px;
   color: rgba(201,168,76,0.9);
   font-weight: 700;
   text-transform: uppercase;
-  margin-bottom: 7px;
+  margin-bottom: 10px;
 }
+
 .hs-tag::before {
   content: '';
-  width: 22px;
+  width: 28px;
   height: 2px;
   background: #c9a84c;
   border-radius: 2px;
@@ -3149,50 +3169,55 @@ body.wow-mode .mobile-menu {
 
 /* العنوان */
 .hs-title {
-  font-size: clamp(20px, 5.5vw, 52px);
+  font-size: clamp(22px, 3.8vw, 58px);
   font-weight: 900;
   color: #fff;
   letter-spacing: 2px;
   line-height: 1.05;
-  margin-bottom: 5px;
-  text-shadow: 0 3px 16px rgba(0,0,0,0.55);
+  margin-bottom: 8px;
+  text-shadow: 0 3px 20px rgba(0,0,0,0.6);
 }
 
 /* الوصف */
 .hs-desc {
-  font-size: clamp(10px, 1.8vw, 14px);
-  color: rgba(255,255,255,0.6);
+  font-size: clamp(11px, 1vw, 15px);
+  color: rgba(255,255,255,0.65);
   letter-spacing: 0.5px;
-  margin-bottom: 12px;
-  max-width: 380px;
+  margin-bottom: 16px;
+  max-width: 400px;
+  line-height: 1.6;
 }
 
 /* ── السعر ── */
 .hs-price-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(201,168,76,0.35);
+  gap: 10px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(201,168,76,0.4);
   border-radius: 50px;
-  padding: clamp(5px, 1vw, 8px) clamp(12px, 2vw, 18px);
-  margin-bottom: 14px;
-  backdrop-filter: blur(10px);
+  padding: clamp(6px, 0.7vw, 10px) clamp(14px, 1.6vw, 22px);
+  margin-bottom: 18px;
+  backdrop-filter: blur(12px);
+  width: fit-content;
 }
+
 .hs-price-icon {
-  font-size: clamp(9px, 1.5vw, 11px);
+  font-size: clamp(10px, 0.9vw, 13px);
   color: rgba(201,168,76,0.7);
   font-weight: 900;
   font-style: normal;
 }
+
 .hs-price-label {
-  font-size: clamp(8px, 1.3vw, 10px);
+  font-size: clamp(8px, 0.7vw, 10px);
   color: rgba(255,255,255,0.35);
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   text-transform: uppercase;
 }
+
 .hs-price-amount {
-  font-size: clamp(14px, 3vw, 22px);
+  font-size: clamp(16px, 1.8vw, 26px);
   font-weight: 900;
   background: linear-gradient(135deg, #c9a84c, #f0d080);
   -webkit-background-clip: text;
@@ -3205,84 +3230,149 @@ body.wow-mode .mobile-menu {
 .hs-btn {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: clamp(9px, 1.5vw, 13px) clamp(18px, 3vw, 28px);
+  gap: 10px;
+  padding: clamp(10px, 1.1vw, 16px) clamp(20px, 2.2vw, 34px);
   background: linear-gradient(135deg, #c9a84c, #f0d080);
   border: none;
   border-radius: 50px;
   color: #0a0a0a;
   font-family: 'Montserrat', sans-serif;
-  font-size: clamp(9px, 1.4vw, 11px);
+  font-size: clamp(9px, 0.8vw, 12px);
   font-weight: 900;
-  letter-spacing: 2px;
+  letter-spacing: 2.5px;
   text-transform: uppercase;
   cursor: pointer;
-  transition: all 0.25s ease;
-  box-shadow: 0 4px 20px rgba(201,168,76,0.45);
+  transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 4px 24px rgba(201,168,76,0.45);
+  width: fit-content;
   -webkit-tap-highlight-color: transparent;
 }
+
 .hs-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 28px rgba(201,168,76,0.55);
-}
-.hs-btn:active {
-  transform: scale(0.96);
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 10px 32px rgba(201,168,76,0.6);
 }
 
-/* ── أزرار السهام ── */
+.hs-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── أزرار السهام — تظهر عند hover فقط ── */
 .hs-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
   z-index: 10;
-  width: clamp(34px, 5vw, 46px);
-  height: clamp(34px, 5vw, 46px);
+  width: clamp(40px, 3.2vw, 54px);
+  height: clamp(40px, 3.2vw, 54px);
   border-radius: 50%;
-  background: rgba(0,0,0,0.45);
-  border: 1px solid rgba(255,255,255,0.18);
-  color: rgba(255,255,255,0.85);
-  font-size: clamp(13px, 2vw, 17px);
+  background: rgba(0,0,0,0.42);
+  border: 1.5px solid rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.9);
+  font-size: clamp(14px, 1.1vw, 18px);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.25s ease;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   -webkit-tap-highlight-color: transparent;
+  /* مخفية افتراضياً */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease,
+              background 0.3s ease,
+              transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+              border-color 0.3s ease;
 }
-.hs-arrow:hover {
-  background: rgba(201,168,76,0.35);
-  border-color: rgba(201,168,76,0.6);
-  color: #fff;
-}
-.hs-arrow-prev { left: clamp(10px, 2vw, 20px); }
-.hs-arrow-next { right: clamp(10px, 2vw, 20px); }
 
-/* ── النقاط ── */
+/* تظهر عند hover على السلايدر */
+#heroSliderWrap:hover .hs-arrow {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.hs-arrow:hover {
+  background: rgba(201,168,76,0.38);
+  border-color: rgba(201,168,76,0.65);
+  color: #fff;
+  transform: translateY(-50%) scale(1.12);
+}
+
+.hs-arrow:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.hs-arrow-prev { left: clamp(14px, 1.8vw, 26px); }
+.hs-arrow-next { right: clamp(14px, 1.8vw, 26px); }
+
+/* ── النقاط — منتصف الأسفل ── */
 .hs-dots {
   position: absolute;
-  bottom: clamp(12px, 2.5vw, 20px);
-  right: clamp(16px, 3vw, 32px);
+  bottom: clamp(14px, 2vw, 22px);
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  gap: 7px;
+  gap: 8px;
   z-index: 10;
   align-items: center;
 }
+
 .hs-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: rgba(255,255,255,0.3);
   cursor: pointer;
   border: none;
   padding: 0;
-  transition: all 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
 }
+
+.hs-dot:hover {
+  background: rgba(255,255,255,0.6);
+  transform: scale(1.2);
+}
+
 .hs-dot.hs-dot-active {
   background: #c9a84c;
-  width: 22px;
+  width: 26px;
   border-radius: 4px;
-  box-shadow: 0 0 10px rgba(201,168,76,0.7);
+  box-shadow: 0 0 12px rgba(201,168,76,0.8);
+}
+
+/* ── عداد الشرائح — زاوية يمين أعلى ── */
+.hs-counter {
+  position: absolute;
+  top: clamp(14px, 1.8vw, 22px);
+  right: clamp(14px, 1.8vw, 22px);
+  z-index: 10;
+  background: rgba(0,0,0,0.42);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 50px;
+  padding: 5px 14px;
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.hs-counter-cur {
+  font-size: 15px;
+  font-weight: 900;
+  color: #c9a84c;
+}
+
+.hs-counter-sep {
+  font-size: 11px;
+  color: rgba(255,255,255,0.22);
+}
+
+.hs-counter-total {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.38);
 }
 
 /* ── شريط التقدم ── */
@@ -3296,6 +3386,7 @@ body.wow-mode .mobile-menu {
   width: 0%;
   transition: width 0.08s linear;
   box-shadow: 0 0 10px rgba(201,168,76,0.6);
+  border-radius: 0 3px 3px 0;
 }
 
 /* ── حالة فارغة ── */
@@ -3313,22 +3404,64 @@ body.wow-mode .mobile-menu {
   text-transform: uppercase;
 }
 
-/* ── Swipe ── */
-#heroSliderWrap { touch-action: pan-y; }
+/* ── Swipe + Drag ── */
+#heroSliderWrap {
+  touch-action: pan-y;
+}
 
-/* ── موبايل ── */
+/* ── خط فاصل بين السلايدر والبطاقات ── */
+#heroSliderWrap ~ .home-cards,
+#heroSliderWrap + .home-cards {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+/* =====================================================
+   موبايل
+===================================================== */
 @media (max-width: 900px) {
   #heroSliderWrap {
-    height: clamp(180px, 55vw, 300px);
+    height: clamp(180px, 55vw, 320px);
+    border-radius: 14px;
+    cursor: default;
   }
+
+  /* موبايل: تدرج من الأسفل بدل اليسار */
+  .hs-overlay {
+    background:
+      linear-gradient(
+        to top,
+        rgba(0,0,0,0.82) 0%,
+        rgba(0,0,0,0.25) 55%,
+        transparent 100%
+      );
+  }
+
+  /* موبايل: المحتوى في الأسفل كامل العرض */
+  .hs-content {
+    width: 100%;
+    top: auto;
+    transform: translateY(14px);
+    padding: clamp(14px, 4vw, 22px);
+  }
+
+  .hs-slide.hs-active .hs-content {
+    transform: translateY(0);
+  }
+
+  .hs-arrow   { display: none; }
+  .hs-counter { display: none; }
 }
+
 @media (max-width: 600px) {
   #heroSliderWrap {
     height: clamp(160px, 60vw, 240px);
+    border-radius: 12px;
   }
-  .hs-arrow { display: none; }
-  .hs-desc  { display: none; }
+  .hs-desc { display: none; }
 }
+
 @media (max-width: 400px) {
   #heroSliderWrap {
     height: clamp(150px, 65vw, 210px);
@@ -3358,7 +3491,6 @@ body.wow-mode .mobile-menu {
   display: flex; flex-direction: column; overflow: hidden;
 }
 
-/* بطاقة شريحة في القائمة */
 .hs-item-card {
   background: rgba(255,255,255,0.025);
   border: 1px solid rgba(255,255,255,0.06);
@@ -3420,18 +3552,6 @@ body.wow-mode .mobile-menu {
 .hs-act-btn.up:hover, .hs-act-btn.dn:hover {
   background: rgba(201,168,76,0.15);
   border-color: rgba(201,168,76,0.35); color: #c9a84c;
-}
-
-/* ── مسافة وخط فاصل بين السلايدر والبطاقات ── */
-#heroSliderWrap {
-  margin-bottom: 0;
-}
-
-#heroSliderWrap + .home-cards,
-#heroSliderWrap ~ .home-cards {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 
@@ -37021,75 +37141,122 @@ function hsBuild() {
   const homeInner = document.querySelector('#homeScreen .home-inner');
   if (!homeInner) return;
 
-  /* إزالة القديم */
   document.getElementById('heroSliderWrap')?.remove();
 
   const wrap = document.createElement('div');
   wrap.id = 'heroSliderWrap';
 
-  /* بناء المحتوى في الذاكرة أولاً */
   if (!_hsData.length) {
     wrap.innerHTML = `<div class="hs-empty">— KOLEKSİYON —</div>`;
-  } else {
-    const slidesHtml = _hsData.map((s, i) => `
-      <div class="hs-slide ${i === 0 ? 'hs-active' : ''}"
-           id="hs-slide-${s.id}" data-idx="${i}">
-        <img class="hs-img"
-             src="${s.image_url}"
-             alt="${s.title || ''}"
-             draggable="false"
-             loading="${i === 0 ? 'eager' : 'lazy'}"
-             onerror="this.style.opacity='0.3'"/>
-        <div class="hs-overlay"></div>
-        <div class="hs-content">
-          ${s.subtitle ? `<div class="hs-tag">${s.subtitle}</div>` : ''}
-          ${s.title    ? `<div class="hs-title">${s.title}</div>` : ''}
-          ${s.description ? `<div class="hs-desc">${s.description}</div>` : ''}
-          ${s.price ? `
-          <div class="hs-price-wrap">
-            <i class="hs-price-icon"></i>
-            <span class="hs-price-label">FİYAT</span>
-            <span class="hs-price-amount">${s.price}</span>
-          </div>` : ''}
-          ${s.link_section ? `
-          <button class="hs-btn"
-            onclick="hsGoSection('${s.link_section}')">
-            <i class="fas fa-arrow-right"></i>
-            Gör
-          </button>` : ''}
-        </div>
-      </div>`).join('');
-
-    const dotsHtml = _hsData.length > 1
-      ? _hsData.map((_, i) => `
-          <button class="hs-dot ${i === 0 ? 'hs-dot-active' : ''}"
-                  onclick="hsGo(${i})"
-                  aria-label="Slide ${i+1}"></button>`
-        ).join('')
-      : '';
-
-    wrap.innerHTML = `
-      <div class="hs-track" id="hsTrack">${slidesHtml}</div>
-      ${_hsData.length > 1 ? `
-      <button class="hs-arrow hs-arrow-prev" onclick="hsPrev()">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <button class="hs-arrow hs-arrow-next" onclick="hsNext()">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-      <div class="hs-dots" id="hsDots">${dotsHtml}</div>
-      <div class="hs-progress" id="hsProgress"></div>` : ''}`;
+    const homeCards = homeInner.querySelector('.home-cards');
+    if (homeCards) homeInner.insertBefore(wrap, homeCards);
+    else homeInner.appendChild(wrap);
+    return;
   }
 
-  /* إدخال في المكان الصحيح دفعة واحدة */
+  const total = _hsData.length;
+
+  const slidesHtml = _hsData.map((s, i) => `
+    <div class="hs-slide ${i === 0 ? 'hs-active' : ''}"
+         id="hs-slide-${s.id}" data-idx="${i}">
+      <img class="hs-img"
+           src="${s.image_url}"
+           alt="${s.title || ''}"
+           draggable="false"
+           loading="${i === 0 ? 'eager' : 'lazy'}"
+           onerror="this.style.opacity='0.3'"/>
+      <div class="hs-overlay"></div>
+      <div class="hs-content">
+        ${s.subtitle    ? `<div class="hs-tag">${s.subtitle}</div>` : ''}
+        ${s.title       ? `<div class="hs-title">${s.title}</div>` : ''}
+        ${s.description ? `<div class="hs-desc">${s.description}</div>` : ''}
+        ${s.price ? `
+        <div class="hs-price-wrap">
+          <i class="hs-price-icon">₺</i>
+          <span class="hs-price-label">FİYAT</span>
+          <span class="hs-price-amount">${s.price}</span>
+        </div>` : ''}
+        ${s.link_section ? `
+        <button class="hs-btn" onclick="hsGoSection('${s.link_section}')">
+          <i class="fas fa-arrow-right"></i> Koleksiyonu Gör
+        </button>` : ''}
+      </div>
+    </div>`).join('');
+
+  const dotsHtml = total > 1
+    ? _hsData.map((_, i) => `
+        <button class="hs-dot ${i === 0 ? 'hs-dot-active' : ''}"
+                onclick="hsGo(${i})"
+                aria-label="Slide ${i+1}"></button>`
+      ).join('')
+    : '';
+
+  wrap.innerHTML = `
+    <div class="hs-track" id="hsTrack">${slidesHtml}</div>
+    ${total > 1 ? `
+    <button class="hs-arrow hs-arrow-prev" onclick="hsPrev()">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <button class="hs-arrow hs-arrow-next" onclick="hsNext()">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+    <div class="hs-dots" id="hsDots">${dotsHtml}</div>
+    <div class="hs-counter" id="hsCounter">
+      <span class="hs-counter-cur" id="hsCounterCur">1</span>
+      <span class="hs-counter-sep">/</span>
+      <span class="hs-counter-total">${total}</span>
+    </div>
+    <div class="hs-progress" id="hsProgress"></div>` : ''}`;
+
   const homeCards = homeInner.querySelector('.home-cards');
-  if (homeCards) {
-    homeInner.insertBefore(wrap, homeCards);
-  } else {
-    homeInner.appendChild(wrap);
-  }
+  if (homeCards) homeInner.insertBefore(wrap, homeCards);
+  else homeInner.appendChild(wrap);
 
-  /* Swipe */
+  /* ══ Mouse Drag (كمبيوتر) ══ */
+  let isDragging  = false;
+  let dragStartX  = 0;
+  let dragDeltaX  = 0;
+
+  wrap.addEventListener('mousedown', e => {
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragDeltaX = 0;
+    _hsPaused  = true;
+    wrap.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    dragDeltaX = e.clientX - dragStartX;
+    /* حركة مرئية أثناء السحب */
+    const track = document.getElementById('hsTrack');
+    if (track) {
+      track.style.transition = 'none';
+      track.style.transform  =
+        `translateX(calc(-${_hsIdx * 100}% + ${dragDeltaX * 0.4}px))`;
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    wrap.style.cursor = 'grab';
+    _hsPaused  = false;
+
+    const track = document.getElementById('hsTrack');
+    if (track) {
+      track.style.transition = '';
+    }
+
+    if (dragDeltaX < -60)      hsNext();
+    else if (dragDeltaX > 60)  hsPrev();
+    else hsUpdateUI(); /* ارجع للمكان */
+
+    dragDeltaX = 0;
+  });
+
+  /* ══ Touch Swipe (موبايل) ══ */
   wrap.addEventListener('touchstart', e => {
     _hsTouchX = e.touches[0].clientX;
     _hsPaused = true;
@@ -37101,12 +37268,23 @@ function hsBuild() {
     _hsPaused = false;
   }, { passive: true });
 
+  /* ══ Pause on hover ══ */
   wrap.addEventListener('mouseenter', () => { _hsPaused = true;  });
-  wrap.addEventListener('mouseleave', () => { _hsPaused = false; });
+  wrap.addEventListener('mouseleave', () => {
+    _hsPaused  = false;
+    isDragging = false;
+    wrap.style.cursor = 'grab';
+    const track = document.getElementById('hsTrack');
+    if (track) {
+      track.style.transition = '';
+      hsUpdateUI();
+    }
+  });
 
   _hsIdx = 0;
   hsStartAuto();
 }
+
 
 
 /* ── الانتقال لقسم ── */
@@ -37142,16 +37320,22 @@ function hsUpdateUI() {
   const track = document.getElementById('hsTrack');
   if (!track) return;
 
-  track.style.transform = `translateX(-${_hsIdx * 100}%)`;
+  track.style.transition = '';
+  track.style.transform  = `translateX(-${_hsIdx * 100}%)`;
 
-  track.querySelectorAll('.hs-slide').forEach((s, i) => {
+  document.querySelectorAll('.hs-slide').forEach((s, i) => {
     s.classList.toggle('hs-active', i === _hsIdx);
   });
 
   document.querySelectorAll('.hs-dot').forEach((d, i) => {
     d.classList.toggle('hs-dot-active', i === _hsIdx);
   });
+
+  /* تحديث العداد */
+  const cur = document.getElementById('hsCounterCur');
+  if (cur) cur.textContent = _hsIdx + 1;
 }
+
 
 /* ══════════════════════════════════════════════════════════════
    التشغيل التلقائي + شريط التقدم
