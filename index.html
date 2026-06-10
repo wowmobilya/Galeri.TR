@@ -19488,7 +19488,7 @@ function renderAdminHomeCards(container) {
     _icon       : 'fa-eye',
   };
 
-  const controlPanels = [
+const controlPanels = [
     {
       section_key : 'admin',
       title       : 'SİPARİŞ',
@@ -19543,6 +19543,18 @@ function renderAdminHomeCards(container) {
       _icon       : 'fa-cog',
       _color      : '#c9a84c',
       _colorRgb   : '201,168,76',
+    },
+    // ★ أضف هذا هنا ★
+    {
+      section_key : 'accounting_external',
+      title       : 'MUHASEBE',
+      subtitle    : 'SİSTEMİ',
+      description : 'Gelir · Gider · Raporlar',
+      count_label : 'FİNANS',
+      btn_text    : 'Muhasebeye Aç',
+      _icon       : 'fa-chart-line',
+      _color      : '#10b981',
+      _colorRgb   : '16,185,129',
     },
   ];
 
@@ -19819,7 +19831,16 @@ function handleAdminCardClick(sectionKey) {
       break;
 
     case 'settings':
-      enterSection('settings'); // ← تم التعديل هنا: استدعاء الدالة مباشرة ليتم إضافة wow-mode وإخفاء الهيدر
+      enterSection('settings');
+      break;
+
+    case 'admin_accounts':
+      enterSection('admin_accounts');
+      break;
+
+    // ★ أضف هذا الـ case هنا ★
+    case 'accounting_external':
+      window.open('./accounting.html', '_blank');
       break;
 
     default:
@@ -38300,6 +38321,7 @@ buildSettingsPage = function() {
   );
   if (!firstGrid) return;
 
+  // ── بطاقة Slider (موجودة أصلاً) ──
   const card = document.createElement('div');
   card.onclick = openHsManager;
   card.style.cssText = `
@@ -38340,7 +38362,64 @@ buildSettingsPage = function() {
        style="color:rgba(201,168,76,0.35);font-size:11px;flex-shrink:0;"></i>`;
 
   firstGrid.appendChild(card);
+
+  // ════════════════════════════════════════════
+  // ★ أضف هذا الكود هنا مباشرة — بطاقة المحاسبة ★
+  // ════════════════════════════════════════════
+  const accCard = document.createElement('div');
+  accCard.onclick = () => window.open('./accounting.html', '_blank');
+  accCard.style.cssText = `
+    background:rgba(16,185,129,0.04);
+    border:1px solid rgba(16,185,129,0.15);
+    border-radius:12px;padding:13px 14px;
+    cursor:pointer;transition:all 0.25s ease;
+    display:flex;align-items:center;gap:11px;`;
+  accCard.onmouseover = function() {
+    this.style.background  = 'rgba(16,185,129,0.09)';
+    this.style.borderColor = 'rgba(16,185,129,0.35)';
+    this.style.transform   = 'translateY(-2px)';
+    this.style.boxShadow   = '0 8px 24px rgba(16,185,129,0.12)';
+  };
+  accCard.onmouseout = function() {
+    this.style.background  = 'rgba(16,185,129,0.04)';
+    this.style.borderColor = 'rgba(16,185,129,0.15)';
+    this.style.transform   = '';
+    this.style.boxShadow   = '';
+  };
+  accCard.innerHTML = `
+    <div style="
+      width:36px;height:36px;flex-shrink:0;border-radius:10px;
+      background:rgba(16,185,129,0.12);
+      border:1px solid rgba(16,185,129,0.3);
+      display:flex;align-items:center;justify-content:center;
+      color:#10b981;font-size:15px;">
+      <i class="fas fa-chart-line"></i>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:12px;font-weight:900;color:#fff;margin-bottom:2px;">
+        Muhasebe Sistemi
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.28);
+           letter-spacing:0.5px;line-height:1.4;">
+        Gelir · Gider · Fatura · Raporlar
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+      <span style="
+        padding:3px 9px;border-radius:50px;
+        background:rgba(16,185,129,0.12);
+        border:1px solid rgba(16,185,129,0.25);
+        font-size:8px;font-weight:700;
+        color:#10b981;letter-spacing:1px;">YENİ</span>
+      <i class="fas fa-external-link-alt"
+         style="color:rgba(16,185,129,0.4);font-size:11px;"></i>
+    </div>`;
+
+  firstGrid.appendChild(accCard);
+  // ════════════════════════════════════════════
+
 };
+
 
 /* ══════════════════════════════════════════════════════════════
    تهيئة بعد تسجيل الدخول
