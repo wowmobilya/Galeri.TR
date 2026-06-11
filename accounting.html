@@ -2517,139 +2517,141 @@ const LS = {
 /* ══════════════════════════════════════════════════
    I18N — نظام محكم بدون خلط لغات
 ══════════════════════════════════════════════════ */
-const LANGS = {
-  ar:{
-    nav_main:'القائمة الرئيسية',nav_dashboard:'لوحة التحكم',
-    nav_cashboxes:'الصناديق',nav_transactions:'المعاملات',
-    nav_invoices:'الفواتير',nav_customers:'العملاء',
-    nav_suppliers:'الموردون',nav_employees:'الموظفون',
-    nav_assets:'الأصول',nav_metals:'المعادن',
-    nav_transfers:'تحويل الصناديق',nav_reports:'التقارير',
-    nav_reports_menu:'التقارير',nav_cashflow:'التدفق النقدي',
-    nav_audit:'سجل التدقيق',nav_system:'النظام',
-    nav_settings:'الإعدادات',nav_barcodes:'الباركود',
-    nav_statements:'كشف الحسابات',
-    income:'دخل',expense:'مصروف',all:'الكل',
-    save:'حفظ',cancel:'إلغاء',delete:'حذف',edit:'تعديل',
-    btn_new:'جديد',btn_new_tx:'معاملة جديدة',
-    monthly_summary:'الملخص الشهري',cat_dist:'توزيع الفئات',
-    recent_tx:'آخر المعاملات',see_all:'عرض الكل',
-    th_date:'التاريخ',th_desc:'الوصف',th_cat:'الفئة',
-    th_cashbox:'الصندوق',th_type:'النوع',th_amount:'المبلغ',
-    th_attach:'مرفق',th_actions:'إجراءات',th_phone:'الهاتف',
-    th_city:'المدينة',th_total:'الإجمالي',th_debt:'الدين',
-    th_status:'الحالة',th_customer:'العميل',
-    sett_company:'الشركة',sett_cashboxes:'الصناديق',sett_cats:'الفئات',
-    role_admin:'محاسبة',add_cashbox:'صندوق جديد',
-    pending:'قيد الانتظار',paid:'مدفوع',overdue:'متأخر',
-    draft:'مسودة',active:'نشط',inactive:'غير نشط',
-    on_leave:'في إجازة',terminated:'منتهي',
-    net_profit:'صافي الربح',salary:'الراتب',
-    buy:'شراء',sell:'بيع',update_price:'تحديث السعر',
-    metal_history:'سجل المعادن',
-    gold:'ذهب',silver:'فضة',
-    live_price:'السعر الحي',cached_price:'سعر محفوظ',
-    barcode:'باركود',generate:'توليد',print:'طباعة',
-    statement:'كشف الحساب',debit:'مدين',credit:'دائن',balance:'الرصيد',
-  },
-  tr:{
-    nav_main:'ANA MENÜ',nav_dashboard:'Genel Bakış',
-    nav_cashboxes:'Kasalar',nav_transactions:'İşlemler',
-    nav_invoices:'Faturalar',nav_customers:'Müşteriler',
-    nav_suppliers:'Tedarikçiler',nav_employees:'Personel',
-    nav_assets:'VARLIKLAR',nav_metals:'Madenler',
-    nav_transfers:'Kasa Transferi',nav_reports:'RAPORLAR',
-    nav_reports_menu:'Raporlar',nav_cashflow:'Nakit Akışı',
-    nav_audit:'Denetim Kaydı',nav_system:'SİSTEM',
-    nav_settings:'Ayarlar',nav_barcodes:'Barkod',
-    nav_statements:'Hesap Özeti',
-    income:'Gelir',expense:'Gider',all:'Tümü',
-    save:'Kaydet',cancel:'İptal',delete:'Sil',edit:'Düzenle',
-    btn_new:'Yeni',btn_new_tx:'Yeni İşlem',
-    monthly_summary:'Aylık Özet',cat_dist:'Kategori Dağılımı',
-    recent_tx:'Son İşlemler',see_all:'Tümünü Gör',
-    th_date:'Tarih',th_desc:'Açıklama',th_cat:'Kategori',th_cashbox:'Kasa',th_type:'Tür',th_amount:'Tutar',
-    th_attach:'Ek',th_actions:'İşlem',th_phone:'Telefon',
-    th_city:'Şehir',th_total:'Toplam',th_debt:'Borç',
-    th_status:'Durum',th_customer:'Müşteri',
-    sett_company:'Şirket',sett_cashboxes:'Kasalar',sett_cats:'Kategoriler',
-    role_admin:'Muhasebe',add_cashbox:'Yeni Kasa',
-    pending:'Beklemede',paid:'Ödendi',overdue:'Gecikmiş',
-    draft:'Taslak',active:'Aktif',inactive:'Pasif',
-    on_leave:'İzinde',terminated:'Ayrıldı',
-    net_profit:'Net Kâr',salary:'Maaş',
-    buy:'Alış',sell:'Satış',update_price:'Fiyat Güncelle',
-    metal_history:'Maden Geçmişi',
-    gold:'Altın',silver:'Gümüş',
-    live_price:'Canlı Fiyat',cached_price:'Kayıtlı Fiyat',
-    barcode:'Barkod',generate:'Oluştur',print:'Yazdır',
-    statement:'Hesap Özeti',debit:'Borç',credit:'Alacak',balance:'Bakiye',
-  },
-  en:{
-    nav_main:'MAIN MENU',nav_dashboard:'Dashboard',
-    nav_cashboxes:'Cashboxes',nav_transactions:'Transactions',
-    nav_invoices:'Invoices',nav_customers:'Customers',
-    nav_suppliers:'Suppliers',nav_employees:'Employees',
-    nav_assets:'ASSETS',nav_metals:'Metals',
-    nav_transfers:'Transfers',nav_reports:'REPORTS',
-    nav_reports_menu:'Reports',nav_cashflow:'Cash Flow',
-    nav_audit:'Audit Log',nav_system:'SYSTEM',
-    nav_settings:'Settings',nav_barcodes:'Barcodes',
-    nav_statements:'Account Statement',
-    income:'Income',expense:'Expense',all:'All',
-    save:'Save',cancel:'Cancel',delete:'Delete',edit:'Edit',
-    btn_new:'New',btn_new_tx:'New Transaction',
-    monthly_summary:'Monthly Summary',cat_dist:'Category Distribution',
-    recent_tx:'Recent Transactions',see_all:'See All',
-    th_date:'Date',th_desc:'Description',th_cat:'Category',
-    th_cashbox:'Cashbox',th_type:'Type',th_amount:'Amount',
-    th_attach:'Attach',th_actions:'Actions',th_phone:'Phone',
-    th_city:'City',th_total:'Total',th_debt:'Debt',
-    th_status:'Status',th_customer:'Customer',
-    sett_company:'Company',sett_cashboxes:'Cashboxes',sett_cats:'Categories',
-    role_admin:'Accounting',add_cashbox:'New Cashbox',
-    pending:'Pending',paid:'Paid',overdue:'Overdue',
-    draft:'Draft',active:'Active',inactive:'Inactive',
-    on_leave:'On Leave',terminated:'Terminated',
-    net_profit:'Net Profit',salary:'Salary',
-    buy:'Buy',sell:'Sell',update_price:'Update Price',
-    metal_history:'Metal History',
-    gold:'Gold',silver:'Silver',
-    live_price:'Live Price',cached_price:'Cached Price',
-    barcode:'Barcode',generate:'Generate',print:'Print',
-    statement:'Account Statement',debit:'Debit',credit:'Credit',balance:'Balance',
-  }
-};
+const LANGS={
+ar:{
+nav_main:'القائمة الرئيسية',nav_dashboard:'لوحة التحكم',nav_cashboxes:'الصناديق',nav_transactions:'المعاملات',nav_invoices:'الفواتير',nav_customers:'العملاء',nav_suppliers:'الموردون',nav_employees:'الموظفون',nav_assets:'الأصول',nav_metals:'المعادن',nav_transfers:'تحويل الصناديق',nav_reports:'التقارير',nav_reports_menu:'التقارير',nav_cashflow:'التدفق النقدي',nav_audit:'سجل التدقيق',nav_system:'النظام',nav_settings:'الإعدادات',nav_barcodes:'الباركود',nav_statements:'كشف الحسابات',
+income:'دخل',expense:'مصروف',all:'الكل',save:'حفظ',cancel:'إلغاء',delete:'حذف',edit:'تعديل',btn_new:'جديد',btn_new_tx:'معاملة جديدة',
+monthly_summary:'الملخص الشهري',cat_dist:'توزيع الفئات',recent_tx:'آخر المعاملات',see_all:'عرض الكل',
+th_date:'التاريخ',th_desc:'الوصف',th_cat:'الفئة',th_cashbox:'الصندوق',th_type:'النوع',th_amount:'المبلغ',th_attach:'مرفق',th_actions:'إجراءات',th_phone:'الهاتف',th_city:'المدينة',th_total:'الإجمالي',th_debt:'الدين',th_status:'الحالة',th_customer:'العميل',
+sett_company:'الشركة',sett_cashboxes:'الصناديق',sett_cats:'الفئات',role_admin:'محاسبة',add_cashbox:'صندوق جديد',
+pending:'قيد الانتظار',paid:'مدفوع',overdue:'متأخر',draft:'مسودة',active:'نشط',inactive:'غير نشط',on_leave:'في إجازة',terminated:'منتهي',
+net_profit:'صافي الربح',salary:'الراتب',buy:'شراء',sell:'بيع',update_price:'تحديث السعر',metal_history:'سجل المعادن',gold:'ذهب',silver:'فضة',live_price:'السعر الحي',cached_price:'سعر محفوظ',barcode:'باركود',generate:'توليد',print:'طباعة',statement:'كشف الحساب',debit:'مدين',credit:'دائن',balance:'الرصيد',
+modal_new_tx:'معاملة جديدة',modal_edit_tx:'تعديل المعاملة',modal_income_expense:'دخل / مصروف',modal_new_inv:'فاتورة جديدة',modal_edit_inv:'تعديل الفاتورة',modal_inv_mgmt:'إدارة الفواتير',modal_new_cust:'عميل جديد',modal_edit_cust:'تعديل العميل',modal_new_supp:'مورد جديد',modal_edit_supp:'تعديل المورد',modal_new_emp:'موظف جديد',modal_edit_emp:'تعديل الموظف',modal_metal_tx:'معاملة معدن',modal_price_update:'تحديث السعر',modal_gold_silver:'ذهب / فضة',modal_transfer:'تحويل الصندوق',modal_barcode:'باركود جديد',modal_category:'فئة جديدة',modal_cashbox:'صندوق جديد',modal_edit_cashbox:'تعديل الصندوق',modal_confirm_delete:'هل أنت متأكد من الحذف؟',modal_confirm_type:'للتأكيد اكتب',
+field_desc:'الوصف',field_amount:'المبلغ',field_currency:'العملة',field_date:'التاريخ',field_cashbox:'الصندوق',field_category:'الفئة',field_pay_method:'طريقة الدفع',field_ref:'رقم المرجع',field_related:'الشخص المرتبط',field_notes:'ملاحظات',field_attachments:'المرفقات',field_name:'الاسم',field_company:'الشركة',field_phone:'الهاتف',field_phone2:'هاتف 2',field_email:'البريد الإلكتروني',field_city:'المدينة',field_tax_no:'الرقم الضريبي',field_credit_limit:'حد الائتمان',field_address:'العنوان',field_photo:'الصورة',field_position:'المنصب',field_dept:'القسم',field_salary:'الراتب',field_salary_currency:'عملة الراتب',field_salary_cashbox:'صندوق الراتب',field_start_date:'تاريخ البدء',field_status:'الحالة',field_metal:'المعدن',field_tx_type:'نوع المعاملة',field_qty:'الكمية (غرام)',field_unit_price:'سعر الوحدة',field_total:'الإجمالي',field_from_cashbox:'الصندوق المصدر',field_to_cashbox:'الصندوق الهدف',field_sent_amount:'المبلغ المرسل',field_received_amount:'المبلغ المستلم',field_label:'التسمية',field_barcode_type:'نوع الباركود',field_code:'الكود',field_price:'السعر',field_name_tr:'الاسم (تركي)',field_name_ar:'الاسم (عربي)',field_cat_type:'النوع',field_color:'اللون',field_icon:'الأيقونة',field_sort:'الترتيب',
+pay_cash:'نقداً',pay_bank:'تحويل بنكي',pay_card:'بطاقة ائتمان',pay_check:'شيك',pay_pos:'POS',pay_other:'أخرى',
+dept_sales:'مبيعات',dept_accounting:'محاسبة',dept_production:'إنتاج',dept_logistics:'لوجستيك',dept_hr:'موارد بشرية',dept_it:'تقنية معلومات',dept_management:'إدارة',
+inv_customer:'العميل',inv_number:'رقم الفاتورة',inv_date:'التاريخ',inv_due_date:'تاريخ الاستحقاق',inv_tax:'ضريبة القيمة المضافة (%)',inv_discount:'الخصم',inv_items:'بنود الفاتورة',inv_add_item:'إضافة بند',inv_subtotal:'المجموع الفرعي',inv_tax_amt:'الضريبة',inv_discount_amt:'الخصم',inv_total:'الإجمالي',inv_mark_paid:'تم الدفع',
+btn_save:'حفظ',btn_cancel:'إلغاء',btn_delete:'حذف',btn_edit:'تعديل',btn_print:'طباعة',btn_download:'تنزيل',btn_add_cashbox:'صندوق جديد',btn_new_invoice:'فاتورة جديدة',btn_new_customer:'عميل جديد',btn_new_supplier:'مورد جديد',btn_new_employee:'موظف جديد',btn_new_metal_tx:'معاملة جديدة',btn_new_transfer:'تحويل جديد',btn_new_barcode:'باركود جديد',btn_live_price:'السعر الحي',btn_update_price:'تحديث السعر',btn_print_all:'طباعة الكل',btn_generate:'توليد',btn_pay_salary:'دفع الراتب',btn_statement:'كشف الحساب',btn_see_all:'عرض الكل',
+msg_offline:'غير متصل — البيانات المحلية',msg_loaded:'تم تحميل البيانات ✓',msg_saved:'تم الحفظ ✓',msg_deleted:'تم الحذف ✓',msg_error:'حدث خطأ!',msg_required:'الوصف والمبلغ مطلوبان!',msg_select_cashbox:'اختر صندوقاً!',msg_low_balance:'رصيد منخفض',msg_salary_paid:'تم دفع الراتب ✓',msg_transfer_done:'اكتمل التحويل ✓',msg_same_cashbox:'لا يمكن التحويل للصندوق نفسه!',msg_insufficient:'رصيد غير كافٍ!',msg_rates_updated:'تم تحديث أسعار الصرف ✓',msg_prices_updated:'تم تحديث الأسعار ✓',msg_welcome:'مرحباً بك! 🎉',
+lbl_all_months:'كل الأشهر',lbl_all_cashboxes:'كل الصناديق',lbl_all_currencies:'كل العملات',lbl_all_types:'كل الأنواع',lbl_all_dates:'كل التواريخ',lbl_this_month:'هذا الشهر',lbl_last_month:'الشهر الماضي',lbl_this_year:'هذا العام',lbl_search:'بحث...',lbl_loading:'جاري التحميل...',lbl_no_data:'لا توجد بيانات',lbl_total_debit:'إجمالي المدين',lbl_total_credit:'إجمالي الدائن',lbl_net_balance:'صافي الرصيد',lbl_tx_count:'عدد المعاملات',lbl_detail:'التفاصيل',lbl_account_movements:'حركات الحساب',lbl_price_history:'سجل الأسعار',lbl_metal_tx_history:'سجل معاملات المعادن',lbl_quick_barcode:'توليد باركود سريع',lbl_barcode_text:'نص / كود',lbl_barcode_list:'قائمة الباركودات',lbl_monthly_comparison:'المقارنة الشهرية',lbl_income_report:'تقرير الدخل',lbl_expense_report:'تقرير المصروفات',lbl_annual_summary:'الملخص السنوي',lbl_cashflow_chart:'مخطط التدفق النقدي',lbl_audit_log:'سجل التدقيق',lbl_company_info:'معلومات الشركة',lbl_cashbox_settings:'إعدادات الصناديق',lbl_exchange_rates:'أسعار الصرف',lbl_categories:'الفئات',lbl_appearance:'المظهر',lbl_language:'اللغة',lbl_security:'الأمان',lbl_print_settings:'إعدادات الطباعة',lbl_data_management:'إدارة البيانات',lbl_theme:'السمة',lbl_dark:'داكن',lbl_light:'فاتح',lbl_accent_color:'لون التمييز',lbl_font_size:'حجم الخط',lbl_small:'صغير',lbl_normal:'عادي',lbl_large:'كبير',lbl_hide_amounts:'إخفاء المبالغ',lbl_hide_amounts_desc:'يخفي المبالغ مثل البنك',lbl_confirm_delete:'تأكيد الحذف',lbl_confirm_delete_desc:'يطلب تأكيداً كتابياً قبل الحذف',lbl_confirm_word:'كلمة تأكيد الحذف',lbl_low_balance_warn:'تحذير الرصيد المنخفض',lbl_print_logo:'طباعة الشعار',lbl_print_header:'رأس الطباعة',lbl_print_footer:'تذييل الطباعة',lbl_company_name:'اسم الشركة',lbl_default_currency:'العملة الافتراضية',lbl_tax_rate:'نسبة الضريبة (%)',lbl_logo:'الشعار',lbl_logo_upload:'ارفع الشعار أو اسحبه',lbl_logo_hint:'PNG, JPG — الحد الأقصى 500KB',lbl_auto_rates:'تلقائي',lbl_rate_display:'الكور',lbl_json_export:'تصدير JSON',lbl_csv_export:'تصدير CSV',lbl_excel_export:'تصدير Excel',lbl_json_import:'استيراد JSON',lbl_clear_all:'حذف كل البيانات',lbl_storage_info:'معلومات التخزين',lbl_product_service:'اسم المنتج/الخدمة...',lbl_qty:'الكمية',lbl_unit_price:'سعر الوحدة',lbl_auto_code:'تلقائي...',lbl_salary_summary:'ملخص الرواتب',lbl_cashbox_detail:'تفاصيل الصندوق',lbl_all_statuses:'الكل',lbl_total_staff:'إجمالي الموظفين',lbl_active_staff:'نشط',lbl_on_leave:'في إجازة',lbl_monthly_salary:'الراتب الشهري',lbl_total_invoices:'إجمالي الفواتير',lbl_total_amount:'إجمالي المبلغ',lbl_income_label:'دخل',lbl_expense_label:'مصروف',lbl_net_profit_label:'صافي الربح',lbl_month:'الشهر',lbl_profit_pct:'نسبة الربح',lbl_annual_income:'الدخل السنوي',lbl_annual_expense:'المصروف السنوي',lbl_annual_salary:'الراتب السنوي',lbl_tx_total:'إجمالي المعاملات',lbl_quantity:'الكمية',lbl_unit_price_gram:'سعر الوحدة (غرام)',lbl_total_value:'القيمة الإجمالية',lbl_profit_loss:'ربح/خسارة',lbl_update:'تحديث',lbl_live_badge:'مباشر',lbl_cached_badge:'محفوظ',lbl_connection:'الاتصال',lbl_hide_amounts_btn:'إخفاء المبالغ',lbl_theme_btn:'السمة',lbl_print_btn:'طباعة',lbl_export_btn:'تصدير',lbl_low_balance_alert:'رصيد منخفض',lbl_department:'القسم',lbl_all_metals:'كل المعادن',lbl_all_barcode_types:'كل الأنواع',lbl_all_entity_types:'كل الأنواع',lbl_product:'منتج',lbl_invoice:'فاتورة',lbl_customer:'عميل',lbl_barcode_search:'بحث عن باركود...',lbl_tx_search:'بحث عن معاملة...',lbl_cust_search:'بحث...',lbl_supp_search:'بحث...',lbl_stmt_search:'بحث...',lbl_photo_upload:'ارفع صورة أو استخدم الكاميرا',lbl_compress_info:'يُضغط تلقائياً • الحد الأقصى 500KB/صورة',lbl_compressing:'جاري الضغط...',lbl_files_added:'ملفات مضافة ✓',lbl_confirm_delete_action:'سيتم الحذف',lbl_type_to_confirm:'للتأكيد اكتب',lbl_cashbox_name_tr:'اسم الصندوق (تركي)',lbl_cashbox_name_ar:'اسم الصندوق (عربي)',lbl_initial_balance:'الرصيد الابتدائي',lbl_cat_name_tr:'الاسم (تركي)',lbl_cat_name_ar:'الاسم (عربي)',lbl_both:'كلاهما',lbl_select_person:'— اختر —',lbl_select_entity:'— اختر —',lbl_related_person:'الشخص المرتبط',lbl_customer_label:'عميل',lbl_supplier_label:'مورد',lbl_employee_label:'موظف',lbl_exchange_rate_display:'الكور',lbl_sent:'مُرسَل',lbl_received:'مُستلَم',lbl_rate:'الكور',lbl_source_cashbox:'الصندوق المصدر',lbl_target_cashbox:'الصندوق الهدف',lbl_date_label:'التاريخ',lbl_source:'المصدر',lbl_target:'الهدف',lbl_actions:'إجراءات',lbl_ref_no:'رقم المرجع',lbl_payment_method:'طريقة الدفع',lbl_total_purchases:'إجمالي المشتريات',lbl_total_debt:'إجمالي الدين',lbl_total_income:'إجمالي الدخل',lbl_total_expense:'إجمالي المصروف',lbl_tx_count_label:'عدد المعاملات',lbl_detail_btn:'تفاصيل',lbl_account_movements_title:'حركات الحساب',lbl_reference:'المرجع',lbl_debit_label:'مدين',lbl_credit_label:'دائن',lbl_balance_label:'الرصيد',lbl_all_tables:'الكل',lbl_transactions_table:'المعاملات',lbl_invoices_table:'الفواتير',lbl_cashboxes_table:'الصناديق',lbl_all_actions:'الكل',lbl_insert_action:'إضافة',lbl_update_action:'تحديث',lbl_delete_action:'حذف',lbl_table_col:'الجدول',lbl_action_col:'الإجراء',lbl_record_id_col:'معرّف السجل',lbl_detail_col:'التفاصيل',lbl_audit_only_supabase:'سجل التدقيق متاح في Supabase فقط',lbl_record_not_found:'السجل غير موجود',lbl_cashbox_detail_title:'تفاصيل الصندوق',lbl_close:'إغلاق',lbl_filter_all:'الكل',lbl_filter_income:'دخل',lbl_filter_expense:'مصروف',
+},
+tr:{
+nav_main:'ANA MENÜ',nav_dashboard:'Genel Bakış',nav_cashboxes:'Kasalar',nav_transactions:'İşlemler',nav_invoices:'Faturalar',nav_customers:'Müşteriler',nav_suppliers:'Tedarikçiler',nav_employees:'Personel',nav_assets:'VARLIKLAR',nav_metals:'Madenler',nav_transfers:'Kasa Transferi',nav_reports:'RAPORLAR',nav_reports_menu:'Raporlar',nav_cashflow:'Nakit Akışı',nav_audit:'Denetim Kaydı',nav_system:'SİSTEM',nav_settings:'Ayarlar',nav_barcodes:'Barkod',nav_statements:'Hesap Özeti',
+income:'Gelir',expense:'Gider',all:'Tümü',save:'Kaydet',cancel:'İptal',delete:'Sil',edit:'Düzenle',btn_new:'Yeni',btn_new_tx:'Yeni İşlem',
+monthly_summary:'Aylık Özet',cat_dist:'Kategori Dağılımı',recent_tx:'Son İşlemler',see_all:'Tümünü Gör',
+th_date:'Tarih',th_desc:'Açıklama',th_cat:'Kategori',th_cashbox:'Kasa',th_type:'Tür',th_amount:'Tutar',th_attach:'Ek',th_actions:'İşlem',th_phone:'Telefon',th_city:'Şehir',th_total:'Toplam',th_debt:'Borç',th_status:'Durum',th_customer:'Müşteri',
+sett_company:'Şirket',sett_cashboxes:'Kasalar',sett_cats:'Kategoriler',role_admin:'Muhasebe',add_cashbox:'Yeni Kasa',
+pending:'Beklemede',paid:'Ödendi',overdue:'Gecikmiş',draft:'Taslak',active:'Aktif',inactive:'Pasif',on_leave:'İzinde',terminated:'Ayrıldı',
+net_profit:'Net Kâr',salary:'Maaş',buy:'Alış',sell:'Satış',update_price:'Fiyat Güncelle',metal_history:'Maden Geçmişi',gold:'Altın',silver:'Gümüş',live_price:'Canlı Fiyat',cached_price:'Kayıtlı Fiyat',barcode:'Barkod',generate:'Oluştur',print:'Yazdır',statement:'Hesap Özeti',debit:'Borç',credit:'Alacak',balance:'Bakiye',
+modal_new_tx:'Yeni İşlem',modal_edit_tx:'İşlem Düzenle',modal_income_expense:'GELİR / GİDER',modal_new_inv:'Yeni Fatura',modal_edit_inv:'Fatura Düzenle',modal_inv_mgmt:'FATURA YÖNETİMİ',modal_new_cust:'Yeni Müşteri',modal_edit_cust:'Müşteri Düzenle',modal_new_supp:'Yeni Tedarikçi',modal_edit_supp:'Tedarikçi Düzenle',modal_new_emp:'Yeni Personel',modal_edit_emp:'Personel Düzenle',modal_metal_tx:'Maden İşlemi',modal_price_update:'Fiyat Güncelle',modal_gold_silver:'ALTIN / GÜMÜŞ',modal_transfer:'Kasa Transferi',modal_barcode:'Yeni Barkod',modal_category:'Yeni Kategori',modal_cashbox:'Yeni Kasa',modal_edit_cashbox:'Kasa Düzenle',modal_confirm_delete:'Silmek istediğinizden emin misiniz?',modal_confirm_type:'Onaylamak için',
+field_desc:'Açıklama',field_amount:'Tutar',field_currency:'Para Birimi',field_date:'Tarih',field_cashbox:'Kasa',field_category:'Kategori',field_pay_method:'Ödeme Yöntemi',field_ref:'Referans No',field_related:'İlişkili Kişi',field_notes:'Not',field_attachments:'Ekler',field_name:'Ad Soyad',field_company:'Şirket',field_phone:'Telefon',field_phone2:'Telefon 2',field_email:'E-posta',field_city:'Şehir',field_tax_no:'Vergi No',field_credit_limit:'Kredi Limiti',field_address:'Adres',field_photo:'Fotoğraf',field_position:'Pozisyon',field_dept:'Departman',field_salary:'Maaş',field_salary_currency:'Maaş Para Birimi',field_salary_cashbox:'Maaş Kasası',field_start_date:'İşe Başlama',field_status:'Durum',field_metal:'Maden',field_tx_type:'İşlem Türü',field_qty:'Miktar (gram)',field_unit_price:'Birim Fiyat',field_total:'Toplam Tutar',field_from_cashbox:'Kaynak Kasa',field_to_cashbox:'Hedef Kasa',field_sent_amount:'Gönderilen Tutar',field_received_amount:'Alınan Tutar',field_label:'Etiket',field_barcode_type:'Barkod Türü',field_code:'Kod',field_price:'Fiyat',field_name_tr:'Türkçe Ad',field_name_ar:'Arapça Ad',field_cat_type:'Tür',field_color:'Renk',field_icon:'İkon',field_sort:'Sıra',
+pay_cash:'Nakit',pay_bank:'Banka Transferi',pay_card:'Kredi Kartı',pay_check:'Çek',pay_pos:'POS',pay_other:'Diğer',
+dept_sales:'Satış',dept_accounting:'Muhasebe',dept_production:'Üretim',dept_logistics:'Lojistik',dept_hr:'İK',dept_it:'IT',dept_management:'Yönetim',
+inv_customer:'Müşteri',inv_number:'Fatura No',inv_date:'Tarih',inv_due_date:'Vade Tarihi',inv_tax:'KDV (%)',inv_discount:'İndirim',inv_items:'Fatura Kalemleri',inv_add_item:'Kalem Ekle',inv_subtotal:'Ara Toplam',inv_tax_amt:'KDV',inv_discount_amt:'İndirim',inv_total:'Toplam',inv_mark_paid:'Ödendi',
+btn_save:'Kaydet',btn_cancel:'İptal',btn_delete:'Sil',btn_edit:'Düzenle',btn_print:'Yazdır',btn_download:'İndir',btn_add_cashbox:'Yeni Kasa',btn_new_invoice:'Yeni Fatura',btn_new_customer:'Yeni Müşteri',btn_new_supplier:'Yeni Tedarikçi',btn_new_employee:'Yeni Personel',btn_new_metal_tx:'Yeni İşlem',btn_new_transfer:'Yeni Transfer',btn_new_barcode:'Yeni Barkod',btn_live_price:'Canlı Fiyat',btn_update_price:'Fiyat Güncelle',btn_print_all:'Tümünü Yazdır',btn_generate:'Oluştur',btn_pay_salary:'Maaş Öde',btn_statement:'Hesap Özeti',btn_see_all:'Tümünü Gör',
+msg_offline:'Çevrimdışı — yerel veriler',msg_loaded:'Veriler yüklendi ✓',msg_saved:'Kaydedildi ✓',msg_deleted:'Silindi ✓',msg_error:'Hata oluştu!',msg_required:'Açıklama ve tutar gerekli!',msg_select_cashbox:'Kasa seçin!',msg_low_balance:'Düşük bakiye',msg_salary_paid:'Maaş ödendi ✓',msg_transfer_done:'Transfer tamamlandı ✓',msg_same_cashbox:'Kaynak ve hedef kasa aynı olamaz!',msg_insufficient:'Yetersiz bakiye!',msg_rates_updated:'Kurlar güncellendi ✓',msg_prices_updated:'Fiyatlar güncellendi ✓',msg_welcome:'Hoş Geldiniz! 🎉',
+lbl_all_months:'Tüm Aylar',lbl_all_cashboxes:'Tüm Kasalar',lbl_all_currencies:'Tüm Para',lbl_all_types:'Tüm Türler',lbl_all_dates:'Tüm Tarihler',lbl_this_month:'Bu Ay',lbl_last_month:'Geçen Ay',lbl_this_year:'Bu Yıl',lbl_search:'Ara...',lbl_loading:'Yükleniyor...',lbl_no_data:'Veri bulunamadı',lbl_total_debit:'Toplam Borç',lbl_total_credit:'Toplam Alacak',lbl_net_balance:'Net Bakiye',lbl_tx_count:'İşlem Sayısı',lbl_detail:'Detay',lbl_account_movements:'Hesap Hareketleri',lbl_price_history:'Fiyat Geçmişi',lbl_metal_tx_history:'Maden İşlem Geçmişi',lbl_quick_barcode:'Hızlı Barkod Oluştur',lbl_barcode_text:'Metin / Kod',lbl_barcode_list:'Barkod Listesi',lbl_monthly_comparison:'Aylık Karşılaştırma',lbl_income_report:'Gelir Raporu',lbl_expense_report:'Gider Raporu',lbl_annual_summary:'Yıllık Özet',lbl_cashflow_chart:'Nakit Akışı Grafiği',lbl_audit_log:'Denetim Kaydı',lbl_company_info:'Şirket Bilgileri',lbl_cashbox_settings:'Kasa Ayarları',lbl_exchange_rates:'Döviz Kurları',lbl_categories:'Kategoriler',lbl_appearance:'Görünüm',lbl_language:'Dil Ayarları',lbl_security:'Güvenlik',lbl_print_settings:'Yazdırma',lbl_data_management:'Veri Yönetimi',lbl_theme:'Tema',lbl_dark:'Koyu',lbl_light:'Açık',lbl_accent_color:'Vurgu Rengi',lbl_font_size:'Yazı Boyutu',lbl_small:'Küçük',lbl_normal:'Normal',lbl_large:'Büyük',lbl_hide_amounts:'Tutarları Gizle',lbl_hide_amounts_desc:'Banka gibi tutarları gizler',lbl_confirm_delete:'Silme Onayı',lbl_confirm_delete_desc:'Silmeden önce yazarak onay ister',lbl_confirm_word:'Silme Onay Kelimesi',lbl_low_balance_warn:'Düşük Bakiye Uyarısı',lbl_print_logo:'Logo Yazdır',lbl_print_header:'Yazdırma Başlığı',lbl_print_footer:'Yazdırma Altbilgisi',lbl_company_name:'Şirket Adı',lbl_default_currency:'Varsayılan Para',lbl_tax_rate:'Vergi Oranı (%)',lbl_logo:'Logo',lbl_logo_upload:'Logo yükle veya sürükle',lbl_logo_hint:'PNG, JPG — Max 500KB',lbl_auto_rates:'Otomatik',lbl_rate_display:'Kur',lbl_json_export:'JSON Dışa Aktar',lbl_csv_export:'CSV Dışa Aktar',lbl_excel_export:'Excel Dışa Aktar',lbl_json_import:'JSON İçe Aktar',lbl_clear_all:'Tüm Verileri Sil',lbl_storage_info:'Depolama Bilgisi',lbl_product_service:'Ürün/Hizmet adı...',lbl_qty:'Miktar',lbl_unit_price:'Birim Fiyat',lbl_auto_code:'Otomatik...',lbl_salary_summary:'Maaş Özeti',lbl_cashbox_detail:'Kasa Detayı',lbl_all_statuses:'Tümü',lbl_total_staff:'Toplam Personel',lbl_active_staff:'Aktif',lbl_on_leave:'İzinde',lbl_monthly_salary:'Aylık Maaş',lbl_total_invoices:'Toplam',lbl_total_amount:'Toplam Tutar',lbl_income_label:'Gelir',lbl_expense_label:'Gider',lbl_net_profit_label:'Net Kâr',lbl_month:'Ay',lbl_profit_pct:'Kâr %',lbl_annual_income:'Yıllık Gelir',lbl_annual_expense:'Yıllık Gider',lbl_annual_salary:'Yıllık Maaş',lbl_tx_total:'İşlem Sayısı',lbl_quantity:'Miktar',lbl_unit_price_gram:'Birim Fiyat (gram)',lbl_total_value:'Toplam Değer',lbl_profit_loss:'Kâr/Zarar',lbl_update:'Güncelle',lbl_live_badge:'LIVE',lbl_cached_badge:'CACHED',lbl_connection:'Bağlantı',lbl_hide_amounts_btn:'Tutarları Gizle',lbl_theme_btn:'Tema',lbl_print_btn:'Yazdır',lbl_export_btn:'Dışa Aktar',lbl_low_balance_alert:'Düşük bakiye',lbl_department:'Departman',lbl_all_metals:'Tümü',lbl_all_barcode_types:'Tüm Türler',lbl_all_entity_types:'Tüm Tipler',lbl_product:'Ürün',lbl_invoice:'Fatura',lbl_customer:'Müşteri',lbl_barcode_search:'Barkod ara...',lbl_tx_search:'İşlem ara...',lbl_cust_search:'Ara...',lbl_supp_search:'Ara...',lbl_stmt_search:'Ara...',lbl_photo_upload:'Fotoğraf yükle veya kamera kullan',lbl_compress_info:'Otomatik sıkıştırılır • Max 500KB/resim',lbl_compressing:'Sıkıştırılıyor...',lbl_files_added:'dosya eklendi ✓',lbl_confirm_delete_action:'silinecek!',lbl_type_to_confirm:'Onaylamak için',lbl_cashbox_name_tr:'Kasa Adı (TR)',lbl_cashbox_name_ar:'اسم الصندوق (AR)',lbl_initial_balance:'Başlangıç Bakiyesi',lbl_cat_name_tr:'Türkçe Ad',lbl_cat_name_ar:'Arapça Ad',lbl_both:'Her İkisi',lbl_select_person:'— Seçiniz —',lbl_select_entity:'— Seç —',lbl_related_person:'İlişkili Kişi',lbl_customer_label:'Müşteri',lbl_supplier_label:'Tedarikçi',lbl_employee_label:'Personel',lbl_exchange_rate_display:'Kur',lbl_sent:'Gönderilen',lbl_received:'Alınan',lbl_rate:'Kur',lbl_source_cashbox:'Kaynak Kasa',lbl_target_cashbox:'Hedef Kasa',lbl_date_label:'Tarih',lbl_source:'Kaynak',lbl_target:'Hedef',lbl_actions:'İşlem',lbl_ref_no:'Referans No',lbl_payment_method:'Ödeme',lbl_total_purchases:'Toplam Alım',lbl_total_debt:'Borç',lbl_total_income:'Toplam Gelir',lbl_total_expense:'Toplam Gider',lbl_tx_count_label:'İşlem Sayısı',lbl_detail_btn:'Detay',lbl_account_movements_title:'Hesap Hareketleri',lbl_reference:'Referans',lbl_debit_label:'Borç',lbl_credit_label:'Alacak',lbl_balance_label:'Bakiye',lbl_all_tables:'Tümü',lbl_transactions_table:'İşlemler',lbl_invoices_table:'Faturalar',lbl_cashboxes_table:'Kasalar',lbl_all_actions:'Tümü',lbl_insert_action:'Ekleme',lbl_update_action:'Güncelleme',lbl_delete_action:'Silme',lbl_table_col:'Tablo',lbl_action_col:'İşlem',lbl_record_id_col:'Kayıt ID',lbl_detail_col:'Detay',lbl_audit_only_supabase:'Denetim kaydı yalnızca Supabase\'de mevcut',lbl_record_not_found:'Kayıt bulunamadı',lbl_cashbox_detail_title:'Kasa Detayı',lbl_close:'Kapat',lbl_filter_all:'Tümü',lbl_filter_income:'Gelir',lbl_filter_expense:'Gider',
+},
+en:{
+nav_main:'MAIN MENU',nav_dashboard:'Dashboard',nav_cashboxes:'Cashboxes',nav_transactions:'Transactions',nav_invoices:'Invoices',nav_customers:'Customers',nav_suppliers:'Suppliers',nav_employees:'Employees',nav_assets:'ASSETS',nav_metals:'Metals',nav_transfers:'Transfers',nav_reports:'REPORTS',nav_reports_menu:'Reports',nav_cashflow:'Cash Flow',nav_audit:'Audit Log',nav_system:'SYSTEM',nav_settings:'Settings',nav_barcodes:'Barcodes',nav_statements:'Account Statement',
+income:'Income',expense:'Expense',all:'All',save:'Save',cancel:'Cancel',delete:'Delete',edit:'Edit',btn_new:'New',btn_new_tx:'New Transaction',
+monthly_summary:'Monthly Summary',cat_dist:'Category Distribution',recent_tx:'Recent Transactions',see_all:'See All',
+th_date:'Date',th_desc:'Description',th_cat:'Category',th_cashbox:'Cashbox',th_type:'Type',th_amount:'Amount',th_attach:'Attach',th_actions:'Actions',th_phone:'Phone',th_city:'City',th_total:'Total',th_debt:'Debt',th_status:'Status',th_customer:'Customer',
+sett_company:'Company',sett_cashboxes:'Cashboxes',sett_cats:'Categories',role_admin:'Accounting',add_cashbox:'New Cashbox',
+pending:'Pending',paid:'Paid',overdue:'Overdue',draft:'Draft',active:'Active',inactive:'Inactive',on_leave:'On Leave',terminated:'Terminated',
+net_profit:'Net Profit',salary:'Salary',buy:'Buy',sell:'Sell',update_price:'Update Price',metal_history:'Metal History',gold:'Gold',silver:'Silver',live_price:'Live Price',cached_price:'Cached Price',barcode:'Barcode',generate:'Generate',print:'Print',statement:'Account Statement',debit:'Debit',credit:'Credit',balance:'Balance',
+modal_new_tx:'New Transaction',modal_edit_tx:'Edit Transaction',modal_income_expense:'INCOME / EXPENSE',modal_new_inv:'New Invoice',modal_edit_inv:'Edit Invoice',modal_inv_mgmt:'INVOICE MANAGEMENT',modal_new_cust:'New Customer',modal_edit_cust:'Edit Customer',modal_new_supp:'New Supplier',modal_edit_supp:'Edit Supplier',modal_new_emp:'New Employee',modal_edit_emp:'Edit Employee',modal_metal_tx:'Metal Transaction',modal_price_update:'Update Price',modal_gold_silver:'GOLD / SILVER',modal_transfer:'Cashbox Transfer',modal_barcode:'New Barcode',modal_category:'New Category',modal_cashbox:'New Cashbox',modal_edit_cashbox:'Edit Cashbox',modal_confirm_delete:'Are you sure you want to delete?',modal_confirm_type:'Type to confirm',
+field_desc:'Description',field_amount:'Amount',field_currency:'Currency',field_date:'Date',field_cashbox:'Cashbox',field_category:'Category',field_pay_method:'Payment Method',field_ref:'Reference No',field_related:'Related Person',field_notes:'Notes',field_attachments:'Attachments',field_name:'Full Name',field_company:'Company',field_phone:'Phone',field_phone2:'Phone 2',field_email:'Email',field_city:'City',field_tax_no:'Tax No',field_credit_limit:'Credit Limit',field_address:'Address',field_photo:'Photo',field_position:'Position',field_dept:'Department',field_salary:'Salary',field_salary_currency:'Salary Currency',field_salary_cashbox:'Salary Cashbox',field_start_date:'Start Date',field_status:'Status',field_metal:'Metal',field_tx_type:'Transaction Type',field_qty:'Quantity (grams)',field_unit_price:'Unit Price',field_total:'Total Amount',field_from_cashbox:'Source Cashbox',field_to_cashbox:'Target Cashbox',field_sent_amount:'Sent Amount',field_received_amount:'Received Amount',field_label:'Label',field_barcode_type:'Barcode Type',field_code:'Code',field_price:'Price',field_name_tr:'Turkish Name',field_name_ar:'Arabic Name',field_cat_type:'Type',field_color:'Color',field_icon:'Icon',field_sort:'Sort Order',
+pay_cash:'Cash',pay_bank:'Bank Transfer',pay_card:'Credit Card',pay_check:'Check',pay_pos:'POS',pay_other:'Other',
+dept_sales:'Sales',dept_accounting:'Accounting',dept_production:'Production',dept_logistics:'Logistics',dept_hr:'HR',dept_it:'IT',dept_management:'Management',
+inv_customer:'Customer',inv_number:'Invoice No',inv_date:'Date',inv_due_date:'Due Date',inv_tax:'VAT (%)',inv_discount:'Discount',inv_items:'Invoice Items',inv_add_item:'Add Item',inv_subtotal:'Subtotal',inv_tax_amt:'Tax',inv_discount_amt:'Discount',inv_total:'Total',inv_mark_paid:'Mark as Paid',
+btn_save:'Save',btn_cancel:'Cancel',btn_delete:'Delete',btn_edit:'Edit',btn_print:'Print',btn_download:'Download',btn_add_cashbox:'New Cashbox',btn_new_invoice:'New Invoice',btn_new_customer:'New Customer',btn_new_supplier:'New Supplier',btn_new_employee:'New Employee',btn_new_metal_tx:'New Transaction',btn_new_transfer:'New Transfer',btn_new_barcode:'New Barcode',btn_live_price:'Live Price',btn_update_price:'Update Price',btn_print_all:'Print All',btn_generate:'Generate',btn_pay_salary:'Pay Salary',btn_statement:'Account Statement',btn_see_all:'See All',
+msg_offline:'Offline — local data',msg_loaded:'Data loaded ✓',msg_saved:'Saved ✓',msg_deleted:'Deleted ✓',msg_error:'An error occurred!',msg_required:'Description and amount are required!',msg_select_cashbox:'Please select a cashbox!',msg_low_balance:'Low balance',msg_salary_paid:'Salary paid ✓',msg_transfer_done:'Transfer completed ✓',msg_same_cashbox:'Source and target cashbox cannot be the same!',msg_insufficient:'Insufficient balance!',msg_rates_updated:'Rates updated ✓',msg_prices_updated:'Prices updated ✓',msg_welcome:'Welcome! 🎉',
+lbl_all_months:'All Months',lbl_all_cashboxes:'All Cashboxes',lbl_all_currencies:'All Currencies',lbl_all_types:'All Types',lbl_all_dates:'All Dates',lbl_this_month:'This Month',lbl_last_month:'Last Month',lbl_this_year:'This Year',lbl_search:'Search...',lbl_loading:'Loading...',lbl_no_data:'No data found',lbl_total_debit:'Total Debit',lbl_total_credit:'Total Credit',lbl_net_balance:'Net Balance',lbl_tx_count:'Transaction Count',lbl_detail:'Detail',lbl_account_movements:'Account Movements',lbl_price_history:'Price History',lbl_metal_tx_history:'Metal Transaction History',lbl_quick_barcode:'Quick Barcode Generator',lbl_barcode_text:'Text / Code',lbl_barcode_list:'Barcode List',lbl_monthly_comparison:'Monthly Comparison',lbl_income_report:'Income Report',lbl_expense_report:'Expense Report',lbl_annual_summary:'Annual Summary',lbl_cashflow_chart:'Cash Flow Chart',lbl_audit_log:'Audit Log',lbl_company_info:'Company Information',lbl_cashbox_settings:'Cashbox Settings',lbl_exchange_rates:'Exchange Rates',lbl_categories:'Categories',lbl_appearance:'Appearance',lbl_language:'Language Settings',lbl_security:'Security',lbl_print_settings:'Print Settings',lbl_data_management:'Data Management',lbl_theme:'Theme',lbl_dark:'Dark',lbl_light:'Light',lbl_accent_color:'Accent Color',lbl_font_size:'Font Size',lbl_small:'Small',lbl_normal:'Normal',lbl_large:'Large',lbl_hide_amounts:'Hide Amounts',lbl_hide_amounts_desc:'Hides amounts like a bank app',lbl_confirm_delete:'Confirm Delete',lbl_confirm_delete_desc:'Requires typed confirmation before deleting',lbl_confirm_word:'Delete Confirmation Word',lbl_low_balance_warn:'Low Balance Warning',lbl_print_logo:'Print Logo',lbl_print_header:'Print Header',lbl_print_footer:'Print Footer',lbl_company_name:'Company Name',lbl_default_currency:'Default Currency',lbl_tax_rate:'Tax Rate (%)',lbl_logo:'Logo',lbl_logo_upload:'Upload logo or drag here',lbl_logo_hint:'PNG, JPG — Max 500KB',lbl_auto_rates:'Auto',lbl_rate_display:'Rate',lbl_json_export:'Export JSON',lbl_csv_export:'Export CSV',lbl_excel_export:'Export Excel',lbl_json_import:'Import JSON',lbl_clear_all:'Clear All Data',lbl_storage_info:'Storage Info',lbl_product_service:'Product/Service name...',lbl_qty:'Quantity',lbl_unit_price:'Unit Price',lbl_auto_code:'Auto...',lbl_salary_summary:'Salary Summary',lbl_cashbox_detail:'Cashbox Detail',lbl_all_statuses:'All',lbl_total_staff:'Total Staff',lbl_active_staff:'Active',lbl_on_leave:'On Leave',lbl_monthly_salary:'Monthly Salary',lbl_total_invoices:'Total',lbl_total_amount:'Total Amount',lbl_income_label:'Income',lbl_expense_label:'Expense',lbl_net_profit_label:'Net Profit',lbl_month:'Month',lbl_profit_pct:'Profit %',lbl_annual_income:'Annual Income',lbl_annual_expense:'Annual Expense',lbl_annual_salary:'Annual Salary',lbl_tx_total:'Transaction Count',lbl_quantity:'Quantity',lbl_unit_price_gram:'Unit Price (gram)',lbl_total_value:'Total Value',lbl_profit_loss:'Profit/Loss',lbl_update:'Update',lbl_live_badge:'LIVE',lbl_cached_badge:'CACHED',lbl_connection:'Connection',lbl_hide_amounts_btn:'Hide Amounts',lbl_theme_btn:'Theme',lbl_print_btn:'Print',lbl_export_btn:'Export',lbl_low_balance_alert:'Low balance',lbl_department:'Department',lbl_all_metals:'All',lbl_all_barcode_types:'All Types',lbl_all_entity_types:'All Types',lbl_product:'Product',lbl_invoice:'Invoice',lbl_customer:'Customer',lbl_barcode_search:'Search barcode...',lbl_tx_search:'Search transaction...',lbl_cust_search:'Search...',lbl_supp_search:'Search...',lbl_stmt_search:'Search...',lbl_photo_upload:'Upload photo or use camera',lbl_compress_info:'Auto compressed • Max 500KB/image',lbl_compressing:'Compressing...',lbl_files_added:'files added ✓',lbl_confirm_delete_action:'will be deleted!',lbl_type_to_confirm:'Type to confirm',lbl_cashbox_name_tr:'Cashbox Name (TR)',lbl_cashbox_name_ar:'Cashbox Name (AR)',lbl_initial_balance:'Initial Balance',lbl_cat_name_tr:'Turkish Name',lbl_cat_name_ar:'Arabic Name',lbl_both:'Both',lbl_select_person:'— Select —',lbl_select_entity:'— Select —',lbl_related_person:'Related Person',lbl_customer_label:'Customer',lbl_supplier_label:'Supplier',lbl_employee_label:'Employee',lbl_exchange_rate_display:'Rate',lbl_sent:'Sent',lbl_received:'Received',lbl_rate:'Rate',lbl_source_cashbox:'Source Cashbox',lbl_target_cashbox:'Target Cashbox',lbl_date_label:'Date',lbl_source:'Source',lbl_target:'Target',lbl_actions:'Actions',lbl_ref_no:'Reference No',lbl_payment_method:'Payment',lbl_total_purchases:'Total Purchases',lbl_total_debt:'Debt',lbl_total_income:'Total Income',lbl_total_expense:'Total Expense',lbl_tx_count_label:'Transaction Count',lbl_detail_btn:'Detail',lbl_account_movements_title:'Account Movements',lbl_reference:'Reference',lbl_debit_label:'Debit',lbl_credit_label:'Credit',lbl_balance_label:'Balance',lbl_all_tables:'All',lbl_transactions_table:'Transactions',lbl_invoices_table:'Invoices',lbl_cashboxes_table:'Cashboxes',lbl_all_actions:'All',lbl_insert_action:'Insert',lbl_update_action:'Update',lbl_delete_action:'Delete',lbl_table_col:'Table',lbl_action_col:'Action',lbl_record_id_col:'Record ID',lbl_detail_col:'Detail',lbl_audit_only_supabase:'Audit log is only available in Supabase',lbl_record_not_found:'Record not found',lbl_cashbox_detail_title:'Cashbox Detail',lbl_close:'Close',lbl_filter_all:'All',lbl_filter_income:'Income',lbl_filter_expense:'Expense',
+}};
 
-const W = {};
 
-W.i18n = {
-  lang:'ar',
-  t(key){
-    return (LANGS[this.lang]&&LANGS[this.lang][key])
-      ||(LANGS['ar']&&LANGS['ar'][key])
-      ||key;
-  },
-  setLang(lang){
-    this.lang=lang;
-    const html=document.documentElement;
-    html.setAttribute('data-lang',lang);
-    html.setAttribute('lang',lang);
-    html.setAttribute('dir',lang==='ar'?'rtl':'ltr');
-    const btn=document.getElementById('langBtn');
-    if(btn) btn.textContent=lang.toUpperCase();
-    LS.set('lang',lang);
-    S.settings.language=lang;
-    this.applyAll();
-    W.ui.renderAll();
-  },
-  applyAll(){
-    document.querySelectorAll('[data-i18n]').forEach(el=>{
-      const key=el.getAttribute('data-i18n');
-      const txt=this.t(key);
-      if(txt!==key) el.textContent=txt;
-    });
-  }
+
+ const W = {};
+
+/* ══ W.i18n ══ */
+W.i18n={
+lang:'ar',
+t(k){return(LANGS[this.lang]&&LANGS[this.lang][k])||(LANGS.ar&&LANGS.ar[k])||k;},
+setLang(lang){
+  this.lang=lang;
+  const h=document.documentElement;
+  h.setAttribute('data-lang',lang);h.setAttribute('lang',lang);h.setAttribute('dir',lang==='ar'?'rtl':'ltr');
+  const b=document.getElementById('langBtn');if(b)b.textContent=lang.toUpperCase();
+  ['ar','tr','en'].forEach(l=>{
+    const x=document.getElementById('lang'+l[0].toUpperCase()+l.slice(1)+'Btn');
+    if(x){x.classList.toggle('btn-primary',l===lang);x.classList.toggle('btn-outline',l!==lang);}
+  });
+  LS.set('lang',lang);S.settings.language=lang;
+  this.applyAll();W.ui.renderAll();
+},
+applyAll(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');const t=this.t(k);if(t!==k)el.textContent=t;});
+  this._titles();this._modals();this._filters();this._header();this._placeholders();this._sidebar();
+},
+_titles(){
+  const m={dashboard:this.t('nav_dashboard'),cashboxes:this.t('nav_cashboxes'),transactions:this.t('nav_transactions'),invoices:this.t('nav_invoices'),customers:this.t('nav_customers'),suppliers:this.t('nav_suppliers'),employees:this.t('nav_employees'),metals:this.t('nav_metals'),transfers:this.t('nav_transfers'),barcodes:this.t('nav_barcodes'),statements:this.t('nav_statements'),reports:this.t('nav_reports_menu'),cashflow:this.t('nav_cashflow'),audit:this.t('nav_audit'),settings:this.t('nav_settings')};
+  const pt=document.getElementById('pageTitle');if(pt&&m[S.currentSection])pt.textContent=m[S.currentSection];
+  const ps=document.getElementById('pageSub');if(ps)ps.textContent=new Date().toLocaleDateString(this.lang==='ar'?'ar-SA':this.lang==='tr'?'tr-TR':'en-US',{weekday:'long',day:'numeric',month:'long'});
+},
+_modals(){
+  const q=(sel,txt)=>{const e=document.querySelector(sel);if(e)e.textContent=txt;};
+  q('#modal-tx .modal-sub',this.t('modal_income_expense'));
+  q('#modal-inv .modal-sub',this.t('modal_inv_mgmt'));
+  q('#modal-metal-price .modal-sub',this.t('modal_gold_silver'));
+  document.querySelectorAll('.modal-footer .btn-ghost').forEach(b=>{if(b.getAttribute('onclick')&&b.getAttribute('onclick').includes('close'))b.textContent=this.t('btn_cancel');});
+  const cb=document.getElementById('confirmBtn');if(cb)cb.innerHTML=`<i class="fas fa-trash-alt"></i>${this.t('btn_delete')}`;
+  const dw=S.settings.confirm_delete_text||(this.lang==='ar'?'احذف':this.lang==='en'?'DELETE':'SİL');
+  const cw=document.getElementById('confirmWord');if(cw)cw.textContent=dw;
+  const ctl=document.querySelector('.confirm-type-label');if(ctl)ctl.innerHTML=`${this.t('modal_confirm_type')} <strong id="confirmWord">${dw}</strong>:`;
+  const txS=document.getElementById('txSaveBtn');if(txS)txS.innerHTML=`<i class="fas fa-save"></i><span>${this.t('btn_save')}</span>`;
+  const invS=document.getElementById('invSaveBtn');if(invS)invS.innerHTML=`<i class="fas fa-save"></i><span>${this.t('btn_save')}</span>`;
+  const ti=document.getElementById('txTypeIncome');if(ti)ti.innerHTML=`<i class="fas fa-arrow-up" style="color:var(--success);"></i> ${this.t('income')}`;
+  const te=document.getElementById('txTypeExpense');if(te)te.innerHTML=`<i class="fas fa-arrow-down" style="color:var(--danger);"></i> ${this.t('expense')}`;
+},
+_filters(){
+  const _o=(id,arr)=>{const s=document.getElementById(id);if(s)arr.forEach(([i,k])=>{if(s.options[i])s.options[i].text=this.t(k);});};
+  _o('txTypeF',[[0,'all'],[1,'income'],[2,'expense']]);
+  _o('cbDetailType',[[0,'all'],[1,'income'],[2,'expense']]);
+  _o('invStatusF',[[0,'all'],[1,'pending'],[2,'paid'],[3,'overdue'],[4,'draft']]);
+  _o('stmtEntityType',[[0,'nav_customers'],[1,'nav_suppliers'],[2,'nav_employees']]);
+  _o('stmtDateFilter',[[0,'lbl_all_dates'],[1,'lbl_this_month'],[2,'lbl_last_month'],[3,'lbl_this_year']]);
+  _o('barcodeEntityF',[[0,'lbl_all_entity_types'],[1,'lbl_product'],[2,'lbl_invoice'],[3,'lbl_customer']]);
+  _o('auditTableF',[[0,'lbl_all_tables'],[1,'lbl_transactions_table'],[2,'lbl_invoices_table'],[3,'lbl_cashboxes_table']]);
+  _o('auditActionF',[[0,'lbl_all_actions'],[1,'lbl_insert_action'],[2,'lbl_update_action'],[3,'lbl_delete_action']]);
+  const txCF=document.getElementById('txCurrencyF');if(txCF&&txCF.options[0])txCF.options[0].text=this.t('lbl_all_currencies');
+  const txMF=document.getElementById('txMonthF');if(txMF&&txMF.options[0])txMF.options[0].text=this.t('lbl_all_months');
+  const btF=document.getElementById('barcodeTypeF');if(btF&&btF.options[0])btF.options[0].text=this.t('lbl_all_barcode_types');
+  const payM={cash:this.t('pay_cash'),bank_transfer:this.t('pay_bank'),credit_card:this.t('pay_card'),check:this.t('pay_check'),pos:this.t('pay_pos'),other:this.t('pay_other')};
+  const pm=document.getElementById('tx-pay-method');if(pm)Array.from(pm.options).forEach(o=>{if(payM[o.value])o.text=payM[o.value];});
+  const etM={'':this.t('lbl_select_entity'),customer:this.t('lbl_customer_label'),supplier:this.t('lbl_supplier_label'),employee:this.t('lbl_employee_label')};
+  const et=document.getElementById('tx-entity-type');if(et)Array.from(et.options).forEach(o=>{if(etM[o.value]!==undefined)o.text=etM[o.value];});
+  const stM={pending:this.t('pending'),paid:this.t('paid'),draft:this.t('draft'),overdue:this.t('overdue')};
+  const is=document.getElementById('inv-status');if(is)Array.from(is.options).forEach(o=>{if(stM[o.value])o.text=stM[o.value];});
+  const esM={active:this.t('active'),inactive:this.t('inactive'),leave:this.t('on_leave'),terminated:this.t('terminated')};
+  const es=document.getElementById('emp-status');if(es)Array.from(es.options).forEach(o=>{if(esM[o.value])o.text=esM[o.value];});
+  const dM={'Satış':this.t('dept_sales'),'Muhasebe':this.t('dept_accounting'),'Üretim':this.t('dept_production'),'Lojistik':this.t('dept_logistics'),'İK':this.t('dept_hr'),'IT':this.t('dept_it'),'Yönetim':this.t('dept_management')};
+  const ed=document.getElementById('emp-dept');if(ed)Array.from(ed.options).forEach(o=>{if(dM[o.value])o.text=dM[o.value];});
+  const mt=document.getElementById('metal-tx-type');if(mt){mt.options[0].text=this.t('buy');mt.options[1].text=this.t('sell');if(mt.options[2])mt.options[2].text=this.lang==='ar'?'تعديل':this.lang==='en'?'Adjust':'Düzeltme';}
+},
+_header(){
+  const hb=document.getElementById('hideAmountsBtn');if(hb)hb.title=this.t('lbl_hide_amounts_btn');
+  const tb=document.getElementById('themeBtn');if(tb)tb.title=this.t('lbl_theme_btn');
+},
+_placeholders(){
+  const m={txSearch:this.t('lbl_tx_search'),custSearch:this.t('lbl_cust_search'),suppSearch:this.t('lbl_supp_search'),stmtSearch:this.t('lbl_stmt_search'),barcodeSearch:this.t('lbl_barcode_search'),cbDetailSearch:this.t('lbl_search'),quickBarcodeText:this.lang==='ar'?'نص الباركود...':this.lang==='en'?'Barcode text...':'Barkod metni...','tx-desc':this.lang==='ar'?'وصف المعاملة...':this.lang==='en'?'Transaction description...':'İşlem açıklaması...'};
+  Object.entries(m).forEach(([id,ph])=>{const el=document.getElementById(id);if(el)el.placeholder=ph;});
+},
+_sidebar(){
+  const r=document.querySelector('.urole[data-i18n="role_admin"]');if(r)r.textContent=this.t('role_admin');
+  document.querySelectorAll('.nav-group-label[data-i18n]').forEach(el=>{el.textContent=this.t(el.getAttribute('data-i18n'));});
+  document.querySelectorAll('.nav-item[data-section] span[data-i18n]').forEach(el=>{el.textContent=this.t(el.getAttribute('data-i18n'));});
+},
 };
 
 /* ══════════════════════════════════════════════════
@@ -2657,30 +2659,27 @@ W.i18n = {
 ══════════════════════════════════════════════════ */
 const H = {
   fmt(n,dec=2){
-    return Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:dec,maximumFractionDigits:dec});
+    return Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:dec,maximumFractionDigits:dec,useGrouping:true});
   },
   fmtDate(d){
-    if(!d) return '—';
+    if(!d)return'—';
     try{
       return new Date(d).toLocaleDateString(
-        W.i18n.lang==='ar'?'ar-SA':'tr-TR',
+        W.i18n.lang==='ar'?'ar-SA':W.i18n.lang==='tr'?'tr-TR':'en-US',
         {day:'2-digit',month:'short',year:'numeric'}
       );
-    }catch(e){ return d; }
+    }catch(e){return d;}
   },
-  today(){ return new Date().toISOString().split('T')[0]; },
-  esc(s){
-    if(!s) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  },
-  uid(){ return 'local_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); },
-  sym(cur){ return CFG.CURRENCY_SYMBOLS[cur]||cur; },
+  today(){return new Date().toISOString().split('T')[0];},
+  esc(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');},
+  uid(){return'local_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);},
+  sym(cur){return CFG.CURRENCY_SYMBOLS[cur]||cur;},
   payLabel(pm){
-    const map={cash:'Nakit',bank_transfer:'Banka',credit_card:'Kredi Kartı',check:'Çek',pos:'POS',other:'Diğer'};
-    return map[pm]||pm||'—';
+    const m={cash:W.i18n.t('pay_cash'),bank_transfer:W.i18n.t('pay_bank'),credit_card:W.i18n.t('pay_card'),check:W.i18n.t('pay_check'),pos:W.i18n.t('pay_pos'),other:W.i18n.t('pay_other')};
+    return m[pm]||pm||'—';
   },
   statusBadge(status){
-    const map={
+    const m={
       pending:`<span class="badge badge-warning">${W.i18n.t('pending')}</span>`,
       paid:`<span class="badge badge-success">${W.i18n.t('paid')}</span>`,
       overdue:`<span class="badge badge-danger">${W.i18n.t('overdue')}</span>`,
@@ -2690,71 +2689,57 @@ const H = {
       leave:`<span class="badge badge-warning">${W.i18n.t('on_leave')}</span>`,
       terminated:`<span class="badge badge-danger">${W.i18n.t('terminated')}</span>`,
     };
-    return map[status]||`<span class="badge badge-neutral">${status}</span>`;
+    return m[status]||`<span class="badge badge-neutral">${status}</span>`;
   },
   emptyState(icon='fa-inbox',title='',desc=''){
-    return `<div class="empty-state"><i class="fas ${icon} empty-icon"></i><div class="empty-title">${title}</div><div class="empty-desc">${desc}</div></div>`;
+    return`<div class="empty-state"><i class="fas ${icon} empty-icon"></i><div class="empty-title">${title||W.i18n.t('lbl_no_data')}</div><div class="empty-desc">${desc}</div></div>`;
   },
   loadingRow(cols=5){
-    return `<tr><td colspan="${cols}"><div class="loading-state"><div class="loading-spinner"></div><span>Yükleniyor...</span></div></td></tr>`;
+    return`<tr><td colspan="${cols}"><div class="loading-state"><div class="loading-spinner"></div><span>${W.i18n.t('lbl_loading')}</span></div></td></tr>`;
   },
   catBadge(name,color){
-    return `<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-2);">
-      <span style="width:6px;height:6px;border-radius:50%;background:${color||'#888'};display:inline-block;flex-shrink:0;"></span>
-      ${H.esc(name||'—')}
-    </span>`;
+    return`<span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-2);"><span style="width:6px;height:6px;border-radius:50%;background:${color||'#888'};display:inline-block;flex-shrink:0;"></span>${H.esc(name||'—')}</span>`;
   },
   amtHtml(val,cls=''){
     const style=S.hideAmounts?'filter:blur(6px);user-select:none;':'';
-    return `<span class="amount-val ${cls}" style="${style}">${val}</span>`;
+    return`<span class="amount-val ${cls}" style="${style}">${val}</span>`;
   },
-  /* توليد كود باركود فريد */
   genBarcodeCode(prefix='WOW'){
     const ts=Date.now().toString().slice(-8);
     const rnd=Math.random().toString(36).slice(2,6).toUpperCase();
-    return `${prefix}-${ts}-${rnd}`;
+    return`${prefix}-${ts}-${rnd}`;
   },
 };
 
 /* ══════════════════════════════════════════════════
    MODAL
 ══════════════════════════════════════════════════ */
-W.modal = {
-  open(id) {
-    const m = document.getElementById(id);
-    if (!m) return;
+W.modal={
+  open(id){
+    const m=document.getElementById(id);if(!m)return;
     m.classList.add('open');
-    // حفظ موضع التمرير ومنع التمرير خلف الـ modal
-    this._scrollY = window.scrollY;
-    document.body.style.top = `-${this._scrollY}px`;
+    this._scrollY=window.scrollY;
+    document.body.style.top=`-${this._scrollY}px`;
     document.body.classList.add('modal-open');
-    setTimeout(() => {
-      const first = m.querySelector('input:not([type=hidden]):not([type=file]),textarea');
-      if (first) first.focus();
-    }, 350);
+    setTimeout(()=>{const f=m.querySelector('input:not([type=hidden]):not([type=file]),textarea');if(f)f.focus();},350);
   },
-  close(id) {
-    const m = document.getElementById(id);
-    if (m) m.classList.remove('open');
-    // استعادة التمرير
-    if (!document.querySelector('.modal-overlay.open')) {
+  close(id){
+    const m=document.getElementById(id);if(m)m.classList.remove('open');
+    if(!document.querySelector('.modal-overlay.open')){
       document.body.classList.remove('modal-open');
-      document.body.style.top = '';
-      window.scrollTo(0, this._scrollY || 0);
+      document.body.style.top='';
+      window.scrollTo(0,this._scrollY||0);
     }
   },
-  closeAll() {
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  closeAll(){
+    document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
     document.body.classList.remove('modal-open');
-    document.body.style.top = '';
-    window.scrollTo(0, this._scrollY || 0);
+    document.body.style.top='';
+    window.scrollTo(0,this._scrollY||0);
   },
-  bgClose(e, id) {
-    if (e.target === document.getElementById(id)) this.close(id);
-  },
-  _scrollY: 0,
+  bgClose(e,id){if(e.target===document.getElementById(id))this.close(id);},
+  _scrollY:0,
 };
-
 
 
 
