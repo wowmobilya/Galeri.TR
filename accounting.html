@@ -685,78 +685,169 @@ td{padding:10px 12px;color:var(--text-1);vertical-align:middle;}
 .badge-neutral {background:var(--bg-input);  color:var(--text-2); border:1px solid var(--border);}
 
 /* ══════════════════════════════════════════════════
-   BOTTOM SHEET MODAL — موبايل
+   BOTTOM SHEET MODAL — ثابت من الأسفل على كل الأجهزة
 ══════════════════════════════════════════════════ */
-.modal-overlay{
-  position:fixed;inset:0;z-index:1000;
-  background:rgba(0,0,0,0.72);
-  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  display:none;align-items:center;justify-content:center;
-  padding:16px;
-  padding-bottom:max(16px,var(--safe-bottom));
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0,0,0,0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: none;
+  align-items: flex-end;        /* ← دائمًا من الأسفل */
+  justify-content: center;
+  padding: 0;
 }
-.modal-overlay.open{display:flex;animation:modalBgIn 0.2s ease;}
-@keyframes modalBgIn{from{opacity:0;}to{opacity:1;}}
-
-.modal-box{
-  background:var(--bg-card);
-  border:1px solid var(--border);
-  border-radius:var(--radius-xl);
-  width:100%;max-width:540px;
-  max-height:90vh;
-  overflow-y:auto;
-  box-shadow:var(--shadow-lg);
-  animation:modalBoxIn 0.3s var(--trans-bounce);
-  -webkit-overflow-scrolling:touch;
+.modal-overlay.open {
+  display: flex;
+  animation: modalBgIn 0.2s ease;
 }
-.modal-box.modal-sm{max-width:380px;}
-.modal-box.modal-lg{max-width:700px;}
-.modal-box.modal-xl{max-width:880px;}
-@keyframes modalBoxIn{from{opacity:0;transform:scale(0.88) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes modalBgIn { from{opacity:0;} to{opacity:1;} }
 
-/* Bottom Sheet على الموبايل */
-@media(max-width:640px){
-  .modal-overlay{padding:0 !important;align-items:flex-end !important;}
-  .modal-box{
-    border-radius:var(--radius-xl) var(--radius-xl) 0 0 !important;
-    max-width:100% !important;max-height:92vh !important;
-    border-bottom:none !important;
-    animation:sheetUp 0.35s var(--trans-bounce) !important;
+/* ══ الصندوق — ثابت من الأسفل دائمًا ══ */
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  border-bottom: none;
+  width: 100%;
+  max-width: 580px;
+  max-height: 92vh;
+  /* flex لتثبيت header + footer وتمرير body فقط */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;             /* ← الصندوق نفسه لا يتمرر */
+  box-shadow: 0 -8px 48px rgba(0,0,0,0.55);
+  animation: sheetUp 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  padding-bottom: var(--safe-bottom);
+}
+.modal-box.modal-sm { max-width: 420px; }
+.modal-box.modal-lg { max-width: 760px; }
+.modal-box.modal-xl { max-width: 960px; }
+
+/* مقبض السحب — يظهر دائمًا */
+.modal-box::before {
+  content: '';
+  display: block;
+  flex-shrink: 0;
+  width: 40px;
+  height: 4px;
+  background: var(--border-input);
+  border-radius: var(--radius-full);
+  margin: 10px auto 0;
+}
+
+@keyframes sheetUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ══ الهيدر — ثابت لا يتمرر ══ */
+.modal-header {
+  padding: 14px 18px 13px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;               /* ← لا يتقلص أبدًا */
+  background: var(--bg-card);
+  z-index: 2;
+  /* إزالة position:sticky لأن flex يكفي */
+}
+.modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.modal-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.modal-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text-1);
+}
+.modal-sub {
+  font-size: 8px;
+  color: var(--text-3);
+  letter-spacing: 1.5px;
+  margin-top: 1px;
+  font-family: 'Montserrat', sans-serif !important;
+}
+.modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--trans-med);
+  flex-shrink: 0;
+}
+.modal-close:hover {
+  background: var(--danger-bg);
+  border-color: rgba(239,68,68,0.3);
+  color: var(--danger);
+  transform: rotate(90deg);
+}
+
+/* ══ المحتوى — يتمرر هنا فقط ══ */
+.modal-body {
+  padding: 18px;
+  overflow-y: auto;             /* ← التمرير هنا فقط */
+  overflow-x: hidden;
+  flex: 1;                      /* ← يأخذ كل المساحة المتبقية */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain; /* ← يمنع تمرير الصفحة خلفه */
+}
+
+/* ══ الفوتر — ثابت لا يتمرر ══ */
+.modal-footer {
+  padding: 12px 18px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 7px;
+  justify-content: flex-end;
+  flex-shrink: 0;               /* ← لا يتقلص أبدًا */
+  background: var(--bg-card);
+  padding-bottom: max(12px, var(--safe-bottom));
+}
+
+/* ══ على الموبايل — عرض كامل ══ */
+@media (max-width: 640px) {
+  .modal-box {
+    max-width: 100% !important;
+    max-height: 92vh !important;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
   }
-  @keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-  /* مقبض السحب */
-  .modal-box::before{
-    content:'';display:block;
-    width:40px;height:4px;
-    background:var(--border-input);
-    border-radius:var(--radius-full);
-    margin:10px auto 0;
+}
+
+/* ══ على الديسكتوب — محاذاة للمنتصف أفقيًا ══ */
+@media (min-width: 641px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding-bottom: 0;
+  }
+  .modal-box {
+    /* هامش سفلي صغير ليبدو عائمًا قليلًا */
+    margin-bottom: 0;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   }
 }
 
-.modal-header{
-  padding:16px 18px 13px;border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;background:var(--bg-card);z-index:2;
-}
-.modal-title-wrap{display:flex;align-items:center;gap:10px;}
-.modal-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
-.modal-title{font-size:13px;font-weight:900;color:var(--text-1);}
-.modal-sub{font-size:8px;color:var(--text-3);letter-spacing:1.5px;margin-top:1px;font-family:'Montserrat',sans-serif !important;}
-.modal-close{
-  width:28px;height:28px;border-radius:var(--radius-sm);
-  background:var(--bg-input);border:1px solid var(--border);
-  color:var(--text-3);font-size:12px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  transition:all var(--trans-med);flex-shrink:0;
-}
-.modal-close:hover{background:var(--danger-bg);border-color:rgba(239,68,68,0.3);color:var(--danger);transform:rotate(90deg);}
-.modal-body{padding:18px;}
-.modal-footer{
-  padding:12px 18px;border-top:1px solid var(--border);
-  display:flex;gap:7px;justify-content:flex-end;
-  padding-bottom:max(12px,var(--safe-bottom));
-}
 
 /* ══════════════════════════════════════════════════
    TOAST
@@ -2582,29 +2673,55 @@ const H = {
    MODAL
 ══════════════════════════════════════════════════ */
 W.modal = {
-  open(id){
-    const m=document.getElementById(id);
-    if(!m) return;
+  open(id) {
+    const m = document.getElementById(id);
+    if (!m) return;
     m.classList.add('open');
-    document.body.style.overflow='hidden';
-    setTimeout(()=>{
-      const first=m.querySelector('input:not([type=hidden]):not([type=file]),textarea');
-      if(first) first.focus();
-    },350);
+    // حفظ موضع التمرير ومنع التمرير خلف الـ modal
+    this._scrollY = window.scrollY;
+    document.body.style.top = `-${this._scrollY}px`;
+    document.body.classList.add('modal-open');
+    setTimeout(() => {
+      const first = m.querySelector('input:not([type=hidden]):not([type=file]),textarea');
+      if (first) first.focus();
+    }, 350);
   },
-  close(id){
-    const m=document.getElementById(id);
-    if(m) m.classList.remove('open');
-    document.body.style.overflow='';
+  close(id) {
+    const m = document.getElementById(id);
+    if (m) m.classList.remove('open');
+    // استعادة التمرير
+    if (!document.querySelector('.modal-overlay.open')) {
+      document.body.classList.remove('modal-open');
+      document.body.style.top = '';
+      window.scrollTo(0, this._scrollY || 0);
+    }
   },
-  closeAll(){
-    document.querySelectorAll('.modal-overlay.open').forEach(m=>m.classList.remove('open'));
-    document.body.style.overflow='';
+  closeAll() {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    document.body.classList.remove('modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, this._scrollY || 0);
   },
-  bgClose(e,id){
-    if(e.target===document.getElementById(id)) this.close(id);
+  bgClose(e, id) {
+    if (e.target === document.getElementById(id)) this.close(id);
   },
+  _scrollY: 0,
 };
+
+
+
+
+/* منع تمرير الصفحة خلف الـ Modal */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+
+
+
+   
 
 /* ══════════════════════════════════════════════════
    CONFIRM
