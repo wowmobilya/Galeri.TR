@@ -1173,6 +1173,21 @@ td{padding:10px 12px;color:var(--text-1);vertical-align:middle;}
 .mob-nav-item.active{color:var(--gold);}
 .mob-nav-item span{font-size:8px;letter-spacing:0.3px;}
 @media(max-width:640px){.mobile-bottom-nav{display:block;}}
+
+
+
+
+
+
+/* منع تمرير الصفحة خلف الـ Modal */
+body.modal-open {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+   
+   
 </style>
 </head>
 <body>
@@ -2710,13 +2725,6 @@ W.modal = {
 
 
 
-
-/* منع تمرير الصفحة خلف الـ Modal */
-body.modal-open {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-}
 
 
 
