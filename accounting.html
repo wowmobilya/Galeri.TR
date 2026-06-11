@@ -1107,46 +1107,78 @@ td{padding:10px 12px;color:var(--text-1);vertical-align:middle;}
 @media(max-width:640px){
   .stats-grid  {grid-template-columns:1fr 1fr;gap:8px;}
   .cashbox-grid{grid-template-columns:1fr 1fr;gap:8px;}
-  .metals-grid {grid-template-columns:1fr;gap:10px;}
+  .metals-grid {grid-template-columns:1fr 1fr;gap:8px;}
   .form-grid,.form-grid-3,.form-grid-4{grid-template-columns:1fr;}
   .section-actions{width:100%;}
   .filter-bar{gap:6px;padding:8px 10px;}
   .search-box{max-width:100%;width:100%;}
-  .stat-card{padding:12px;}
-  .stat-icon{width:34px;height:34px;font-size:14px;margin-bottom:8px;}
-  .table-wrap table{font-size:11px;}
-  td{padding:8px 10px;}
-  thead th{padding:7px 10px;}
   .hide-mobile{display:none !important;}
   .card-header{padding:11px 13px 10px;flex-wrap:wrap;gap:8px;}
   .card-body{padding:12px;}
   .page-body{padding:10px 10px 80px;}
   .section-header{margin-bottom:10px;}
-  .cashbox-card{padding:12px;}
-  .cashbox-card .cb-balance{font-size:18px;}
+  .table-wrap table{font-size:11px;}
+  td{padding:8px 10px;}
+  thead th{padding:7px 10px;}
   .statement-summary{grid-template-columns:1fr 1fr;}
   .barcode-grid{grid-template-columns:1fr 1fr;}
   .chart-grid-wrap{grid-template-columns:1fr !important;}
+
+  /* ══ stat card ══ */
+  .stat-card{padding:11px 10px;border-radius:var(--radius-md);}
+  .stat-icon{width:30px;height:30px;font-size:12px;margin-bottom:6px;border-radius:var(--radius-sm);}
+  .stat-label{font-size:7px;letter-spacing:1px;margin-bottom:2px;}
+  .stat-value{font-size:14px !important;margin-bottom:3px;}
+  .stat-change{font-size:8px;}
+
+  /* ══ cashbox card ══ */
+  .cashbox-card{padding:10px 9px;}
+  .cashbox-card .cb-icon{width:30px;height:30px;font-size:13px;margin-bottom:6px;}
+  .cashbox-card .cb-currency{font-size:7px;letter-spacing:1px;}
+  .cashbox-card .cb-name{font-size:9px;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cashbox-card .cb-balance{font-size:15px !important;margin-bottom:6px;}
+  .cashbox-card .cb-actions{gap:3px;margin-top:7px;}
+  .cashbox-card .cb-actions .btn{min-height:26px;padding:3px 5px;font-size:9px;}
+
+  /* ══ metal card ══ */
+  .metal-card{padding:12px 10px;}
+  .metal-card .metal-name{font-size:12px;}
+  .metal-card .metal-qty{font-size:18px;}
+  .metal-card .metal-icon-wrap{width:36px;height:36px;font-size:16px;}
+  .metal-card .metal-price-row{flex-wrap:wrap;gap:6px;}
+  .metal-card .metal-price-val{font-size:11px;}
+  .metal-card .metal-price-label{font-size:8px;}
 }
+
+/* ══ 400px — نحافظ على عمودين دائماً ══ */
 @media(max-width:400px){
-  .stats-grid  {grid-template-columns:1fr;}
-  .cashbox-grid{grid-template-columns:1fr;}
+  /* ← حذفنا grid-template-columns:1fr لأنه يكسر الشبكة */
+  .stats-grid  {grid-template-columns:1fr 1fr;gap:6px;}
+  .cashbox-grid{grid-template-columns:1fr 1fr;gap:6px;}
+  .metals-grid {grid-template-columns:1fr 1fr;gap:6px;}
+  .stat-value{font-size:12px !important;}
+  .cashbox-card .cb-balance{font-size:13px !important;}
   .header-right{gap:4px;}
   .header-btn{width:30px;height:30px;font-size:12px;}
   .statement-summary{grid-template-columns:1fr;}
 }
+
 @media(hover:none) and (pointer:coarse){
   .btn{min-height:44px;}
   .nav-item{min-height:46px;}
+  /* استثناء أزرار البطاقات الصغيرة */
+  .cb-actions .btn{min-height:26px !important;}
   input[type="text"],input[type="number"],input[type="email"],
   input[type="tel"],input[type="date"],input[type="url"],
   select,textarea{font-size:16px !important;}
 }
+
 @supports(padding-bottom:env(safe-area-inset-bottom)){
   .modal-footer{padding-bottom:calc(12px + env(safe-area-inset-bottom));}
   #toast-container{bottom:calc(24px + env(safe-area-inset-bottom));}
   .sidebar{padding-bottom:env(safe-area-inset-bottom);}
 }
+
 
 /* ══════════════════════════════════════════════════
    MOBILE BOTTOM NAV
