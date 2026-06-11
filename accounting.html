@@ -4202,7 +4202,15 @@ W.cashbox = {
   getBalance(cbId) {
     const cb = S.cashboxes.find(c => c.id == cbId);
     if (!cb) return 0;
-    let bal = +(cb.initial_balance || 0);
+
+    /* ✅ إصلاح: إذا البيانات من Supabase → استخدم balance مباشرة
+       لأن DB يحسبه تلقائياً عبر trigger */
+    if (S.sbReady && !String(cbId).startsWith('local_') && !String(cbId).startsWith('cb')) {
+      return +(cb.balance || 0);
+    }
+
+    /* للبيانات المحلية → احسب من المعاملات */
+    let bal = +(cb.initial_balance || cb.balance || 0);
     S.transactions.forEach(t => {
       if (t.cashbox_id == cbId && t.currency === cb.currency) {
         bal += t.type === 'income' ? +(t.amount||0) : -(t.amount||0);
@@ -4212,12 +4220,6 @@ W.cashbox = {
     S.transfers.forEach(t => {
       if (t.to_cashbox_id == cbId)   bal += +(t.amount_to||0);
       if (t.from_cashbox_id == cbId) bal -= +(t.amount_from||0);
-    });
-    /* خصم الرواتب المدفوعة */
-    S.transactions.forEach(t => {
-      if (t.cashbox_id == cbId && t.category === 'salary') {
-        /* الرواتب محسوبة ضمن المصروفات أعلاه */
-      }
     });
     return bal;
   },
@@ -7423,43 +7425,117 @@ W.realtime = {
   },
 
   /* تحميل البيانات من Supabase عند الاتصال */
-  async loadFromSupabase() {
-    if (!S.online) return;
-    try {
-      const sb = await getSB();
-      if (!sb) return;
-      const tables = [
-        { key:'cashboxes',    table:'acc_cashboxes' },
-        { key:'categories',   table:'acc_categories' },
-        { key:'transactions', table:'acc_transactions', order:'date', limit:500 },
-        { key:'invoices',     table:'acc_invoices',     order:'date', limit:200 },
-        { key:'customers',    table:'acc_customers' },
-        { key:'suppliers',    table:'acc_suppliers' },
-        { key:'employees',    table:'acc_employees' },
-        { key:'metals',       table:'acc_metals' },
-        { key:'metalTx',      table:'acc_metal_transactions', order:'date', limit:200 },
-        { key:'metalPrices',  table:'acc_metal_prices' },
-        { key:'transfers',    table:'acc_cashbox_transfers',  order:'date', limit:200 },
-        { key:'rates',        table:'acc_exchange_rates' },
-        { key:'barcodes',     table:'acc_barcodes' },
-      ];
-      await Promise.allSettled(tables.map(async ({ key, table, order, limit }) => {
+/* تحميل البيانات من Supabase عند الاتصال */
+async loadFromSupabase() {
+  if (!S.online) return;
+  try {
+    const sb = await getSB();
+    if (!sb) return;
+
+    const tables = [
+      { key:'cashboxes',    table:'acc_cashboxes' },
+      { key:'categories',   table:'acc_categories' },
+      { key:'transactions', table:'acc_transactions', order:'date', limit:500 },
+      { key:'invoices',     table:'acc_invoices',     order:'date', limit:200 },
+      { key:'customers',    table:'acc_customers' },
+      { key:'suppliers',    table:'acc_suppliers' },
+      { key:'employees',    table:'acc_employees' },
+      { key:'metals',       table:'acc_metals' },
+      { key:'metalTx',      table:'acc_metal_transactions', order:'date', limit:200 },
+      { key:'metalPrices',  table:'acc_metal_prices' },
+      { key:'transfers',    table:'acc_cashbox_transfers',  order:'date', limit:200 },
+      { key:'rates',        table:'acc_exchange_rates' },
+      { key:'barcodes',     table:'acc_barcodes' },
+    ];
+
+    const results = await Promise.allSettled(
+      tables.map(async ({ key, table, order, limit }) => {
         let q = sb.from(table).select('*');
-        if (order) q = q.order(order, { ascending:false });
+        if (order) q = q.order(order, { ascending: false });
         if (limit) q = q.limit(limit);
         const { data, error } = await q;
-        if (!error && data && data.length) {
-          S[key] = data;
+        if (error) {
+          console.warn(`[SB] ${table}:`, error.message);
+          return;
         }
-      }));
-      LS.saveAll();
-      W.toast.success(W.i18n.t('msg_loaded'));
-      W.ui.renderAll();
-    } catch(e) {
-      console.warn('[SB] loadFromSupabase:', e.message);
-    }
-  },
-};
+        if (data && data.length) {
+          /* ✅ تطبيع البيانات القادمة من Supabase */
+          S[key] = data.map(row => this._normalizeRow(key, row));
+        }
+      })
+    );
+
+    LS.saveAll();
+    W.toast.success(W.i18n.t('msg_loaded'));
+    W.ui.renderAll();
+
+  } catch(e) {
+    console.warn('[SB] loadFromSupabase:', e.message);
+  }
+},
+
+/* تطبيع صف واحد من Supabase ليتوافق مع الكود */
+_normalizeRow(key, row) {
+  if (!row) return row;
+  const r = { ...row };
+
+  switch(key) {
+    case 'cashboxes':
+      /* acc_cashboxes: balance → initial_balance */
+      if (r.initial_balance === undefined) r.initial_balance = r.balance || 0;
+      if (!r.name_tr) r.name_tr = r.name || '';
+      if (!r.name_ar) r.name_ar = '';
+      break;
+
+    case 'transactions':
+      /* acc_transactions: pay_method → payment_method */
+      if (!r.payment_method) r.payment_method = r.pay_method || 'cash';
+      if (!r.reference_no)   r.reference_no   = r.reference  || '';
+      if (!r.attachments)    r.attachments     = [];
+      break;
+
+    case 'metalPrices':
+      /* acc_metal_prices: metal_type → metal_id */
+      if (!r.metal_id) {
+        const metal = S.metals.find(m => m.type === r.metal_type);
+        r.metal_id = metal?.id || null;
+      }
+      if (!r.price_per_gram) {
+        r.price_per_gram = r.price_usd_gram || 0;
+      }
+      if (!r.currency) r.currency = 'USD';
+      break;
+
+    case 'metalTx':
+      /* acc_metal_transactions: price_per_unit → price_per_gram */
+      if (!r.price_per_gram) r.price_per_gram = r.price_per_unit || 0;
+      break;
+
+    case 'barcodes':
+      /* acc_barcodes: type → barcode_type */
+      if (!r.barcode_type) r.barcode_type = r.type || 'CODE128';
+      break;
+
+    case 'customers':
+    case 'suppliers':
+      /* avatar_url → avatar */
+      if (!r.avatar) r.avatar = r.avatar_url || null;
+      break;
+
+    case 'employees':
+      /* avatar_url → avatar */
+      if (!r.avatar) r.avatar = r.avatar_url || null;
+      /* salary_cashbox_id موجود مباشرة */
+      break;
+
+    case 'rates':
+      /* acc_exchange_rates: متوافق مباشرة */
+      break;
+  }
+
+  return r;
+},
+
 
 /* ══════════════════════════════════════════════════
    INIT — تهيئة التطبيق
