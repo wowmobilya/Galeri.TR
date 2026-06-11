@@ -7160,11 +7160,169 @@ W.mob = {
 };
 
 /* ══════════════════════════════════════════════════
+   DATA MAPPER — تحويل بيانات JS إلى صيغة DB
+══════════════════════════════════════════════════ */
+const DBMap = {
+  _maps: {
+    acc_cashboxes: (d) => ({
+      name:            d.name_tr || d.name || '',
+      name_ar:         d.name_ar || '',
+      name_tr:         d.name_tr || d.name || '',
+      currency:        d.currency || 'TRY',
+      balance:         d.initial_balance || 0,
+      color:           d.color || '#c9a84c',
+      icon:            d.icon  || 'fa-wallet',
+      sort_order:      d.sort_order || 0,
+      is_active:       true,
+    }),
+    acc_transactions: (d) => ({
+      description:    d.description || '',
+      amount:         +d.amount || 0,
+      currency:       d.currency || 'TRY',
+      type:           d.type || 'income',
+      category_id:    d.category_id || null,
+      cashbox_id:     d.cashbox_id  || null,
+      entity_type:    d.entity_type || null,
+      entity_id:      d.entity_id   || null,
+      entity_name:    d.entity_name || '',
+      pay_method:     d.payment_method || d.pay_method || 'cash',
+      payment_method: d.payment_method || d.pay_method || 'cash',
+      reference:      d.reference_no || d.reference || '',
+      reference_no:   d.reference_no || d.reference || '',
+      notes:          d.notes || '',
+      date:           d.date  || new Date().toISOString().split('T')[0],
+      has_attachment: !!(d.attachments && d.attachments.length),
+    }),
+    acc_invoices: (d) => ({
+      invoice_number: d.invoice_number || '',
+      customer_name:  d.customer_name  || '',
+      customer_id:    d.customer_id    || null,
+      subtotal:       +d.subtotal      || 0,
+      tax_rate:       +d.tax_rate      || 18,
+      tax_amount:     +d.tax_amount    || 0,
+      discount:       +d.discount      || 0,
+      total:          +d.total         || 0,
+      currency:       d.currency       || 'TRY',
+      status:         d.status         || 'pending',
+      date:           d.date           || new Date().toISOString().split('T')[0],
+      due_date:       d.due_date       || null,
+      cashbox_id:     d.cashbox_id     || null,
+      notes:          d.notes          || '',
+      items:          d.items          || [],
+    }),
+    acc_metal_prices: (d) => {
+      const metal = S.metals.find(m => m.id == d.metal_id);
+      return {
+        metal_type:     metal?.type || 'gold',
+        metal_id:       d.metal_id  || null,
+        price_per_gram: +d.price_per_gram || 0,
+        price_usd_gram: d.currency === 'USD' ? +d.price_per_gram : 0,
+        price_try_gram: d.currency === 'TRY' ? +d.price_per_gram : 0,
+        price_eur_gram: d.currency === 'EUR' ? +d.price_per_gram : 0,
+        currency:       d.currency  || 'USD',
+        source:         'manual',
+        date:           d.date      || new Date().toISOString().split('T')[0],
+      };
+    },
+    acc_metal_transactions: (d) => ({
+      metal_id:       d.metal_id    || null,
+      type:           d.type        || 'buy',
+      quantity:       +d.quantity   || 0,
+      price_per_unit: +d.price_per_gram || +d.price_per_unit || 0,
+      price_per_gram: +d.price_per_gram || +d.price_per_unit || 0,
+      total_amount:   +d.total_amount   || 0,
+      currency:       d.currency    || 'TRY',
+      cashbox_id:     d.cashbox_id  || null,
+      date:           d.date        || new Date().toISOString().split('T')[0],
+      notes:          d.notes       || '',
+    }),
+    acc_barcodes: (d) => ({
+      code:         d.code         || '',
+      label:        d.label        || '',
+      type:         d.barcode_type || d.type || 'CODE128',
+      barcode_type: d.barcode_type || d.type || 'CODE128',
+      entity_type:  d.entity_type  || 'product',
+      entity_id:    d.entity_id    || null,
+      price:        +d.price       || 0,
+      currency:     d.currency     || 'TRY',
+    }),
+    acc_cashbox_transfers: (d) => ({
+      from_cashbox_id: d.from_cashbox_id,
+      to_cashbox_id:   d.to_cashbox_id,
+      amount_from:     +d.amount_from || 0,
+      amount_to:       +d.amount_to   || 0,
+      exchange_rate:   +d.rate        || 1,
+      date:            d.date         || new Date().toISOString().split('T')[0],
+      notes:           d.notes        || '',
+    }),
+    acc_customers: (d) => ({
+      name:         d.name         || '',
+      company:      d.company      || '',
+      phone:        d.phone        || '',
+      phone2:       d.phone2       || '',
+      email:        d.email        || '',
+      city:         d.city         || '',
+      tax_no:       d.tax_no       || '',
+      credit_limit: +d.credit_limit || 0,
+      address:      d.address      || '',
+      avatar_url:   d.avatar       || null,
+      is_active:    true,
+    }),
+    acc_suppliers: (d) => ({
+      name:      d.name    || '',
+      company:   d.company || '',
+      phone:     d.phone   || '',
+      phone2:    d.phone2  || '',
+      email:     d.email   || '',
+      city:      d.city    || '',
+      tax_no:    d.tax_no  || '',
+      notes:     d.notes   || '',
+      is_active: true,
+    }),
+    acc_employees: (d) => ({
+      name:              d.name              || '',
+      position:          d.position          || '',
+      department:        d.department        || '',
+      salary:            +d.salary           || 0,
+      salary_currency:   d.salary_currency   || 'TRY',
+      salary_cashbox_id: d.salary_cashbox_id || null,
+      phone:             d.phone             || '',
+      email:             d.email             || '',
+      start_date:        d.start_date        || null,
+      status:            d.status            || 'active',
+      avatar_url:        d.avatar            || null,
+    }),
+    acc_categories: (d) => ({
+      name:    d.name_tr || d.name || '',
+      name_ar: d.name_ar || '',
+      name_tr: d.name_tr || d.name || '',
+      type:    d.type    || 'expense',
+      color:   d.color   || '#888',
+      icon:    d.icon    || 'fa-tag',
+    }),
+    acc_exchange_rates: (d) => ({
+      from_currency: d.from_currency,
+      to_currency:   d.to_currency,
+      rate:          +d.rate || 1,
+      source:        'manual',
+      date:          new Date().toISOString().split('T')[0],
+    }),
+  },
+
+  map(table, data) {
+    const fn = this._maps[table];
+    if (!fn) return data;
+    try { return fn(data); }
+    catch(e) { console.warn('[DBMap]', table, e); return data; }
+  },
+};
+
+/* ══════════════════════════════════════════════════
    W.realtime — المزامنة الفورية مع Supabase
    ══════════════════════════════════════════════════
    push()     : إرسال بيانات إلى Supabase
    subscribe(): الاشتراك في التحديثات الفورية
-   
+
    ملاحظة: كود Supabase لم يتغير كما طلبت.
    فقط أضفنا معالجة أفضل للأخطاء وإعادة المحاولة.
 ══════════════════════════════════════════════════ */
@@ -7177,13 +7335,23 @@ W.realtime = {
     try {
       const sb = await getSB();
       if (!sb) return;
+
+      /* ✅ تحويل البيانات قبل الإرسال */
+      const mapped = DBMap.map(table, data);
+
+      /* تنظيف الحقول المحلية */
+      const clean = Object.fromEntries(
+        Object.entries(mapped).filter(([k, v]) =>
+          v !== undefined &&
+          !['id', 'created_at', 'updated_at'].includes(k)
+        )
+      );
+
       if (action === 'INSERT') {
-        /* إزالة المعرّف المحلي قبل الإرسال */
-        const { id: localId, ...rest } = data;
-        const { error } = await sb.from(table).insert([rest]);
-        if (error) console.warn(`[SB] INSERT ${table}:`, error.message);
+        const { error } = await sb.from(table).insert([clean]);
+        if (error) console.warn(`[SB] INSERT ${table}:`, error.message, clean);
       } else if (action === 'UPDATE' && id) {
-        const { error } = await sb.from(table).update(data).eq('id', id);
+        const { error } = await sb.from(table).update(clean).eq('id', id);
         if (error) console.warn(`[SB] UPDATE ${table}:`, error.message);
       } else if (action === 'DELETE' && id) {
         const { error } = await sb.from(table).delete().eq('id', id);
@@ -7223,24 +7391,23 @@ W.realtime = {
   _handleChange(table, payload) {
     const { eventType, new: newRec, old: oldRec } = payload;
     const map = {
-      acc_transactions:     'transactions',
-      acc_invoices:         'invoices',
-      acc_customers:        'customers',
-      acc_suppliers:        'suppliers',
-      acc_employees:        'employees',
-      acc_categories:       'categories',
-      acc_cashboxes:        'cashboxes',
-      acc_metals:           'metals',
+      acc_transactions:      'transactions',
+      acc_invoices:          'invoices',
+      acc_customers:         'customers',
+      acc_suppliers:         'suppliers',
+      acc_employees:         'employees',
+      acc_categories:        'categories',
+      acc_cashboxes:         'cashboxes',
+      acc_metals:            'metals',
       acc_metal_transactions:'metalTx',
-      acc_metal_prices:     'metalPrices',
-      acc_cashbox_transfers:'transfers',
-      acc_exchange_rates:   'rates',
-      acc_barcodes:         'barcodes',
+      acc_metal_prices:      'metalPrices',
+      acc_cashbox_transfers: 'transfers',
+      acc_exchange_rates:    'rates',
+      acc_barcodes:          'barcodes',
     };
     const key = map[table];
     if (!key || !S[key]) return;
     if (eventType === 'INSERT') {
-      /* تجنب التكرار */
       if (!S[key].find(i => i.id == newRec.id)) {
         S[key].unshift(newRec);
       }
@@ -7272,7 +7439,7 @@ W.realtime = {
         { key:'metals',       table:'acc_metals' },
         { key:'metalTx',      table:'acc_metal_transactions', order:'date', limit:200 },
         { key:'metalPrices',  table:'acc_metal_prices' },
-        { key:'transfers',    table:'acc_cashbox_transfers', order:'date', limit:200 },
+        { key:'transfers',    table:'acc_cashbox_transfers',  order:'date', limit:200 },
         { key:'rates',        table:'acc_exchange_rates' },
         { key:'barcodes',     table:'acc_barcodes' },
       ];
@@ -7376,7 +7543,6 @@ async function initApp() {
   setInterval(() => {
     LS.saveAll();
     if (navigator.onLine && S.online) {
-      /* تحديث أسعار المعادن كل 5 دقائق */
       const lastMetal = LS.get('lastMetalUpdate', 0);
       if (Date.now() - lastMetal > 300000) {
         W.metal.fetchLivePrices();
@@ -7399,6 +7565,7 @@ async function initApp() {
     W.toast.success(`${W.i18n.t('msg_welcome')} ${name}`);
   }, 800);
 }
+
 
 /* ══════════════════════════════════════════════════
    _loadDefaults — البيانات الافتراضية
