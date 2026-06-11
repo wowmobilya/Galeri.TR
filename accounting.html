@@ -768,24 +768,22 @@ body.modal-open{overflow:hidden;position:fixed;width:100%;}
   </div>
   <nav class="sidebar-nav" id="sidebarNav">
     <div class="nav-group-label" data-i18n="nav_main">ANA MENÜ</div>
-    <div class="nav-item active" data-section="dashboard"><i class="fas fa-tachometer-alt"></i><span data-i18n="nav_dashboard">Genel Bakış</span></div>
-    <div class="nav-item" data-section="cashboxes"><i class="fas fa-cash-register"></i><span data-i18n="nav_cashboxes">Kasalar</span><span class="nav-badge" id="nb-cashboxes">4</span></div>
-    <div class="nav-item" data-section="transactions"><i class="fas fa-exchange-alt"></i><span data-i18n="nav_transactions">İşlemler</span><span class="nav-badge" id="nb-transactions">0</span></div>
-    <div class="nav-item" data-section="invoices"><i class="fas fa-file-invoice"></i><span data-i18n="nav_invoices">Faturalar</span><span class="nav-badge danger" id="nb-invoices" style="display:none">!</span></div>
-    <div class="nav-item" data-section="customers"><i class="fas fa-users"></i><span data-i18n="nav_customers">Müşteriler</span></div>
-    <div class="nav-item" data-section="suppliers"><i class="fas fa-truck"></i><span data-i18n="nav_suppliers">Tedarikçiler</span></div>
-    <div class="nav-item" data-section="employees"><i class="fas fa-user-tie"></i><span data-i18n="nav_employees">Personel</span></div>
-    <div class="nav-group-label" data-i18n="nav_assets">VARLIKLAR</div>
-    <div class="nav-item" data-section="metals"><i class="fas fa-coins"></i><span data-i18n="nav_metals">Madenler</span></div>
-    <div class="nav-item" data-section="transfers"><i class="fas fa-random"></i><span data-i18n="nav_transfers">Kasa Transferi</span></div>
-    <div class="nav-item" data-section="barcodes"><i class="fas fa-barcode"></i><span data-i18n="nav_barcodes">Barkod</span></div>
-    <div class="nav-group-label" data-i18n="nav_reports">RAPORLAR</div>
-    <div class="nav-item" data-section="statements"><i class="fas fa-file-alt"></i><span data-i18n="nav_statements">Hesap Özeti</span></div>
-    <div class="nav-item" data-section="reports"><i class="fas fa-chart-bar"></i><span data-i18n="nav_reports_menu">Raporlar</span></div>
-    <div class="nav-item" data-section="cashflow"><i class="fas fa-water"></i><span data-i18n="nav_cashflow">Nakit Akışı</span></div>
-    <div class="nav-item" data-section="audit"><i class="fas fa-history"></i><span data-i18n="nav_audit">Denetim Kaydı</span></div>
-    <div class="nav-group-label" data-i18n="nav_system">SİSTEM</div>
-    <div class="nav-item" data-section="settings"><i class="fas fa-cog"></i><span data-i18n="nav_settings">Ayarlar</span></div>
+<div class="nav-item active" data-section="dashboard" onclick="W.ui.showSection('dashboard')"><i class="fas fa-tachometer-alt"></i><span data-i18n="nav_dashboard">Genel Bakış</span></div>
+<div class="nav-item" data-section="cashboxes" onclick="W.ui.showSection('cashboxes')"><i class="fas fa-cash-register"></i><span data-i18n="nav_cashboxes">Kasalar</span><span class="nav-badge" id="nb-cashboxes">4</span></div>
+<div class="nav-item" data-section="transactions" onclick="W.ui.showSection('transactions')"><i class="fas fa-exchange-alt"></i><span data-i18n="nav_transactions">İşlemler</span><span class="nav-badge" id="nb-transactions">0</span></div>
+<div class="nav-item" data-section="invoices" onclick="W.ui.showSection('invoices')"><i class="fas fa-file-invoice"></i><span data-i18n="nav_invoices">Faturalar</span><span class="nav-badge danger" id="nb-invoices" style="display:none">!</span></div>
+<div class="nav-item" data-section="customers" onclick="W.ui.showSection('customers')"><i class="fas fa-users"></i><span data-i18n="nav_customers">Müşteriler</span></div>
+<div class="nav-item" data-section="suppliers" onclick="W.ui.showSection('suppliers')"><i class="fas fa-truck"></i><span data-i18n="nav_suppliers">Tedarikçiler</span></div>
+<div class="nav-item" data-section="employees" onclick="W.ui.showSection('employees')"><i class="fas fa-user-tie"></i><span data-i18n="nav_employees">Personel</span></div>
+<div class="nav-item" data-section="metals" onclick="W.ui.showSection('metals')"><i class="fas fa-coins"></i><span data-i18n="nav_metals">Madenler</span></div>
+<div class="nav-item" data-section="transfers" onclick="W.ui.showSection('transfers')"><i class="fas fa-random"></i><span data-i18n="nav_transfers">Kasa Transferi</span></div>
+<div class="nav-item" data-section="barcodes" onclick="W.ui.showSection('barcodes')"><i class="fas fa-barcode"></i><span data-i18n="nav_barcodes">Barkod</span></div>
+<div class="nav-item" data-section="statements" onclick="W.ui.showSection('statements')"><i class="fas fa-file-alt"></i><span data-i18n="nav_statements">Hesap Özeti</span></div>
+<div class="nav-item" data-section="reports" onclick="W.ui.showSection('reports')"><i class="fas fa-chart-bar"></i><span data-i18n="nav_reports_menu">Raporlar</span></div>
+<div class="nav-item" data-section="cashflow" onclick="W.ui.showSection('cashflow')"><i class="fas fa-water"></i><span data-i18n="nav_cashflow">Nakit Akışı</span></div>
+<div class="nav-item" data-section="audit" onclick="W.ui.showSection('audit')"><i class="fas fa-history"></i><span data-i18n="nav_audit">Denetim Kaydı</span></div>
+<div class="nav-item" data-section="settings" onclick="W.ui.showSection('settings')"><i class="fas fa-cog"></i><span data-i18n="nav_settings">Ayarlar</span></div>
+
   </nav>
   <div class="sidebar-user">
     <div class="user-card" onclick="W.ui.showSection('settings')">
@@ -7482,6 +7480,47 @@ if ('serviceWorker' in navigator) {
     console.log('[SW] Service Worker support detected');
   });
 }
+
+
+
+/* ══════════════════════════════════════════════════
+   FIX NAVIGATION — إصلاح التنقل بين الأقسام
+   ══════════════════════════════════════════════════
+   يضمن عمل التنقل حتى لو فشل onclick المباشر
+══════════════════════════════════════════════════ */
+(function fixNavigation() {
+  /* انتظر اكتمال DOM */
+  function bindNav() {
+    document.querySelectorAll('.nav-item[data-section]').forEach(item => {
+      /* إزالة أي listener قديم */
+      const clone = item.cloneNode(true);
+      item.parentNode.replaceChild(clone, item);
+      /* إضافة listener جديد */
+      clone.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const sec = this.dataset.section;
+        if (sec && typeof W !== 'undefined' && W.ui) {
+          W.ui.showSection(sec);
+        }
+      });
+    });
+  }
+
+  /* تشغيل فوري إذا كان DOM جاهزاً */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindNav);
+  } else {
+    bindNav();
+  }
+
+  /* تشغيل مرة ثانية بعد initApp */
+  window.addEventListener('load', function() {
+    setTimeout(bindNav, 500);
+  });
+})();
+
+   
+   
 </script>
 </body>
 </html>
