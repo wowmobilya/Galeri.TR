@@ -724,6 +724,12 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
   .cashbox-grid{grid-template-columns:repeat(3,1fr);}
   .person-grid{grid-template-columns:repeat(2,1fr);}
 }
+
+
+@keyframes spin-refresh { to { transform: rotate(360deg); } }
+.refreshing #refreshIcon { animation: spin-refresh 0.8s linear infinite; }
+
+  
 </style>
 </head>
 <body>
@@ -810,6 +816,9 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
       <div class="header-btn" style="width:auto;padding:0 9px;font-size:10px;font-weight:900;font-family:'Montserrat',sans-serif;" onclick="W.i18n.cycle()" id="langBtn">AR</div>
       <button class="header-btn" onclick="W.ui.toggleTheme()" id="themeBtn"><i class="fas fa-moon" id="themeIcon"></i></button>
       <button class="header-btn" onclick="W.print.current()"><i class="fas fa-print"></i></button>
+      <button class="header-btn" onclick="W.data.loadAll()" title="تحديث البيانات" id="refreshBtn">
+  <i class="fas fa-sync-alt" id="refreshIcon"></i>
+</button>
       <button class="header-btn" onclick="W.export.toJSON()"><i class="fas fa-download"></i></button>
       <button class="btn btn-primary btn-sm" onclick="W.tx.openModal()"><i class="fas fa-plus"></i><span data-i18n="btn_new">Yeni</span></button>
     </div>
@@ -2800,14 +2809,22 @@ W.ui={
 W.mob={setActive(el){document.querySelectorAll('.mob-nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}};
 
 /* ══ DATA ══ */
-W.data={
-  async loadAll(){
-    await IDB.loadState();W.dashboard.render();W.ui.updateBadges();
-    const sb=await getSB();
-    if(!sb){W.toast.warning(W.i18n.t('msg_offline'));W.ui.setOnline(false);return;}
-    try{
-      const[txR,invR,cuR,suR,emR,caR,cbR,meR,mtR,mpR,trR,raR,bcR,stR,atR,seR]=await Promise.all([
-        sb.from('acc_transactions').select('*').order('date',{ascending:false}).limit(1000),
+W.data = {
+  async loadAll() {
+    // ══ البداية: تفعيل أيقونة التحميل ══
+    document.getElementById('refreshBtn')?.classList.add('refreshing');
+
+    const sb = await getSB();
+    if (!sb) {
+      W.toast.warning(W.i18n.t('msg_offline'));
+      W.ui.setOnline(false);
+      document.getElementById('refreshBtn')?.classList.remove('refreshing');
+      return;
+    }
+    try {
+      W.ui.setOnline(true);
+      const [txR,invR,cuR,suR,emR,caR,cbR,meR,mtR,mpR,trR,raR,bcR,stR,atR,seR] = await Promise.all([
+        sb.from('acc_transactions').select('*').order('date',{ascending:false}).limit(2000),
         sb.from('acc_invoices').select('*').order('created_at',{ascending:false}),
         sb.from('acc_customers').select('*').order('name',{ascending:true}),
         sb.from('acc_suppliers').select('*').order('name',{ascending:true}),
@@ -2820,43 +2837,97 @@ W.data={
         sb.from('acc_cashbox_transfers').select('*').order('date',{ascending:false}),
         sb.from('acc_rates').select('*').order('from_currency',{ascending:true}),
         sb.from('acc_barcodes').select('*').order('created_at',{ascending:false}),
-        sb.from('acc_account_statements').select('*').order('date',{ascending:false}).limit(500),
-        sb.from('acc_attendance').select('*').order('date',{ascending:false}).limit(1000),
+        sb.from('acc_account_statements').select('*').order('date',{ascending:false}).limit(1000),
+        sb.from('acc_attendance').select('*').order('date',{ascending:false}).limit(2000),
         sb.from('acc_settings').select('*').eq('id',1).maybeSingle(),
       ]);
-      if(txR.data)S.transactions=txR.data;if(invR.data)S.invoices=invR.data;
-      if(cuR.data)S.customers=cuR.data;if(suR.data)S.suppliers=suR.data;
-      if(emR.data)S.employees=emR.data;if(caR.data&&caR.data.length)S.categories=caR.data;
-      if(cbR.data&&cbR.data.length)S.cashboxes=cbR.data;if(meR.data)S.metals=meR.data;
-      if(mtR.data)S.metalTx=mtR.data;if(mpR.data)S.metalPrices=mpR.data;
-      if(trR.data)S.transfers=trR.data;if(raR.data)S.rates=raR.data;
-      if(bcR.data)S.barcodes=bcR.data;if(stR.data)S.statements=stR.data;
-      if(atR.data)S.attendance=atR.data;if(seR.data)S.settings=seR.data;
-      await IDB.saveState();W.ui.setOnline(true);W.ui.updateBadges();W.ui.renderAll();
+
+      // تحديث كل البيانات
+      if (txR.data  && !txR.error)  S.transactions  = txR.data;
+      if (invR.data && !invR.error) S.invoices      = invR.data;
+      if (cuR.data  && !cuR.error)  S.customers     = cuR.data;
+      if (suR.data  && !suR.error)  S.suppliers     = suR.data;
+      if (emR.data  && !emR.error)  S.employees     = emR.data;
+      if (caR.data  && caR.data.length && !caR.error) S.categories  = caR.data;
+      if (cbR.data  && cbR.data.length && !cbR.error) S.cashboxes   = cbR.data;
+      if (meR.data  && !meR.error)  S.metals        = meR.data;
+      if (mtR.data  && !mtR.error)  S.metalTx       = mtR.data;
+      if (mpR.data  && !mpR.error)  S.metalPrices   = mpR.data;
+      if (trR.data  && !trR.error)  S.transfers     = trR.data;
+      if (raR.data  && !raR.error)  S.rates         = raR.data;
+      if (bcR.data  && !bcR.error)  S.barcodes      = bcR.data;
+      if (stR.data  && !stR.error)  S.statements    = stR.data;
+      if (atR.data  && !atR.error)  S.attendance    = atR.data;
+      if (seR.data  && !seR.error)  S.settings      = seR.data;
+
+      // حفظ محلي
+      await IDB.saveState();
+
+      // تحديث كل الواجهة
+      W.ui.setOnline(true);
+      W.ui.updateBadges();
+      W.cashbox._populateSelects();
+      W.cat._populateCatSelects();
+      W.ui.renderAll();
       W.inv.checkOverdue();
-    }catch(e){console.error('[LoadAll]',e);W.toast.error(W.i18n.t('msg_offline'));}
+
+      console.log('✅ loadAll: تم تحميل كل البيانات من Supabase');
+
+    } catch(e) {
+      console.error('[loadAll]', e);
+      W.toast.error(W.i18n.t('msg_offline'));
+      W.ui.setOnline(false);
+
+    } finally {
+      // ══ النهاية دائماً: إيقاف أيقونة التحميل ══
+      document.getElementById('refreshBtn')?.classList.remove('refreshing');
+    }
   },
-  async importJSON(){
-    const input=document.createElement('input');input.type='file';input.accept='.json';
-    input.onchange=async e=>{
-      try{const text=await e.target.files[0].text();const data=JSON.parse(text);
-        if(data.transactions)S.transactions=data.transactions;if(data.invoices)S.invoices=data.invoices;
-        if(data.customers)S.customers=data.customers;if(data.suppliers)S.suppliers=data.suppliers;
-        if(data.employees)S.employees=data.employees;if(data.categories)S.categories=data.categories;
-        if(data.barcodes)S.barcodes=data.barcodes;if(data.attendance)S.attendance=data.attendance;
-        await IDB.saveState();W.ui.renderAll();W.toast.success(W.i18n.lang==='ar'?'تم الاستيراد ✓':'İçe aktarıldı ✓');
-      }catch(err){W.toast.error('Invalid JSON!');}
-    };input.click();
+
+  async importJSON() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async e => {
+      try {
+        const text = await e.target.files[0].text();
+        const data = JSON.parse(text);
+        if (data.transactions) S.transactions = data.transactions;
+        if (data.invoices)     S.invoices     = data.invoices;
+        if (data.customers)    S.customers    = data.customers;
+        if (data.suppliers)    S.suppliers    = data.suppliers;
+        if (data.employees)    S.employees    = data.employees;
+        if (data.categories)   S.categories   = data.categories;
+        if (data.barcodes)     S.barcodes     = data.barcodes;
+        if (data.attendance)   S.attendance   = data.attendance;
+        await IDB.saveState();
+        W.ui.renderAll();
+        W.toast.success(W.i18n.lang === 'ar' ? 'تم الاستيراد ✓' : 'İçe aktarıldı ✓');
+      } catch(err) {
+        W.toast.error('Invalid JSON!');
+      }
+    };
+    input.click();
   },
-  clearAll(){
-    W.confirm.show(W.i18n.lang==='ar'?'حذف كل البيانات':'Tüm Verileri Sil',W.i18n.lang==='ar'?'سيتم حذف كل شيء نهائياً!':'Tüm veriler silinecek!',async()=>{
-      S.transactions=[];S.invoices=[];S.customers=[];S.suppliers=[];S.employees=[];
-      S.metalTx=[];S.transfers=[];S.barcodes=[];S.statements=[];S.attendance=[];
-      await IDB.saveState();W.ui.renderAll();W.ui.updateBadges();
-      W.toast.success(W.i18n.lang==='ar'?'تم الحذف':'Silindi');
-    });
+
+  clearAll() {
+    W.confirm.show(
+      W.i18n.lang === 'ar' ? 'حذف كل البيانات' : 'Tüm Verileri Sil',
+      W.i18n.lang === 'ar' ? 'سيتم حذف كل شيء نهائياً!' : 'Tüm veriler silinecek!',
+      async () => {
+        S.transactions = []; S.invoices = [];    S.customers  = [];
+        S.suppliers    = []; S.employees = [];   S.metalTx    = [];
+        S.transfers    = []; S.barcodes  = [];   S.statements = [];
+        S.attendance   = [];
+        await IDB.saveState();
+        W.ui.renderAll();
+        W.ui.updateBadges();
+        W.toast.success(W.i18n.lang === 'ar' ? 'تم الحذف' : 'Silindi');
+      }
+    );
   }
 };
+
 
 /* ══ EXPORT ══ */
 W.export={
@@ -2951,55 +3022,114 @@ W.realtime = {
   async _handleChange(stateKey, payload) {
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
-    // للإعدادات (ليست مصفوفة)
+    // ══ الإعدادات ليست مصفوفة ══
     if (stateKey === 'settings') {
-      if (newRecord) S.settings = { ...S.settings, ...newRecord };
+      if (newRecord) {
+        S.settings = { ...S.settings, ...newRecord };
+        W.settings.load();
+      }
       return;
     }
 
     if (!Array.isArray(S[stateKey])) return;
 
     if (eventType === 'INSERT') {
-      // تجنب التكرار
+      // تجنب التكرار — قد يكون الجهاز نفسه أضافه بـ ID حقيقي
       const exists = S[stateKey].find(r => String(r.id) === String(newRecord.id));
-      if (!exists) S[stateKey].unshift(newRecord);
+      if (!exists) {
+        S[stateKey].unshift(newRecord);
+      } else {
+        // حدّث البيانات إن كانت ناقصة
+        const idx = S[stateKey].findIndex(r => String(r.id) === String(newRecord.id));
+        if (idx > -1) Object.assign(S[stateKey][idx], newRecord);
+      }
 
     } else if (eventType === 'UPDATE') {
       const idx = S[stateKey].findIndex(r => String(r.id) === String(newRecord.id));
-      if (idx > -1) Object.assign(S[stateKey][idx], newRecord);
-      else S[stateKey].unshift(newRecord);
+      if (idx > -1) {
+        Object.assign(S[stateKey][idx], newRecord);
+      } else {
+        S[stateKey].unshift(newRecord);
+      }
 
     } else if (eventType === 'DELETE') {
-      S[stateKey] = S[stateKey].filter(r => String(r.id) !== String(oldRecord.id));
+      if (oldRecord && oldRecord.id) {
+        S[stateKey] = S[stateKey].filter(r =>
+          String(r.id) !== String(oldRecord.id)
+        );
+      }
     }
 
-    // حفظ في IDB للعمل أوفلاين
-    try { await IDB.saveAll(stateKey, S[stateKey]); } catch(e) {}
+    // ══ تحديث الـ selects الحساسة فوراً ══
+    if (stateKey === 'cashboxes') {
+      W.cashbox._populateSelects();
+      W.cashbox.renderAll();
+    }
+    if (stateKey === 'categories') {
+      W.cat._populateCatSelects();
+      W.cat.renderList();
+    }
+    if (stateKey === 'employees') {
+      W.ui.updateBadges();
+    }
+    if (stateKey === 'customers') {
+      W.ui.updateBadges();
+      W.cust._updateDatalist();
+    }
+    if (stateKey === 'transactions') {
+      W.ui.updateBadges();
+      W.dashboard._renderRecentTx();
+      W.dashboard._renderStats();
+    }
+    if (stateKey === 'invoices') {
+      W.inv.checkOverdue();
+      W.ui.updateBadges();
+    }
+
+    // ══ حفظ محلي للعمل أوفلاين ══
+    try {
+      await IDB.saveAll(stateKey, S[stateKey]);
+      LS.set(stateKey, S[stateKey]);
+    } catch(e) {
+      console.warn('[IDB save]', e);
+    }
   },
 
   _showSyncIndicator() {
     const dot = document.getElementById('connDot');
     if (!dot) return;
+    // وميض ذهبي عند وصول بيانات جديدة
+    dot.style.transition = 'all 0.3s ease';
     dot.style.background = 'var(--gold)';
-    dot.style.transform = 'scale(1.5)';
+    dot.style.transform = 'scale(1.8)';
+    dot.style.boxShadow = '0 0 8px var(--gold)';
     setTimeout(() => {
       dot.style.background = 'var(--success)';
       dot.style.transform = 'scale(1)';
+      dot.style.boxShadow = 'none';
     }, 800);
   },
 
-  // إيقاف كل القنوات (عند تسجيل الخروج مثلاً)
+  // ══ إعادة الاتصال عند الانقطاع ══
+  async reconnect() {
+    console.log('🔄 Realtime: إعادة الاتصال...');
+    await this.disconnect();
+    await new Promise(r => setTimeout(r, 1000));
+    await this.init();
+    W.toast.info(W.i18n.lang === 'ar' ? '🔄 تم إعادة الاتصال' : 'Yeniden bağlandı');
+  },
+
+  // ══ إيقاف كل القنوات ══
   async disconnect() {
     const sb = getSBSync();
     if (!sb) return;
     for (const ch of this._channels) {
-      await sb.removeChannel(ch);
+      try { await sb.removeChannel(ch); } catch(e) {}
     }
     this._channels = [];
     console.log('🔌 Realtime: تم قطع الاتصال');
   }
 };
-
 
 
   
@@ -3236,14 +3366,34 @@ W.cashbox={
     const cb=S.cashboxes.find(c=>String(c.id)===String(id));if(!cb)return;
     W.confirm.show(W.i18n.t('btn_delete'),this.cbName(cb),async()=>{S.cashboxes=S.cashboxes.filter(c=>String(c.id)!==String(id));await this._persist();this.renderAll();this._populateSelects();W.dashboard.render();W.toast.success(W.i18n.t('msg_deleted'));W.audit.log('acc_cashboxes','DELETE',id,{});});
   },
-  async _updateBalance(cbId,delta){
-    const cb=S.cashboxes.find(c=>String(c.id)===String(cbId));if(!cb)return;
-    cb.balance=(Number(cb.balance||0)+delta);await this._persist();this.renderAll();
+    async _updateBalance(cbId, delta) {
+    const cb = S.cashboxes.find(c => String(c.id) === String(cbId));
+    if (!cb) return;
+    const newBalance = Number(cb.balance || 0) + delta;
+    cb.balance = newBalance;
+
+    // تحديث Supabase مباشرة
+    const sb = await getSB();
+    if (sb) {
+      await sb.from('acc_cashboxes')
+        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+        .eq('id', cbId);
+    }
+    await this._persist();
+    this.renderAll();
   },
-  async _persist(){
-    LS.set('cashboxes',S.cashboxes);await IDB.saveAll('cashboxes',S.cashboxes);
-    const sb=await getSB();if(sb)await Promise.all(S.cashboxes.map(c=>sb.from('acc_cashboxes').upsert(c).select()));
+
+  async _persist() {
+    LS.set('cashboxes', S.cashboxes);
+    await IDB.saveAll('cashboxes', S.cashboxes);
+    const sb = await getSB();
+    if (sb) {
+      await Promise.all(
+        S.cashboxes.map(c => sb.from('acc_cashboxes').upsert(c).select())
+      );
+    }
   },
+
   _populateSelects(){
     const opts=S.cashboxes.filter(c=>c.is_active!==false).map(c=>`<option value="${c.id}">${H.esc(this.cbName(c))} (${H.sym(c.currency)} ${H.fmt(Number(c.balance||0))})</option>`).join('');
     const optsSm=S.cashboxes.filter(c=>c.is_active!==false).map(c=>`<option value="${c.id}">${H.esc(this.cbName(c))}</option>`).join('');
@@ -3339,30 +3489,154 @@ W.tx={
     const list=type==='customer'?S.customers:type==='supplier'?S.suppliers:S.employees;
     sel.innerHTML=`<option value="">— ${W.i18n.t('lbl_entity')} —</option>`+list.map(p=>`<option value="${p.id}">${H.esc(p.name||'')}</option>`).join('');
   },
-  async save(){
-    const btn=document.getElementById('txSaveBtn');if(btn){btn.disabled=true;btn.innerHTML=`<span class="spinner"></span>`;}
-    try{
-      const id=document.getElementById('tx-edit-id').value;
-      const desc=document.getElementById('tx-desc').value.trim();
-      const amt=Number(document.getElementById('tx-amount').value);
-      if(!desc||!amt){W.toast.error(W.i18n.t('msg_required'));return;}
-      const cbId=document.getElementById('tx-cashbox').value;
-      if(!cbId){W.toast.error(W.i18n.t('msg_select_cashbox'));return;}
-      let attach=[];try{attach=JSON.parse(document.getElementById('tx-attach').value||'[]');}catch(e){}
-      const data={description:desc,amount:amt,type:document.getElementById('tx-type').value,date:document.getElementById('tx-date').value,cashbox_id:cbId,category_id:document.getElementById('tx-category').value||null,currency:document.getElementById('tx-currency').value||'TRY',payment_method:document.getElementById('tx-pay-method').value,reference:document.getElementById('tx-ref').value||null,entity_type:document.getElementById('tx-entity-type').value||null,entity_id:document.getElementById('tx-entity-id').value||null,notes:document.getElementById('tx-notes').value||null,attachments:attach,created_at:new Date().toISOString()};
-      const delta=data.type==='income'?data.amount:-data.amount;
-      if(id){
-        const i=S.transactions.findIndex(t=>String(t.id)===String(id));
-        if(i>-1){const old=S.transactions[i];const oldDelta=old.type==='income'?old.amount:-old.amount;await W.cashbox._updateBalance(old.cashbox_id,-oldDelta);Object.assign(S.transactions[i],{...data,id});}
-        W.audit.log('acc_transactions','UPDATE',id,data);
-      }else{data.id=H.uid();S.transactions.unshift(data);W.audit.log('acc_transactions','INSERT',data.id,data);}
-      await W.cashbox._updateBalance(cbId,delta);
-      await this._persist();W.modal.close('modal-tx');this.render();W.dashboard.render();W.ui.updateBadges();
+  async save() {
+    const btn = document.getElementById('txSaveBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>`; }
+    try {
+      const id   = document.getElementById('tx-edit-id').value;
+      const desc = document.getElementById('tx-desc').value.trim();
+      const amt  = Number(document.getElementById('tx-amount').value);
+      if (!desc || !amt) { W.toast.error(W.i18n.t('msg_required')); return; }
+      const cbId = document.getElementById('tx-cashbox').value;
+      if (!cbId) { W.toast.error(W.i18n.t('msg_select_cashbox')); return; }
+
+      let attach = [];
+      try { attach = JSON.parse(document.getElementById('tx-attach').value || '[]'); } catch(e) {}
+
+      const data = {
+        description:    desc,
+        amount:         amt,
+        type:           document.getElementById('tx-type').value,
+        date:           document.getElementById('tx-date').value,
+        cashbox_id:     cbId,
+        category_id:    document.getElementById('tx-category').value || null,
+        currency:       document.getElementById('tx-currency').value || 'TRY',
+        payment_method: document.getElementById('tx-pay-method').value,
+        reference:      document.getElementById('tx-ref').value || null,
+        entity_type:    document.getElementById('tx-entity-type').value || null,
+        entity_id:      document.getElementById('tx-entity-id').value || null,
+        notes:          document.getElementById('tx-notes').value || null,
+        attachments:    attach,
+        created_at:     new Date().toISOString()
+      };
+
+      const sb = await getSB();
+
+      if (id && !String(id).startsWith('loc_')) {
+        // ══ تعديل سجل موجود ══
+        const old = S.transactions.find(t => String(t.id) === String(id));
+        if (old) {
+          const oldDelta = old.type === 'income' ? old.amount : -old.amount;
+          await W.cashbox._updateBalance(old.cashbox_id, -oldDelta);
+        }
+        if (sb) {
+          const { data: updated, error } = await sb
+            .from('acc_transactions')
+            .update(data)
+            .eq('id', id)
+            .select()
+            .single();
+          if (!error && updated) {
+            const i = S.transactions.findIndex(t => String(t.id) === String(id));
+            if (i > -1) S.transactions[i] = updated;
+          } else if (error) {
+            console.error('[TX Update]', error);
+            W.toast.error(W.i18n.t('msg_error') + ': ' + error.message);
+            return;
+          }
+        } else {
+          // أوفلاين
+          const i = S.transactions.findIndex(t => String(t.id) === String(id));
+          if (i > -1) Object.assign(S.transactions[i], { ...data, id });
+        }
+        const delta = data.type === 'income' ? data.amount : -data.amount;
+        await W.cashbox._updateBalance(cbId, delta);
+        W.audit.log('acc_transactions', 'UPDATE', id, data);
+
+      } else {
+        // ══ إضافة سجل جديد ══
+        if (sb) {
+          const { data: inserted, error } = await sb
+            .from('acc_transactions')
+            .insert(data)
+            .select()
+            .single();
+
+          if (error) {
+            console.error('[TX Insert]', error);
+            W.toast.error(W.i18n.t('msg_error') + ': ' + error.message);
+            return;
+          }
+
+          if (inserted) {
+            // أضف بالـ ID الحقيقي من Supabase
+            S.transactions.unshift(inserted);
+            // اجلب رصيد الصندوق المحدّث من Supabase (الـ trigger حدّثه)
+            await this._refreshCashbox(cbId);
+            W.audit.log('acc_transactions', 'INSERT', inserted.id, data);
+          }
+
+        } else {
+          // أوفلاين — حفظ محلي مؤقت
+          data.id = H.uid();
+          S.transactions.unshift(data);
+          const delta = data.type === 'income' ? data.amount : -data.amount;
+          await W.cashbox._updateBalance(cbId, delta);
+          W.audit.log('acc_transactions', 'INSERT', data.id, data);
+        }
+      }
+
+      // تحديث كشف الحسابات
+      if (data.entity_type && data.entity_id) {
+        W.statements.addEntry(data.entity_type, data.entity_id, data);
+      }
+
+      // حفظ محلي
+      await IDB.saveAll('transactions', S.transactions);
+      LS.set('transactions', S.transactions);
+
+      // تحديث الواجهة
+      W.modal.close('modal-tx');
+      this.render();
+      W.dashboard.render();
+      W.cashbox.renderAll();
+      W.ui.updateBadges();
       W.toast.success(W.i18n.t('msg_saved'));
-      // Update entity statement
-      if(data.entity_type&&data.entity_id)W.statements.addEntry(data.entity_type,data.entity_id,data);
-    }finally{if(btn){btn.disabled=false;btn.innerHTML=`<i class="fas fa-save"></i><span>${W.i18n.t('btn_save')}</span>`;}}
+
+    } catch(e) {
+      console.error('[TX Save]', e);
+      W.toast.error(W.i18n.t('msg_error'));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-save"></i><span>${W.i18n.t('btn_save')}</span>`;
+      }
+    }
   },
+
+  // ══ دالة جديدة: جلب رصيد الصندوق المحدّث من Supabase ══
+  async _refreshCashbox(cbId) {
+    const sb = await getSB();
+    if (!sb || !cbId) return;
+    try {
+      const { data, error } = await sb
+        .from('acc_cashboxes')
+        .select('*')
+        .eq('id', cbId)
+        .single();
+      if (!error && data) {
+        const i = S.cashboxes.findIndex(c => String(c.id) === String(cbId));
+        if (i > -1) S.cashboxes[i] = data;
+        else S.cashboxes.push(data);
+        await IDB.saveAll('cashboxes', S.cashboxes);
+        LS.set('cashboxes', S.cashboxes);
+        W.cashbox.renderAll();
+      }
+    } catch(e) {
+      console.warn('[_refreshCashbox]', e);
+    }
+  },
+
   render(){
     this._populateFilters();this.filter();
   },
@@ -3427,15 +3701,50 @@ W.tx={
     this.updateCurrencySym();
     if(t.attachments?.length){const prev=document.getElementById('tx-attach-preview');const hidden=document.getElementById('tx-attach');if(prev)prev.innerHTML=t.attachments.map((a,i)=>`<div class="preview-item"><img src="${a.url||''}" onclick="W.upload.viewImage(this.src)"/><div class="preview-remove" onclick="W.upload.removePreview(this,'tx-attach',${i})"><i class="fas fa-times"></i></div></div>`).join('');if(hidden)hidden.value=JSON.stringify(t.attachments);}
   },
-  delete(id){
-    const t=S.transactions.find(x=>String(x.id)===String(id));if(!t)return;
-    W.confirm.show(W.i18n.t('btn_delete'),t.description,async()=>{
-      const delta=t.type==='income'?-t.amount:t.amount;await W.cashbox._updateBalance(t.cashbox_id,delta);
-      S.transactions=S.transactions.filter(x=>String(x.id)!==String(id));
-      await this._persist();this.render();W.dashboard.render();W.ui.updateBadges();
-      W.toast.success(W.i18n.t('msg_deleted'));W.audit.log('acc_transactions','DELETE',id,{});
+  delete(id) {
+    const t = S.transactions.find(x => String(x.id) === String(id));
+    if (!t) return;
+    W.confirm.show(W.i18n.t('btn_delete'), t.description, async () => {
+      const sb = await getSB();
+
+      // ══ حذف من Supabase أولاً ══
+      if (sb && !String(id).startsWith('loc_')) {
+        const { error } = await sb
+          .from('acc_transactions')
+          .delete()
+          .eq('id', id);
+
+        if (error) {
+          console.error('[TX Delete]', error);
+          W.toast.error(W.i18n.t('msg_error') + ': ' + error.message);
+          return;
+        }
+      }
+
+      // ══ عكس الرصيد ══
+      const delta = t.type === 'income' ? -t.amount : t.amount;
+
+      // ══ حذف من الذاكرة المحلية ══
+      S.transactions = S.transactions.filter(x => String(x.id) !== String(id));
+
+      // ══ تحديث الصندوق ══
+      await W.cashbox._updateBalance(t.cashbox_id, delta);
+
+      // ══ حفظ محلي ══
+      await IDB.saveAll('transactions', S.transactions);
+      LS.set('transactions', S.transactions);
+
+      // ══ تحديث الواجهة ══
+      this.render();
+      W.dashboard.render();
+      W.cashbox.renderAll();
+      W.ui.updateBadges();
+
+      W.toast.success(W.i18n.t('msg_deleted'));
+      W.audit.log('acc_transactions', 'DELETE', id, {});
     });
   },
+
   async _persist(latestId) {
     LS.set('transactions', S.transactions);
     await IDB.saveAll('transactions', S.transactions);
