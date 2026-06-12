@@ -802,7 +802,10 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
       </div>
     </div>
     <div class="header-right">
-      <div class="header-btn" title="Connection"><i class="fas fa-wifi" id="connIcon"></i><div class="conn-dot" id="connDot"></div></div>
+<div class="header-btn" title="Connection" onclick="W.realtime.init()" style="cursor:pointer;">
+  <i class="fas fa-wifi" id="connIcon"></i>
+  <div class="conn-dot" id="connDot"></div>
+</div>
       <button class="header-btn" id="hideAmountsBtn" onclick="W.ui.toggleHideAmounts()" title="Hide"><i class="fas fa-eye" id="hideAmountsIcon"></i></button>
       <div class="header-btn" style="width:auto;padding:0 9px;font-size:10px;font-weight:900;font-family:'Montserrat',sans-serif;" onclick="W.i18n.cycle()" id="langBtn">AR</div>
       <button class="header-btn" onclick="W.ui.toggleTheme()" id="themeBtn"><i class="fas fa-moon" id="themeIcon"></i></button>
@@ -2226,12 +2229,28 @@ const IDB={
 };
 
 /* ══ SUPABASE ══ */
-let _sb=null;
-async function getSB(){
-  if(_sb&&S.sbReady)return _sb;
-  try{_sb=supabase.createClient(CFG.SB_URL,CFG.SB_KEY,{realtime:{params:{eventsPerSecond:20}}});S.sbReady=true;return _sb;}
-  catch(e){return null;}
+let _sb = null;
+let _realtimeChannels = [];
+
+function getSBSync() { return _sb; }
+
+async function getSB() {
+  if (_sb && S.sbReady) return _sb;
+  try {
+    _sb = supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+      realtime: {
+        params: { eventsPerSecond: 20 }
+      },
+      auth: { persistSession: false }
+    });
+    S.sbReady = true;
+    return _sb;
+  } catch(e) {
+    console.error('[Supabase]', e);
+    return null;
+  }
 }
+
 
 /* ══ i18n ══ */
 const LANGS={
@@ -2866,6 +2885,124 @@ W.print={
   }
 };
 
+
+
+
+/* ══ REALTIME ══ */
+W.realtime = {
+  _channels: [],
+
+  async init() {
+    const sb = await getSB();
+    if (!sb) return;
+
+    // قائمة الجداول التي نريد مراقبتها
+    const tables = [
+      { name: 'acc_transactions',       stateKey: 'transactions',  render: () => { W.tx.render(); W.dashboard.render(); W.cashbox.renderAll(); W.ui.updateBadges(); } },
+      { name: 'acc_cashboxes',          stateKey: 'cashboxes',     render: () => { W.cashbox.renderAll(); W.cashbox._populateSelects(); W.dashboard.render(); } },
+      { name: 'acc_customers',          stateKey: 'customers',     render: () => { W.cust.render(); W.ui.updateBadges(); } },
+      { name: 'acc_suppliers',          stateKey: 'suppliers',     render: () => { W.supp.render(); } },
+      { name: 'acc_employees',          stateKey: 'employees',     render: () => { W.emp.render(); W.ui.updateBadges(); } },
+      { name: 'acc_attendance',         stateKey: 'attendance',    render: () => { W.emp.render(); } },
+      { name: 'acc_invoices',           stateKey: 'invoices',      render: () => { W.inv.render(); W.ui.updateBadges(); } },
+      { name: 'acc_categories',         stateKey: 'categories',    render: () => { W.cat._populateCatSelects(); W.cat.renderList(); } },
+      { name: 'acc_metals',             stateKey: 'metals',        render: () => { W.metal.render(); W.dashboard._renderMetals(); } },
+      { name: 'acc_metal_transactions', stateKey: 'metalTx',       render: () => { W.metal.render(); } },
+      { name: 'acc_metal_prices',       stateKey: 'metalPrices',   render: () => { W.metal.render(); W.dashboard._renderMetals(); } },
+      { name: 'acc_cashbox_transfers',  stateKey: 'transfers',     render: () => { W.transfer.render(); } },
+      { name: 'acc_rates',              stateKey: 'rates',         render: () => { W.settings._renderRatesList(); } },
+      { name: 'acc_barcodes',           stateKey: 'barcodes',      render: () => { W.barcode.render(); } },
+      { name: 'acc_account_statements', stateKey: 'statements',    render: () => { if(S.section==='statements') W.statements.loadList(); } },
+      { name: 'acc_settings',           stateKey: 'settings',      render: () => { W.settings.load(); } },
+    ];
+
+    tables.forEach(({ name, stateKey, render }) => {
+      const channel = sb
+        .channel(`realtime:${name}`)
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: name },
+          async (payload) => {
+            console.log(`[Realtime] ${name}:`, payload.eventType);
+
+            // تحديث البيانات المحلية بذكاء
+            await this._handleChange(stateKey, payload);
+
+            // تحديث الواجهة
+            render();
+
+            // إشعار بصري خفيف
+            this._showSyncIndicator();
+          }
+        )
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log(`✅ Realtime: ${name} متصل`);
+          } else if (status === 'CHANNEL_ERROR') {
+            console.warn(`⚠️ Realtime: ${name} خطأ`);
+          }
+        });
+
+      this._channels.push(channel);
+    });
+
+    console.log(`🔴 Realtime: ${tables.length} قناة مفعّلة`);
+  },
+
+  async _handleChange(stateKey, payload) {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    // للإعدادات (ليست مصفوفة)
+    if (stateKey === 'settings') {
+      if (newRecord) S.settings = { ...S.settings, ...newRecord };
+      return;
+    }
+
+    if (!Array.isArray(S[stateKey])) return;
+
+    if (eventType === 'INSERT') {
+      // تجنب التكرار
+      const exists = S[stateKey].find(r => String(r.id) === String(newRecord.id));
+      if (!exists) S[stateKey].unshift(newRecord);
+
+    } else if (eventType === 'UPDATE') {
+      const idx = S[stateKey].findIndex(r => String(r.id) === String(newRecord.id));
+      if (idx > -1) Object.assign(S[stateKey][idx], newRecord);
+      else S[stateKey].unshift(newRecord);
+
+    } else if (eventType === 'DELETE') {
+      S[stateKey] = S[stateKey].filter(r => String(r.id) !== String(oldRecord.id));
+    }
+
+    // حفظ في IDB للعمل أوفلاين
+    try { await IDB.saveAll(stateKey, S[stateKey]); } catch(e) {}
+  },
+
+  _showSyncIndicator() {
+    const dot = document.getElementById('connDot');
+    if (!dot) return;
+    dot.style.background = 'var(--gold)';
+    dot.style.transform = 'scale(1.5)';
+    setTimeout(() => {
+      dot.style.background = 'var(--success)';
+      dot.style.transform = 'scale(1)';
+    }, 800);
+  },
+
+  // إيقاف كل القنوات (عند تسجيل الخروج مثلاً)
+  async disconnect() {
+    const sb = getSBSync();
+    if (!sb) return;
+    for (const ch of this._channels) {
+      await sb.removeChannel(ch);
+    }
+    this._channels = [];
+    console.log('🔌 Realtime: تم قطع الاتصال');
+  }
+};
+
+
+
+  
 /* ══ AUDIT ══ */
 W.audit={
   log(table,action,recordId,detail){
@@ -3299,10 +3436,18 @@ W.tx={
       W.toast.success(W.i18n.t('msg_deleted'));W.audit.log('acc_transactions','DELETE',id,{});
     });
   },
-  async _persist(){
-    LS.set('transactions',S.transactions);await IDB.saveAll('transactions',S.transactions);
-    const sb=await getSB();if(sb){const batch=S.transactions.slice(0,50);await Promise.all(batch.map(t=>sb.from('acc_transactions').upsert(t).select()));}
+  async _persist(latestId) {
+    LS.set('transactions', S.transactions);
+    await IDB.saveAll('transactions', S.transactions);
+    const sb = await getSB();
+    if (!sb) return;
+    // حفظ آخر 10 فقط في Supabase (أسرع)
+    const toSave = latestId
+      ? S.transactions.filter(t => String(t.id) === String(latestId))
+      : S.transactions.slice(0, 10);
+    await Promise.all(toSave.map(t => sb.from('acc_transactions').upsert(t).select()));
   }
+
 };
 
 /* ══ DASHBOARD ══ */
@@ -4613,8 +4758,13 @@ async function initApp(){
     W.cat._populateCatSelects();
   }catch(e){console.warn('[IDB]',e);}
 
-  // Load from Supabase (background)
-  setTimeout(()=>W.data.loadAll(),1200);
+   // Load from Supabase + تفعيل Realtime
+  setTimeout(async () => {
+    await W.data.loadAll();
+    // تفعيل Realtime بعد تحميل البيانات
+    await W.realtime.init();
+  }, 1200);
+
 
   // Check overdue invoices
   setTimeout(()=>W.inv.checkOverdue(),2000);
