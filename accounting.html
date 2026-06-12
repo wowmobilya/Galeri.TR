@@ -2244,21 +2244,22 @@ let _realtimeChannels = [];
 function getSBSync() { return _sb; }
 
 async function getSB() {
-  if (_sb && S.sbReady) return _sb;
+  if (_sb) return _sb;
   try {
     _sb = supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
-      realtime: {
-        params: { eventsPerSecond: 20 }
-      },
+      realtime: { params: { eventsPerSecond: 20 } },
       auth: { persistSession: false }
     });
     S.sbReady = true;
     return _sb;
   } catch(e) {
     console.error('[Supabase]', e);
+    S.sbReady = false;
+    _sb = null;
     return null;
   }
 }
+
 
 
 /* ══ i18n ══ */
@@ -2811,9 +2812,7 @@ W.mob={setActive(el){document.querySelectorAll('.mob-nav-item').forEach(n=>n.cla
 /* ══ DATA ══ */
 W.data = {
   async loadAll() {
-    // ══ البداية: تفعيل أيقونة التحميل ══
     document.getElementById('refreshBtn')?.classList.add('refreshing');
-
     const sb = await getSB();
     if (!sb) {
       W.toast.warning(W.i18n.t('msg_offline'));
@@ -2842,44 +2841,52 @@ W.data = {
         sb.from('acc_settings').select('*').eq('id',1).maybeSingle(),
       ]);
 
-      // تحديث كل البيانات
-      if (txR.data  && !txR.error)  S.transactions  = txR.data;
-      if (invR.data && !invR.error) S.invoices      = invR.data;
-      if (cuR.data  && !cuR.error)  S.customers     = cuR.data;
-      if (suR.data  && !suR.error)  S.suppliers     = suR.data;
-      if (emR.data  && !emR.error)  S.employees     = emR.data;
-      if (caR.data  && caR.data.length && !caR.error) S.categories  = caR.data;
-      if (cbR.data  && cbR.data.length && !cbR.error) S.cashboxes   = cbR.data;
-      if (meR.data  && !meR.error)  S.metals        = meR.data;
-      if (mtR.data  && !mtR.error)  S.metalTx       = mtR.data;
-      if (mpR.data  && !mpR.error)  S.metalPrices   = mpR.data;
-      if (trR.data  && !trR.error)  S.transfers     = trR.data;
-      if (raR.data  && !raR.error)  S.rates         = raR.data;
-      if (bcR.data  && !bcR.error)  S.barcodes      = bcR.data;
-      if (stR.data  && !stR.error)  S.statements    = stR.data;
-      if (atR.data  && !atR.error)  S.attendance    = atR.data;
-      if (seR.data  && !seR.error)  S.settings      = seR.data;
+      // تحديث البيانات مع logging للأخطاء
+      const tables = [
+        [txR,  'transactions',  'acc_transactions'],
+        [invR, 'invoices',      'acc_invoices'],
+        [cuR,  'customers',     'acc_customers'],
+        [suR,  'suppliers',     'acc_suppliers'],
+        [emR,  'employees',     'acc_employees'],
+        [caR,  'categories',    'acc_categories'],
+        [cbR,  'cashboxes',     'acc_cashboxes'],
+        [meR,  'metals',        'acc_metals'],
+        [mtR,  'metalTx',       'acc_metal_transactions'],
+        [mpR,  'metalPrices',   'acc_metal_prices'],
+        [trR,  'transfers',     'acc_cashbox_transfers'],
+        [raR,  'rates',         'acc_rates'],
+        [bcR,  'barcodes',      'acc_barcodes'],
+        [stR,  'statements',    'acc_account_statements'],
+        [atR,  'attendance',    'acc_attendance'],
+      ];
 
-      // حفظ محلي
+      tables.forEach(([result, key, name]) => {
+        if (result.error) {
+          console.error(`[loadAll] ${name}:`, result.error.message);
+        } else if (result.data && result.data.length) {
+          S[key] = result.data;
+        }
+      });
+
+      // الإعدادات (ليست مصفوفة)
+      if (seR.data && !seR.error) S.settings = seR.data;
+
       await IDB.saveState();
-
-      // تحديث كل الواجهة
       W.ui.setOnline(true);
       W.ui.updateBadges();
       W.cashbox._populateSelects();
       W.cat._populateCatSelects();
+      W.tx._populateFilters();
+      W.transfer._populateMonthFilter();
       W.ui.renderAll();
       W.inv.checkOverdue();
 
-      console.log('✅ loadAll: تم تحميل كل البيانات من Supabase');
-
+      console.log('✅ loadAll: done');
     } catch(e) {
       console.error('[loadAll]', e);
       W.toast.error(W.i18n.t('msg_offline'));
       W.ui.setOnline(false);
-
     } finally {
-      // ══ النهاية دائماً: إيقاف أيقونة التحميل ══
       document.getElementById('refreshBtn')?.classList.remove('refreshing');
     }
   },
@@ -2915,9 +2922,9 @@ W.data = {
       W.i18n.lang === 'ar' ? 'حذف كل البيانات' : 'Tüm Verileri Sil',
       W.i18n.lang === 'ar' ? 'سيتم حذف كل شيء نهائياً!' : 'Tüm veriler silinecek!',
       async () => {
-        S.transactions = []; S.invoices = [];    S.customers  = [];
-        S.suppliers    = []; S.employees = [];   S.metalTx    = [];
-        S.transfers    = []; S.barcodes  = [];   S.statements = [];
+        S.transactions = []; S.invoices = [];  S.customers  = [];
+        S.suppliers    = []; S.employees = []; S.metalTx    = [];
+        S.transfers    = []; S.barcodes  = []; S.statements = [];
         S.attendance   = [];
         await IDB.saveState();
         W.ui.renderAll();
@@ -2927,6 +2934,7 @@ W.data = {
     );
   }
 };
+
 
 
 /* ══ EXPORT ══ */
@@ -2962,144 +2970,144 @@ W.print={
 /* ══ REALTIME ══ */
 W.realtime = {
   _channels: [],
+  _initialized: false,
 
   async init() {
+    // ✅ منع التشغيل المزدوج
+    if (this._initialized && this._channels.length > 0) {
+      console.log('Realtime: already running, skipping');
+      return;
+    }
+
     const sb = await getSB();
     if (!sb) return;
 
-    // قائمة الجداول التي نريد مراقبتها
     const tables = [
-      { name: 'acc_transactions',       stateKey: 'transactions',  render: () => { W.tx.render(); W.dashboard.render(); W.cashbox.renderAll(); W.ui.updateBadges(); } },
-      { name: 'acc_cashboxes',          stateKey: 'cashboxes',     render: () => { W.cashbox.renderAll(); W.cashbox._populateSelects(); W.dashboard.render(); } },
-      { name: 'acc_customers',          stateKey: 'customers',     render: () => { W.cust.render(); W.ui.updateBadges(); } },
-      { name: 'acc_suppliers',          stateKey: 'suppliers',     render: () => { W.supp.render(); } },
-      { name: 'acc_employees',          stateKey: 'employees',     render: () => { W.emp.render(); W.ui.updateBadges(); } },
-      { name: 'acc_attendance',         stateKey: 'attendance',    render: () => { W.emp.render(); } },
-      { name: 'acc_invoices',           stateKey: 'invoices',      render: () => { W.inv.render(); W.ui.updateBadges(); } },
-      { name: 'acc_categories',         stateKey: 'categories',    render: () => { W.cat._populateCatSelects(); W.cat.renderList(); } },
-      { name: 'acc_metals',             stateKey: 'metals',        render: () => { W.metal.render(); W.dashboard._renderMetals(); } },
-      { name: 'acc_metal_transactions', stateKey: 'metalTx',       render: () => { W.metal.render(); } },
-      { name: 'acc_metal_prices',       stateKey: 'metalPrices',   render: () => { W.metal.render(); W.dashboard._renderMetals(); } },
-      { name: 'acc_cashbox_transfers',  stateKey: 'transfers',     render: () => { W.transfer.render(); } },
-      { name: 'acc_rates',              stateKey: 'rates',         render: () => { W.settings._renderRatesList(); } },
-      { name: 'acc_barcodes',           stateKey: 'barcodes',      render: () => { W.barcode.render(); } },
-      { name: 'acc_account_statements', stateKey: 'statements',    render: () => { if(S.section==='statements') W.statements.loadList(); } },
-      { name: 'acc_settings',           stateKey: 'settings',      render: () => { W.settings.load(); } },
+      { name: 'acc_transactions',       stateKey: 'transactions',
+        render: () => { W.tx.render(); W.dashboard.render(); W.ui.updateBadges(); } },
+      { name: 'acc_cashboxes',          stateKey: 'cashboxes',
+        render: () => { W.cashbox.renderAll(); W.cashbox._populateSelects(); W.dashboard.render(); } },
+      { name: 'acc_customers',          stateKey: 'customers',
+        render: () => { W.cust.render(); W.ui.updateBadges(); } },
+      { name: 'acc_suppliers',          stateKey: 'suppliers',
+        render: () => { W.supp.render(); } },
+      { name: 'acc_employees',          stateKey: 'employees',
+        render: () => { W.emp.render(); W.ui.updateBadges(); } },
+      { name: 'acc_attendance',         stateKey: 'attendance',
+        render: () => { if (S.section === 'employees') W.emp.render(); } },
+      { name: 'acc_invoices',           stateKey: 'invoices',
+        render: () => { W.inv.render(); W.ui.updateBadges(); } },
+      { name: 'acc_categories',         stateKey: 'categories',
+        render: () => { W.cat._populateCatSelects(); W.cat.renderList(); } },
+      { name: 'acc_metals',             stateKey: 'metals',
+        render: () => { if (S.section === 'metals') W.metal.render(); W.dashboard._renderMetals(); } },
+      { name: 'acc_metal_transactions', stateKey: 'metalTx',
+        render: () => { if (S.section === 'metals') W.metal.render(); } },
+      { name: 'acc_metal_prices',       stateKey: 'metalPrices',
+        render: () => { if (S.section === 'metals') W.metal.render(); W.dashboard._renderMetals(); } },
+      { name: 'acc_cashbox_transfers',  stateKey: 'transfers',
+        render: () => { if (S.section === 'transfers') W.transfer.render(); } },
+      { name: 'acc_rates',              stateKey: 'rates',
+        render: () => { W.settings._renderRatesList(); } },
+      { name: 'acc_barcodes',           stateKey: 'barcodes',
+        render: () => { if (S.section === 'barcodes') W.barcode.render(); } },
+      { name: 'acc_account_statements', stateKey: 'statements',
+        render: () => { if (S.section === 'statements') W.statements.loadList(); } },
+      { name: 'acc_settings',           stateKey: 'settings',
+        render: () => { W.settings.load(); } },
     ];
 
     tables.forEach(({ name, stateKey, render }) => {
       const channel = sb
-        .channel(`realtime:${name}`)
+        .channel(`rt_${name}_${Date.now()}`)
         .on('postgres_changes',
           { event: '*', schema: 'public', table: name },
           async (payload) => {
-            console.log(`[Realtime] ${name}:`, payload.eventType);
-
-            // تحديث البيانات المحلية بذكاء
+            console.log(`[RT] ${name}:`, payload.eventType);
             await this._handleChange(stateKey, payload);
-
-            // تحديث الواجهة
             render();
-
-            // إشعار بصري خفيف
             this._showSyncIndicator();
           }
         )
         .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            console.log(`✅ Realtime: ${name} متصل`);
-          } else if (status === 'CHANNEL_ERROR') {
-            console.warn(`⚠️ Realtime: ${name} خطأ`);
-          }
+          if (status === 'SUBSCRIBED') console.log(`✅ RT: ${name}`);
+          else if (status === 'CHANNEL_ERROR') console.warn(`⚠️ RT error: ${name}`);
         });
 
       this._channels.push(channel);
     });
 
-    console.log(`🔴 Realtime: ${tables.length} قناة مفعّلة`);
+    this._initialized = true;
+    console.log(`🔴 Realtime: ${tables.length} channels active`);
   },
 
   async _handleChange(stateKey, payload) {
     const { eventType, new: newRecord, old: oldRecord } = payload;
 
-    // ══ الإعدادات ليست مصفوفة ══
     if (stateKey === 'settings') {
-      if (newRecord) {
-        S.settings = { ...S.settings, ...newRecord };
-        W.settings.load();
-      }
+      if (newRecord) S.settings = { ...S.settings, ...newRecord };
       return;
     }
 
     if (!Array.isArray(S[stateKey])) return;
 
     if (eventType === 'INSERT') {
-      // تجنب التكرار — قد يكون الجهاز نفسه أضافه بـ ID حقيقي
       const exists = S[stateKey].find(r => String(r.id) === String(newRecord.id));
       if (!exists) {
         S[stateKey].unshift(newRecord);
       } else {
-        // حدّث البيانات إن كانت ناقصة
         const idx = S[stateKey].findIndex(r => String(r.id) === String(newRecord.id));
         if (idx > -1) Object.assign(S[stateKey][idx], newRecord);
       }
-
     } else if (eventType === 'UPDATE') {
       const idx = S[stateKey].findIndex(r => String(r.id) === String(newRecord.id));
-      if (idx > -1) {
-        Object.assign(S[stateKey][idx], newRecord);
-      } else {
-        S[stateKey].unshift(newRecord);
-      }
-
+      if (idx > -1) Object.assign(S[stateKey][idx], newRecord);
+      else S[stateKey].unshift(newRecord);
     } else if (eventType === 'DELETE') {
       if (oldRecord && oldRecord.id) {
-        S[stateKey] = S[stateKey].filter(r =>
-          String(r.id) !== String(oldRecord.id)
-        );
+        S[stateKey] = S[stateKey].filter(r => String(r.id) !== String(oldRecord.id));
       }
     }
 
-    // ══ تحديث الـ selects الحساسة فوراً ══
+    // تحديثات خاصة
     if (stateKey === 'cashboxes') {
       W.cashbox._populateSelects();
-      W.cashbox.renderAll();
+      // تحديث تفاصيل الصندوق المفتوح
+      if (S.currentCashbox) W.cashbox.filterDetail();
     }
     if (stateKey === 'categories') {
       W.cat._populateCatSelects();
       W.cat.renderList();
     }
-    if (stateKey === 'employees') {
+    if (stateKey === 'transactions') {
+      W.ui.updateBadges();
+      W.dashboard._renderRecentTx();
+      W.dashboard._renderStats();
+      // تحديث تفاصيل الصندوق المفتوح
+      if (S.currentCashbox) W.cashbox.filterDetail();
+    }
+    if (stateKey === 'invoices') {
+      W.inv.checkOverdue();
       W.ui.updateBadges();
     }
     if (stateKey === 'customers') {
       W.ui.updateBadges();
       W.cust._updateDatalist();
     }
-    if (stateKey === 'transactions') {
-      W.ui.updateBadges();
-      W.dashboard._renderRecentTx();
-      W.dashboard._renderStats();
-    }
-    if (stateKey === 'invoices') {
-      W.inv.checkOverdue();
+    if (stateKey === 'employees') {
       W.ui.updateBadges();
     }
 
-    // ══ حفظ محلي للعمل أوفلاين ══
+    // حفظ محلي
     try {
       await IDB.saveAll(stateKey, S[stateKey]);
       LS.set(stateKey, S[stateKey]);
-    } catch(e) {
-      console.warn('[IDB save]', e);
-    }
+    } catch(e) { console.warn('[IDB save]', e); }
   },
 
   _showSyncIndicator() {
     const dot = document.getElementById('connDot');
     if (!dot) return;
-    // وميض ذهبي عند وصول بيانات جديدة
-    dot.style.transition = 'all 0.3s ease';
     dot.style.background = 'var(--gold)';
     dot.style.transform = 'scale(1.8)';
     dot.style.boxShadow = '0 0 8px var(--gold)';
@@ -3110,16 +3118,15 @@ W.realtime = {
     }, 800);
   },
 
-  // ══ إعادة الاتصال عند الانقطاع ══
   async reconnect() {
-    console.log('🔄 Realtime: إعادة الاتصال...');
+    console.log('🔄 Realtime: reconnecting...');
     await this.disconnect();
+    this._initialized = false;
     await new Promise(r => setTimeout(r, 1000));
     await this.init();
     W.toast.info(W.i18n.lang === 'ar' ? '🔄 تم إعادة الاتصال' : 'Yeniden bağlandı');
   },
 
-  // ══ إيقاف كل القنوات ══
   async disconnect() {
     const sb = getSBSync();
     if (!sb) return;
@@ -3127,7 +3134,8 @@ W.realtime = {
       try { await sb.removeChannel(ch); } catch(e) {}
     }
     this._channels = [];
-    console.log('🔌 Realtime: تم قطع الاتصال');
+    this._initialized = false;
+    console.log('🔌 Realtime: disconnected');
   }
 };
 
@@ -3251,11 +3259,19 @@ W.settings={
         </div>
       </div>`).join('')||`<div style="text-align:center;padding:16px;color:var(--text-3);">${W.i18n.t('lbl_no_data')}</div>`;
   },
-  async _persist(){
-    LS.set('settings',S.settings);await IDB.saveSingle('settings',S.settings);
-    const sb=await getSB();if(sb)await sb.from('acc_settings').upsert({...S.settings,id:1}).select();
-  }
-};
+ async _persist() {
+  LS.set('settings', S.settings);
+  await IDB.saveSingle('settings', S.settings);
+  const sb = await getSB();
+  if (!sb) return;
+  // ✅ احذف الحقول المحسوبة (Generated Columns) قبل الإرسال
+  const toSave = { ...S.settings };
+  delete toSave.currency;          // generated in acc_rates
+  delete toSave.reference_no;      // generated in some tables
+  delete toSave.department;        // generated in acc_employees
+  await sb.from('acc_settings').upsert({ ...toSave, id: 1 }).select();
+},
+
 
 /* ══ CASHBOX ══ */
 W.cashbox={
@@ -3285,15 +3301,23 @@ W.cashbox={
       </div>
     </div>`;
   },
-  showDetail(cbId){
-    S.currentCashbox=cbId;const cb=S.cashboxes.find(c=>String(c.id)===String(cbId));if(!cb)return;
-    const detail=document.getElementById('cashboxDetail');if(!detail)return;
-    detail.style.display='block';
-    document.getElementById('cbDetailTitle').innerHTML=`<i class="fas ${cb.icon||'fa-wallet'}" style="color:${cb.color||'var(--gold)'};"></i><span>${H.esc(this.cbName(cb))}</span>`;
-    document.getElementById('cbDetailBalance').textContent=H.sym(cb.currency)+' '+H.fmt(Number(cb.balance||0));
-    this._populateDetailFilters(cb);this.filterDetail();
-    detail.scrollIntoView({behavior:'smooth',block:'start'});
-  },
+ showDetail(cbId) {
+  S.currentCashbox = cbId;
+  const cb = S.cashboxes.find(c => String(c.id) === String(cbId));
+  if (!cb) return;
+  const detail = document.getElementById('cashboxDetail');
+  if (!detail) return;
+  detail.style.display = 'block';
+  document.getElementById('cbDetailTitle').innerHTML =
+    `<i class="fas ${cb.icon||'fa-wallet'}" style="color:${cb.color||'var(--gold)'};"></i>
+     <span>${H.esc(this.cbName(cb))}</span>`;
+  document.getElementById('cbDetailBalance').textContent =
+    H.sym(cb.currency) + ' ' + H.fmt(Number(cb.balance || 0));
+  this._populateDetailFilters(cb);
+  this.filterDetail();
+  detail.scrollIntoView({ behavior: 'smooth', block: 'start' });
+},
+
   _populateDetailFilters(cb){
     const ms=document.getElementById('cbDetailMonth');if(!ms)return;
     const months=[...new Set(S.transactions.filter(t=>String(t.cashbox_id)===String(cb.id)).map(t=>(t.date||'').slice(0,7)).filter(Boolean))].sort().reverse();
@@ -3366,33 +3390,69 @@ W.cashbox={
     const cb=S.cashboxes.find(c=>String(c.id)===String(id));if(!cb)return;
     W.confirm.show(W.i18n.t('btn_delete'),this.cbName(cb),async()=>{S.cashboxes=S.cashboxes.filter(c=>String(c.id)!==String(id));await this._persist();this.renderAll();this._populateSelects();W.dashboard.render();W.toast.success(W.i18n.t('msg_deleted'));W.audit.log('acc_cashboxes','DELETE',id,{});});
   },
-    async _updateBalance(cbId, delta) {
-    const cb = S.cashboxes.find(c => String(c.id) === String(cbId));
-    if (!cb) return;
-    const newBalance = Number(cb.balance || 0) + delta;
-    cb.balance = newBalance;
+async _updateBalance(cbId, delta) {
+  const cb = S.cashboxes.find(c => String(c.id) === String(cbId));
+  if (!cb) return;
 
-    // تحديث Supabase مباشرة
-    const sb = await getSB();
-    if (sb) {
-      await sb.from('acc_cashboxes')
-        .update({ balance: newBalance, updated_at: new Date().toISOString() })
-        .eq('id', cbId);
-    }
-    await this._persist();
-    this.renderAll();
-  },
-
-  async _persist() {
-    LS.set('cashboxes', S.cashboxes);
+  // أوفلاين فقط — حدّث محلياً
+  // إذا متصل، الـ trigger في Supabase يتكفل بالرصيد
+  if (!S.online || !S.sbReady) {
+    cb.balance = Number(cb.balance || 0) + delta;
     await IDB.saveAll('cashboxes', S.cashboxes);
-    const sb = await getSB();
-    if (sb) {
-      await Promise.all(
-        S.cashboxes.map(c => sb.from('acc_cashboxes').upsert(c).select())
-      );
+    LS.set('cashboxes', S.cashboxes);
+    this.renderAll();
+    return;
+  }
+
+  // متصل — اجلب الرصيد الحقيقي من Supabase بعد تأخير بسيط
+  setTimeout(async () => {
+    await this._refreshBalance(cbId);
+  }, 600);
+},
+
+async _refreshBalance(cbId) {
+  const sb = await getSB();
+  if (!sb || !cbId) return;
+  try {
+    const { data, error } = await sb
+      .from('acc_cashboxes')
+      .select('id, balance, updated_at')
+      .eq('id', cbId)
+      .single();
+    if (!error && data) {
+      const i = S.cashboxes.findIndex(c => String(c.id) === String(cbId));
+      if (i > -1) {
+        S.cashboxes[i].balance = data.balance;
+        S.cashboxes[i].updated_at = data.updated_at;
+      }
+      await IDB.saveAll('cashboxes', S.cashboxes);
+      LS.set('cashboxes', S.cashboxes);
+      this.renderAll();
     }
-  },
+  } catch(e) {
+    console.warn('[_refreshBalance]', e);
+  }
+},
+
+async _persist(changedId = null) {
+  LS.set('cashboxes', S.cashboxes);
+  await IDB.saveAll('cashboxes', S.cashboxes);
+  const sb = await getSB();
+  if (!sb) return;
+
+  // أرسل فقط الصندوق المتغير إن وُجد
+  const toSave = changedId
+    ? S.cashboxes.filter(c => String(c.id) === String(changedId))
+    : S.cashboxes;
+
+  await Promise.all(
+    toSave.map(c => {
+      const row = { ...c };
+      return sb.from('acc_cashboxes').upsert(row).select();
+    })
+  );
+},
+
 
   _populateSelects(){
     const opts=S.cashboxes.filter(c=>c.is_active!==false).map(c=>`<option value="${c.id}">${H.esc(this.cbName(c))} (${H.sym(c.currency)} ${H.fmt(Number(c.balance||0))})</option>`).join('');
@@ -3489,130 +3549,128 @@ W.tx={
     const list=type==='customer'?S.customers:type==='supplier'?S.suppliers:S.employees;
     sel.innerHTML=`<option value="">— ${W.i18n.t('lbl_entity')} —</option>`+list.map(p=>`<option value="${p.id}">${H.esc(p.name||'')}</option>`).join('');
   },
-  async save() {
-    const btn = document.getElementById('txSaveBtn');
-    if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>`; }
-    try {
-      const id   = document.getElementById('tx-edit-id').value;
-      const desc = document.getElementById('tx-desc').value.trim();
-      const amt  = Number(document.getElementById('tx-amount').value);
-      if (!desc || !amt) { W.toast.error(W.i18n.t('msg_required')); return; }
-      const cbId = document.getElementById('tx-cashbox').value;
-      if (!cbId) { W.toast.error(W.i18n.t('msg_select_cashbox')); return; }
+async save() {
+  const btn = document.getElementById('txSaveBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>`; }
+  try {
+    const id   = document.getElementById('tx-edit-id').value;
+    const desc = document.getElementById('tx-desc').value.trim();
+    const amt  = Number(document.getElementById('tx-amount').value);
+    if (!desc || !amt) { W.toast.error(W.i18n.t('msg_required')); return; }
+    const cbId = document.getElementById('tx-cashbox').value;
+    if (!cbId) { W.toast.error(W.i18n.t('msg_select_cashbox')); return; }
 
-      let attach = [];
-      try { attach = JSON.parse(document.getElementById('tx-attach').value || '[]'); } catch(e) {}
+    let attach = [];
+    try { attach = JSON.parse(document.getElementById('tx-attach').value || '[]'); } catch(e) {}
 
-      const data = {
-        description:    desc,
-        amount:         amt,
-        type:           document.getElementById('tx-type').value,
-        date:           document.getElementById('tx-date').value,
-        cashbox_id:     cbId,
-        category_id:    document.getElementById('tx-category').value || null,
-        currency:       document.getElementById('tx-currency').value || 'TRY',
-        payment_method: document.getElementById('tx-pay-method').value,
-        reference:      document.getElementById('tx-ref').value || null,
-        entity_type:    document.getElementById('tx-entity-type').value || null,
-        entity_id:      document.getElementById('tx-entity-id').value || null,
-        notes:          document.getElementById('tx-notes').value || null,
-        attachments:    attach,
-        created_at:     new Date().toISOString()
-      };
+    const data = {
+      description:    desc,
+      amount:         amt,
+      type:           document.getElementById('tx-type').value,
+      date:           document.getElementById('tx-date').value,
+      cashbox_id:     cbId,
+      category_id:    document.getElementById('tx-category').value || null,
+      currency:       document.getElementById('tx-currency').value || 'TRY',
+      payment_method: document.getElementById('tx-pay-method').value,
+      reference:      document.getElementById('tx-ref').value || null,
+      entity_type:    document.getElementById('tx-entity-type').value || null,
+      entity_id:      document.getElementById('tx-entity-id').value || null,
+      notes:          document.getElementById('tx-notes').value || null,
+      attachments:    attach,
+      created_at:     new Date().toISOString()
+    };
 
-      const sb = await getSB();
+    const sb = await getSB();
 
-      if (id && !String(id).startsWith('loc_')) {
-        // ══ تعديل سجل موجود ══
-        const old = S.transactions.find(t => String(t.id) === String(id));
-        if (old) {
-          const oldDelta = old.type === 'income' ? old.amount : -old.amount;
-          await W.cashbox._updateBalance(old.cashbox_id, -oldDelta);
-        }
-        if (sb) {
-          const { data: updated, error } = await sb
-            .from('acc_transactions')
-            .update(data)
-            .eq('id', id)
-            .select()
-            .single();
-          if (!error && updated) {
-            const i = S.transactions.findIndex(t => String(t.id) === String(id));
-            if (i > -1) S.transactions[i] = updated;
-          } else if (error) {
-            console.error('[TX Update]', error);
-            W.toast.error(W.i18n.t('msg_error') + ': ' + error.message);
-            return;
-          }
-        } else {
-          // أوفلاين
+    if (id && !String(id).startsWith('loc_')) {
+      // ══ تعديل سجل موجود ══
+      if (sb) {
+        const { data: updated, error } = await sb
+          .from('acc_transactions')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) { W.toast.error(W.i18n.t('msg_error') + ': ' + error.message); return; }
+        if (updated) {
           const i = S.transactions.findIndex(t => String(t.id) === String(id));
-          if (i > -1) Object.assign(S.transactions[i], { ...data, id });
+          if (i > -1) S.transactions[i] = updated;
         }
-        const delta = data.type === 'income' ? data.amount : -data.amount;
-        await W.cashbox._updateBalance(cbId, delta);
-        W.audit.log('acc_transactions', 'UPDATE', id, data);
-
       } else {
-        // ══ إضافة سجل جديد ══
-        if (sb) {
-          const { data: inserted, error } = await sb
-            .from('acc_transactions')
-            .insert(data)
-            .select()
-            .single();
-
-          if (error) {
-            console.error('[TX Insert]', error);
-            W.toast.error(W.i18n.t('msg_error') + ': ' + error.message);
-            return;
-          }
-
-          if (inserted) {
-            // أضف بالـ ID الحقيقي من Supabase
-            S.transactions.unshift(inserted);
-            // اجلب رصيد الصندوق المحدّث من Supabase (الـ trigger حدّثه)
-            await this._refreshCashbox(cbId);
-            W.audit.log('acc_transactions', 'INSERT', inserted.id, data);
-          }
-
-        } else {
-          // أوفلاين — حفظ محلي مؤقت
-          data.id = H.uid();
-          S.transactions.unshift(data);
-          const delta = data.type === 'income' ? data.amount : -data.amount;
-          await W.cashbox._updateBalance(cbId, delta);
-          W.audit.log('acc_transactions', 'INSERT', data.id, data);
+        const i = S.transactions.findIndex(t => String(t.id) === String(id));
+        if (i > -1) Object.assign(S.transactions[i], { ...data, id });
+        // أوفلاين: حدّث الرصيد يدوياً
+        const old = S.transactions[i];
+        if (old) {
+          const oldDelta = old.type === 'income' ? -old.amount : old.amount;
+          const newDelta = data.type === 'income' ? data.amount : -data.amount;
+          const cb = S.cashboxes.find(c => String(c.id) === String(cbId));
+          if (cb) cb.balance = Number(cb.balance || 0) + oldDelta + newDelta;
         }
       }
+      // اجلب الرصيد المحدّث (الـ trigger عدّله)
+      setTimeout(() => W.cashbox._refreshBalance(cbId), 700);
+      W.audit.log('acc_transactions', 'UPDATE', id, data);
 
-      // تحديث كشف الحسابات
-      if (data.entity_type && data.entity_id) {
-        W.statements.addEntry(data.entity_type, data.entity_id, data);
-      }
+    } else {
+      // ══ إضافة سجل جديد ══
+      if (sb) {
+        const { data: inserted, error } = await sb
+          .from('acc_transactions')
+          .insert(data)
+          .select()
+          .single();
 
-      // حفظ محلي
-      await IDB.saveAll('transactions', S.transactions);
-      LS.set('transactions', S.transactions);
+        if (error) { W.toast.error(W.i18n.t('msg_error') + ': ' + error.message); return; }
 
-      // تحديث الواجهة
-      W.modal.close('modal-tx');
-      this.render();
-      W.dashboard.render();
-      W.cashbox.renderAll();
-      W.ui.updateBadges();
-      W.toast.success(W.i18n.t('msg_saved'));
-
-    } catch(e) {
-      console.error('[TX Save]', e);
-      W.toast.error(W.i18n.t('msg_error'));
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.innerHTML = `<i class="fas fa-save"></i><span>${W.i18n.t('btn_save')}</span>`;
+        if (inserted) {
+          // أضف بالـ ID الحقيقي من Supabase
+          const exists = S.transactions.find(t => String(t.id) === String(inserted.id));
+          if (!exists) S.transactions.unshift(inserted);
+          // الـ trigger حدّث الرصيد — اجلبه بعد لحظة
+          setTimeout(() => W.cashbox._refreshBalance(cbId), 700);
+          W.audit.log('acc_transactions', 'INSERT', inserted.id, data);
+        }
+      } else {
+        // أوفلاين
+        data.id = H.uid();
+        S.transactions.unshift(data);
+        const cb = S.cashboxes.find(c => String(c.id) === String(cbId));
+        if (cb) {
+          cb.balance = Number(cb.balance || 0) + (data.type === 'income' ? data.amount : -data.amount);
+        }
+        W.audit.log('acc_transactions', 'INSERT', data.id, data);
       }
     }
-  },
+
+    // تحديث كشف الحسابات
+    if (data.entity_type && data.entity_id) {
+      W.statements.addEntry(data.entity_type, data.entity_id, data);
+    }
+
+    // حفظ محلي
+    await IDB.saveAll('transactions', S.transactions);
+    LS.set('transactions', S.transactions);
+
+    // تحديث الواجهة
+    W.modal.close('modal-tx');
+    this.render();
+    W.dashboard.render();
+    W.cashbox.renderAll();
+    W.ui.updateBadges();
+    W.toast.success(W.i18n.t('msg_saved'));
+
+  } catch(e) {
+    console.error('[TX Save]', e);
+    W.toast.error(W.i18n.t('msg_error'));
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fas fa-save"></i><span>${W.i18n.t('btn_save')}</span>`;
+    }
+  }
+},
+
 
   // ══ دالة جديدة: جلب رصيد الصندوق المحدّث من Supabase ══
   async _refreshCashbox(cbId) {
@@ -3701,49 +3759,41 @@ W.tx={
     this.updateCurrencySym();
     if(t.attachments?.length){const prev=document.getElementById('tx-attach-preview');const hidden=document.getElementById('tx-attach');if(prev)prev.innerHTML=t.attachments.map((a,i)=>`<div class="preview-item"><img src="${a.url||''}" onclick="W.upload.viewImage(this.src)"/><div class="preview-remove" onclick="W.upload.removePreview(this,'tx-attach',${i})"><i class="fas fa-times"></i></div></div>`).join('');if(hidden)hidden.value=JSON.stringify(t.attachments);}
   },
-  delete(id) {
-    const t = S.transactions.find(x => String(x.id) === String(id));
-    if (!t) return;
-    W.confirm.show(W.i18n.t('btn_delete'), t.description, async () => {
-      const sb = await getSB();
+delete(id) {
+  const t = S.transactions.find(x => String(x.id) === String(id));
+  if (!t) return;
+  W.confirm.show(W.i18n.t('btn_delete'), t.description, async () => {
+    const sb = await getSB();
 
-      // ══ حذف من Supabase أولاً ══
-      if (sb && !String(id).startsWith('loc_')) {
-        const { error } = await sb
-          .from('acc_transactions')
-          .delete()
-          .eq('id', id);
-
-        if (error) {
-          console.error('[TX Delete]', error);
-          W.toast.error(W.i18n.t('msg_error') + ': ' + error.message);
-          return;
-        }
+    if (sb && !String(id).startsWith('loc_')) {
+      const { error } = await sb
+        .from('acc_transactions')
+        .delete()
+        .eq('id', id);
+      if (error) { W.toast.error(W.i18n.t('msg_error') + ': ' + error.message); return; }
+      // ✅ الـ trigger عكس الرصيد تلقائياً — اجلبه بعد لحظة
+      setTimeout(() => W.cashbox._refreshBalance(t.cashbox_id), 700);
+    } else {
+      // أوفلاين — عكس الرصيد يدوياً
+      const cb = S.cashboxes.find(c => String(c.id) === String(t.cashbox_id));
+      if (cb) {
+        cb.balance = Number(cb.balance || 0) + (t.type === 'income' ? -t.amount : t.amount);
       }
+    }
 
-      // ══ عكس الرصيد ══
-      const delta = t.type === 'income' ? -t.amount : t.amount;
+    S.transactions = S.transactions.filter(x => String(x.id) !== String(id));
+    await IDB.saveAll('transactions', S.transactions);
+    LS.set('transactions', S.transactions);
 
-      // ══ حذف من الذاكرة المحلية ══
-      S.transactions = S.transactions.filter(x => String(x.id) !== String(id));
+    this.render();
+    W.dashboard.render();
+    W.cashbox.renderAll();
+    W.ui.updateBadges();
+    W.toast.success(W.i18n.t('msg_deleted'));
+    W.audit.log('acc_transactions', 'DELETE', id, {});
+  });
+},
 
-      // ══ تحديث الصندوق ══
-      await W.cashbox._updateBalance(t.cashbox_id, delta);
-
-      // ══ حفظ محلي ══
-      await IDB.saveAll('transactions', S.transactions);
-      LS.set('transactions', S.transactions);
-
-      // ══ تحديث الواجهة ══
-      this.render();
-      W.dashboard.render();
-      W.cashbox.renderAll();
-      W.ui.updateBadges();
-
-      W.toast.success(W.i18n.t('msg_deleted'));
-      W.audit.log('acc_transactions', 'DELETE', id, {});
-    });
-  },
 
   async _persist(latestId) {
     LS.set('transactions', S.transactions);
@@ -4183,13 +4233,38 @@ W.emp={
     document.getElementById('att-type').value=nextType;
     this._toggleAttFields(nextType);this.calcAttAmount();
   },
-  async deleteAtt(id){
-    S.attendance=S.attendance.filter(a=>String(a.id)!==String(id));
-    await this._persistAtt();
-    const empId=document.getElementById('att-employee')?.value;
-    if(empId)this._loadAttHistory(empId);
-    W.toast.success(W.i18n.t('msg_deleted'));
-  },
+ async deleteAtt(id) {
+  const sb = await getSB();
+
+  // ✅ احذف من Supabase أولاً إذا كان ID حقيقي
+  if (sb && !String(id).startsWith('loc_')) {
+    const { error } = await sb
+      .from('acc_attendance')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('[deleteAtt]', error.message);
+      W.toast.error(W.i18n.t('msg_error') + ': ' + error.message);
+      return;
+    }
+  }
+
+  // ✅ احذف محلياً
+  S.attendance = S.attendance.filter(a => String(a.id) !== String(id));
+
+  // ✅ حفظ محلي فقط (بدون إرسال لـ Supabase مرة ثانية)
+  LS.set('attendance', S.attendance);
+  await IDB.saveAll('attendance', S.attendance);
+
+  // ✅ أعد رسم السجل للموظف الحالي
+  const empId = document.getElementById('att-employee')?.value;
+  if (empId) this._loadAttHistory(empId);
+
+  W.toast.success(W.i18n.t('msg_deleted'));
+  W.audit.log('acc_attendance', 'DELETE', id, {});
+},
+
 
   /* ── Bulk Attendance ── */
   openBulkAttendance(){
@@ -4427,9 +4502,66 @@ W.emp={
     W.statements.addEntry('employee',empId,txData);
     W.audit.log('acc_transactions','INSERT',txData.id,{type:'salary_payment',empId,amount,ym});
   },
-  async _persist(){LS.set('employees',S.employees);await IDB.saveAll('employees',S.employees);const sb=await getSB();if(sb)await Promise.all(S.employees.map(e=>sb.from('acc_employees').upsert(e).select()));},
-  async _persistAtt(){LS.set('attendance',S.attendance);await IDB.saveAll('attendance',S.attendance);const sb=await getSB();if(sb){const batch=S.attendance.slice(0,100);await Promise.all(batch.map(a=>sb.from('acc_attendance').upsert(a).select()));}}
+ async _persist() {
+  LS.set('employees', S.employees);
+  await IDB.saveAll('employees', S.employees);
+  const sb = await getSB();
+  if (!sb) return;
+  // ✅ أرسل فقط الموظف المتغير إن أمكن، وإلا الكل
+  await Promise.all(
+    S.employees.map(e => {
+      const row = { ...e };
+      // احذف الحقول المحسوبة (Generated Columns)
+      delete row.department; // GENERATED ALWAYS AS (dept)
+      return sb.from('acc_employees').upsert(row).select();
+    })
+  );
+},
+
+async _persistAtt(newRecord = null) {
+  LS.set('attendance', S.attendance);
+  await IDB.saveAll('attendance', S.attendance);
+  const sb = await getSB();
+  if (!sb) return;
+
+  if (newRecord) {
+    // ✅ احفظ السجل الجديد فقط — أسرع وأدق
+    const row = { ...newRecord };
+    // احذف الـ id المحلي المؤقت حتى يُنشئ Supabase id حقيقي
+    if (String(row.id).startsWith('loc_')) delete row.id;
+
+    const { data: inserted, error } = await sb
+      .from('acc_attendance')
+      .insert(row)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[att insert]', error.message);
+    } else if (inserted) {
+      // ✅ حدّث الـ id المحلي بالـ id الحقيقي من Supabase
+      const idx = S.attendance.findIndex(
+        a => String(a.id) === String(newRecord.id)
+      );
+      if (idx > -1) S.attendance[idx].id = inserted.id;
+      // حفظ محلي بالـ id الصحيح
+      await IDB.saveAll('attendance', S.attendance);
+      LS.set('attendance', S.attendance);
+    }
+  } else {
+    // حفظ دفعي عند الضرورة (مزامنة كاملة)
+    const batch = S.attendance.slice(0, 50);
+    await Promise.all(
+      batch.map(a => {
+        const row = { ...a };
+        if (String(row.id).startsWith('loc_')) delete row.id;
+        return sb.from('acc_attendance').upsert(row).select();
+      })
+    );
+  }
+}
 };
+
 
 /* ══ INVOICES ══ */
 W.inv={
@@ -4577,22 +4709,115 @@ W.metal={
   },
   fillCurrentPrice(){const type=document.getElementById('metal-tx-metal')?.value||'gold';const price=this.getPrice(type);const el=document.getElementById('metal-tx-price');if(el)el.value=price;this.calcTotal();},
   calcTotal(){const qty=Number(document.getElementById('metal-tx-qty')?.value||0);const price=Number(document.getElementById('metal-tx-price')?.value||0);const total=qty*price;const sym=H.sym(document.getElementById('metal-tx-currency')?.value||'TRY');const el=document.getElementById('metalTxTotal');if(el)el.textContent=sym+' '+H.fmt(total);},
-  async saveTx(){
-    const qty=Number(document.getElementById('metal-tx-qty')?.value||0);const price=Number(document.getElementById('metal-tx-price')?.value||0);
-    if(!qty||!price){W.toast.error(W.i18n.t('msg_required'));return;}
-    const metalType=document.getElementById('metal-tx-metal')?.value||'gold';
-    const txType=document.getElementById('metal-tx-type')?.value||'buy';
-    const total=qty*price;const cbId=document.getElementById('metal-tx-cashbox')?.value;
-    const data={id:H.uid(),metal_type:metalType,transaction_type:txType,quantity_grams:qty,price_per_gram:price,total_amount:total,currency:document.getElementById('metal-tx-currency')?.value||'TRY',cashbox_id:cbId,date:document.getElementById('metal-tx-date')?.value||H.today(),notes:document.getElementById('metal-tx-notes')?.value||'',created_at:new Date().toISOString()};
-    S.metalTx.unshift(data);
-    let metal=S.metals.find(m=>m.metal_type===metalType);
-    if(!metal){metal={id:H.uid(),metal_type:metalType,name_tr:metalType==='gold'?'Altın':'Gümüş',name_ar:metalType==='gold'?'ذهب':'فضة',name_en:metalType==='gold'?'Gold':'Silver',quantity_grams:0,currency:data.currency};S.metals.push(metal);}
-    if(txType==='buy')metal.quantity_grams=(Number(metal.quantity_grams||0)+qty);
-    else if(txType==='sell')metal.quantity_grams=Math.max(0,Number(metal.quantity_grams||0)-qty);
-    if(cbId){const delta=txType==='buy'?-total:total;await W.cashbox._updateBalance(cbId,delta);}
-    await this._persist();W.modal.close('modal-metal-tx');this.render();W.dashboard.render();
-    W.toast.success(W.i18n.t('msg_saved'));
-  },
+ async saveTx() {
+  const qty   = Number(document.getElementById('metal-tx-qty')?.value || 0);
+  const price = Number(document.getElementById('metal-tx-price')?.value || 0);
+  if (!qty || !price) { W.toast.error(W.i18n.t('msg_required')); return; }
+
+  const metalType = document.getElementById('metal-tx-metal')?.value || 'gold';
+  const txType    = document.getElementById('metal-tx-type')?.value || 'buy';
+  const total     = qty * price;
+  const cbId      = document.getElementById('metal-tx-cashbox')?.value;
+  const currency  = document.getElementById('metal-tx-currency')?.value || 'TRY';
+  const date      = document.getElementById('metal-tx-date')?.value || H.today();
+  const notes     = document.getElementById('metal-tx-notes')?.value || '';
+
+  const sb = await getSB();
+
+  // ── تأكد من وجود المعدن وجلب ID الحقيقي ──
+  let metal = S.metals.find(m => m.metal_type === metalType || m.type === metalType);
+  if (!metal) {
+    const newMetal = {
+      name:    metalType === 'gold' ? 'Altın' : 'Gümüş',
+      name_ar: metalType === 'gold' ? 'ذهب'  : 'فضة',
+      name_tr: metalType === 'gold' ? 'Altın' : 'Gümüş',
+      name_en: metalType === 'gold' ? 'Gold'  : 'Silver',
+      type:       metalType,
+      metal_type: metalType,
+      quantity_grams: 0,
+      currency,
+      color: metalType === 'gold' ? '#c9a84c' : '#94a3b8',
+      icon:  'fa-coins'
+    };
+    if (sb) {
+      const { data: ins, error } = await sb.from('acc_metals').insert(newMetal).select().single();
+      if (!error && ins) {
+        S.metals.push(ins);
+        metal = ins;
+      } else {
+        newMetal.id = H.uid();
+        S.metals.push(newMetal);
+        metal = newMetal;
+      }
+    } else {
+      newMetal.id = H.uid();
+      S.metals.push(newMetal);
+      metal = newMetal;
+    }
+  }
+
+  const txData = {
+    metal_id:         metal.id,   // ✅ ID الحقيقي
+    metal_type:       metalType,
+    transaction_type: txType,
+    quantity_grams:   qty,
+    price_per_gram:   price,
+    total_amount:     total,
+    currency,
+    cashbox_id:       cbId || null,
+    date,
+    notes,
+    created_at: new Date().toISOString()
+  };
+
+  if (sb) {
+    const { data: inserted, error } = await sb
+      .from('acc_metal_transactions')
+      .insert(txData)
+      .select()
+      .single();
+    if (error) { W.toast.error(W.i18n.t('msg_error') + ': ' + error.message); return; }
+    if (inserted) S.metalTx.unshift(inserted);
+    // الـ trigger يحدّث الكمية تلقائياً — اجلب المعدن المحدّث
+    setTimeout(async () => {
+      const { data: updatedMetal } = await sb.from('acc_metals').select('*').eq('id', metal.id).single();
+      if (updatedMetal) {
+        const idx = S.metals.findIndex(m => String(m.id) === String(metal.id));
+        if (idx > -1) S.metals[idx] = updatedMetal;
+      }
+      W.metal.render();
+      W.dashboard._renderMetals();
+    }, 700);
+  } else {
+    // أوفلاين
+    txData.id = H.uid();
+    S.metalTx.unshift(txData);
+    if (txType === 'buy') metal.quantity_grams = (Number(metal.quantity_grams || 0) + qty);
+    else if (txType === 'sell') metal.quantity_grams = Math.max(0, Number(metal.quantity_grams || 0) - qty);
+  }
+
+  // تحديث رصيد الصندوق
+  if (cbId) {
+    const delta = txType === 'buy' ? -total : total;
+    if (!S.online || !S.sbReady) {
+      const cb = S.cashboxes.find(c => String(c.id) === String(cbId));
+      if (cb) cb.balance = Number(cb.balance || 0) + delta;
+    } else {
+      setTimeout(() => W.cashbox._refreshBalance(cbId), 800);
+    }
+  }
+
+  await this._persist();
+  W.modal.close('modal-metal-tx');
+  if (S.online) {
+    // الـ render سيأتي من setTimeout أعلاه
+  } else {
+    this.render();
+    W.dashboard.render();
+  }
+  W.toast.success(W.i18n.t('msg_saved'));
+},
+
   openPriceModal(){
     const body=document.getElementById('metalPriceBody');if(!body)return;
     body.innerHTML=['gold','silver'].map(type=>{const price=this.getPrice(type);return`
@@ -4789,7 +5014,51 @@ W.barcode={
       </div>`).join('');
     setTimeout(()=>{data.forEach(bc=>{const el=document.getElementById(`bc-display-${bc.id}`);if(!el)return;try{if(bc.barcode_type==='QR'){el.innerHTML='<canvas></canvas>';QRCode.toCanvas(el.querySelector('canvas'),bc.code||'WOW',{width:100,margin:1},()=>{});}else{el.innerHTML='<svg></svg>';JsBarcode(el.querySelector('svg'),bc.code||'WOW',{format:bc.barcode_type||'CODE128',width:1.2,height:40,displayValue:true,fontSize:9,margin:5});}}catch(e){el.innerHTML='<span style="font-size:9px;color:var(--danger);">!</span>';}});},100);
   },
-  printOne(id){const bc=S.barcodes.find(x=>String(x.id)===String(id));if(!bc)return;const el=document.getElementById(`bc-display-${id}`);if(!el)return;const win=window.open('','_blank','width=400,height=300');win.document.write(`<html><body style="text-align:center;padding:20px;font-family:sans-serif;"><div style="font-size:14px;font-weight:bold;margin-bottom:8px;">${H.esc(bc.label||bc.code)}</div>${el.innerHTML}<div style="font-size:11px;margin-top:5px;">${H.esc(bc.code)}</div>${bc.price?`<div style="font-size:13px;font-weight:900;margin-top:4px;">${H.sym(bc.currency||'TRY')} ${H.fmt(bc.price)}</div>`:''}</body></html>`);win.document.close();setTimeout(()=>{win.print();win.close();},500);},
+printOne(id) {
+  const bc = S.barcodes.find(x => String(x.id) === String(id));
+  if (!bc) return;
+
+  const win = window.open('', '_blank', 'width=450,height=350');
+  const barcodeScript = bc.barcode_type !== 'QR'
+    ? `<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>`
+    : `<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>`;
+
+  const renderScript = bc.barcode_type === 'QR'
+    ? `QRCode.toCanvas(document.getElementById('bc'),
+        '${bc.code.replace(/'/g,"\\'")}',
+        {width:160,margin:2}, function(){});`
+    : `JsBarcode('#bc','${bc.code.replace(/'/g,"\\'")}',
+        {format:'${bc.barcode_type}',width:2,height:60,
+         displayValue:true,fontSize:12,margin:10});`;
+
+  const canvasOrSvg = bc.barcode_type === 'QR'
+    ? `<canvas id="bc"></canvas>`
+    : `<svg id="bc"></svg>`;
+
+  win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="UTF-8">
+    <style>
+      body{font-family:sans-serif;text-align:center;padding:20px;background:#fff;}
+      .label{font-size:14px;font-weight:bold;margin-bottom:8px;}
+      .code{font-size:11px;color:#666;margin-top:4px;}
+      .price{font-size:14px;font-weight:900;margin-top:6px;color:#c9a84c;}
+    </style>
+    ${barcodeScript}
+  </head><body>
+    <div class="label">${H.esc(bc.label || bc.code)}</div>
+    ${canvasOrSvg}
+    <div class="code">${H.esc(bc.code)}</div>
+    ${bc.price ? `<div class="price">${H.sym(bc.currency||'TRY')} ${H.fmt(bc.price)}</div>` : ''}
+    <script>
+      window.onload = function() {
+        try { ${renderScript} } catch(e) { console.error(e); }
+        setTimeout(function(){ window.print(); window.close(); }, 700);
+      };
+    <\/script>
+  </body></html>`);
+  win.document.close();
+},
+
   printAll(){const win=window.open('','_blank','width=800,height=600');const items=S.barcodes.slice(0,50).map(bc=>`<div style="display:inline-block;margin:8px;padding:10px;border:1px solid #ddd;text-align:center;"><div style="font-size:11px;font-weight:bold;">${H.esc(bc.label||bc.code)}</div><div id="p-${bc.id}"></div><div style="font-size:9px;">${H.esc(bc.code)}</div></div>`).join('');win.document.write(`<html><body style="font-family:sans-serif;">${items}<script>document.querySelectorAll('[id^="p-"]').forEach(el=>{const id=el.id.slice(2);});<\/script></body></html>`);win.document.close();setTimeout(()=>{win.print();win.close();},800);},
   printFromModal(){this.printOne(S.barcodes[0]?.id||'');},
   delete(id){W.confirm.show(W.i18n.t('btn_delete'),'',async()=>{S.barcodes=S.barcodes.filter(b=>String(b.id)!==String(id));await this._persist();this.filter();W.toast.success(W.i18n.t('msg_deleted'));});},
