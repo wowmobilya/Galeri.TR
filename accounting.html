@@ -727,6 +727,219 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
 
 
 @keyframes spin-refresh { to { transform: rotate(360deg); } }
+
+/* ══ FILES LIBRARY ══ */
+.files-grid-view {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.files-list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.file-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--trans-med);
+  cursor: pointer;
+  position: relative;
+}
+.file-card:hover {
+  border-color: var(--border-gold);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+.file-card.favorited {
+  border-color: rgba(245,158,11,0.4);
+}
+.file-thumb {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+  background: var(--bg-card2);
+}
+.file-thumb-icon {
+  width: 100%;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  background: var(--bg-card2);
+}
+.file-info {
+  padding: 10px;
+}
+.file-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+.file-meta {
+  font-size: 9px;
+  color: var(--text-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+  font-family: 'Montserrat', sans-serif;
+}
+.file-actions {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.file-type-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  font-family: 'Montserrat', sans-serif;
+  backdrop-filter: blur(8px);
+}
+.ftype-image { background: rgba(16,185,129,0.85); color: #fff; }
+.ftype-video { background: rgba(239,68,68,0.85);  color: #fff; }
+.ftype-audio { background: rgba(139,92,246,0.85); color: #fff; }
+.ftype-pdf   { background: rgba(239,68,68,0.85);  color: #fff; }
+.ftype-doc   { background: rgba(59,130,246,0.85); color: #fff; }
+.ftype-other { background: rgba(107,114,128,0.85);color: #fff; }
+.fav-star {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all var(--trans-fast);
+  backdrop-filter: blur(4px);
+}
+.fav-star.active { color: var(--warning); }
+.fav-star:hover  { color: var(--warning); transform: scale(1.2); }
+
+/* List view */
+.file-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  transition: all var(--trans-med);
+  cursor: pointer;
+}
+.file-list-item:hover {
+  border-color: var(--border-gold);
+  background: var(--bg-hover);
+}
+.file-list-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.file-list-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.file-list-info { flex: 1; min-width: 0; }
+.file-list-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-list-meta {
+  font-size: 9px;
+  color: var(--text-3);
+  font-family: 'Montserrat', sans-serif;
+  margin-top: 2px;
+}
+.file-list-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+/* Player */
+#playerContent video,
+#playerContent audio {
+  width: 100%;
+  max-width: 700px;
+  border-radius: var(--radius-md);
+  outline: none;
+}
+#playerContent iframe {
+  width: 100%;
+  height: 500px;
+  border: none;
+  border-radius: var(--radius-md);
+}
+#playerContent img {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: var(--radius-md);
+  object-fit: contain;
+}
+
+/* Drop zone active */
+.drop-zone-active {
+  background: var(--gold-glow) !important;
+  border-color: var(--gold) !important;
+  transform: scale(1.01);
+}
+
+/* Upload progress */
+.upload-progress-bar {
+  height: 4px;
+  background: var(--bg-input);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-top: 6px;
+}
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold), var(--gold-light));
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+@media (max-width: 640px) {
+  .files-grid-view {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .file-thumb, .file-thumb-icon { height: 100px; }
+}
+
+  
 .refreshing #refreshIcon { animation: spin-refresh 0.8s linear infinite; }
 
   
@@ -734,6 +947,109 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
 </head>
 <body>
 
+
+
+
+<!-- Modal: File Upload -->
+<div class="modal-overlay" id="modal-file-upload"
+     onclick="W.modal.bgClose(event,'modal-file-upload')">
+  <div class="modal-box modal-lg">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-icon"
+             style="background:var(--gold-glow);border:1px solid var(--border-gold);color:var(--gold);">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <div>
+          <div class="modal-title">رفع ملف جديد</div>
+          <div class="modal-sub">صور · فيديو · PDF · صوت · مستندات</div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="W.modal.close('modal-file-upload')">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="file-edit-id"/>
+
+      <!-- منطقة الرفع -->
+      <div class="upload-area" id="fileUploadArea" style="margin-bottom:14px;min-height:100px;"
+           ondragover="W.files.onDragOver(event)"
+           ondragleave="W.files.onDragLeave(event)"
+           ondrop="W.files.onDrop(event)">
+        <input type="file" id="fileInput" multiple accept="*/*"
+               onchange="W.files.handleFileSelect(this.files)"/>
+        <i class="fas fa-cloud-upload-alt"
+           style="font-size:28px;color:var(--gold);display:block;margin-bottom:8px;"></i>
+        <div style="font-size:12px;font-weight:700;color:var(--text-1);">
+          اسحب الملفات أو انقر للاختيار
+        </div>
+        <div style="font-size:10px;color:var(--text-3);margin-top:4px;">
+          يدعم: صور · فيديو · PDF · صوت · Word · Excel · وأكثر
+        </div>
+      </div>
+
+      <!-- معاينة الملفات المختارة -->
+      <div id="fileUploadPreview" style="margin-bottom:12px;"></div>
+
+      <!-- بيانات الملف -->
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-tag"></i><span>اسم الملف</span>
+          </label>
+          <input type="text" class="form-input" id="file-name"
+                 placeholder="اسم وصفي للملف"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">
+            <i class="fas fa-folder"></i><span>الفئة</span>
+          </label>
+          <select class="form-select" id="file-category">
+            <option value="general">عام</option>
+            <option value="invoices">فواتير</option>
+            <option value="contracts">عقود</option>
+            <option value="reports">تقارير</option>
+            <option value="products">منتجات</option>
+            <option value="employees">موظفون</option>
+          </select>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">
+            <i class="fas fa-align-left"></i><span>وصف</span>
+          </label>
+          <textarea class="form-textarea" id="file-description"
+                    rows="2" placeholder="وصف اختياري..."></textarea>
+        </div>
+      </div>
+
+      <!-- شريط التقدم -->
+      <div id="uploadProgressWrap" style="display:none;margin-top:10px;">
+        <div style="font-size:10px;color:var(--text-2);margin-bottom:4px;"
+             id="uploadProgressText">جاري الرفع...</div>
+        <div class="upload-progress-bar">
+          <div class="upload-progress-fill" id="uploadProgressFill"
+               style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="W.modal.close('modal-file-upload')">
+        إلغاء
+      </button>
+      <button class="btn btn-primary" onclick="W.files.saveFile()" id="fileSaveBtn">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>رفع وحفظ</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
 <div class="print-header" id="printHeader">
   <h1 id="printCompany">WOW MOBİLYA</h1>
   <p id="printDate"></p>
@@ -780,6 +1096,17 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
       <div class="nav-item" data-section="cashflow"><i class="fas fa-water"></i><span data-i18n="nav_cashflow">Nakit Akışı</span></div>
       <div class="nav-item" data-section="audit"><i class="fas fa-history"></i><span data-i18n="nav_audit">Denetim</span></div>
     </div>
+
+<div class="nav-group">
+  <div class="nav-group-label">الملفات</div>
+  <div class="nav-item" data-section="files">
+    <i class="fas fa-folder-open"></i>
+    <span>مكتبة الملفات</span>
+    <span class="nav-badge" id="nb-files">0</span>
+  </div>
+</div>
+
+    
     <div class="nav-group">
       <div class="nav-group-label" data-i18n="nav_system">SİSTEM</div>
       <div class="nav-item" data-section="settings"><i class="fas fa-cog"></i><span data-i18n="nav_settings">Ayarlar</span></div>
@@ -1246,6 +1573,109 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
       </div>
     </div>
 
+
+
+
+<!-- ══ FILES LIBRARY ══ -->
+<div class="section" id="sec-files">
+
+  <!-- رأس القسم -->
+  <div class="section-header">
+    <div class="section-title">
+      <i class="fas fa-folder-open"></i>
+      <span>مكتبة الملفات</span>
+    </div>
+    <div class="section-actions">
+      <div class="tabs-wrap" id="filesViewTabs">
+        <button class="tab-btn active" onclick="W.files.setView('grid',this)">
+          <i class="fas fa-th"></i>
+        </button>
+        <button class="tab-btn" onclick="W.files.setView('list',this)">
+          <i class="fas fa-list"></i>
+        </button>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="W.files.openUploadModal()">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>رفع ملف</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid" id="filesKpi" style="margin-bottom:14px;"></div>
+
+  <!-- فلاتر -->
+  <div class="card" style="margin-bottom:12px;">
+    <div class="filter-bar" style="flex-wrap:wrap;gap:8px;">
+      <div class="search-box" style="flex:1;min-width:160px;">
+        <i class="fas fa-search"></i>
+        <input type="text" id="filesSearch" placeholder="بحث في الملفات..."
+               oninput="W.files.filter()"/>
+      </div>
+      <select class="filter-select" id="filesTypeF" onchange="W.files.filter()">
+        <option value="all">كل الأنواع</option>
+        <option value="image">🖼️ صور</option>
+        <option value="video">🎬 فيديو</option>
+        <option value="audio">🎵 صوت</option>
+        <option value="pdf">📄 PDF</option>
+        <option value="doc">📝 مستندات</option>
+        <option value="other">📦 أخرى</option>
+      </select>
+      <select class="filter-select" id="filesCatF" onchange="W.files.filter()">
+        <option value="all">كل الفئات</option>
+        <option value="general">عام</option>
+        <option value="invoices">فواتير</option>
+        <option value="contracts">عقود</option>
+        <option value="reports">تقارير</option>
+        <option value="products">منتجات</option>
+        <option value="employees">موظفون</option>
+      </select>
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;position:relative;">
+        <i class="fas fa-cloud-upload-alt"></i>
+        <span>رفع سريع</span>
+        <input type="file" multiple accept="*/*" style="position:absolute;inset:0;opacity:0;cursor:pointer;"
+               onchange="W.files.quickUpload(this.files)"/>
+      </label>
+    </div>
+  </div>
+
+  <!-- منطقة السحب والإفلات -->
+  <div id="filesDropZone" class="card" style="
+    border:2px dashed var(--border-gold);border-radius:var(--radius-lg);
+    padding:20px;text-align:center;margin-bottom:14px;
+    background:var(--gold-glow2);cursor:pointer;display:none;
+    transition:all var(--trans-med);">
+    <i class="fas fa-cloud-upload-alt" style="font-size:32px;color:var(--gold);margin-bottom:8px;display:block;"></i>
+    <div style="font-size:13px;font-weight:700;color:var(--gold);">اسحب الملفات هنا</div>
+    <div style="font-size:10px;color:var(--text-3);margin-top:4px;">يدعم: صور، فيديو، PDF، صوت، مستندات</div>
+  </div>
+
+  <!-- شبكة الملفات -->
+  <div id="filesGrid"></div>
+
+  <!-- مشغّل الوسائط المدمج -->
+  <div id="filesMediaPlayer" style="display:none;margin-top:14px;">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title" id="playerTitle">
+          <i class="fas fa-play-circle" style="color:var(--gold);"></i>
+          <span>مشغّل الوسائط</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="W.files.closePlayer()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="card-body" id="playerContent" style="text-align:center;"></div>
+    </div>
+  </div>
+
+</div>
+
+
+
+
+
+    
     <!-- ══ SETTINGS ══ -->
     <div class="section" id="sec-settings">
       <div class="settings-grid">
@@ -1440,9 +1870,15 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
       <div class="mob-nav-fab" onclick="W.tx.openModal()"><i class="fas fa-plus"></i></div>
       <span class="mob-nav-fab-label" data-i18n="btn_new">Yeni</span>
     </div>
-    <div class="mob-nav-item" onclick="W.ui.showSection('employees');W.mob.setActive(this)">
-      <i class="fas fa-user-tie"></i><span data-i18n="nav_employees">Personel</span>
-    </div>
+<div class="mob-nav-item" onclick="W.ui.showSection('files');W.mob.setActive(this)">
+  <i class="fas fa-folder-open"></i>
+  <span>ملفاتي</span>
+</div>
+<div class="mob-nav-item" onclick="W.ui.showSection('employees');W.mob.setActive(this)">
+  <i class="fas fa-user-tie"></i>
+  <span data-i18n="nav_employees">Personel</span>
+</div>
+
     <div class="mob-nav-item" onclick="W.ui.openSidebar()">
       <i class="fas fa-bars"></i><span data-i18n="nav_menu">Menü</span>
     </div>
@@ -2140,7 +2576,8 @@ const S={
   transactions:[],invoices:[],customers:[],suppliers:[],
   employees:[],categories:[],cashboxes:[],metals:[],
   metalTx:[],metalPrices:[],transfers:[],rates:[],
-  barcodes:[],statements:[],attendance:[],auditLog:[],
+  barcodes:[],statements:[],attendance:[],auditLog:[],files:[],
+
   settings:{},section:'dashboard',hideAmounts:false,
   chartMode:'6m',currentCashbox:null,confirmCb:null,
   confirmWord:'SİL',online:true,sbReady:false,
@@ -2166,7 +2603,8 @@ const IDB={
         const db=e.target.result;
         ['transactions','invoices','customers','suppliers','employees','categories',
          'cashboxes','metals','metalTx','metalPrices','transfers','rates','barcodes',
-         'statements','attendance','settings'].forEach(n=>{
+         'statements','attendance','settings','files'].forEach(n=>{
+
           if(!db.objectStoreNames.contains(n))db.createObjectStore(n,{keyPath:'id',autoIncrement:true});
         });
       };
@@ -2214,18 +2652,20 @@ const IDB={
       this.saveAll('metalTx',S.metalTx),this.saveAll('metalPrices',S.metalPrices),
       this.saveAll('transfers',S.transfers),this.saveAll('rates',S.rates),
       this.saveAll('barcodes',S.barcodes),this.saveAll('statements',S.statements),
-      this.saveAll('attendance',S.attendance),this.saveSingle('settings',S.settings),
+this.saveAll('attendance',S.attendance),this.saveSingle('settings',S.settings),
+this.saveAll('files',S.files),
     ]);
   },
   async loadState(){
-    const[tx,inv,cu,su,em,ca,cb,me,mt,mp,tr,ra,bc,st,at,se]=await Promise.all([
+const[tx,inv,cu,su,em,ca,cb,me,mt,mp,tr,ra,bc,st,at,se,fi]=await Promise.all([
       this.getAll('transactions'),this.getAll('invoices'),this.getAll('customers'),
       this.getAll('suppliers'),this.getAll('employees'),this.getAll('categories'),
       this.getAll('cashboxes'),this.getAll('metals'),this.getAll('metalTx'),
       this.getAll('metalPrices'),this.getAll('transfers'),this.getAll('rates'),
       this.getAll('barcodes'),this.getAll('statements'),this.getAll('attendance'),
-      this.getAll('settings'),
+      this.getAll('settings'),this.getAll('files'),
     ]);
+
     if(tx.length)S.transactions=tx;if(inv.length)S.invoices=inv;
     if(cu.length)S.customers=cu;if(su.length)S.suppliers=su;
     if(em.length)S.employees=em;if(ca.length)S.categories=ca;
@@ -2233,7 +2673,8 @@ const IDB={
     if(mt.length)S.metalTx=mt;if(mp.length)S.metalPrices=mp;
     if(tr.length)S.transfers=tr;if(ra.length)S.rates=ra;
     if(bc.length)S.barcodes=bc;if(st.length)S.statements=st;
-    if(at.length)S.attendance=at;if(se.length)S.settings=se[0]||{};
+if(at.length)S.attendance=at;if(se.length)S.settings=se[0]||{};
+if(fi.length)S.files=fi;
   }
 };
 
@@ -2791,7 +3232,7 @@ W.ui={
     if(navEl)navEl.classList.add('active');
     else document.querySelector(`.nav-item[data-section="${name}"]`)?.classList.add('active');
     S.section=name;this.closeSidebar();W.i18n._updatePageTitle();
-    const loaders={dashboard:()=>W.dashboard.render(),cashboxes:()=>W.cashbox.render(),transactions:()=>W.tx.render(),invoices:()=>W.inv.render(),customers:()=>W.cust.render(),suppliers:()=>W.supp.render(),employees:()=>W.emp.render(),metals:()=>W.metal.render(),transfers:()=>W.transfer.render(),barcodes:()=>W.barcode.render(),statements:()=>W.statements.loadList(),reports:()=>W.reports.load(),cashflow:()=>W.cashflow.load(),audit:()=>W.audit.load(),settings:()=>W.settings.load()};
+const loaders={dashboard:()=>W.dashboard.render(),cashboxes:()=>W.cashbox.render(),transactions:()=>W.tx.render(),invoices:()=>W.inv.render(),customers:()=>W.cust.render(),suppliers:()=>W.supp.render(),employees:()=>W.emp.render(),metals:()=>W.metal.render(),transfers:()=>W.transfer.render(),barcodes:()=>W.barcode.render(),statements:()=>W.statements.loadList(),reports:()=>W.reports.load(),cashflow:()=>W.cashflow.load(),audit:()=>W.audit.load(),settings:()=>W.settings.load(),files:()=>W.files.render()};
     if(loaders[name])loaders[name]();
   },
   renderAll(){const loaders={dashboard:()=>W.dashboard.render(),cashboxes:()=>W.cashbox.render(),transactions:()=>W.tx.render(),invoices:()=>W.inv.render(),customers:()=>W.cust.render(),suppliers:()=>W.supp.render(),employees:()=>W.emp.render(),metals:()=>W.metal.render(),transfers:()=>W.transfer.render(),barcodes:()=>W.barcode.render(),statements:()=>W.statements.loadList(),reports:()=>W.reports.load(),cashflow:()=>W.cashflow.load(),settings:()=>W.settings.load()};if(loaders[S.section])loaders[S.section]();},
@@ -2803,7 +3244,7 @@ W.ui={
   setOnline(online){S.online=online;const dot=document.getElementById('connDot');const icon=document.getElementById('connIcon');if(dot)dot.className='conn-dot'+(online?'':' offline');if(icon)icon.className=online?'fas fa-wifi':'fas fa-wifi-slash';},
   toggleHideAmounts(val){S.hideAmounts=val!==undefined?val:!S.hideAmounts;LS.set('hide_amounts',S.hideAmounts);this.applyHideAmounts();const el=document.getElementById('sett-hide-amounts');if(el)el.checked=S.hideAmounts;},
   applyHideAmounts(){const btn=document.getElementById('hideAmountsBtn');const icon=document.getElementById('hideAmountsIcon');if(btn)btn.classList.toggle('active-state',S.hideAmounts);if(icon)icon.className=S.hideAmounts?'fas fa-eye-slash':'fas fa-eye';document.querySelectorAll('.amount-val').forEach(el=>{el.style.filter=S.hideAmounts?'blur(6px)':'';el.style.userSelect=S.hideAmounts?'none':'';});},
-  updateBadges(){const set=(id,val,hide=false)=>{const el=document.getElementById(id);if(el){if(hide)el.style.display=val>0?'inline-flex':'none';el.textContent=val;}};set('nb-transactions',S.transactions.length);set('nb-cashboxes',S.cashboxes.filter(c=>c.is_active!==false).length);set('nb-customers',S.customers.filter(c=>c.is_active!==false).length);set('nb-employees',S.employees.filter(e=>e.status==='active').length);const overdue=S.invoices.filter(i=>i.status==='overdue').length;set('nb-invoices',overdue,true);}
+updateBadges(){const set=(id,val,hide=false)=>{const el=document.getElementById(id);if(el){if(hide)el.style.display=val>0?'inline-flex':'none';el.textContent=val;}};set('nb-transactions',S.transactions.length);set('nb-cashboxes',S.cashboxes.filter(c=>c.is_active!==false).length);set('nb-customers',S.customers.filter(c=>c.is_active!==false).length);set('nb-employees',S.employees.filter(e=>e.status==='active').length);set('nb-files',(S.files||[]).length);const overdue=S.invoices.filter(i=>i.status==='overdue').length;set('nb-invoices',overdue,true);}
 };
 
 W.mob={setActive(el){document.querySelectorAll('.mob-nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}};
@@ -2823,7 +3264,7 @@ W.data = {
     }
     try {
       W.ui.setOnline(true);
-      const [txR,invR,cuR,suR,emR,caR,cbR,meR,mtR,mpR,trR,raR,bcR,stR,atR,seR] = await Promise.all([
+const [txR,invR,cuR,suR,emR,caR,cbR,meR,mtR,mpR,trR,raR,bcR,stR,atR,seR,fiR] = await Promise.all([
         sb.from('acc_transactions').select('*').order('date',{ascending:false}).limit(2000),
         sb.from('acc_invoices').select('*').order('created_at',{ascending:false}),
         sb.from('acc_customers').select('*').order('name',{ascending:true}),
@@ -2839,7 +3280,10 @@ W.data = {
         sb.from('acc_barcodes').select('*').order('created_at',{ascending:false}),
         sb.from('acc_account_statements').select('*').order('date',{ascending:false}).limit(1000),
         sb.from('acc_attendance').select('*').order('date',{ascending:false}).limit(2000),
-        sb.from('acc_settings').select('*').eq('id',1).maybeSingle(),
+sb.from('acc_settings').select('*').eq('id',1).maybeSingle(),
+        sb.from('acc_files').select('*').order('created_at',{ascending:false}).limit(500),
+      ]);
+
       ]);
 
       // تحديث كل البيانات
@@ -2859,6 +3303,8 @@ W.data = {
       if (stR.data  && !stR.error)  S.statements    = stR.data;
       if (atR.data  && !atR.error)  S.attendance    = atR.data;
       if (seR.data  && !seR.error)  S.settings      = seR.data;
+      if (fiR.data  && !fiR.error)  S.files         = fiR.data;
+
 
       // حفظ محلي
       await IDB.saveState();
@@ -2985,6 +3431,8 @@ W.realtime = {
       { name: 'acc_barcodes',           stateKey: 'barcodes',      render: () => { W.barcode.render(); } },
       { name: 'acc_account_statements', stateKey: 'statements',    render: () => { if(S.section==='statements') W.statements.loadList(); } },
       { name: 'acc_settings',           stateKey: 'settings',      render: () => { W.settings.load(); } },
+      { name: 'acc_files', stateKey: 'files', render: () => { W.files.render(); W.files._updateBadge(); } },
+
     ];
 
     tables.forEach(({ name, stateKey, render }) => {
@@ -3772,6 +4220,7 @@ W.dashboard={
     const expense=txM.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount||0),0);
     const profit=income-expense;
     const totalAssets=S.cashboxes.filter(c=>c.is_active!==false).reduce((s,c)=>{const rate=H.getRate(c.currency,'TRY');return s+Number(c.balance||0)*rate;},0);
+
     const overdue=S.invoices.filter(i=>i.status==='overdue').length;
     const activEmp=S.employees.filter(e=>e.status==='active').length;
     const sym=H.sym(S.settings.default_currency||'TRY');
@@ -4963,6 +5412,737 @@ W.cashflow={
   }
 };
 
+
+
+
+
+/* ══════════════════════════════════════════════════════
+   W.files — مكتبة الملفات المتكاملة
+   ══════════════════════════════════════════════════════ */
+W.files = {
+  _view: 'grid',
+  _pendingFiles: [],
+  _currentFile: null,
+
+  /* ── أيقونات الأنواع ── */
+  _typeIcon(type) {
+    const icons = {
+      image: { icon: '🖼️', fa: 'fa-image',       color: '#10b981', cls: 'ftype-image' },
+      video: { icon: '🎬', fa: 'fa-film',         color: '#ef4444', cls: 'ftype-video' },
+      audio: { icon: '🎵', fa: 'fa-music',        color: '#8b5cf6', cls: 'ftype-audio' },
+      pdf:   { icon: '📄', fa: 'fa-file-pdf',     color: '#ef4444', cls: 'ftype-pdf'   },
+      doc:   { icon: '📝', fa: 'fa-file-word',    color: '#3b82f6', cls: 'ftype-doc'   },
+      xls:   { icon: '📊', fa: 'fa-file-excel',   color: '#10b981', cls: 'ftype-doc'   },
+      ppt:   { icon: '📊', fa: 'fa-file-powerpoint',color:'#f97316',cls: 'ftype-doc'   },
+      zip:   { icon: '🗜️', fa: 'fa-file-archive', color: '#f59e0b', cls: 'ftype-other' },
+      other: { icon: '📦', fa: 'fa-file',         color: '#6b7280', cls: 'ftype-other' },
+    };
+    return icons[type] || icons.other;
+  },
+
+  /* ── تحديد نوع الملف من mime أو الامتداد ── */
+  _detectType(file) {
+    const mime = file.type || '';
+    const name = (file.name || '').toLowerCase();
+    const ext  = name.split('.').pop();
+
+    if (mime.startsWith('image/'))  return 'image';
+    if (mime.startsWith('video/'))  return 'video';
+    if (mime.startsWith('audio/'))  return 'audio';
+    if (mime === 'application/pdf' || ext === 'pdf') return 'pdf';
+    if (['doc','docx'].includes(ext)) return 'doc';
+    if (['xls','xlsx'].includes(ext)) return 'xls';
+    if (['ppt','pptx'].includes(ext)) return 'ppt';
+    if (['zip','rar','7z'].includes(ext)) return 'zip';
+    return 'other';
+  },
+
+  /* ── تحويل الحجم ── */
+  _fmtSize(kb) {
+    if (!kb) return '—';
+    if (kb < 1024) return kb + ' KB';
+    return (kb / 1024).toFixed(1) + ' MB';
+  },
+
+  /* ── تحويل الفئة ── */
+  _catLabel(cat) {
+    const m = {
+      general:'عام', invoices:'فواتير', contracts:'عقود',
+      reports:'تقارير', products:'منتجات', employees:'موظفون'
+    };
+    return m[cat] || cat;
+  },
+
+  /* ══ تغيير طريقة العرض ══ */
+  setView(view, btn) {
+    this._view = view;
+    document.querySelectorAll('#filesViewTabs .tab-btn')
+      .forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    this.filter();
+  },
+
+  /* ══ عرض القسم ══ */
+  render() {
+    this._renderKpi();
+    this.filter();
+    this._initDropZone();
+  },
+
+  /* ══ KPI ══ */
+  _renderKpi() {
+    const el = document.getElementById('filesKpi');
+    if (!el) return;
+    const total  = S.files?.length || 0;
+    const images = S.files?.filter(f => f.file_type === 'image').length || 0;
+    const videos = S.files?.filter(f => f.file_type === 'video').length || 0;
+    const pdfs   = S.files?.filter(f => f.file_type === 'pdf').length || 0;
+    const favs   = S.files?.filter(f => f.is_favorite).length || 0;
+    const totalKB= S.files?.reduce((s,f) => s + (f.size_kb||0), 0) || 0;
+
+    el.innerHTML = `
+      <div class="kpi-box" onclick="W.files.filterByType('all')" style="cursor:pointer;">
+        <div class="kpi-label">إجمالي الملفات</div>
+        <div class="kpi-val" style="color:var(--gold);">${total}</div>
+      </div>
+      <div class="kpi-box" onclick="W.files.filterByType('image')" style="cursor:pointer;">
+        <div class="kpi-label">🖼️ صور</div>
+        <div class="kpi-val" style="color:var(--success);">${images}</div>
+      </div>
+      <div class="kpi-box" onclick="W.files.filterByType('video')" style="cursor:pointer;">
+        <div class="kpi-label">🎬 فيديو</div>
+        <div class="kpi-val" style="color:var(--danger);">${videos}</div>
+      </div>
+      <div class="kpi-box" onclick="W.files.filterByType('pdf')" style="cursor:pointer;">
+        <div class="kpi-label">📄 PDF</div>
+        <div class="kpi-val" style="color:var(--info);">${pdfs}</div>
+      </div>
+      <div class="kpi-box" onclick="W.files.filterByType('all')" style="cursor:pointer;">
+        <div class="kpi-label">⭐ المفضلة</div>
+        <div class="kpi-val" style="color:var(--warning);">${favs}</div>
+      </div>
+      <div class="kpi-box">
+        <div class="kpi-label">💾 الحجم الكلي</div>
+        <div class="kpi-val" style="color:var(--purple);font-size:13px;">
+          ${this._fmtSize(totalKB)}
+        </div>
+      </div>`;
+  },
+
+  /* ══ فلترة وعرض ══ */
+  filterByType(type) {
+    const el = document.getElementById('filesTypeF');
+    if (el) el.value = type;
+    this.filter();
+  },
+
+  filter() {
+    const q    = (document.getElementById('filesSearch')?.value || '').toLowerCase();
+    const type = document.getElementById('filesTypeF')?.value || 'all';
+    const cat  = document.getElementById('filesCatF')?.value  || 'all';
+
+    let data = [...(S.files || [])];
+    if (type !== 'all') data = data.filter(f => f.file_type === type);
+    if (cat  !== 'all') data = data.filter(f => f.category  === cat);
+    if (q) data = data.filter(f =>
+      (f.name || '').toLowerCase().includes(q) ||
+      (f.description || '').toLowerCase().includes(q)
+    );
+
+    data.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+    const grid = document.getElementById('filesGrid');
+    if (!grid) return;
+
+    if (!data.length) {
+      grid.innerHTML = `<div class="${this._view === 'grid' ? 'files-grid-view' : ''}">
+        ${H.emptyState('fa-folder-open',
+          'لا توجد ملفات',
+          'ارفع ملفاتك المهمة هنا')}
+      </div>`;
+      return;
+    }
+
+    if (this._view === 'grid') {
+      grid.innerHTML = `<div class="files-grid-view">
+        ${data.map(f => this._cardHtml(f)).join('')}
+      </div>`;
+    } else {
+      grid.innerHTML = `<div class="files-list-view">
+        ${data.map(f => this._listItemHtml(f)).join('')}
+      </div>`;
+    }
+  },
+
+  /* ══ بطاقة الملف (Grid) ══ */
+  _cardHtml(f) {
+    const ti = this._typeIcon(f.file_type);
+    const isImg = f.file_type === 'image';
+    const thumb = isImg && f.file_url
+      ? `<img class="file-thumb" src="${H.esc(f.file_url)}"
+             alt="${H.esc(f.name)}" loading="lazy"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"/>`
+      : '';
+    const iconDiv = `<div class="file-thumb-icon"
+      style="color:${ti.color};${isImg ? 'display:none;' : ''}">
+      <i class="fas ${ti.fa}"></i>
+    </div>`;
+
+    return `<div class="file-card${f.is_favorite ? ' favorited' : ''}"
+                 onclick="W.files.openFile('${f.id}')">
+      ${thumb}${iconDiv}
+      <span class="file-type-badge ${ti.cls}">${f.file_type?.toUpperCase()}</span>
+      <div class="fav-star${f.is_favorite ? ' active' : ''}"
+           onclick="event.stopPropagation();W.files.toggleFav('${f.id}')">
+        <i class="fas fa-star"></i>
+      </div>
+      <div class="file-info">
+        <div class="file-name" title="${H.esc(f.name || '')}">${H.esc(f.name || 'ملف')}</div>
+        <div class="file-meta">
+          <span>${this._fmtSize(f.size_kb)}</span>
+          <span>${H.fmtDate(f.created_at)}</span>
+        </div>
+        <div class="file-actions">
+          <button class="btn btn-primary btn-xs"
+                  onclick="event.stopPropagation();W.files.openFile('${f.id}')">
+            <i class="fas fa-eye"></i>
+          </button>
+          <a class="btn btn-outline btn-xs"
+             href="${H.esc(f.file_url || '#')}"
+             download="${H.esc(f.name || 'file')}"
+             target="_blank"
+             onclick="event.stopPropagation();W.files.countDownload('${f.id}')">
+            <i class="fas fa-download"></i>
+          </a>
+          <button class="btn btn-danger btn-xs"
+                  onclick="event.stopPropagation();W.files.delete('${f.id}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  },
+
+  /* ══ عنصر القائمة (List) ══ */
+  _listItemHtml(f) {
+    const ti = this._typeIcon(f.file_type);
+    const isImg = f.file_type === 'image';
+    const iconEl = isImg && f.file_url
+      ? `<img class="file-list-thumb" src="${H.esc(f.file_url)}"
+             alt="${H.esc(f.name)}" loading="lazy"
+             onerror="this.style.display='none'"/>`
+      : `<div class="file-list-icon" style="background:${ti.color}22;color:${ti.color};">
+           <i class="fas ${ti.fa}"></i>
+         </div>`;
+
+    return `<div class="file-list-item" onclick="W.files.openFile('${f.id}')">
+      ${iconEl}
+      <div class="file-list-info">
+        <div class="file-list-name">${H.esc(f.name || 'ملف')}</div>
+        <div class="file-list-meta">
+          <span class="badge ${ti.cls}" style="margin-left:4px;">
+            ${f.file_type?.toUpperCase()}
+          </span>
+          ${this._catLabel(f.category)} ·
+          ${this._fmtSize(f.size_kb)} ·
+          ${H.fmtDate(f.created_at)}
+          ${f.download_count ? ` · ⬇️ ${f.download_count}` : ''}
+        </div>
+      </div>
+      <div class="file-list-actions">
+        <button class="btn btn-primary btn-xs"
+                onclick="event.stopPropagation();W.files.openFile('${f.id}')">
+          <i class="fas fa-eye"></i>
+        </button>
+        <a class="btn btn-outline btn-xs"
+           href="${H.esc(f.file_url || '#')}"
+           download="${H.esc(f.name || 'file')}"
+           target="_blank"
+           onclick="event.stopPropagation();W.files.countDownload('${f.id}')">
+          <i class="fas fa-download"></i>
+        </a>
+        <button class="btn btn-ghost btn-xs${f.is_favorite ? ' active-state' : ''}"
+                onclick="event.stopPropagation();W.files.toggleFav('${f.id}')">
+          <i class="fas fa-star" style="color:${f.is_favorite ? 'var(--warning)' : ''}"></i>
+        </button>
+        <button class="btn btn-danger btn-xs"
+                onclick="event.stopPropagation();W.files.delete('${f.id}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>`;
+  },
+
+  /* ══ فتح / عرض الملف ══ */
+  openFile(id) {
+    const f = (S.files || []).find(x => String(x.id) === String(id));
+    if (!f || !f.file_url) return;
+
+    const playerWrap   = document.getElementById('filesMediaPlayer');
+    const playerTitle  = document.getElementById('playerTitle');
+    const playerContent= document.getElementById('playerContent');
+    if (!playerWrap || !playerContent) return;
+
+    playerWrap.style.display = 'block';
+    playerTitle.innerHTML = `<i class="fas ${this._typeIcon(f.file_type).fa}"
+      style="color:var(--gold);"></i> <span>${H.esc(f.name || 'ملف')}</span>`;
+
+    const url = f.file_url;
+
+    switch (f.file_type) {
+      case 'image':
+        playerContent.innerHTML = `
+          <img src="${H.esc(url)}" alt="${H.esc(f.name)}"
+               style="max-width:100%;max-height:70vh;border-radius:var(--radius-md);
+                      object-fit:contain;cursor:zoom-in;"
+               onclick="W.upload.viewImage('${H.esc(url)}')"/>
+          <div style="margin-top:8px;font-size:10px;color:var(--text-3);">
+            انقر للتكبير
+          </div>`;
+        break;
+
+      case 'video':
+        playerContent.innerHTML = `
+          <video controls autoplay
+                 style="width:100%;max-width:700px;border-radius:var(--radius-md);"
+                 preload="metadata">
+            <source src="${H.esc(url)}">
+            <p style="color:var(--text-3);font-size:11px;">
+              المتصفح لا يدعم تشغيل الفيديو.
+              <a href="${H.esc(url)}" download style="color:var(--gold);">تحميل</a>
+            </p>
+          </video>`;
+        break;
+
+      case 'audio':
+        playerContent.innerHTML = `
+          <div style="padding:24px;background:var(--bg-card2);
+                      border-radius:var(--radius-lg);border:1px solid var(--border);">
+            <div style="font-size:48px;margin-bottom:16px;">🎵</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:12px;">
+              ${H.esc(f.name)}
+            </div>
+            <audio controls autoplay style="width:100%;max-width:500px;" preload="metadata">
+              <source src="${H.esc(url)}">
+              <p style="color:var(--text-3);font-size:11px;">
+                المتصفح لا يدعم تشغيل الصوت.
+                <a href="${H.esc(url)}" download style="color:var(--gold);">تحميل</a>
+              </p>
+            </audio>
+          </div>`;
+        break;
+
+      case 'pdf':
+        playerContent.innerHTML = `
+          <div style="border-radius:var(--radius-md);overflow:hidden;
+                      border:1px solid var(--border);">
+            <iframe src="${H.esc(url)}#toolbar=1&navpanes=0"
+                    style="width:100%;height:600px;border:none;"
+                    title="${H.esc(f.name)}">
+            </iframe>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
+            <a href="${H.esc(url)}" target="_blank"
+               class="btn btn-outline btn-sm">
+              <i class="fas fa-external-link-alt"></i> فتح في تبويب جديد
+            </a>
+            <a href="${H.esc(url)}" download="${H.esc(f.name)}"
+               class="btn btn-primary btn-sm"
+               onclick="W.files.countDownload('${f.id}')">
+              <i class="fas fa-download"></i> تحميل
+            </a>
+          </div>`;
+        break;
+
+      default:
+        playerContent.innerHTML = `
+          <div style="padding:32px;text-align:center;">
+            <div style="font-size:56px;margin-bottom:16px;">
+              ${this._typeIcon(f.file_type).icon}
+            </div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:6px;">
+              ${H.esc(f.name)}
+            </div>
+            <div style="font-size:11px;color:var(--text-3);margin-bottom:16px;">
+              ${this._fmtSize(f.size_kb)} · ${this._catLabel(f.category)}
+            </div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+              <a href="${H.esc(url)}" target="_blank"
+                 class="btn btn-outline btn-sm">
+                <i class="fas fa-external-link-alt"></i> فتح
+              </a>
+              <a href="${H.esc(url)}" download="${H.esc(f.name)}"
+                 class="btn btn-primary btn-sm"
+                 onclick="W.files.countDownload('${f.id}')">
+                <i class="fas fa-download"></i> تحميل
+              </a>
+            </div>
+          </div>`;
+    }
+
+    playerWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    this.countDownload(id);
+  },
+
+  closePlayer() {
+    const el = document.getElementById('filesMediaPlayer');
+    if (el) {
+      // إيقاف الوسائط
+      el.querySelectorAll('video, audio').forEach(m => {
+        m.pause();
+        m.src = '';
+      });
+      el.style.display = 'none';
+      document.getElementById('playerContent').innerHTML = '';
+    }
+  },
+
+  /* ══ فتح Modal الرفع ══ */
+  openUploadModal() {
+    this._pendingFiles = [];
+    document.getElementById('file-edit-id').value = '';
+    document.getElementById('file-name').value = '';
+    document.getElementById('file-description').value = '';
+    document.getElementById('file-category').value = 'general';
+    document.getElementById('fileUploadPreview').innerHTML = '';
+    document.getElementById('uploadProgressWrap').style.display = 'none';
+    document.getElementById('uploadProgressFill').style.width = '0%';
+    W.modal.open('modal-file-upload');
+  },
+
+  /* ══ معالجة اختيار الملفات ══ */
+  handleFileSelect(files) {
+    this._pendingFiles = Array.from(files);
+    this._renderUploadPreview();
+    if (files.length === 1) {
+      const name = files[0].name.replace(/\.[^/.]+$/, '');
+      const nameEl = document.getElementById('file-name');
+      if (nameEl && !nameEl.value) nameEl.value = name;
+    }
+  },
+
+  _renderUploadPreview() {
+    const el = document.getElementById('fileUploadPreview');
+    if (!el) return;
+    if (!this._pendingFiles.length) { el.innerHTML = ''; return; }
+
+    el.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      ${this._pendingFiles.map((f, i) => {
+        const type = this._detectType(f);
+        const ti   = this._typeIcon(type);
+        const sizeKB = Math.round(f.size / 1024);
+        return `<div style="display:flex;align-items:center;gap:7px;padding:7px 10px;
+                     background:var(--bg-input);border:1px solid var(--border);
+                     border-radius:var(--radius-sm);font-size:10px;">
+          <i class="fas ${ti.fa}" style="color:${ti.color};font-size:14px;"></i>
+          <div>
+            <div style="font-weight:700;max-width:140px;overflow:hidden;
+                        text-overflow:ellipsis;white-space:nowrap;">${H.esc(f.name)}</div>
+            <div style="color:var(--text-3);">${this._fmtSize(sizeKB)}</div>
+          </div>
+          <button class="btn btn-danger btn-xs btn-icon"
+                  onclick="W.files._removePending(${i})">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>`;
+      }).join('')}
+    </div>
+    <div style="font-size:10px;color:var(--text-3);">
+      ${this._pendingFiles.length} ملف مختار
+    </div>`;
+  },
+
+  _removePending(i) {
+    this._pendingFiles.splice(i, 1);
+    this._renderUploadPreview();
+  },
+
+  /* ══ رفع سريع (بدون modal) ══ */
+  async quickUpload(files) {
+    if (!files?.length) return;
+    W.toast.info(`جاري رفع ${files.length} ملف...`);
+    for (const file of files) {
+      await this._uploadAndSave(file, {
+        name: file.name.replace(/\.[^/.]+$/, ''),
+        category: 'general',
+        description: ''
+      });
+    }
+    W.toast.success(`تم رفع ${files.length} ملف ✓`);
+    this.render();
+    this._updateBadge();
+  },
+
+  /* ══ حفظ الملف من Modal ══ */
+  async saveFile() {
+    if (!this._pendingFiles.length) {
+      W.toast.error('اختر ملفاً أولاً!');
+      return;
+    }
+
+    const btn = document.getElementById('fileSaveBtn');
+    if (btn) { btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>`; }
+
+    const progressWrap = document.getElementById('uploadProgressWrap');
+    const progressFill = document.getElementById('uploadProgressFill');
+    const progressText = document.getElementById('uploadProgressText');
+    if (progressWrap) progressWrap.style.display = 'block';
+
+    const meta = {
+      name:        document.getElementById('file-name')?.value?.trim() || '',
+      category:    document.getElementById('file-category')?.value || 'general',
+      description: document.getElementById('file-description')?.value?.trim() || '',
+    };
+
+    try {
+      const total = this._pendingFiles.length;
+      for (let i = 0; i < total; i++) {
+        const file = this._pendingFiles[i];
+        const pct  = Math.round((i / total) * 100);
+        if (progressFill) progressFill.style.width = pct + '%';
+        if (progressText) progressText.textContent =
+          `جاري رفع ${i + 1} من ${total}: ${file.name}`;
+
+        const fileMeta = total === 1
+          ? meta
+          : { ...meta, name: meta.name || file.name.replace(/\.[^/.]+$/, '') };
+
+        await this._uploadAndSave(file, fileMeta);
+      }
+
+      if (progressFill) progressFill.style.width = '100%';
+      if (progressText) progressText.textContent = 'اكتمل الرفع ✓';
+
+      setTimeout(() => {
+        W.modal.close('modal-file-upload');
+        this.render();
+        this._updateBadge();
+        W.toast.success(`تم رفع ${total} ملف بنجاح ✓`);
+      }, 600);
+
+    } catch(e) {
+      console.error('[Files Save]', e);
+      W.toast.error('حدث خطأ أثناء الرفع: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fas fa-cloud-upload-alt"></i><span>رفع وحفظ</span>`;
+      }
+    }
+  },
+
+  /* ══ رفع ملف واحد ══ */
+  async _uploadAndSave(file, meta) {
+    const type   = this._detectType(file);
+    const sizeKB = Math.round(file.size / 1024);
+    let fileUrl  = '';
+
+    // محاولة الرفع على Supabase Storage
+    const sb = await getSB();
+    if (sb) {
+      try {
+        const ext      = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36).slice(2,7)}.${ext}`;
+        const path     = `files/${fileName}`;
+
+        const { data: uploadData, error: uploadError } =
+          await sb.storage.from('acc-files').upload(path, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (!uploadError && uploadData) {
+          const { data: urlData } =
+            sb.storage.from('acc-files').getPublicUrl(path);
+          fileUrl = urlData?.publicUrl || '';
+        }
+      } catch(e) {
+        console.warn('[Storage upload]', e);
+      }
+    }
+
+    // إذا فشل الرفع، استخدم Base64 (للملفات الصغيرة)
+    if (!fileUrl && sizeKB < 2048) {
+      fileUrl = await this._toBase64(file);
+    }
+
+    const data = {
+      id:           H.uid(),
+      name:         meta.name || file.name.replace(/\.[^/.]+$/, ''),
+      description:  meta.description || '',
+      file_url:     fileUrl,
+      file_type:    type,
+      mime_type:    file.type || '',
+      size_kb:      sizeKB,
+      category:     meta.category || 'general',
+      is_favorite:  false,
+      download_count: 0,
+      uploaded_by:  S.settings?.username || 'admin',
+      created_at:   new Date().toISOString(),
+      updated_at:   new Date().toISOString(),
+    };
+
+    // حفظ في Supabase
+    if (sb) {
+      const { data: saved, error } =
+        await sb.from('acc_files').insert(data).select().single();
+      if (!error && saved) {
+        data.id = saved.id;
+      }
+    }
+
+    if (!S.files) S.files = [];
+    S.files.unshift(data);
+    await IDB.saveAll('files', S.files);
+    LS.set('files', S.files);
+  },
+
+  /* ── تحويل لـ Base64 ── */
+  _toBase64(file) {
+    return new Promise((res, rej) => {
+      const reader = new FileReader();
+      reader.onload  = e => res(e.target.result);
+      reader.onerror = e => rej(e);
+      reader.readAsDataURL(file);
+    });
+  },
+
+  /* ══ حذف ملف ══ */
+  delete(id) {
+    const f = (S.files || []).find(x => String(x.id) === String(id));
+    if (!f) return;
+    W.confirm.show('حذف الملف', f.name, async () => {
+      // حذف من Storage إن أمكن
+      const sb = await getSB();
+      if (sb && f.file_url && f.file_url.includes('acc-files')) {
+        try {
+          const path = f.file_url.split('/acc-files/')[1];
+          if (path) await sb.storage.from('acc-files').remove([path]);
+        } catch(e) {}
+      }
+
+      // حذف من قاعدة البيانات
+      if (sb && !String(id).startsWith('loc_')) {
+        await sb.from('acc_files').delete().eq('id', id);
+      }
+
+      S.files = (S.files || []).filter(x => String(x.id) !== String(id));
+      await IDB.saveAll('files', S.files);
+      LS.set('files', S.files);
+
+      this.closePlayer();
+      this.render();
+      this._updateBadge();
+      W.toast.success(W.i18n.t('msg_deleted'));
+    });
+  },
+
+  /* ══ تبديل المفضلة ══ */
+  async toggleFav(id) {
+    const f = (S.files || []).find(x => String(x.id) === String(id));
+    if (!f) return;
+    f.is_favorite = !f.is_favorite;
+
+    const sb = await getSB();
+    if (sb && !String(id).startsWith('loc_')) {
+      await sb.from('acc_files')
+        .update({ is_favorite: f.is_favorite })
+        .eq('id', id);
+    }
+
+    await IDB.saveAll('files', S.files);
+    LS.set('files', S.files);
+    this.filter();
+    this._renderKpi();
+    W.toast.success(f.is_favorite ? '⭐ أضيف للمفضلة' : 'أُزيل من المفضلة');
+  },
+
+  /* ══ عداد التحميلات ══ */
+  async countDownload(id) {
+    const f = (S.files || []).find(x => String(x.id) === String(id));
+    if (!f) return;
+    f.download_count = (f.download_count || 0) + 1;
+    const sb = await getSB();
+    if (sb && !String(id).startsWith('loc_')) {
+      await sb.from('acc_files')
+        .update({ download_count: f.download_count })
+        .eq('id', id);
+    }
+  },
+
+  /* ══ تحديث Badge ══ */
+  _updateBadge() {
+    const el = document.getElementById('nb-files');
+    if (el) el.textContent = (S.files || []).length;
+  },
+
+  /* ══ Drag & Drop ══ */
+  _initDropZone() {
+    const body = document.getElementById('sec-files');
+    if (!body) return;
+
+    body.addEventListener('dragover', e => {
+      e.preventDefault();
+      document.getElementById('filesDropZone').style.display = 'block';
+      document.getElementById('filesDropZone').classList.add('drop-zone-active');
+    });
+
+    body.addEventListener('dragleave', e => {
+      if (!body.contains(e.relatedTarget)) {
+        document.getElementById('filesDropZone').classList.remove('drop-zone-active');
+        document.getElementById('filesDropZone').style.display = 'none';
+      }
+    });
+
+    body.addEventListener('drop', e => {
+      e.preventDefault();
+      document.getElementById('filesDropZone').classList.remove('drop-zone-active');
+      document.getElementById('filesDropZone').style.display = 'none';
+      const files = e.dataTransfer?.files;
+      if (files?.length) this.quickUpload(files);
+    });
+  },
+
+  onDragOver(e) {
+    e.preventDefault();
+    document.getElementById('fileUploadArea')?.classList.add('drop-zone-active');
+  },
+  onDragLeave(e) {
+    document.getElementById('fileUploadArea')?.classList.remove('drop-zone-active');
+  },
+  onDrop(e) {
+    e.preventDefault();
+    document.getElementById('fileUploadArea')?.classList.remove('drop-zone-active');
+    const files = e.dataTransfer?.files;
+    if (files?.length) this.handleFileSelect(files);
+  },
+
+  /* ══ تحميل البيانات من Supabase ══ */
+  async loadFromDB() {
+    const sb = await getSB();
+    if (!sb) return;
+    try {
+      const { data, error } = await sb
+        .from('acc_files')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (!error && data) {
+        S.files = data;
+        await IDB.saveAll('files', S.files);
+        LS.set('files', S.files);
+        this._updateBadge();
+        if (S.section === 'files') this.render();
+      }
+    } catch(e) {
+      console.warn('[Files loadFromDB]', e);
+    }
+  }
+};
+
+
+
+  
 /* ══ DEFAULT DATA ══ */
 function initDefaultData(){
   if(!S.cashboxes.length){
@@ -5017,7 +6197,7 @@ async function initApp(){
   if(savedSettings&&Object.keys(savedSettings).length)S.settings=savedSettings;
 
   // Load saved data from LS (fast fallback)
-  const keys=['transactions','invoices','customers','suppliers','employees','categories','cashboxes','metals','metalTx','metalPrices','transfers','rates','barcodes','statements','attendance'];
+const keys=['transactions','invoices','customers','suppliers','employees','categories','cashboxes','metals','metalTx','metalPrices','transfers','rates','barcodes','statements','attendance','files'];
   keys.forEach(k=>{const d=LS.get(k);if(d&&Array.isArray(d)&&d.length)S[k]=d;});
 
   // Init defaults if empty
