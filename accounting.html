@@ -845,7 +845,8 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
       <div class="nav-group-label" data-i18n="nav_assets">VARLIKLAR</div>
       <div class="nav-item" data-section="metals"><i class="fas fa-coins"></i><span data-i18n="nav_metals">Madenler</span></div>
       <div class="nav-item" data-section="transfers"><i class="fas fa-random"></i><span data-i18n="nav_transfers">Kasa Transferi</span></div>
-      <div class="nav-item" data-section="barcodes"><i class="fas fa-barcode"></i><span data-i18n="nav_barcodes">Barkod</span></div>
+<div class="nav-item" data-section="barcodes"><i class="fas fa-barcode"></i><span data-i18n="nav_barcodes">Barkod</span></div>
+<div class="nav-item" data-section="files"><i class="fas fa-folder-open"></i><span>مكتبة الملفات</span><span class="nav-badge" id="nb-files" style="background:rgba(6,182,212,0.15);color:#06b6d4;border-color:rgba(6,182,212,0.3);">0</span></div>
     </div>
     <div class="nav-group">
       <div class="nav-group-label" data-i18n="nav_reports">RAPORLAR</div>
@@ -1517,6 +1518,10 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
     <div class="mob-nav-item" onclick="W.ui.showSection('employees');W.mob.setActive(this)">
       <i class="fas fa-user-tie"></i><span data-i18n="nav_employees">Personel</span>
     </div>
+    <div class="mob-nav-item" onclick="W.ui.showSection('files');W.mob.setActive(this)">
+  <i class="fas fa-folder-open"></i><span>ملفاتي</span>
+</div>
+
     <div class="mob-nav-item" onclick="W.ui.openSidebar()">
       <i class="fas fa-bars"></i><span data-i18n="nav_menu">Menü</span>
     </div>
@@ -2962,7 +2967,8 @@ W.ui={
     if(navEl)navEl.classList.add('active');
     else document.querySelector(`.nav-item[data-section="${name}"]`)?.classList.add('active');
     S.section=name;this.closeSidebar();W.i18n._updatePageTitle();
-    const loaders={dashboard:()=>W.dashboard.render(),cashboxes:()=>W.cashbox.render(),transactions:()=>W.tx.render(),invoices:()=>W.inv.render(),customers:()=>W.cust.render(),suppliers:()=>W.supp.render(),employees:()=>W.emp.render(),metals:()=>W.metal.render(),transfers:()=>W.transfer.render(),barcodes:()=>W.barcode.render(),statements:()=>W.statements.loadList(),reports:()=>W.reports.load(),cashflow:()=>W.cashflow.load(),audit:()=>W.audit.load(),settings:()=>W.settings.load()};
+    const loaders={dashboard:()=>W.dashboard.render(),cashboxes:()=>W.cashbox.render(),transactions:()=>W.tx.render(),invoices:()=>W.inv.render(),customers:()=>W.cust.render(),suppliers:()=>W.supp.render(),employees:()=>W.emp.render(),metals:()=>W.metal.render(),transfers:()=>W.transfer.render(),barcodes:()=>W.barcode.render(),statements:()=>W.statements.loadList(),reports:()=>W.reports.load(),cashflow:()=>W.cashflow.load(),audit:()=>W.audit.load(),settings:()=>W.settings.load(),files:()=>{W.files.init();W.files.loadFromDB();}};
+
     if(loaders[name])loaders[name]();
   },
   renderAll(){const loaders={dashboard:()=>W.dashboard.render(),cashboxes:()=>W.cashbox.render(),transactions:()=>W.tx.render(),invoices:()=>W.inv.render(),customers:()=>W.cust.render(),suppliers:()=>W.supp.render(),employees:()=>W.emp.render(),metals:()=>W.metal.render(),transfers:()=>W.transfer.render(),barcodes:()=>W.barcode.render(),statements:()=>W.statements.loadList(),reports:()=>W.reports.load(),cashflow:()=>W.cashflow.load(),settings:()=>W.settings.load()};if(loaders[S.section])loaders[S.section]();},
@@ -2974,7 +2980,7 @@ W.ui={
   setOnline(online){S.online=online;const dot=document.getElementById('connDot');const icon=document.getElementById('connIcon');if(dot)dot.className='conn-dot'+(online?'':' offline');if(icon)icon.className=online?'fas fa-wifi':'fas fa-wifi-slash';},
   toggleHideAmounts(val){S.hideAmounts=val!==undefined?val:!S.hideAmounts;LS.set('hide_amounts',S.hideAmounts);this.applyHideAmounts();const el=document.getElementById('sett-hide-amounts');if(el)el.checked=S.hideAmounts;},
   applyHideAmounts(){const btn=document.getElementById('hideAmountsBtn');const icon=document.getElementById('hideAmountsIcon');if(btn)btn.classList.toggle('active-state',S.hideAmounts);if(icon)icon.className=S.hideAmounts?'fas fa-eye-slash':'fas fa-eye';document.querySelectorAll('.amount-val').forEach(el=>{el.style.filter=S.hideAmounts?'blur(6px)':'';el.style.userSelect=S.hideAmounts?'none':'';});},
-  updateBadges(){const set=(id,val,hide=false)=>{const el=document.getElementById(id);if(el){if(hide)el.style.display=val>0?'inline-flex':'none';el.textContent=val;}};set('nb-transactions',S.transactions.length);set('nb-cashboxes',S.cashboxes.filter(c=>c.is_active!==false).length);set('nb-customers',S.customers.filter(c=>c.is_active!==false).length);set('nb-employees',S.employees.filter(e=>e.status==='active').length);const overdue=S.invoices.filter(i=>i.status==='overdue').length;set('nb-invoices',overdue,true);}
+updateBadges(){const set=(id,val,hide=false)=>{const el=document.getElementById(id);if(el){if(hide)el.style.display=val>0?'inline-flex':'none';el.textContent=val;}};set('nb-transactions',S.transactions.length);set('nb-cashboxes',S.cashboxes.filter(c=>c.is_active!==false).length);set('nb-customers',S.customers.filter(c=>c.is_active!==false).length);set('nb-employees',S.employees.filter(e=>e.status==='active').length);const overdue=S.invoices.filter(i=>i.status==='overdue').length;set('nb-invoices',overdue,true);if(W.files&&W.files._data)set('nb-files',W.files._data.length);}
 };
 
 W.mob={setActive(el){document.querySelectorAll('.mob-nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}};
@@ -5833,22 +5839,9 @@ W.files = {
   },
 };
 
-/* ── تسجيل في W.ui.showSection ── */
-const _origShowSection = W.ui.showSection.bind(W.ui);
-W.ui.showSection = function(name, navEl) {
-  _origShowSection(name, navEl);
-  if (name === 'files') {
-    W.files.init();
-    W.files.loadFromDB();
-  }
-};
 
-/* ── تحديث updateBadges ── */
-const _origUpdateBadges = W.ui.updateBadges.bind(W.ui);
-W.ui.updateBadges = function() {
-  _origUpdateBadges();
-  W.files._updateBadge();
-};
+
+
 
 /* ── مفتاح Escape لإغلاق المشاهد ── */
 document.addEventListener('keydown', e => {
