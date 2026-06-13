@@ -1498,7 +1498,77 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
       </div>
     </div>
 
-  </div><!-- /page-body -->
+    <!-- ══ FILES LIBRARY ══ -->
+    <div class="section" id="sec-files">
+
+      <div class="file-upload-zone" id="filesUploadZone">
+        <input type="file" id="filesInput" multiple accept="*/*" onchange="W.files.handleUpload(this.files)"/>
+        <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
+        <div class="file-upload-title">اسحب الملفات هنا أو انقر للرفع</div>
+        <div class="file-upload-sub">يدعم جميع أنواع الملفات • حد أقصى 50MB للملف</div>
+        <div class="file-upload-types">
+          <span class="file-upload-type-tag">🎬 فيديو</span>
+          <span class="file-upload-type-tag">🖼️ صور</span>
+          <span class="file-upload-type-tag">📄 PDF</span>
+          <span class="file-upload-type-tag">🎵 صوت</span>
+          <span class="file-upload-type-tag">📝 مستندات</span>
+          <span class="file-upload-type-tag">📦 أخرى</span>
+        </div>
+        <div class="upload-progress-bar" id="filesProgressBar" style="display:none;">
+          <div class="upload-progress-fill" id="filesProgressFill"></div>
+        </div>
+        <div id="filesUploadStatus" style="font-size:11px;color:var(--gold);margin-top:6px;font-weight:700;"></div>
+      </div>
+
+      <div class="files-stats" id="filesStats"></div>
+
+      <div class="files-toolbar">
+        <div class="search-box" style="flex:1;max-width:220px;">
+          <i class="fas fa-search"></i>
+          <input type="text" id="filesSearch" placeholder="بحث في الملفات..." oninput="W.files.filter()"/>
+        </div>
+        <div class="files-type-tabs" id="filesTypeTabs">
+          <div class="file-type-btn active" data-type="all" onclick="W.files.setType('all',this)"><i class="fas fa-th"></i> الكل</div>
+          <div class="file-type-btn" data-type="image" onclick="W.files.setType('image',this)"><i class="fas fa-image"></i> صور</div>
+          <div class="file-type-btn" data-type="video" onclick="W.files.setType('video',this)"><i class="fas fa-film"></i> فيديو</div>
+          <div class="file-type-btn" data-type="audio" onclick="W.files.setType('audio',this)"><i class="fas fa-music"></i> صوت</div>
+          <div class="file-type-btn" data-type="pdf" onclick="W.files.setType('pdf',this)"><i class="fas fa-file-pdf"></i> PDF</div>
+          <div class="file-type-btn" data-type="doc" onclick="W.files.setType('doc',this)"><i class="fas fa-file-word"></i> مستندات</div>
+          <div class="file-type-btn" data-type="other" onclick="W.files.setType('other',this)"><i class="fas fa-file"></i> أخرى</div>
+        </div>
+        <div style="display:flex;gap:5px;margin-right:auto;">
+          <div class="view-toggle-btn active" id="viewGrid" onclick="W.files.setView('grid',this)"><i class="fas fa-th-large"></i></div>
+          <div class="view-toggle-btn" id="viewList" onclick="W.files.setView('list',this)"><i class="fas fa-list"></i></div>
+        </div>
+        <select class="filter-select" id="filesSortBy" onchange="W.files.filter()">
+          <option value="date_desc">الأحدث أولاً</option>
+          <option value="date_asc">الأقدم أولاً</option>
+          <option value="name_asc">الاسم أ-ي</option>
+          <option value="size_desc">الأكبر حجماً</option>
+        </select>
+        <button class="btn btn-danger btn-sm" onclick="W.files.deleteSelected()" id="filesDeleteBtn" style="display:none;">
+          <i class="fas fa-trash"></i> حذف المحدد
+        </button>
+      </div>
+
+      <div id="filesContainer"></div>
+
+    </div>
+
+    <!-- File Viewer — fixed overlay لا يتأثر بالـ layout -->
+    <div class="file-viewer-overlay" id="fileViewer" onclick="W.files.closeViewer(event)">
+      <div class="file-viewer-content" id="fileViewerContent" onclick="event.stopPropagation()"></div>
+      <div class="file-viewer-bar" id="fileViewerBar">
+        <div class="file-viewer-name" id="fileViewerName"></div>
+        <a class="btn btn-outline btn-sm" id="fileViewerDownload" download><i class="fas fa-download"></i></a>
+        <button class="btn btn-ghost btn-sm" onclick="W.files.prevFile()"><i class="fas fa-chevron-right"></i></button>
+        <button class="btn btn-ghost btn-sm" onclick="W.files.nextFile()"><i class="fas fa-chevron-left"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="W.files.deleteCurrentFile()"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-ghost btn-sm" onclick="W.files.closeViewer()"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+
+    </div><!-- /page-body -->
 </div><!-- /main-wrap -->
 </div><!-- /app-wrapper -->
 
@@ -2199,97 +2269,7 @@ td{padding:9px 10px;color:var(--text-1);vertical-align:middle;}
 
 
 
-<!-- ══ FILES LIBRARY ══ -->
-<div class="section" id="sec-files">
 
-  <!-- Upload Zone -->
-  <div class="file-upload-zone" id="filesUploadZone">
-    <input type="file" id="filesInput" multiple accept="*/*" onchange="W.files.handleUpload(this.files)"/>
-    <i class="fas fa-cloud-upload-alt file-upload-icon"></i>
-    <div class="file-upload-title">اسحب الملفات هنا أو انقر للرفع</div>
-    <div class="file-upload-sub">يدعم جميع أنواع الملفات • حد أقصى 50MB للملف</div>
-    <div class="file-upload-types">
-      <span class="file-upload-type-tag">🎬 فيديو</span>
-      <span class="file-upload-type-tag">🖼️ صور</span>
-      <span class="file-upload-type-tag">📄 PDF</span>
-      <span class="file-upload-type-tag">🎵 صوت</span>
-      <span class="file-upload-type-tag">📝 مستندات</span>
-      <span class="file-upload-type-tag">📦 أخرى</span>
-    </div>
-    <div class="upload-progress-bar" id="filesProgressBar" style="display:none;">
-      <div class="upload-progress-fill" id="filesProgressFill"></div>
-    </div>
-    <div id="filesUploadStatus" style="font-size:11px;color:var(--gold);margin-top:6px;font-weight:700;"></div>
-  </div>
-
-  <!-- Stats -->
-  <div class="files-stats" id="filesStats"></div>
-
-  <!-- Toolbar -->
-  <div class="files-toolbar">
-    <div class="search-box" style="flex:1;max-width:220px;">
-      <i class="fas fa-search"></i>
-      <input type="text" id="filesSearch" placeholder="بحث في الملفات..." oninput="W.files.filter()"/>
-    </div>
-    <div class="files-type-tabs" id="filesTypeTabs">
-      <div class="file-type-btn active" data-type="all" onclick="W.files.setType('all',this)">
-        <i class="fas fa-th"></i> الكل
-      </div>
-      <div class="file-type-btn" data-type="image" onclick="W.files.setType('image',this)">
-        <i class="fas fa-image"></i> صور
-      </div>
-      <div class="file-type-btn" data-type="video" onclick="W.files.setType('video',this)">
-        <i class="fas fa-film"></i> فيديو
-      </div>
-      <div class="file-type-btn" data-type="audio" onclick="W.files.setType('audio',this)">
-        <i class="fas fa-music"></i> صوت
-      </div>
-      <div class="file-type-btn" data-type="pdf" onclick="W.files.setType('pdf',this)">
-        <i class="fas fa-file-pdf"></i> PDF
-      </div>
-      <div class="file-type-btn" data-type="doc" onclick="W.files.setType('doc',this)">
-        <i class="fas fa-file-word"></i> مستندات
-      </div>
-      <div class="file-type-btn" data-type="other" onclick="W.files.setType('other',this)">
-        <i class="fas fa-file"></i> أخرى
-      </div>
-    </div>
-    <div style="display:flex;gap:5px;margin-right:auto;">
-      <div class="view-toggle-btn active" id="viewGrid" onclick="W.files.setView('grid',this)" title="شبكي">
-        <i class="fas fa-th-large"></i>
-      </div>
-      <div class="view-toggle-btn" id="viewList" onclick="W.files.setView('list',this)" title="قائمة">
-        <i class="fas fa-list"></i>
-      </div>
-    </div>
-    <select class="filter-select" id="filesSortBy" onchange="W.files.filter()">
-      <option value="date_desc">الأحدث أولاً</option>
-      <option value="date_asc">الأقدم أولاً</option>
-      <option value="name_asc">الاسم أ-ي</option>
-      <option value="size_desc">الأكبر حجماً</option>
-    </select>
-    <button class="btn btn-danger btn-sm" onclick="W.files.deleteSelected()" id="filesDeleteBtn" style="display:none;">
-      <i class="fas fa-trash"></i> حذف المحدد
-    </button>
-  </div>
-
-  <!-- Files Container -->
-  <div id="filesContainer"></div>
-
-</div>
-
-<!-- File Viewer -->
-<div class="file-viewer-overlay" id="fileViewer" onclick="W.files.closeViewer(event)">
-  <div class="file-viewer-content" id="fileViewerContent" onclick="event.stopPropagation()"></div>
-  <div class="file-viewer-bar" id="fileViewerBar">
-    <div class="file-viewer-name" id="fileViewerName"></div>
-    <a class="btn btn-outline btn-sm" id="fileViewerDownload" download><i class="fas fa-download"></i></a>
-    <button class="btn btn-ghost btn-sm" onclick="W.files.prevFile()"><i class="fas fa-chevron-right"></i></button>
-    <button class="btn btn-ghost btn-sm" onclick="W.files.nextFile()"><i class="fas fa-chevron-left"></i></button>
-    <button class="btn btn-danger btn-sm" onclick="W.files.deleteCurrentFile()"><i class="fas fa-trash"></i></button>
-    <button class="btn btn-ghost btn-sm" onclick="W.files.closeViewer()"><i class="fas fa-times"></i></button>
-  </div>
-</div>
 
 
   
