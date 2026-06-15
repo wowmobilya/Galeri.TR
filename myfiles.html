@@ -2,17 +2,17 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
   <title>ملفاتي — WOW MOBİLYA</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Montserrat:wght@300;400;600;700;900&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 
   <style>
     /* ============================================================
-       CSS VARIABLES
+       VARIABLES
     ============================================================ */
     :root {
       --gold: #c9a84c;
@@ -20,46 +20,46 @@
       --bg: #0a0a0a;
       --bg2: #111111;
       --bg3: #1a1a1a;
-      --bg4: #161616;
-      --surface: rgba(255,255,255,0.03);
-      --surface2: rgba(255,255,255,0.06);
-      --border: rgba(255,255,255,0.07);
-      --border-gold: rgba(201,168,76,0.25);
+      --surface: rgba(255,255,255,0.04);
+      --surface2: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.08);
+      --border-gold: rgba(201,168,76,0.3);
       --text: #ffffff;
-      --text2: rgba(255,255,255,0.65);
-      --text3: rgba(255,255,255,0.35);
-      --text4: rgba(255,255,255,0.18);
+      --text2: rgba(255,255,255,0.7);
+      --text3: rgba(255,255,255,0.4);
+      --text4: rgba(255,255,255,0.2);
       --danger: #ef4444;
       --success: #4ade80;
       --info: #60a5fa;
-      --warning: #fbbf24;
       --purple: #a78bfa;
-      --header-h: 62px;
-      --sidebar-w: 260px;
-      --radius: 14px;
-      --radius-sm: 9px;
-      --shadow: 0 8px 32px rgba(0,0,0,0.5);
-      --transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+      --orange: #f97316;
+      --yellow: #fbbf24;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.6);
+      --header-h: 60px;
+      --filter-h: 58px;
+      --bottom-h: 70px;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     [data-theme="light"] {
-      --bg: #f5f5f0;
+      --bg: #f0f0eb;
       --bg2: #ffffff;
-      --bg3: #eeeeea;
-      --bg4: #e8e8e4;
-      --surface: rgba(0,0,0,0.03);
-      --surface2: rgba(0,0,0,0.06);
+      --bg3: #e8e8e3;
+      --surface: rgba(0,0,0,0.04);
+      --surface2: rgba(0,0,0,0.08);
       --border: rgba(0,0,0,0.09);
-      --border-gold: rgba(201,168,76,0.35);
+      --border-gold: rgba(201,168,76,0.4);
       --text: #111111;
       --text2: rgba(0,0,0,0.65);
       --text3: rgba(0,0,0,0.40);
       --text4: rgba(0,0,0,0.20);
-      --shadow: 0 8px 32px rgba(0,0,0,0.12);
     }
 
     /* ============================================================
-       RESET & BASE
+       RESET
     ============================================================ */
     *, *::before, *::after {
       margin: 0; padding: 0; box-sizing: border-box;
@@ -67,23 +67,19 @@
     }
     html { scroll-behavior: smooth; }
     body {
-      font-family: 'Tajawal', 'Montserrat', sans-serif;
+      font-family: 'Tajawal', sans-serif;
       background: var(--bg);
       color: var(--text);
       overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
       min-height: 100vh;
-      transition: background 0.3s, color 0.3s;
+      padding-top: calc(var(--header-h) + var(--safe-top));
+      padding-bottom: calc(var(--bottom-h) + var(--safe-bottom));
     }
-    @media print { body { display: none !important; } }
 
-    /* ============================================================
-       SCROLLBAR
-    ============================================================ */
-    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.25); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 10px; }
 
     /* ============================================================
        HEADER
@@ -91,554 +87,766 @@
     #appHeader {
       position: fixed;
       top: 0; left: 0; right: 0;
-      height: var(--header-h);
+      height: calc(var(--header-h) + var(--safe-top));
+      padding-top: var(--safe-top);
       z-index: 1000;
-      background: var(--bg2);
+      background: rgba(17,17,17,0.95);
       border-bottom: 1px solid var(--border);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       display: flex;
       align-items: center;
-      padding: 0 16px;
+      padding-right: 14px;
+      padding-left: 14px;
       gap: 10px;
     }
 
     .header-back-btn {
-      width: 38px; height: 38px;
+      width: 36px; height: 36px;
       border-radius: 10px;
       background: var(--surface);
       border: 1px solid var(--border);
       color: var(--text2);
-      font-size: 15px;
+      font-size: 14px;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: var(--transition);
-      flex-shrink: 0;
       text-decoration: none;
+      flex-shrink: 0;
+      transition: all 0.2s;
     }
-    .header-back-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border-gold); }
+    .header-back-btn:active { transform: scale(0.92); }
 
-    .header-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .header-logo {
+      display: flex; align-items: center; gap: 9px;
+      flex: 1; min-width: 0;
+    }
     .header-logo-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05));
+      width: 34px; height: 34px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.05));
       border: 1px solid var(--border-gold);
       display: flex; align-items: center; justify-content: center;
-      color: var(--gold); font-size: 16px;
+      color: var(--gold); font-size: 15px;
+      flex-shrink: 0;
     }
-    .header-title { font-size: 17px; font-weight: 900; color: var(--text); letter-spacing: 0.5px; }
-    .header-subtitle { font-size: 9px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; }
-    .header-spacer { flex: 1; }
-
-    .header-search-wrap { position: relative; flex: 1; max-width: 320px; }
-    .header-search-wrap i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 13px; pointer-events: none; }
-    .header-search-inp {
-      width: 100%; padding: 9px 36px 9px 14px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text);
-      font-family: 'Tajawal', sans-serif; font-size: 13px;
-      outline: none; transition: var(--transition);
-      -webkit-user-select: text; user-select: text;
+    .header-title {
+      font-size: 16px; font-weight: 900;
+      color: var(--text); white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
     }
-    .header-search-inp:focus { border-color: var(--border-gold); background: var(--surface2); }
-    .header-search-inp::placeholder { color: var(--text4); }
 
-    .header-btn {
-      width: 38px; height: 38px; border-radius: 10px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text2); font-size: 14px; cursor: pointer;
+    .header-actions { display: flex; gap: 7px; align-items: center; flex-shrink: 0; }
+
+    .hdr-btn {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text2);
+      font-size: 14px;
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: var(--transition); flex-shrink: 0; position: relative;
+      transition: all 0.2s;
+      position: relative;
     }
-    .header-btn:hover { background: var(--surface2); color: var(--gold); border-color: var(--border-gold); }
-    .header-btn.active { background: rgba(201,168,76,0.12); border-color: var(--border-gold); color: var(--gold); }
-
-    .upload-trigger-btn {
-      display: flex; align-items: center; gap: 8px;
-      padding: 9px 18px;
+    .hdr-btn:active { transform: scale(0.9); }
+    .hdr-btn.gold {
       background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      border: none; border-radius: 10px;
-      color: #0a0a0a; font-family: 'Tajawal', sans-serif;
-      font-size: 13px; font-weight: 700; cursor: pointer;
-      transition: var(--transition); flex-shrink: 0; white-space: nowrap;
-    }
-    .upload-trigger-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.4); }
-
-    /* ============================================================
-       LAYOUT
-    ============================================================ */
-    #appLayout { display: flex; padding-top: var(--header-h); min-height: 100vh; }
-
-    /* ============================================================
-       SIDEBAR
-    ============================================================ */
-    #sidebar {
-      width: var(--sidebar-w); flex-shrink: 0;
-      background: var(--bg2); border-left: 1px solid var(--border);
-      position: fixed; top: var(--header-h); right: 0; bottom: 0;
-      overflow-y: auto; z-index: 100;
-      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-      display: flex; flex-direction: column; gap: 0;
-    }
-
-    .sidebar-section { padding: 16px 12px 8px; }
-    .sidebar-section-title {
-      font-size: 9px; letter-spacing: 2.5px; color: var(--text4);
-      text-transform: uppercase; font-weight: 700;
-      padding: 0 8px; margin-bottom: 6px;
-    }
-
-    .sidebar-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 10px 12px; border-radius: var(--radius-sm);
-      cursor: pointer; transition: var(--transition);
-      color: var(--text2); font-size: 13px; font-weight: 600;
-      position: relative; border: 1px solid transparent;
-      margin-bottom: 2px; text-decoration: none;
-    }
-    .sidebar-item:hover { background: var(--surface); color: var(--text); }
-    .sidebar-item.active { background: rgba(201,168,76,0.08); border-color: var(--border-gold); color: var(--gold); }
-    .sidebar-item i { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
-    .sidebar-item .item-count {
-      margin-right: auto; background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 50px; padding: 1px 8px; font-size: 10px; font-weight: 700; color: var(--text3);
-    }
-    .sidebar-item.active .item-count { background: rgba(201,168,76,0.15); border-color: var(--border-gold); color: var(--gold); }
-
-    .folder-item {
-      display: flex; align-items: center; gap: 8px;
-      padding: 9px 12px; border-radius: var(--radius-sm);
-      cursor: pointer; transition: var(--transition);
-      color: var(--text2); font-size: 13px; font-weight: 600;
-      border: 1px solid transparent; margin-bottom: 2px; position: relative;
-    }
-    .folder-item:hover { background: var(--surface); color: var(--text); }
-    .folder-item.active { background: rgba(201,168,76,0.08); border-color: var(--border-gold); color: var(--gold); }
-    .folder-item .folder-actions { margin-right: auto; display: none; gap: 4px; }
-    .folder-item:hover .folder-actions { display: flex; }
-    .folder-action-btn {
-      width: 22px; height: 22px; border-radius: 5px;
-      background: var(--surface2); border: none; color: var(--text3);
-      font-size: 10px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: var(--transition);
-    }
-    .folder-action-btn:hover { color: var(--gold); background: rgba(201,168,76,0.1); }
-    .folder-action-btn.danger:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
-
-    .add-folder-btn {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; border-radius: var(--radius-sm);
-      background: none; border: 1px dashed var(--border);
-      color: var(--text4); font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: var(--transition);
-      width: 100%; font-family: 'Tajawal', sans-serif; margin-top: 4px;
-    }
-    .add-folder-btn:hover { border-color: var(--border-gold); color: var(--gold); background: rgba(201,168,76,0.04); }
-
-    .storage-info-card {
-      margin: 12px; padding: 14px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-    .storage-info-title {
-      font-size: 10px; letter-spacing: 2px; color: var(--text3);
-      text-transform: uppercase; font-weight: 700; margin-bottom: 10px;
-      display: flex; align-items: center; gap: 6px;
-    }
-    .storage-bar-wrap { height: 6px; background: var(--surface2); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
-    .storage-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width 1s ease; }
-    .storage-bar-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
-    .storage-bar-fill.danger  { background: linear-gradient(90deg, #ef4444, #f87171); }
-    .storage-nums { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); }
-    .storage-used { font-weight: 700; color: var(--text2); }
-
-    /* مبدّل اللغة في السايدبار (موبايل فقط) */
-    .sidebar-lang-row {
-      display: none;
-      padding: 10px 12px;
-      gap: 6px;
-      border-bottom: 1px solid var(--border);
-    }
-    .sidebar-lang-row .lang-btn {
-      flex: 1; text-align: center;
-      padding: 7px 4px; border-radius: 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text3); font-size: 11px; font-weight: 700;
-      cursor: pointer; transition: var(--transition);
-      font-family: 'Tajawal', sans-serif;
-    }
-    .sidebar-lang-row .lang-btn.active {
-      background: rgba(201,168,76,0.15);
-      border-color: var(--border-gold); color: var(--gold);
+      border-color: transparent;
+      color: #0a0a0a;
     }
 
     /* ============================================================
-       MAIN CONTENT
+       SEARCH BAR
     ============================================================ */
-    #mainContent {
-      flex: 1; margin-left: 0; margin-right: var(--sidebar-w);
-      padding: 20px; min-height: calc(100vh - var(--header-h));
-      transition: margin-right 0.3s;
-    }
-
-    /* ============================================================
-       MOBILE SEARCH BAR
-    ============================================================ */
-    #mobileSearchBar {
-      display: none;
+    #searchBar {
       position: sticky;
-      top: var(--header-h);
-      z-index: 199;
+      top: calc(var(--header-h) + var(--safe-top));
+      z-index: 900;
       background: var(--bg);
-      padding: 8px 12px;
+      padding: 10px 14px 8px;
       border-bottom: 1px solid var(--border);
+    }
+    .search-wrap {
+      position: relative;
+      display: flex; align-items: center;
+    }
+    .search-wrap i.search-icon {
+      position: absolute;
+      right: 12px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3); font-size: 13px;
+      pointer-events: none;
+    }
+    .search-inp {
+      width: 100%;
+      padding: 10px 38px 10px 42px;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .search-inp:focus {
+      border-color: var(--border-gold);
+      background: var(--surface);
+    }
+    .search-inp::placeholder { color: var(--text4); }
+    .search-clear {
+      position: absolute;
+      left: 12px; top: 50%;
+      transform: translateY(-50%);
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--surface2);
+      border: none;
+      color: var(--text3);
+      font-size: 10px;
+      cursor: pointer;
+      display: none;
+      align-items: center; justify-content: center;
+    }
+    .search-clear.visible { display: flex; }
+
+    /* ============================================================
+       FILTER TABS — أزرار الفئات
+    ============================================================ */
+    #filterTabs {
+      display: flex;
       gap: 8px;
+      padding: 10px 14px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      background: var(--bg);
+      position: sticky;
+      top: calc(var(--header-h) + var(--safe-top) + 54px);
+      z-index: 800;
+    }
+    #filterTabs::-webkit-scrollbar { display: none; }
+
+    .filter-tab {
+      display: flex;
+      flex-direction: column;
       align-items: center;
+      gap: 5px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      color: var(--text3);
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      white-space: nowrap;
+      min-width: 58px;
     }
-    #mobileSearchBar .mob-search-wrap { position: relative; flex: 1; }
-    #mobileSearchBar .mob-search-wrap i {
-      position: absolute; right: 11px; top: 50%;
-      transform: translateY(-50%); color: var(--text3);
-      font-size: 12px; pointer-events: none;
+    .filter-tab i {
+      font-size: 18px;
+      transition: all 0.2s;
     }
-    #mobileSearchBar .mob-search-inp {
-      width: 100%; padding: 9px 34px 9px 12px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text);
-      font-family: 'Tajawal', sans-serif; font-size: 13px; outline: none;
-      transition: var(--transition); -webkit-user-select: text; user-select: text;
-    }
-    #mobileSearchBar .mob-search-inp:focus { border-color: var(--border-gold); }
-    #mobileSearchBar .mob-search-inp::placeholder { color: var(--text4); }
-    #mobileSearchBar .mob-filter-btn {
-      width: 38px; height: 38px; border-radius: 10px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text2); font-size: 13px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: var(--transition);
-    }
-    #mobileSearchBar .mob-filter-btn:hover,
-    #mobileSearchBar .mob-filter-btn.active {
+    .filter-tab:active { transform: scale(0.94); }
+    .filter-tab.active {
       background: rgba(201,168,76,0.12);
-      border-color: var(--border-gold); color: var(--gold);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
+    .filter-tab .tab-count {
+      font-size: 9px;
+      font-weight: 900;
+      opacity: 0.7;
     }
 
     /* ============================================================
-       TOOLBAR
+       STATS ROW
     ============================================================ */
-    .toolbar {
-      display: flex; align-items: center; gap: 10px;
-      margin-bottom: 20px; flex-wrap: wrap;
+    #statsRow {
+      display: flex;
+      gap: 8px;
+      padding: 0 14px 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
     }
-    .toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
-    .toolbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    #statsRow::-webkit-scrollbar { display: none; }
 
-    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text3); flex-wrap: wrap; }
-    .breadcrumb-item { cursor: pointer; transition: color 0.2s; }
-    .breadcrumb-item:hover { color: var(--gold); }
-    .breadcrumb-item.active { color: var(--text); font-weight: 700; }
-    .breadcrumb-sep { font-size: 10px; color: var(--text4); }
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .stat-pill i { font-size: 13px; }
+    .stat-pill-val { font-size: 13px; font-weight: 900; color: var(--text); }
+    .stat-pill-lbl { font-size: 10px; color: var(--text3); }
+
+    /* ============================================================
+       TOOLBAR ROW
+    ============================================================ */
+    #toolbarRow {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px 12px;
+      gap: 8px;
+    }
+    .toolbar-left {
+      display: flex; align-items: center; gap: 6px;
+      flex: 1; min-width: 0;
+    }
+    .breadcrumb {
+      font-size: 13px; font-weight: 700;
+      color: var(--text2);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .toolbar-right { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .tool-btn {
+      width: 32px; height: 32px;
+      border-radius: 9px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text3);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .tool-btn:active { transform: scale(0.9); }
+    .tool-btn.active {
+      background: rgba(201,168,76,0.12);
+      border-color: var(--gold);
+      color: var(--gold);
+    }
 
     .sort-select {
-      padding: 7px 12px; background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text2); font-family: 'Tajawal', sans-serif;
-      font-size: 12px; outline: none; cursor: pointer; transition: var(--transition);
+      padding: 6px 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--text2);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 11px;
+      outline: none;
+      max-width: 110px;
     }
-    .sort-select:focus { border-color: var(--border-gold); }
-
-    .view-btn {
-      width: 34px; height: 34px; border-radius: 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text3); font-size: 13px; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: var(--transition);
-    }
-    .view-btn:hover { color: var(--gold); border-color: var(--border-gold); }
-    .view-btn.active { background: rgba(201,168,76,0.1); border-color: var(--border-gold); color: var(--gold); }
 
     /* ============================================================
-       STATS BAR
+       FILES GRID
     ============================================================ */
-    .stats-bar {
+    #filesContainer {
+      padding: 0 14px;
+      min-height: 200px;
+    }
+
+    .files-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px; margin-bottom: 20px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
     }
-    .stat-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px 16px;
-      display: flex; align-items: center; gap: 12px;
-      transition: var(--transition); cursor: default;
+    .files-grid.grid3 {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
     }
-    .stat-card:hover { border-color: var(--border-gold); background: var(--surface2); }
-    .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
-    .stat-val { font-size: 20px; font-weight: 900; color: var(--text); line-height: 1; margin-bottom: 3px; }
-    .stat-lbl { font-size: 10px; color: var(--text3); letter-spacing: 0.5px; }
-
-    /* ============================================================
-       STICKY UPLOAD BAR
-    ============================================================ */
-    .sticky-upload-bar {
-      position: sticky; top: var(--header-h);
-      z-index: 200; background: var(--bg);
-      padding: 10px 0 14px; margin-bottom: 4px;
+    .files-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
 
-    /* ============================================================
-       FILES GRID / LIST
-    ============================================================ */
-    #filesContainer { position: relative; min-height: 300px; }
-
-    .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
-    .files-grid.large { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
-    .files-grid.small { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-    .files-list { display: flex; flex-direction: column; gap: 4px; }
-
+    /* FILE CARD */
     .file-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
-      cursor: pointer; transition: var(--transition);
-      position: relative; animation: cardFadeIn 0.3s ease forwards; opacity: 0;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      animation: fadeUp 0.3s ease forwards;
+      opacity: 0;
     }
-    @keyframes cardFadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .file-card:hover { border-color: var(--border-gold); transform: translateY(-3px); box-shadow: var(--shadow); }
-    .file-card.selected { border-color: var(--gold) !important; box-shadow: 0 0 0 2px rgba(201,168,76,0.25); }
+    .file-card:active { transform: scale(0.97); }
+    .file-card.selected {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px rgba(201,168,76,0.2);
+    }
 
     .file-card-thumb {
-      width: 100%; aspect-ratio: 4/3;
-      background: var(--bg3); display: flex; align-items: center;
-      justify-content: center; position: relative; overflow: hidden;
-    }
-    .file-card-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
-    .file-card:hover .file-card-thumb img { transform: scale(1.05); }
-    .file-card-thumb .file-type-icon { font-size: 36px; }
-
-    .file-card-info { padding: 10px 12px; }
-    .file-card-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
-    .file-card-meta { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text3); }
-
-    .file-row {
-      display: flex; align-items: center; gap: 12px;
-      padding: 10px 14px; background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      cursor: pointer; transition: var(--transition);
-      animation: cardFadeIn 0.25s ease forwards; opacity: 0;
-    }
-    .file-row:hover { border-color: var(--border-gold); background: var(--surface2); }
-    .file-row.selected { border-color: var(--gold); background: rgba(201,168,76,0.05); }
-    .file-row-icon { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
-    .file-row-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .file-row-meta { font-size: 11px; color: var(--text3); display: flex; gap: 16px; align-items: center; flex-shrink: 0; }
-    .file-row-actions { display: flex; gap: 5px; opacity: 0; transition: opacity 0.2s; }
-    .file-row:hover .file-row-actions { opacity: 1; }
-
-    .select-check {
-      position: absolute; top: 8px; right: 8px;
-      width: 22px; height: 22px; border-radius: 50%;
-      background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.3);
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: var(--bg3);
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px; color: transparent; transition: var(--transition); z-index: 5;
+      position: relative; overflow: hidden;
     }
-    .file-card.selected .select-check { background: var(--gold); border-color: var(--gold); color: #0a0a0a; }
+    .file-card-thumb img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .file-type-icon { font-size: 32px; }
 
+    .file-card-info { padding: 9px 10px; }
+    .file-card-name {
+      font-size: 11px; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+    .file-card-meta {
+      display: flex; justify-content: space-between;
+      font-size: 9px; color: var(--text3);
+    }
+
+    /* FILE ROW */
+    .file-row {
+      display: flex; align-items: center; gap: 11px;
+      padding: 11px 13px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+      animation: fadeUp 0.25s ease forwards;
+      opacity: 0;
+    }
+    .file-row:active { transform: scale(0.98); }
+    .file-row.selected { border-color: var(--gold); background: rgba(201,168,76,0.04); }
+    .file-row-icon {
+      width: 42px; height: 42px;
+      border-radius: 11px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 19px; flex-shrink: 0;
+    }
+    .file-row-info { flex: 1; min-width: 0; }
+    .file-row-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-row-meta { font-size: 10px; color: var(--text3); margin-top: 2px; }
+    .file-row-actions {
+      display: flex; gap: 5px; flex-shrink: 0;
+    }
+    .row-action-btn {
+      width: 30px; height: 30px;
+      border-radius: 8px;
+      background: var(--surface2);
+      border: none; color: var(--text3);
+      font-size: 12px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .row-action-btn:active { transform: scale(0.88); }
+
+    /* شارات */
     .file-type-badge {
-      position: absolute; bottom: 7px; left: 7px;
-      padding: 2px 7px; border-radius: 5px;
-      font-size: 8px; font-weight: 800;
-      letter-spacing: 1px; text-transform: uppercase;
-      backdrop-filter: blur(8px);
+      position: absolute; bottom: 6px; left: 6px;
+      padding: 2px 6px; border-radius: 5px;
+      font-size: 7px; font-weight: 900;
+      letter-spacing: 0.8px; text-transform: uppercase;
     }
-
-    .upload-progress-overlay {
-      position: absolute; inset: 0; background: rgba(0,0,0,0.7);
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 8px; z-index: 10; border-radius: var(--radius);
+    .select-check {
+      position: absolute; top: 7px; right: 7px;
+      width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(0,0,0,0.55);
+      border: 2px solid rgba(255,255,255,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; color: transparent;
+      transition: all 0.2s; z-index: 5;
     }
-    .upload-progress-bar { width: 80%; height: 4px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
-    .upload-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 4px; transition: width 0.3s ease; }
-    .upload-progress-pct { font-size: 13px; font-weight: 900; color: var(--gold); }
-
+    .file-card.selected .select-check {
+      background: var(--gold); border-color: var(--gold); color: #0a0a0a;
+    }
     .compress-badge {
       position: absolute; top: 7px; left: 7px;
-      background: rgba(74,222,128,0.85); color: #0a0a0a;
-      font-size: 8px; font-weight: 800;
-      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;
+      background: rgba(74,222,128,0.9); color: #0a0a0a;
+      font-size: 7px; font-weight: 900;
+      padding: 2px 5px; border-radius: 4px;
     }
+
+    /* progress overlay */
+    .upload-progress-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+      z-index: 10;
+    }
+    .upload-progress-bar { width: 75%; height: 4px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+    .upload-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 4px; transition: width 0.3s; }
+    .upload-progress-pct { font-size: 13px; font-weight: 900; color: var(--gold); }
 
     /* ============================================================
        EMPTY STATE
     ============================================================ */
     .empty-state {
-      display: flex; flex-direction: column; align-items: center;
-      justify-content: center; padding: 80px 20px;
-      text-align: center; color: var(--text3);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 20px; text-align: center;
     }
-    .empty-state-icon { font-size: 52px; color: rgba(201,168,76,0.12); margin-bottom: 16px; }
+    .empty-state-icon { font-size: 56px; color: rgba(201,168,76,0.1); margin-bottom: 16px; }
     .empty-state-title { font-size: 16px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
-    .empty-state-sub { font-size: 12px; color: var(--text3); line-height: 1.7; max-width: 280px; }
+    .empty-state-sub { font-size: 12px; color: var(--text3); line-height: 1.7; max-width: 240px; }
+
+    /* ============================================================
+       LOADING
+    ============================================================ */
+    #loadingState {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 20px; gap: 14px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ============================================================
+       BOTTOM NAV BAR
+    ============================================================ */
+    #bottomNav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: calc(var(--bottom-h) + var(--safe-bottom));
+      padding-bottom: var(--safe-bottom);
+      background: rgba(17,17,17,0.97);
+      border-top: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 1000;
+      padding-right: 8px;
+      padding-left: 8px;
+    }
+
+    .nav-btn {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 4px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: none; border: none;
+      color: var(--text3);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 10px; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+    }
+    .nav-btn i { font-size: 20px; transition: all 0.2s; }
+    .nav-btn:active { transform: scale(0.9); }
+    .nav-btn.active { color: var(--gold); }
+    .nav-btn.active i { transform: scale(1.1); }
+
+    /* زر الرفع المركزي */
+    .nav-upload-btn {
+      width: 52px; height: 52px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      border: none; color: #0a0a0a;
+      font-size: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 20px rgba(201,168,76,0.5);
+      transition: all 0.2s;
+      flex-shrink: 0;
+      margin-bottom: 4px;
+    }
+    .nav-upload-btn:active { transform: scale(0.9); box-shadow: 0 2px 10px rgba(201,168,76,0.3); }
+
+    /* ============================================================
+       BULK ACTION BAR
+    ============================================================ */
+    #bulkBar {
+      position: fixed;
+      bottom: calc(var(--bottom-h) + var(--safe-bottom) + 10px);
+      left: 14px; right: 14px;
+      background: var(--bg2);
+      border: 1.5px solid var(--border-gold);
+      border-radius: 16px;
+      padding: 10px 14px;
+      display: flex; align-items: center; gap: 8px;
+      z-index: 999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      transform: translateY(120px);
+      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #bulkBar.visible { transform: translateY(0); }
+    .bulk-count { font-size: 12px; font-weight: 900; color: var(--gold); flex-shrink: 0; }
+    .bulk-actions { display: flex; gap: 6px; flex: 1; justify-content: flex-end; }
+    .bulk-btn {
+      width: 36px; height: 36px;
+      border-radius: 10px; border: none;
+      font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+    }
+    .bulk-btn:active { transform: scale(0.88); }
+    .bulk-btn-dl    { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #0a0a0a; }
+    .bulk-btn-share { background: rgba(96,165,250,0.15); color: var(--info); }
+    .bulk-btn-del   { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .bulk-btn-clear { background: var(--surface2); color: var(--text3); }
 
     /* ============================================================
        DROP ZONE
     ============================================================ */
     #dropZone {
       position: fixed; inset: 0; z-index: 9000;
-      background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+      background: rgba(0,0,0,0.9);
       display: none; align-items: center; justify-content: center;
-      flex-direction: column; gap: 16px;
     }
     #dropZone.active { display: flex; }
-    .drop-zone-inner {
-      border: 3px dashed var(--gold); border-radius: 24px;
-      padding: 60px 80px; text-align: center;
+    .drop-inner {
+      border: 3px dashed var(--gold);
+      border-radius: 24px; padding: 50px 40px;
+      text-align: center;
       animation: dropPulse 1.5s ease infinite;
     }
     @keyframes dropPulse {
-      0%,100% { border-color: var(--gold); box-shadow: 0 0 0 0 rgba(201,168,76,0.3); }
-      50% { border-color: var(--gold-light); box-shadow: 0 0 0 20px rgba(201,168,76,0); }
+      0%,100% { border-color: var(--gold); }
+      50%      { border-color: var(--gold-light); }
     }
-    .drop-zone-icon { font-size: 56px; color: var(--gold); margin-bottom: 16px; }
-    .drop-zone-title { font-size: 22px; font-weight: 900; color: #fff; }
-    .drop-zone-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 8px; }
+    .drop-inner i { font-size: 52px; color: var(--gold); display: block; margin-bottom: 14px; }
+    .drop-inner h2 { font-size: 20px; color: #fff; font-weight: 900; }
+    .drop-inner p  { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 8px; }
 
     /* ============================================================
-       BULK ACTION BAR
-    ============================================================ */
-    #bulkBar {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(120px);
-      background: var(--bg2); border: 1px solid var(--border-gold);
-      border-radius: 50px; padding: 10px 20px;
-      display: flex; align-items: center; gap: 12px;
-      z-index: 500; backdrop-filter: blur(20px);
-      box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-      transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
-      white-space: nowrap;
-    }
-    #bulkBar.visible { transform: translateX(-50%) translateY(0); }
-    .bulk-count { font-size: 13px; font-weight: 700; color: var(--gold); }
-    .bulk-btn {
-      padding: 7px 14px; border-radius: 50px; border: none;
-      font-family: 'Tajawal', sans-serif; font-size: 12px; font-weight: 700;
-      cursor: pointer; transition: var(--transition);
-      display: flex; align-items: center; gap: 6px;
-    }
-    .bulk-btn-dl { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #0a0a0a; }
-    .bulk-btn-dl:hover { transform: scale(1.05); }
-    .bulk-btn-del { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); }
-    .bulk-btn-del:hover { background: rgba(239,68,68,0.22); }
-    .bulk-btn-share { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.25); color: var(--info); }
-    .bulk-btn-clear { background: none; border: 1px solid var(--border); color: var(--text3); }
-    .bulk-btn-clear:hover { color: var(--danger); border-color: rgba(239,68,68,0.3); }
-
-    /* ============================================================
-       MODALS
+       MODALS — Bottom Sheet
     ============================================================ */
     .modal-overlay {
       position: fixed; inset: 0; z-index: 8000;
-      background: rgba(0,0,0,0.85); backdrop-filter: blur(16px);
-      display: none; align-items: center; justify-content: center; padding: 16px;
+      background: rgba(0,0,0,0.8);
+      display: none; align-items: flex-end;
+      padding: 0;
     }
     .modal-overlay.active { display: flex; }
 
-    .modal-box {
-      width: 100%; max-width: 480px;
-      background: var(--bg2); border: 1px solid var(--border-gold);
-      border-radius: 22px; overflow: hidden;
-      animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      box-shadow: 0 40px 100px rgba(0,0,0,0.8);
-      max-height: 90vh; overflow-y: auto;
+    .modal-sheet {
+      width: 100%;
+      background: var(--bg2);
+      border-radius: 24px 24px 0 0;
+      border-top: 1px solid var(--border-gold);
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: sheetUp 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      padding-bottom: calc(16px + var(--safe-bottom));
     }
-    @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.88) translateY(20px); }
-      to   { opacity: 1; transform: scale(1) translateY(0); }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
     }
-    .modal-top-line { height: 3px; background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-light) 50%, var(--gold) 70%, transparent); }
-    .modal-header { padding: 18px 20px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
-    .modal-title { font-size: 16px; font-weight: 900; color: var(--text); }
-    .modal-close {
-      width: 30px; height: 30px; border-radius: 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text3); font-size: 13px; cursor: pointer;
+
+    /* مقبض السحب */
+    .sheet-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin: 12px auto 0;
+    }
+
+    .sheet-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sheet-title { font-size: 16px; font-weight: 900; color: var(--text); }
+    .sheet-close {
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text3); font-size: 12px;
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: var(--transition);
+      transition: all 0.2s;
     }
-    .modal-close:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: var(--danger); transform: rotate(90deg); }
-    .modal-body { padding: 18px 20px 22px; }
+    .sheet-close:active { transform: scale(0.88); }
+    .sheet-body { padding: 16px 18px; }
 
-    .file-preview-img { width: 100%; max-height: 300px; object-fit: contain; border-radius: var(--radius-sm); background: var(--bg3); }
-    .file-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-    .file-info-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
-    .file-info-label { font-size: 9px; letter-spacing: 2px; color: var(--text4); text-transform: uppercase; margin-bottom: 4px; }
-    .file-info-val { font-size: 13px; font-weight: 700; color: var(--text); }
-
+    /* ============================================================
+       INPUTS
+    ============================================================ */
     .modal-input {
-      width: 100%; padding: 12px 14px;
-      background: var(--surface); border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--text);
-      font-family: 'Tajawal', sans-serif; font-size: 13px;
-      outline: none; transition: var(--transition);
-      -webkit-user-select: text; user-select: text; margin-bottom: 12px;
+      width: 100%; padding: 13px 14px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 14px; outline: none;
+      transition: all 0.2s;
+      -webkit-user-select: text; user-select: text;
+      margin-bottom: 14px;
     }
-    .modal-input:focus { border-color: var(--gold); background: var(--surface2); box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
-    .modal-label { font-size: 10px; letter-spacing: 2px; color: var(--text3); text-transform: uppercase; font-weight: 700; margin-bottom: 6px; display: block; }
+    .modal-input:focus { border-color: var(--gold); background: var(--surface2); }
+    .modal-label {
+      font-size: 10px; letter-spacing: 2px;
+      color: var(--text3); text-transform: uppercase;
+      font-weight: 700; margin-bottom: 7px; display: block;
+    }
 
     /* ============================================================
        BUTTONS
     ============================================================ */
     .btn {
-      padding: 11px 20px; border-radius: var(--radius-sm); border: none;
-      font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 700;
-      cursor: pointer; transition: var(--transition);
-      display: inline-flex; align-items: center; gap: 7px;
+      padding: 13px 20px; border-radius: var(--radius-sm);
+      border: none; font-family: 'Tajawal', sans-serif;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex; align-items: center; gap: 8px;
     }
+    .btn:active { transform: scale(0.96); }
     .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #0a0a0a; }
-    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.35); }
     .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
-    .btn-ghost:hover { background: var(--surface2); }
-    .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); }
-    .btn-danger:hover { background: rgba(239,68,68,0.2); }
+    .btn-danger { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); }
+    .btn-full { width: 100%; justify-content: center; }
+
+    /* ============================================================
+       FILE INFO GRID
+    ============================================================ */
+    .file-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .file-info-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+    .file-info-label { font-size: 9px; letter-spacing: 2px; color: var(--text4); text-transform: uppercase; margin-bottom: 4px; }
+    .file-info-val { font-size: 12px; font-weight: 700; color: var(--text); }
+
+    .file-preview-img { width: 100%; max-height: 240px; object-fit: contain; border-radius: var(--radius-sm); background: var(--bg3); }
+    .video-player { width: 100%; border-radius: var(--radius-sm); background: #000; max-height: 240px; }
+    .audio-player { width: 100%; margin-top: 12px; }
+
+    /* ============================================================
+       SHARE
+    ============================================================ */
+    .share-link-box { display: flex; gap: 8px; margin-top: 10px; }
+    .share-link-inp {
+      flex: 1; padding: 11px 12px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text2);
+      font-size: 12px; outline: none;
+      font-family: 'Tajawal', sans-serif;
+      -webkit-user-select: text; user-select: text;
+    }
+
+    /* ============================================================
+       SAVE OPTIONS
+    ============================================================ */
+    .save-option-card {
+      display: flex; align-items: center; gap: 13px;
+      padding: 13px; background: var(--surface);
+      border: 1.5px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; transition: all 0.2s; margin-bottom: 10px;
+    }
+    .save-option-card:active { transform: scale(0.98); border-color: var(--border-gold); }
+    .save-option-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .save-option-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .save-option-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+    /* ============================================================
+       CONTEXT MENU — Bottom Sheet
+    ============================================================ */
+    #ctxMenu {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(0,0,0,0.7);
+      display: none; align-items: flex-end;
+    }
+    #ctxMenu.active { display: flex; }
+    .ctx-sheet {
+      width: 100%;
+      background: var(--bg2);
+      border-radius: 24px 24px 0 0;
+      border-top: 1px solid var(--border-gold);
+      padding-bottom: calc(10px + var(--safe-bottom));
+      animation: sheetUp 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    .ctx-file-info {
+      display: flex; align-items: center; gap: 12px;
+      padding: 16px 18px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ctx-file-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .ctx-file-name { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ctx-file-size { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    .ctx-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 14px 18px;
+    }
+    .ctx-action-btn {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 6px;
+      padding: 12px 8px;
+      border-radius: 14px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      color: var(--text2);
+      font-family: 'Tajawal', sans-serif;
+      font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .ctx-action-btn i { font-size: 20px; }
+    .ctx-action-btn:active { transform: scale(0.92); }
+    .ctx-action-btn.danger { color: var(--danger); border-color: rgba(239,68,68,0.2); background: rgba(239,68,68,0.06); }
 
     /* ============================================================
        TOAST
     ============================================================ */
     #toastContainer {
-      position: fixed; bottom: 28px; left: 50%;
-      transform: translateX(-50%); z-index: 99999;
+      position: fixed;
+      bottom: calc(var(--bottom-h) + var(--safe-bottom) + 14px);
+      left: 50%; transform: translateX(-50%);
+      z-index: 99999;
       display: flex; flex-direction: column; gap: 8px;
       align-items: center; pointer-events: none;
+      width: calc(100% - 28px);
     }
     .toast {
-      padding: 12px 20px; border-radius: 50px;
-      font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 700;
+      padding: 12px 18px; border-radius: 14px;
+      font-family: 'Tajawal', sans-serif;
+      font-size: 13px; font-weight: 700;
       display: flex; align-items: center; gap: 9px;
-      backdrop-filter: blur(20px); box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
       animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      white-space: nowrap;
+      width: 100%; max-width: 360px;
     }
     @keyframes toastIn {
-      from { opacity: 0; transform: translateY(20px) scale(0.9); }
+      from { opacity: 0; transform: translateY(16px) scale(0.9); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .toast-success { background: rgba(10,10,10,0.97); border: 1px solid rgba(74,222,128,0.4); color: rgba(255,255,255,0.85); }
-    .toast-error   { background: rgba(30,5,5,0.97);   border: 1px solid rgba(239,68,68,0.4);  color: rgba(255,255,255,0.85); }
-    .toast-info    { background: rgba(10,10,10,0.97); border: 1px solid rgba(201,168,76,0.4); color: rgba(255,255,255,0.85); }
+    .toast-success { background: rgba(10,20,10,0.97); border: 1px solid rgba(74,222,128,0.4); color: rgba(255,255,255,0.9); }
+    .toast-error   { background: rgba(25,5,5,0.97);   border: 1px solid rgba(239,68,68,0.4);  color: rgba(255,255,255,0.9); }
+    .toast-info    { background: rgba(10,10,10,0.97); border: 1px solid rgba(201,168,76,0.4); color: rgba(255,255,255,0.9); }
 
     /* ============================================================
        FILE TYPE COLORS
     ============================================================ */
-    .type-video   { color: #f97316; background: rgba(249,115,22,0.1); }
-    .type-audio   { color: #a78bfa; background: rgba(167,139,250,0.1); }
-    .type-image   { color: #4ade80; background: rgba(74,222,128,0.1); }
-    .type-pdf     { color: #ef4444; background: rgba(239,68,68,0.1); }
-    .type-doc     { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .type-archive { color: #fbbf24; background: rgba(251,191,36,0.1); }
-    .type-other   { color: #94a3b8; background: rgba(148,163,184,0.1); }
+    .type-video   { color: #f97316; background: rgba(249,115,22,0.12); }
+    .type-audio   { color: #a78bfa; background: rgba(167,139,250,0.12); }
+    .type-image   { color: #4ade80; background: rgba(74,222,128,0.12); }
+    .type-pdf     { color: #ef4444; background: rgba(239,68,68,0.12); }
+    .type-doc     { color: #60a5fa; background: rgba(96,165,250,0.12); }
+    .type-archive { color: #fbbf24; background: rgba(251,191,36,0.12); }
+    .type-other   { color: #94a3b8; background: rgba(148,163,184,0.12); }
 
     .badge-video   { background: rgba(249,115,22,0.85);  color: #fff; }
     .badge-audio   { background: rgba(167,139,250,0.85); color: #fff; }
@@ -649,205 +857,45 @@
     .badge-other   { background: rgba(148,163,184,0.85); color: #fff; }
 
     /* ============================================================
-       LOADING SPINNER
+       FOLDERS SHEET
     ============================================================ */
-    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ============================================================
-       LANGUAGE SWITCHER (desktop header)
-    ============================================================ */
-    .lang-switcher { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
-    .lang-btn { padding: 4px 10px; border-radius: 6px; border: none; background: none; color: var(--text3); font-size: 11px; font-weight: 700; cursor: pointer; transition: var(--transition); font-family: 'Tajawal', sans-serif; }
-    .lang-btn.active { background: rgba(201,168,76,0.15); color: var(--gold); }
-
-    /* ============================================================
-       SHARE / VIDEO / SAVE OPTIONS
-    ============================================================ */
-    .share-link-box { display: flex; gap: 8px; margin-top: 12px; }
-    .share-link-inp { flex: 1; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 12px; outline: none; font-family: 'Tajawal', sans-serif; -webkit-user-select: text; user-select: text; }
-    .video-player { width: 100%; border-radius: var(--radius-sm); background: #000; max-height: 400px; }
-    .audio-player { width: 100%; margin-top: 12px; }
-
-    .save-option-card {
-      display: flex; align-items: center; gap: 14px;
-      padding: 14px; background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      cursor: pointer; transition: var(--transition); margin-bottom: 10px;
+    .folder-chip {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 14px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer; transition: all 0.2s;
+      margin-bottom: 8px;
     }
-    .save-option-card:hover { border-color: var(--border-gold); background: var(--surface2); }
-    .save-option-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
-    .save-option-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-    .save-option-sub { font-size: 10px; color: var(--text3); line-height: 1.5; }
-
-    /* ============================================================
-       CONTEXT MENU
-    ============================================================ */
-    #ctxMenu {
-      position: fixed; z-index: 9999;
-      background: var(--bg2); border: 1px solid var(--border-gold);
-      border-radius: 12px; overflow: hidden;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.7);
-      backdrop-filter: blur(20px); min-width: 170px;
-      animation: ctxIn 0.18s ease forwards; display: none;
+    .folder-chip:active { transform: scale(0.98); border-color: var(--border-gold); }
+    .folder-chip.active { border-color: var(--gold); background: rgba(201,168,76,0.06); }
+    .folder-chip i { font-size: 18px; flex-shrink: 0; }
+    .folder-chip-name { flex: 1; font-size: 13px; font-weight: 700; color: var(--text); }
+    .folder-chip-count { font-size: 10px; color: var(--text3); background: var(--surface2); padding: 2px 8px; border-radius: 50px; }
+    .folder-chip-actions { display: flex; gap: 5px; }
+    .folder-chip-btn {
+      width: 26px; height: 26px; border-radius: 7px;
+      background: var(--surface2); border: none;
+      color: var(--text3); font-size: 11px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
     }
-    @keyframes ctxIn {
-      from { opacity: 0; transform: scale(0.92); }
-      to   { opacity: 1; transform: scale(1); }
+    .folder-chip-btn.danger:active { color: var(--danger); }
+
+    /* storage bar in folders sheet */
+    .storage-mini {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-top: 4px;
     }
-    .ctx-item {
-      display: flex; align-items: center; gap: 9px;
-      padding: 10px 14px; font-size: 12px; font-weight: 700;
-      color: var(--text2); cursor: pointer; transition: background 0.15s;
-      border-bottom: 1px solid var(--border);
-      font-family: 'Tajawal', sans-serif;
-    }
-    .ctx-item:last-child { border-bottom: none; }
-    .ctx-item:hover { background: var(--surface2); color: var(--text); }
-    .ctx-item.danger { color: var(--danger); }
-    .ctx-item.danger:hover { background: rgba(239,68,68,0.08); }
-    .ctx-item i { width: 14px; text-align: center; font-size: 12px; }
-
-    /* ============================================================
-       SIDEBAR OVERLAY
-    ============================================================ */
-    #sidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
-
-    /* ============================================================
-       RESPONSIVE — TABLET
-    ============================================================ */
-    @media (max-width: 900px) {
-      :root { --sidebar-w: 0px; }
-
-      #sidebar { transform: translateX(100%); width: 280px; }
-      #sidebar.open { transform: translateX(0); }
-      #sidebarOverlay.active { display: block; }
-
-      #mainContent { margin-right: 0; }
-      .header-search-wrap { display: none; }
-      .stats-bar { grid-template-columns: repeat(2, 1fr); }
-
-      /* هيدر الموبايل */
-      #appHeader { padding: 0 10px; gap: 7px; height: 56px; }
-      :root { --header-h: 56px; }
-      .header-subtitle { display: none; }
-      .header-logo-icon { width: 32px; height: 32px; font-size: 14px; }
-      .header-title { font-size: 15px; }
-      .lang-switcher { display: none; }
-      .upload-trigger-btn { padding: 8px 12px; font-size: 12px; gap: 5px; }
-      .upload-trigger-btn span { display: none; }
-      .header-btn { width: 34px; height: 34px; font-size: 13px; }
-      .header-back-btn { width: 34px; height: 34px; }
-
-      /* شريط البحث الموبايل */
-      #mobileSearchBar { display: flex; }
-
-      /* السايدبار لغة */
-      .sidebar-lang-row { display: flex; }
-
-      /* sticky bar */
-      .sticky-upload-bar { top: 56px; padding: 8px 0 10px; }
-
-      /* main padding */
-      #mainContent { padding: 10px 10px 90px; }
-    }
-
-    /* ============================================================
-       RESPONSIVE — MOBILE
-    ============================================================ */
-    @media (max-width: 600px) {
-      .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 7px; margin-bottom: 12px; }
-      .stat-card { padding: 10px 12px; gap: 9px; }
-      .stat-icon { width: 34px; height: 34px; font-size: 14px; }
-      .stat-val { font-size: 17px; }
-      .stat-lbl { font-size: 9px; }
-
-      .toolbar { flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-      .toolbar::-webkit-scrollbar { display: none; }
-      .toolbar-left { flex-shrink: 0; }
-      .toolbar-right { flex-shrink: 0; gap: 5px; }
-      .sort-select { padding: 6px 8px; font-size: 11px; max-width: 105px; }
-      .view-btn { width: 30px; height: 30px; font-size: 11px; }
-      .breadcrumb { font-size: 12px; }
-
-      .files-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .files-grid.small { grid-template-columns: repeat(3, 1fr); gap: 6px; }
-      .file-card-info { padding: 8px 10px; }
-      .file-card-name { font-size: 11px; }
-      .file-card-meta { font-size: 9px; }
-
-      /* list view موبايل */
-      .file-row { padding: 9px 10px; gap: 9px; }
-      .file-row-icon { width: 36px; height: 36px; font-size: 15px; }
-      .file-row-name { font-size: 12px; }
-      .file-row-meta { font-size: 10px; gap: 8px; }
-      .file-row-actions { opacity: 1; }
-      .file-row-actions .view-btn { width: 28px; height: 28px; font-size: 11px; }
-
-      /* bulk bar */
-      #bulkBar { bottom: 16px; padding: 8px 14px; gap: 8px; border-radius: 40px; max-width: calc(100vw - 24px); }
-      .bulk-btn { padding: 6px 10px; font-size: 11px; gap: 4px; }
-      .bulk-btn span { display: none; }
-      .bulk-count { font-size: 12px; }
-
-      /* modals → bottom sheet */
-      .modal-overlay { padding: 0; align-items: flex-end; }
-      .modal-box {
-        border-radius: 22px 22px 0 0;
-        max-height: 88vh; width: 100%; max-width: 100%;
-        animation: modalInMobile 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
-      }
-      @keyframes modalInMobile {
-        from { transform: translateY(100%); opacity: 0.8; }
-        to   { transform: translateY(0);    opacity: 1; }
-      }
-      .file-info-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
-      .file-preview-img { max-height: 220px; }
-      .video-player { max-height: 240px; }
-
-      /* context menu → bottom sheet */
-      #ctxMenu {
-        position: fixed !important;
-        bottom: 0 !important; left: 0 !important;
-        right: 0 !important; top: auto !important;
-        width: 100% !important; min-width: unset;
-        border-radius: 20px 20px 0 0; border-bottom: none;
-        padding-bottom: env(safe-area-inset-bottom, 16px);
-        animation: ctxInMobile 0.25s ease forwards;
-      }
-      @keyframes ctxInMobile {
-        from { transform: translateY(100%); }
-        to   { transform: translateY(0); }
-      }
-      #ctxMenu::before {
-        content: ''; display: block;
-        width: 40px; height: 4px;
-        background: var(--border); border-radius: 4px;
-        margin: 10px auto 6px;
-      }
-      .ctx-item { padding: 14px 18px; font-size: 14px; }
-
-      .empty-state { padding: 50px 16px; }
-      .empty-state-icon { font-size: 42px; }
-      .empty-state-title { font-size: 15px; }
-    }
-
-    @media (max-width: 380px) {
-      .files-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
-      .files-grid.small { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    /* Safe Area — Notch / Home Indicator */
-    @supports (padding-top: env(safe-area-inset-top)) {
-      @media (max-width: 900px) {
-        #appHeader {
-          padding-top: env(safe-area-inset-top);
-          height: calc(56px + env(safe-area-inset-top));
-        }
-        #bulkBar { bottom: calc(16px + env(safe-area-inset-bottom)); }
-        #toastContainer { bottom: calc(28px + env(safe-area-inset-bottom)); }
-      }
-    }
+    .storage-mini-title { font-size: 10px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+    .storage-bar-wrap { height: 5px; background: var(--surface2); border-radius: 5px; overflow: hidden; margin-bottom: 6px; }
+    .storage-bar-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width 1s ease; }
+    .storage-bar-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .storage-bar-fill.danger  { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .storage-nums { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); }
 
   </style>
 </head>
@@ -855,316 +903,266 @@
 
 <!-- DROP ZONE -->
 <div id="dropZone">
-  <div class="drop-zone-inner">
-    <div class="drop-zone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
-    <div class="drop-zone-title" data-i18n="dropTitle">اسحب الملفات هنا</div>
-    <div class="drop-zone-sub"  data-i18n="dropSub">يدعم جميع أنواع الملفات</div>
+  <div class="drop-inner">
+    <i class="fas fa-cloud-upload-alt"></i>
+    <h2>اسحب الملفات هنا</h2>
+    <p>يدعم جميع أنواع الملفات</p>
   </div>
 </div>
 
-<!-- HEADER -->
+<!-- ============================================================
+     HEADER
+============================================================ -->
 <header id="appHeader">
-  <a href="./index.html" class="header-back-btn" title="الرجوع">
+  <a href="./index.html" class="header-back-btn">
     <i class="fas fa-arrow-right"></i>
   </a>
-
   <div class="header-logo">
     <div class="header-logo-icon"><i class="fas fa-folder-open"></i></div>
-    <div>
-      <div class="header-title" data-i18n="appTitle">ملفاتي</div>
-      <div class="header-subtitle">WOW MOBİLYA</div>
-    </div>
+    <div class="header-title">ملفاتي</div>
   </div>
+  <div class="header-actions">
+    <button class="hdr-btn" onclick="toggleTheme()" id="themeBtn" title="الوضع">
+      <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+    <button class="hdr-btn" onclick="toggleSelectAll()" title="تحديد الكل">
+      <i class="fas fa-check-double"></i>
+    </button>
+  </div>
+</header>
 
-  <div class="header-search-wrap">
-    <i class="fas fa-search"></i>
-    <input type="text" class="header-search-inp" id="globalSearch"
+<!-- ============================================================
+     SEARCH BAR
+============================================================ -->
+<div id="searchBar">
+  <div class="search-wrap">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" class="search-inp" id="searchInp"
            placeholder="ابحث في الملفات..."
-           oninput="onSearch(this.value)" autocomplete="off"/>
+           oninput="onSearch(this.value)"
+           autocomplete="off"/>
+    <button class="search-clear" id="searchClear" onclick="clearSearch()">
+      <i class="fas fa-times"></i>
+    </button>
   </div>
+</div>
 
-  <div class="header-spacer"></div>
-
-  <div class="lang-switcher">
-    <button class="lang-btn active" onclick="setLang('ar')">AR</button>
-    <button class="lang-btn" onclick="setLang('tr')">TR</button>
-    <button class="lang-btn" onclick="setLang('en')">EN</button>
+<!-- ============================================================
+     FILTER TABS
+============================================================ -->
+<div id="filterTabs">
+  <div class="filter-tab active" id="tab-all" onclick="filterByType('all')">
+    <i class="fas fa-th-large" style="color:var(--gold);"></i>
+    <span>الكل</span>
+    <span class="tab-count" id="cnt-all">0</span>
   </div>
+  <div class="filter-tab" id="tab-image" onclick="filterByType('image')">
+    <i class="fas fa-image" style="color:#4ade80;"></i>
+    <span>صور</span>
+    <span class="tab-count" id="cnt-image">0</span>
+  </div>
+  <div class="filter-tab" id="tab-video" onclick="filterByType('video')">
+    <i class="fas fa-video" style="color:#f97316;"></i>
+    <span>فيديو</span>
+    <span class="tab-count" id="cnt-video">0</span>
+  </div>
+  <div class="filter-tab" id="tab-audio" onclick="filterByType('audio')">
+    <i class="fas fa-music" style="color:#a78bfa;"></i>
+    <span>صوت</span>
+    <span class="tab-count" id="cnt-audio">0</span>
+  </div>
+  <div class="filter-tab" id="tab-pdf" onclick="filterByType('pdf')">
+    <i class="fas fa-file-pdf" style="color:#ef4444;"></i>
+    <span>PDF</span>
+    <span class="tab-count" id="cnt-pdf">0</span>
+  </div>
+  <div class="filter-tab" id="tab-doc" onclick="filterByType('doc')">
+    <i class="fas fa-file-word" style="color:#60a5fa;"></i>
+    <span>مستند</span>
+    <span class="tab-count" id="cnt-doc">0</span>
+  </div>
+  <div class="filter-tab" id="tab-archive" onclick="filterByType('archive')">
+    <i class="fas fa-file-archive" style="color:#fbbf24;"></i>
+    <span>مضغوط</span>
+    <span class="tab-count" id="cnt-archive">0</span>
+  </div>
+  <div class="filter-tab" id="tab-other" onclick="filterByType('other')">
+    <i class="fas fa-file" style="color:#94a3b8;"></i>
+    <span>أخرى</span>
+    <span class="tab-count" id="cnt-other">0</span>
+  </div>
+</div>
 
-  <button class="header-btn" id="themeBtn" onclick="toggleTheme()" title="تبديل الوضع">
-    <i class="fas fa-moon" id="themeIcon"></i>
+<!-- ============================================================
+     STATS ROW
+============================================================ -->
+<div id="statsRow">
+  <div class="stat-pill">
+    <i class="fas fa-file" style="color:var(--gold);"></i>
+    <span class="stat-pill-val" id="statTotal">0</span>
+    <span class="stat-pill-lbl">ملف</span>
+  </div>
+  <div class="stat-pill">
+    <i class="fas fa-hdd" style="color:var(--info);"></i>
+    <span class="stat-pill-val" id="statSize">0 MB</span>
+    <span class="stat-pill-lbl">حجم</span>
+  </div>
+  <div class="stat-pill">
+    <i class="fas fa-compress-alt" style="color:var(--success);"></i>
+    <span class="stat-pill-val" id="statSaved">0 MB</span>
+    <span class="stat-pill-lbl">وُفِّر</span>
+  </div>
+  <div class="stat-pill">
+    <i class="fas fa-folder" style="color:var(--purple);"></i>
+    <span class="stat-pill-val" id="statFolders">0</span>
+    <span class="stat-pill-lbl">مجلد</span>
+  </div>
+</div>
+
+<!-- ============================================================
+     TOOLBAR ROW
+============================================================ -->
+<div id="toolbarRow">
+  <div class="toolbar-left">
+    <div class="breadcrumb" id="breadcrumb">جميع الملفات</div>
+  </div>
+  <div class="toolbar-right">
+    <select class="sort-select" id="sortSelect" onchange="onSortChange(this.value)">
+      <option value="date_desc">الأحدث</option>
+      <option value="date_asc">الأقدم</option>
+      <option value="name_asc">أ-ي</option>
+      <option value="name_desc">ي-أ</option>
+      <option value="size_desc">الأكبر</option>
+      <option value="size_asc">الأصغر</option>
+    </select>
+    <button class="tool-btn active" id="viewGrid"  onclick="setView('grid')"><i class="fas fa-th-large"></i></button>
+    <button class="tool-btn"        id="viewGrid3" onclick="setView('grid3')"><i class="fas fa-th"></i></button>
+    <button class="tool-btn"        id="viewList"  onclick="setView('list')"><i class="fas fa-list"></i></button>
+  </div>
+</div>
+
+<!-- ============================================================
+     FILES CONTAINER
+============================================================ -->
+<div id="filesContainer">
+  <div id="loadingState">
+    <div class="spinner"></div>
+    <div style="font-size:13px;color:var(--text3);">جاري التحميل...</div>
+  </div>
+  <div id="filesGrid" class="files-grid" style="display:none;"></div>
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
+    <div class="empty-state-title">لا توجد ملفات</div>
+    <div class="empty-state-sub">اسحب الملفات هنا أو اضغط زر + للرفع</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     BOTTOM NAV
+============================================================ -->
+<nav id="bottomNav">
+  <button class="nav-btn active" id="nav-home" onclick="navTo('home')">
+    <i class="fas fa-home"></i>
+    <span>الرئيسية</span>
+  </button>
+  <button class="nav-btn" id="nav-folders" onclick="navTo('folders')">
+    <i class="fas fa-folder"></i>
+    <span>مجلداتي</span>
   </button>
 
-  <button class="header-btn" id="sidebarToggle" onclick="toggleSidebar()" style="display:none;">
-    <i class="fas fa-bars"></i>
-  </button>
-
-  <label class="upload-trigger-btn" style="cursor:pointer;">
+  <!-- زر الرفع المركزي -->
+  <label class="nav-upload-btn" style="cursor:pointer;" title="رفع ملف">
     <input type="file" id="fileInput" multiple style="display:none;"
            onchange="handleFileSelect(this.files)"/>
     <i class="fas fa-plus"></i>
-    <span data-i18n="uploadBtn">رفع ملف</span>
   </label>
-</header>
 
-<!-- شريط بحث الموبايل -->
-<div id="mobileSearchBar">
-  <div class="mob-search-wrap">
+  <button class="nav-btn" id="nav-search" onclick="navTo('search')">
     <i class="fas fa-search"></i>
-    <input type="text" class="mob-search-inp"
-           id="mobileSearch"
-           placeholder="ابحث في الملفات..."
-           oninput="onSearch(this.value);syncSearch(this.value)"
-           autocomplete="off"/>
-  </div>
-  <button class="mob-filter-btn" id="mobFilterBtn" onclick="toggleSidebar()" title="الفئات">
-    <i class="fas fa-sliders-h"></i>
+    <span>بحث</span>
   </button>
+  <button class="nav-btn" id="nav-settings" onclick="navTo('settings')">
+    <i class="fas fa-cog"></i>
+    <span>إعدادات</span>
+  </button>
+</nav>
+
+<!-- ============================================================
+     BULK ACTION BAR
+============================================================ -->
+<div id="bulkBar">
+  <span class="bulk-count" id="bulkCount">0 محدد</span>
+  <div class="bulk-actions">
+    <button class="bulk-btn bulk-btn-dl"    onclick="bulkDownload()" title="تنزيل"><i class="fas fa-download"></i></button>
+    <button class="bulk-btn bulk-btn-share" onclick="bulkShare()"    title="مشاركة"><i class="fas fa-share-alt"></i></button>
+    <button class="bulk-btn bulk-btn-del"   onclick="bulkDelete()"   title="حذف"><i class="fas fa-trash-alt"></i></button>
+    <button class="bulk-btn bulk-btn-clear" onclick="clearSelection()" title="إلغاء"><i class="fas fa-times"></i></button>
+  </div>
 </div>
 
-<!-- SIDEBAR OVERLAY -->
-<div id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-<!-- LAYOUT -->
-<div id="appLayout">
-
-  <!-- SIDEBAR -->
-  <aside id="sidebar">
-
-    <!-- مبدّل اللغة (موبايل فقط) -->
-    <div class="sidebar-lang-row">
-      <button class="lang-btn active" onclick="setLang('ar');toggleSidebar()">AR</button>
-      <button class="lang-btn" onclick="setLang('tr');toggleSidebar()">TR</button>
-      <button class="lang-btn" onclick="setLang('en');toggleSidebar()">EN</button>
-    </div>
-
-    <!-- الفئات -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title" data-i18n="categories">الفئات</div>
-      <div class="sidebar-item active" onclick="filterByType('all');closeSidebarMobile()" id="cat-all">
-        <i class="fas fa-th-large"></i>
-        <span data-i18n="allFiles">جميع الملفات</span>
-        <span class="item-count" id="cnt-all">0</span>
+<!-- ============================================================
+     CONTEXT MENU — Bottom Sheet
+============================================================ -->
+<div id="ctxMenu" onclick="closeCtxMenu()">
+  <div class="ctx-sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <div class="ctx-file-info" id="ctxFileInfo">
+      <div class="ctx-file-icon type-other" id="ctxFileIcon">
+        <i class="fas fa-file"></i>
       </div>
-      <div class="sidebar-item" onclick="filterByType('video');closeSidebarMobile()" id="cat-video">
-        <i class="fas fa-video type-video" style="background:none;"></i>
-        <span data-i18n="videos">فيديوهات</span>
-        <span class="item-count" id="cnt-video">0</span>
-      </div>
-      <div class="sidebar-item" onclick="filterByType('audio');closeSidebarMobile()" id="cat-audio">
-        <i class="fas fa-music type-audio" style="background:none;"></i>
-        <span data-i18n="audios">صوتيات</span>
-        <span class="item-count" id="cnt-audio">0</span>
-      </div>
-      <div class="sidebar-item" onclick="filterByType('image');closeSidebarMobile()" id="cat-image">
-        <i class="fas fa-image type-image" style="background:none;"></i>
-        <span data-i18n="images">صور</span>
-        <span class="item-count" id="cnt-image">0</span>
-      </div>
-      <div class="sidebar-item" onclick="filterByType('pdf');closeSidebarMobile()" id="cat-pdf">
-        <i class="fas fa-file-pdf type-pdf" style="background:none;"></i>
-        <span>PDF</span>
-        <span class="item-count" id="cnt-pdf">0</span>
-      </div>
-      <div class="sidebar-item" onclick="filterByType('doc');closeSidebarMobile()" id="cat-doc">
-        <i class="fas fa-file-word type-doc" style="background:none;"></i>
-        <span data-i18n="docs">مستندات</span>
-        <span class="item-count" id="cnt-doc">0</span>
-      </div>
-      <div class="sidebar-item" onclick="filterByType('archive');closeSidebarMobile()" id="cat-archive">
-        <i class="fas fa-file-archive type-archive" style="background:none;"></i>
-        <span data-i18n="archives">مضغوطات</span>
-        <span class="item-count" id="cnt-archive">0</span>
-      </div>
-      <div class="sidebar-item" onclick="filterByType('other');closeSidebarMobile()" id="cat-other">
-        <i class="fas fa-file type-other" style="background:none;"></i>
-        <span data-i18n="others">أخرى</span>
-        <span class="item-count" id="cnt-other">0</span>
+      <div style="flex:1;min-width:0;">
+        <div class="ctx-file-name" id="ctxFileName">اسم الملف</div>
+        <div class="ctx-file-size" id="ctxFileSize">0 MB</div>
       </div>
     </div>
-
-    <!-- المجلدات المخصصة -->
-    <div class="sidebar-section">
-      <div class="sidebar-section-title" data-i18n="myFolders">مجلداتي</div>
-      <div id="foldersList"></div>
-      <button class="add-folder-btn" onclick="openAddFolderModal()">
-        <i class="fas fa-plus"></i>
-        <span data-i18n="newFolder">مجلد جديد</span>
+    <div class="ctx-actions-grid">
+      <button class="ctx-action-btn" onclick="ctxAction('preview')">
+        <i class="fas fa-eye"></i><span>معاينة</span>
+      </button>
+      <button class="ctx-action-btn" onclick="ctxAction('download')">
+        <i class="fas fa-download"></i><span>تنزيل</span>
+      </button>
+      <button class="ctx-action-btn" onclick="ctxAction('share')">
+        <i class="fas fa-share-alt"></i><span>مشاركة</span>
+      </button>
+      <button class="ctx-action-btn" onclick="ctxAction('move')">
+        <i class="fas fa-folder-open"></i><span>نقل</span>
+      </button>
+      <button class="ctx-action-btn" onclick="ctxAction('rename')">
+        <i class="fas fa-pen"></i><span>تسمية</span>
+      </button>
+      <button class="ctx-action-btn" onclick="ctxAction('info')">
+        <i class="fas fa-info-circle"></i><span>تفاصيل</span>
+      </button>
+      <button class="ctx-action-btn" onclick="ctxAction('select')">
+        <i class="fas fa-check-square"></i><span>تحديد</span>
+      </button>
+      <button class="ctx-action-btn danger" onclick="ctxAction('delete')">
+        <i class="fas fa-trash-alt"></i><span>حذف</span>
       </button>
     </div>
-
-    <!-- مساحة التخزين -->
-    <div class="storage-info-card">
-      <div class="storage-info-title">
-        <i class="fas fa-server" style="color:var(--gold);"></i>
-        <span data-i18n="storageUsed">المساحة المستخدمة</span>
-      </div>
-      <div class="storage-bar-wrap">
-        <div class="storage-bar-fill" id="storageBar" style="width:0%"></div>
-      </div>
-      <div class="storage-nums">
-        <span class="storage-used" id="storageUsed">0 MB</span>
-        <span id="storageTotal">1 GB</span>
-      </div>
-      <div style="margin-top:8px;font-size:10px;color:var(--text4);
-                  display:flex;align-items:center;gap:5px;">
-        <div style="width:6px;height:6px;border-radius:50%;background:var(--success);
-                    animation:iconPulse 2s infinite;"></div>
-        <span id="storageStatus">Supabase Free · 1GB</span>
-      </div>
-    </div>
-
-  </aside>
-
-  <!-- MAIN CONTENT -->
-  <main id="mainContent">
-
-    <!-- شريط الأدوات الثابت -->
-    <div class="sticky-upload-bar">
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <div class="breadcrumb" id="breadcrumb">
-            <span class="breadcrumb-item active" onclick="filterByType('all')" data-i18n="allFiles">
-              جميع الملفات
-            </span>
-          </div>
-        </div>
-        <div class="toolbar-right">
-          <select class="sort-select" id="sortSelect" onchange="onSortChange(this.value)">
-            <option value="date_desc" data-i18n="sortNewest">الأحدث أولاً</option>
-            <option value="date_asc"  data-i18n="sortOldest">الأقدم أولاً</option>
-            <option value="name_asc"  data-i18n="sortNameAZ">الاسم أ-ي</option>
-            <option value="name_desc" data-i18n="sortNameZA">الاسم ي-أ</option>
-            <option value="size_desc" data-i18n="sortSizeBig">الأكبر حجماً</option>
-            <option value="size_asc"  data-i18n="sortSizeSmall">الأصغر حجماً</option>
-          </select>
-          <button class="view-btn active" id="viewGrid"  onclick="setView('grid')"  title="شبكة كبيرة"><i class="fas fa-th-large"></i></button>
-          <button class="view-btn"        id="viewGrid2" onclick="setView('grid2')" title="شبكة صغيرة"><i class="fas fa-th"></i></button>
-          <button class="view-btn"        id="viewList"  onclick="setView('list')"  title="قائمة"><i class="fas fa-list"></i></button>
-          <button class="header-btn" onclick="toggleSelectAll()" id="selectAllBtn" title="تحديد الكل">
-            <i class="fas fa-check-double"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- إحصائيات -->
-    <div class="stats-bar" id="statsBar">
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(201,168,76,0.1);color:var(--gold);">
-          <i class="fas fa-file"></i>
-        </div>
-        <div>
-          <div class="stat-val" id="statTotal">0</div>
-          <div class="stat-lbl" data-i18n="totalFiles">إجمالي الملفات</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(96,165,250,0.1);color:var(--info);">
-          <i class="fas fa-hdd"></i>
-        </div>
-        <div>
-          <div class="stat-val" id="statSize">0 MB</div>
-          <div class="stat-lbl" data-i18n="totalSize">الحجم الكلي</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(74,222,128,0.1);color:var(--success);">
-          <i class="fas fa-compress-alt"></i>
-        </div>
-        <div>
-          <div class="stat-val" id="statSaved">0 MB</div>
-          <div class="stat-lbl" data-i18n="spaceSaved">تم توفيره</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon" style="background:rgba(167,139,250,0.1);color:var(--purple);">
-          <i class="fas fa-folder"></i>
-        </div>
-        <div>
-          <div class="stat-val" id="statFolders">0</div>
-          <div class="stat-lbl" data-i18n="myFolders">مجلداتي</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- منطقة الملفات -->
-    <div id="filesContainer">
-      <div id="loadingState" style="display:flex;align-items:center;
-           justify-content:center;padding:80px 20px;flex-direction:column;gap:14px;">
-        <div class="spinner"></div>
-        <div style="font-size:13px;color:var(--text3);" data-i18n="loading">جاري التحميل...</div>
-      </div>
-      <div id="filesGrid" class="files-grid" style="display:none;"></div>
-      <div id="emptyState" class="empty-state" style="display:none;">
-        <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
-        <div class="empty-state-title" data-i18n="noFiles">لا توجد ملفات</div>
-        <div class="empty-state-sub"   data-i18n="noFilesSub">اسحب الملفات هنا أو اضغط "رفع ملف" للبدء</div>
-      </div>
-    </div>
-
-  </main>
-</div>
-
-<!-- BULK ACTION BAR -->
-<div id="bulkBar">
-  <span class="bulk-count" id="bulkCount">0 <span data-i18n="selected">محدد</span></span>
-  <button class="bulk-btn bulk-btn-dl"    onclick="bulkDownload()">
-    <i class="fas fa-download"></i><span data-i18n="download">تنزيل</span>
-  </button>
-  <button class="bulk-btn bulk-btn-share" onclick="bulkShare()">
-    <i class="fas fa-share-alt"></i><span data-i18n="share">مشاركة</span>
-  </button>
-  <button class="bulk-btn bulk-btn-del"   onclick="bulkDelete()">
-    <i class="fas fa-trash-alt"></i><span data-i18n="delete">حذف</span>
-  </button>
-  <button class="bulk-btn bulk-btn-clear" onclick="clearSelection()">
-    <i class="fas fa-times"></i>
-  </button>
-</div>
-
-<!-- CONTEXT MENU -->
-<div id="ctxMenu">
-  <div class="ctx-item" onclick="ctxAction('preview')">
-    <i class="fas fa-eye"></i><span data-i18n="preview">معاينة</span>
-  </div>
-  <div class="ctx-item" onclick="ctxAction('download')">
-    <i class="fas fa-download"></i><span data-i18n="download">تنزيل</span>
-  </div>
-  <div class="ctx-item" onclick="ctxAction('share')">
-    <i class="fas fa-share-alt"></i><span data-i18n="share">مشاركة</span>
-  </div>
-  <div class="ctx-item" onclick="ctxAction('move')">
-    <i class="fas fa-folder-open"></i><span data-i18n="moveToFolder">نقل لمجلد</span>
-  </div>
-  <div class="ctx-item" onclick="ctxAction('rename')">
-    <i class="fas fa-pen"></i><span data-i18n="rename">إعادة تسمية</span>
-  </div>
-  <div class="ctx-item" onclick="ctxAction('info')">
-    <i class="fas fa-info-circle"></i><span data-i18n="details">التفاصيل</span>
-  </div>
-  <div class="ctx-item danger" onclick="ctxAction('delete')">
-    <i class="fas fa-trash-alt"></i><span data-i18n="delete">حذف</span>
   </div>
 </div>
 
-<!-- MODAL: معاينة الملف -->
-<div class="modal-overlay file-preview-modal" id="previewModal">
-  <div class="modal-box" style="max-width:600px;">
-    <div class="modal-top-line"></div>
-    <div class="modal-header">
-      <div class="modal-title" id="previewTitle">معاينة الملف</div>
-      <button class="modal-close" onclick="closeModal('previewModal')"><i class="fas fa-times"></i></button>
+<!-- ============================================================
+     MODAL: معاينة
+============================================================ -->
+<div class="modal-overlay" id="previewModal">
+  <div class="modal-sheet" style="max-height:92vh;">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title" id="previewTitle">معاينة</div>
+      <button class="sheet-close" onclick="closeModal('previewModal')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="sheet-body">
       <div id="previewContent"></div>
       <div class="file-info-grid" id="previewMeta"></div>
-      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-        <button class="btn btn-gold"   onclick="downloadFile(currentCtxFile)" style="flex:1;">
-          <i class="fas fa-download"></i><span data-i18n="download">تنزيل</span>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn btn-gold" onclick="downloadFile(currentCtxFile)" style="flex:1;">
+          <i class="fas fa-download"></i> تنزيل
         </button>
-        <button class="btn btn-ghost"  onclick="openShareModal(currentCtxFile)" style="flex:1;">
-          <i class="fas fa-share-alt"></i><span data-i18n="share">مشاركة</span>
+        <button class="btn btn-ghost" onclick="openShareModal(currentCtxFile)" style="flex:1;">
+          <i class="fas fa-share-alt"></i> مشاركة
         </button>
         <button class="btn btn-danger" onclick="deleteFile(currentCtxFile);closeModal('previewModal')">
           <i class="fas fa-trash-alt"></i>
@@ -1176,28 +1174,26 @@
 
 <!-- MODAL: مشاركة -->
 <div class="modal-overlay" id="shareModal">
-  <div class="modal-box">
-    <div class="modal-top-line"></div>
-    <div class="modal-header">
-      <div class="modal-title" data-i18n="shareFile">مشاركة الملف</div>
-      <button class="modal-close" onclick="closeModal('shareModal')"><i class="fas fa-times"></i></button>
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">مشاركة الملف</div>
+      <button class="sheet-close" onclick="closeModal('shareModal')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;" data-i18n="shareSub">
-        انسخ الرابط أو شارك مباشرة
-      </div>
+    <div class="sheet-body">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:10px;">انسخ الرابط أو شارك مباشرة</div>
       <div class="share-link-box">
         <input type="text" class="share-link-inp" id="shareLinkInp" readonly/>
-        <button class="btn btn-gold" onclick="copyShareLink()" style="flex-shrink:0;">
+        <button class="btn btn-gold" onclick="copyShareLink()" style="flex-shrink:0;padding:11px 16px;">
           <i class="fas fa-copy"></i>
         </button>
       </div>
-      <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-ghost" onclick="shareViaWhatsApp()" style="flex:1;">
-          <i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-ghost btn-full" onclick="shareViaWhatsApp()" style="flex:1;">
+          <i class="fab fa-whatsapp" style="color:#25d366;font-size:18px;"></i> WhatsApp
         </button>
-        <button class="btn btn-ghost" onclick="shareViaNative()" style="flex:1;">
-          <i class="fas fa-share-alt"></i><span data-i18n="moreOptions">خيارات</span>
+        <button class="btn btn-ghost btn-full" onclick="shareViaNative()" style="flex:1;">
+          <i class="fas fa-share-alt"></i> خيارات
         </button>
       </div>
     </div>
@@ -1206,24 +1202,68 @@
 
 <!-- MODAL: إضافة مجلد -->
 <div class="modal-overlay" id="addFolderModal">
-  <div class="modal-box" style="max-width:400px;">
-    <div class="modal-top-line"></div>
-    <div class="modal-header">
-      <div class="modal-title" data-i18n="newFolder">مجلد جديد</div>
-      <button class="modal-close" onclick="closeModal('addFolderModal')"><i class="fas fa-times"></i></button>
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">مجلد جديد</div>
+      <button class="sheet-close" onclick="closeModal('addFolderModal')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-      <label class="modal-label" data-i18n="folderName">اسم المجلد</label>
+    <div class="sheet-body">
+      <label class="modal-label">اسم المجلد</label>
       <input type="text" class="modal-input" id="newFolderName"
              placeholder="مثال: مشاريع 2026" maxlength="40"
              onkeydown="if(event.key==='Enter')saveNewFolder()"/>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-ghost" onclick="closeModal('addFolderModal')" style="flex:1;">
-          <span data-i18n="cancel">إلغاء</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('addFolderModal')" style="flex:1;">إلغاء</button>
+        <button class="btn btn-gold"  onclick="saveNewFolder()" style="flex:2;">
+          <i class="fas fa-folder-plus"></i> إنشاء
         </button>
-        <button class="btn btn-gold" onclick="saveNewFolder()" style="flex:2;">
-          <i class="fas fa-folder-plus"></i><span data-i18n="create">إنشاء</span>
-        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: مجلداتي -->
+<div class="modal-overlay" id="foldersModal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">مجلداتي</div>
+      <button class="sheet-close" onclick="closeModal('foldersModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sheet-body">
+      <!-- زر إضافة مجلد -->
+      <button onclick="closeModal('foldersModal');openAddFolderModal()"
+              style="width:100%;display:flex;align-items:center;gap:10px;
+                     padding:12px 14px;border-radius:12px;
+                     background:rgba(201,168,76,0.08);
+                     border:1.5px dashed var(--border-gold);
+                     color:var(--gold);font-family:'Tajawal',sans-serif;
+                     font-size:13px;font-weight:700;cursor:pointer;
+                     margin-bottom:14px;transition:all 0.2s;">
+        <i class="fas fa-plus" style="font-size:16px;"></i>
+        مجلد جديد
+      </button>
+
+      <!-- قائمة المجلدات -->
+      <div id="foldersListSheet"></div>
+
+      <!-- مساحة التخزين -->
+      <div class="storage-mini">
+        <div class="storage-mini-title">المساحة المستخدمة</div>
+        <div class="storage-bar-wrap">
+          <div class="storage-bar-fill" id="storageBar" style="width:0%"></div>
+        </div>
+        <div class="storage-nums">
+          <span style="font-weight:700;color:var(--text2);" id="storageUsed">0 MB</span>
+          <span id="storageTotal">1 GB</span>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:var(--text4);
+                    display:flex;align-items:center;gap:5px;">
+          <div style="width:6px;height:6px;border-radius:50%;
+                      background:var(--success);"></div>
+          <span id="storageStatus">Supabase Free · 1GB</span>
+        </div>
       </div>
     </div>
   </div>
@@ -1231,37 +1271,36 @@
 
 <!-- MODAL: نقل لمجلد -->
 <div class="modal-overlay" id="moveModal">
-  <div class="modal-box" style="max-width:400px;">
-    <div class="modal-top-line"></div>
-    <div class="modal-header">
-      <div class="modal-title" data-i18n="moveToFolder">نقل لمجلد</div>
-      <button class="modal-close" onclick="closeModal('moveModal')"><i class="fas fa-times"></i></button>
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">نقل لمجلد</div>
+      <button class="sheet-close" onclick="closeModal('moveModal')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
+    <div class="sheet-body">
       <div id="moveFoldersList" style="display:flex;flex-direction:column;gap:8px;
-           max-height:280px;overflow-y:auto;"></div>
+           max-height:320px;overflow-y:auto;"></div>
     </div>
   </div>
 </div>
 
 <!-- MODAL: إعادة تسمية -->
 <div class="modal-overlay" id="renameModal">
-  <div class="modal-box" style="max-width:400px;">
-    <div class="modal-top-line"></div>
-    <div class="modal-header">
-      <div class="modal-title" data-i18n="rename">إعادة تسمية</div>
-      <button class="modal-close" onclick="closeModal('renameModal')"><i class="fas fa-times"></i></button>
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">إعادة تسمية</div>
+      <button class="sheet-close" onclick="closeModal('renameModal')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-      <label class="modal-label" data-i18n="newName">الاسم الجديد</label>
+    <div class="sheet-body">
+      <label class="modal-label">الاسم الجديد</label>
       <input type="text" class="modal-input" id="renameInput"
-             maxlength="100" onkeydown="if(event.key==='Enter')confirmRename()"/>
-      <div style="display:flex;gap:10px;">
-        <button class="btn btn-ghost" onclick="closeModal('renameModal')" style="flex:1;">
-          <span data-i18n="cancel">إلغاء</span>
-        </button>
-        <button class="btn btn-gold" onclick="confirmRename()" style="flex:2;">
-          <i class="fas fa-check"></i><span data-i18n="save">حفظ</span>
+             maxlength="100"
+             onkeydown="if(event.key==='Enter')confirmRename()"/>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal('renameModal')" style="flex:1;">إلغاء</button>
+        <button class="btn btn-gold"  onclick="confirmRename()" style="flex:2;">
+          <i class="fas fa-check"></i> حفظ
         </button>
       </div>
     </div>
@@ -1270,25 +1309,107 @@
 
 <!-- MODAL: خيارات الحفظ -->
 <div class="modal-overlay" id="saveOptionsModal">
-  <div class="modal-box" style="max-width:420px;">
-    <div class="modal-top-line"></div>
-    <div class="modal-header">
-      <div class="modal-title" data-i18n="saveWhere">أين تحفظ؟</div>
-      <button class="modal-close" onclick="closeModal('saveOptionsModal')"><i class="fas fa-times"></i></button>
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">أين تحفظ؟</div>
+      <button class="sheet-close" onclick="closeModal('saveOptionsModal')"><i class="fas fa-times"></i></button>
     </div>
-    <div class="modal-body">
-      <div style="font-size:12px;color:var(--text3);margin-bottom:14px;" id="saveOptionsFileName"></div>
+    <div class="sheet-body">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px;"
+           id="saveOptionsFileName"></div>
       <div class="save-option-card" onclick="confirmSaveStandard()">
         <div class="save-option-icon" style="background:rgba(201,168,76,0.1);color:var(--gold);">
           <i class="fas fa-magic"></i>
         </div>
         <div>
-          <div class="save-option-title" data-i18n="autoCategory">تصنيف تلقائي</div>
-          <div class="save-option-sub"   data-i18n="autoCategorySub">يُحفظ في المجلد المناسب حسب نوع الملف تلقائياً</div>
+          <div class="save-option-title">تصنيف تلقائي</div>
+          <div class="save-option-sub">يُحفظ حسب نوع الملف تلقائياً</div>
         </div>
         <i class="fas fa-chevron-left" style="color:var(--text4);margin-right:auto;"></i>
       </div>
       <div id="saveOptionsFolders"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: الإعدادات -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header">
+      <div class="sheet-title">الإعدادات</div>
+      <button class="sheet-close" onclick="closeModal('settingsModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sheet-body">
+
+      <!-- الوضع الليلي/النهاري -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:14px;background:var(--surface);border:1px solid var(--border);
+                  border-radius:var(--radius-sm);margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:38px;height:38px;border-radius:10px;
+                      background:rgba(201,168,76,0.1);color:var(--gold);
+                      display:flex;align-items:center;justify-content:center;font-size:17px;">
+            <i class="fas fa-moon" id="settingsThemeIcon"></i>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--text);">الوضع الليلي</div>
+            <div style="font-size:10px;color:var(--text3);">تبديل المظهر</div>
+          </div>
+        </div>
+        <button onclick="toggleTheme();updateSettingsIcons()"
+                style="width:46px;height:26px;border-radius:50px;
+                       background:var(--surface2);border:1px solid var(--border);
+                       cursor:pointer;position:relative;transition:all 0.3s;"
+                id="themeToggleSwitch">
+          <div id="themeToggleDot"
+               style="width:20px;height:20px;border-radius:50%;
+                      background:var(--gold);position:absolute;
+                      top:2px;right:2px;transition:all 0.3s;"></div>
+        </button>
+      </div>
+
+      <!-- اللغة -->
+      <div style="padding:14px;background:var(--surface);border:1px solid var(--border);
+                  border-radius:var(--radius-sm);margin-bottom:10px;">
+        <div style="font-size:10px;letter-spacing:2px;color:var(--text3);
+                    text-transform:uppercase;margin-bottom:10px;">اللغة</div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="setLang('ar')" id="langAR"
+                  style="flex:1;padding:10px;border-radius:10px;
+                         background:rgba(201,168,76,0.12);border:1.5px solid var(--gold);
+                         color:var(--gold);font-family:'Tajawal',sans-serif;
+                         font-size:13px;font-weight:700;cursor:pointer;">
+            العربية
+          </button>
+          <button onclick="setLang('tr')" id="langTR"
+                  style="flex:1;padding:10px;border-radius:10px;
+                         background:var(--surface);border:1.5px solid var(--border);
+                         color:var(--text2);font-family:'Tajawal',sans-serif;
+                         font-size:13px;font-weight:700;cursor:pointer;">
+            Türkçe
+          </button>
+          <button onclick="setLang('en')" id="langEN"
+                  style="flex:1;padding:10px;border-radius:10px;
+                         background:var(--surface);border:1.5px solid var(--border);
+                         color:var(--text2);font-family:'Tajawal',sans-serif;
+                         font-size:13px;font-weight:700;cursor:pointer;">
+            English
+          </button>
+        </div>
+      </div>
+
+      <!-- معلومات التطبيق -->
+      <div style="padding:14px;background:var(--surface);border:1px solid var(--border);
+                  border-radius:var(--radius-sm);text-align:center;">
+        <div style="font-size:28px;color:var(--gold);margin-bottom:8px;">
+          <i class="fas fa-folder-open"></i>
+        </div>
+        <div style="font-size:14px;font-weight:900;color:var(--text);">ملفاتي</div>
+        <div style="font-size:10px;color:var(--text3);letter-spacing:2px;margin-top:2px;">WOW MOBİLYA · v2.0</div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1303,10 +1424,10 @@
 /* ============================================================
    SUPABASE CONFIG
 ============================================================ */
-const SUPABASE_URL  = 'https://sldthbnigivpsqixccah.supabase.co';
-const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
-const FILES_BUCKET  = 'user-files';
-const FILES_TABLE   = 'user_files';
+const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
+const FILES_BUCKET = 'user-files';
+const FILES_TABLE  = 'user_files';
 
 let _sb = null;
 async function initSB() {
@@ -1325,45 +1446,25 @@ async function initSB() {
 /* ============================================================
    INDEXEDDB
 ============================================================ */
-const IDB_NAME  = 'wow_files_db';
-const IDB_STORE = 'pending_uploads';
-
+const IDB_NAME = 'wow_files_db', IDB_STORE = 'pending_uploads';
 function openIDB() {
-  return new Promise((res, rej) => {
+  return new Promise((res,rej) => {
     const req = indexedDB.open(IDB_NAME, 1);
     req.onupgradeneeded = e => {
       const db = e.target.result;
       if (!db.objectStoreNames.contains(IDB_STORE))
-        db.createObjectStore(IDB_STORE, { keyPath: 'id', autoIncrement: true });
+        db.createObjectStore(IDB_STORE, { keyPath:'id', autoIncrement:true });
     };
     req.onsuccess = e => res(e.target.result);
     req.onerror   = e => rej(e.target.error);
   });
 }
-async function saveToIDB(fileObj) {
-  const db  = await openIDB();
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(IDB_STORE, 'readwrite');
-    const req = tx.objectStore(IDB_STORE).add(fileObj);
+async function saveToIDB(obj) {
+  const db = await openIDB();
+  return new Promise((res,rej) => {
+    const tx  = db.transaction(IDB_STORE,'readwrite');
+    const req = tx.objectStore(IDB_STORE).add(obj);
     req.onsuccess = () => res(req.result);
-    req.onerror   = () => rej(req.error);
-  });
-}
-async function getAllFromIDB() {
-  const db = await openIDB();
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(IDB_STORE, 'readonly');
-    const req = tx.objectStore(IDB_STORE).getAll();
-    req.onsuccess = () => res(req.result || []);
-    req.onerror   = () => rej(req.error);
-  });
-}
-async function deleteFromIDB(id) {
-  const db = await openIDB();
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(IDB_STORE, 'readwrite');
-    const req = tx.objectStore(IDB_STORE).delete(id);
-    req.onsuccess = () => res();
     req.onerror   = () => rej(req.error);
   });
 }
@@ -1372,128 +1473,56 @@ async function deleteFromIDB(id) {
    i18n
 ============================================================ */
 const I18N = {
-  ar: {
-    appTitle:'ملفاتي', categories:'الفئات', allFiles:'جميع الملفات',
-    videos:'فيديوهات', audios:'صوتيات', images:'صور', pdfs:'PDF',
-    docs:'مستندات', archives:'مضغوطات', others:'أخرى',
-    myFolders:'مجلداتي', newFolder:'مجلد جديد', storageUsed:'المساحة المستخدمة',
-    uploadBtn:'رفع ملف', searchPlaceholder:'ابحث في الملفات...',
-    sortNewest:'الأحدث أولاً', sortOldest:'الأقدم أولاً',
-    sortNameAZ:'الاسم أ-ي', sortNameZA:'الاسم ي-أ',
-    sortSizeBig:'الأكبر حجماً', sortSizeSmall:'الأصغر حجماً',
-    totalFiles:'إجمالي الملفات', totalSize:'الحجم الكلي',
-    spaceSaved:'تم توفيره', selected:'محدد',
-    download:'تنزيل', share:'مشاركة', delete:'حذف',
-    preview:'معاينة', moveToFolder:'نقل لمجلد', rename:'إعادة تسمية',
-    details:'التفاصيل', shareFile:'مشاركة الملف',
-    shareSub:'انسخ الرابط أو شارك مباشرة', moreOptions:'خيارات',
-    folderName:'اسم المجلد', folderNamePh:'مثال: مشاريع 2026',
-    create:'إنشاء', cancel:'إلغاء', save:'حفظ', newName:'الاسم الجديد',
-    saveWhere:'أين تحفظ؟', autoCategory:'تصنيف تلقائي',
-    autoCategorySub:'يُحفظ في المجلد المناسب حسب نوع الملف تلقائياً',
-    noFiles:'لا توجد ملفات', noFilesSub:'اسحب الملفات هنا أو اضغط "رفع ملف" للبدء',
-    loading:'جاري التحميل...', dropTitle:'اسحب الملفات هنا',
-    dropSub:'يدعم جميع أنواع الملفات',
-    uploadSuccess:'تم الرفع بنجاح', uploadError:'فشل الرفع',
-    deleteSuccess:'تم الحذف', deleteError:'فشل الحذف',
-    copied:'تم النسخ', compressing:'جاري الضغط...',
-    uploadDate:'تاريخ الرفع', downloadDate:'تاريخ التنزيل',
-    fileSize:'الحجم', fileType:'النوع', fileName:'الاسم',
-    folder:'المجلد', compressed:'مضغوط',
-  },
-  tr: {
-    appTitle:'Dosyalarım', categories:'Kategoriler', allFiles:'Tüm Dosyalar',
-    videos:'Videolar', audios:'Sesler', images:'Görseller', pdfs:'PDF',
-    docs:'Belgeler', archives:'Arşivler', others:'Diğer',
-    myFolders:'Klasörlerim', newFolder:'Yeni Klasör', storageUsed:'Kullanılan Alan',
-    uploadBtn:'Dosya Yükle', searchPlaceholder:'Dosyalarda ara...',
-    sortNewest:'En Yeni', sortOldest:'En Eski',
-    sortNameAZ:'İsim A-Z', sortNameZA:'İsim Z-A',
-    sortSizeBig:'En Büyük', sortSizeSmall:'En Küçük',
-    totalFiles:'Toplam Dosya', totalSize:'Toplam Boyut',
-    spaceSaved:'Tasarruf', selected:'seçildi',
-    download:'İndir', share:'Paylaş', delete:'Sil',
-    preview:'Önizle', moveToFolder:'Klasöre Taşı', rename:'Yeniden Adlandır',
-    details:'Detaylar', shareFile:'Dosyayı Paylaş',
-    shareSub:'Bağlantıyı kopyala veya doğrudan paylaş', moreOptions:'Seçenekler',
-    folderName:'Klasör Adı', folderNamePh:'Örn: Projeler 2026',
-    create:'Oluştur', cancel:'İptal', save:'Kaydet', newName:'Yeni Ad',
-    saveWhere:'Nereye kaydedilsin?', autoCategory:'Otomatik Sınıflandır',
-    autoCategorySub:'Dosya türüne göre otomatik klasöre kaydedilir',
-    noFiles:'Dosya yok', noFilesSub:'Dosyaları buraya sürükleyin veya "Dosya Yükle" butonuna basın',
-    loading:'Yükleniyor...', dropTitle:'Dosyaları buraya sürükleyin',
-    dropSub:'Tüm dosya türlerini destekler',
-    uploadSuccess:'Başarıyla yüklendi', uploadError:'Yükleme başarısız',
-    deleteSuccess:'Silindi', deleteError:'Silme başarısız',
-    copied:'Kopyalandı', compressing:'Sıkıştırılıyor...',
-    uploadDate:'Yükleme Tarihi', downloadDate:'İndirme Tarihi',
-    fileSize:'Boyut', fileType:'Tür', fileName:'Ad',
-    folder:'Klasör', compressed:'Sıkıştırılmış',
-  },
-  en: {
-    appTitle:'My Files', categories:'Categories', allFiles:'All Files',
-    videos:'Videos', audios:'Audio', images:'Images', pdfs:'PDF',
-    docs:'Documents', archives:'Archives', others:'Other',
-    myFolders:'My Folders', newFolder:'New Folder', storageUsed:'Storage Used',
-    uploadBtn:'Upload File', searchPlaceholder:'Search files...',
-    sortNewest:'Newest First', sortOldest:'Oldest First',
-    sortNameAZ:'Name A-Z', sortNameZA:'Name Z-A',
-    sortSizeBig:'Largest', sortSizeSmall:'Smallest',
-    totalFiles:'Total Files', totalSize:'Total Size',
-    spaceSaved:'Saved', selected:'selected',
-    download:'Download', share:'Share', delete:'Delete',
-    preview:'Preview', moveToFolder:'Move to Folder', rename:'Rename',
-    details:'Details', shareFile:'Share File',
-    shareSub:'Copy link or share directly', moreOptions:'Options',
-    folderName:'Folder Name', folderNamePh:'e.g. Projects 2026',
-    create:'Create', cancel:'Cancel', save:'Save', newName:'New Name',
-    saveWhere:'Where to save?', autoCategory:'Auto Categorize',
-    autoCategorySub:'Saved automatically in the right folder by file type',
-    noFiles:'No files', noFilesSub:'Drag files here or click "Upload File" to start',
-    loading:'Loading...', dropTitle:'Drop files here',
-    dropSub:'Supports all file types',
-    uploadSuccess:'Uploaded successfully', uploadError:'Upload failed',
-    deleteSuccess:'Deleted', deleteError:'Delete failed',
-    copied:'Copied', compressing:'Compressing...',
-    uploadDate:'Upload Date', downloadDate:'Download Date',
-    fileSize:'Size', fileType:'Type', fileName:'Name',
-    folder:'Folder', compressed:'Compressed',
-  }
+  ar: { appTitle:'ملفاتي', allFiles:'جميع الملفات', uploadSuccess:'تم الرفع بنجاح',
+        uploadError:'فشل الرفع', deleteSuccess:'تم الحذف', deleteError:'فشل الحذف',
+        copied:'تم النسخ', compressing:'جاري الضغط...', download:'تنزيل',
+        share:'مشاركة', delete:'حذف', rename:'إعادة تسمية', preview:'معاينة',
+        moveToFolder:'نقل لمجلد', details:'تفاصيل', fileName:'الاسم',
+        fileSize:'الحجم', fileType:'النوع', uploadDate:'تاريخ الرفع',
+        downloadDate:'آخر تنزيل', folder:'المجلد', compressed:'مضغوط',
+        spaceSaved:'وُفِّر', newFolder:'مجلد جديد', create:'إنشاء',
+        cancel:'إلغاء', save:'حفظ', newName:'الاسم الجديد',
+        noFiles:'لا توجد ملفات', loading:'جاري التحميل...' },
+  tr: { appTitle:'Dosyalarım', allFiles:'Tüm Dosyalar', uploadSuccess:'Yüklendi',
+        uploadError:'Yükleme başarısız', deleteSuccess:'Silindi', deleteError:'Silinemedi',
+        copied:'Kopyalandı', compressing:'Sıkıştırılıyor...', download:'İndir',
+        share:'Paylaş', delete:'Sil', rename:'Yeniden Adlandır', preview:'Önizle',
+        moveToFolder:'Klasöre Taşı', details:'Detaylar', fileName:'Ad',
+        fileSize:'Boyut', fileType:'Tür', uploadDate:'Yükleme Tarihi',
+        downloadDate:'Son İndirme', folder:'Klasör', compressed:'Sıkıştırılmış',
+        spaceSaved:'Tasarruf', newFolder:'Yeni Klasör', create:'Oluştur',
+        cancel:'İptal', save:'Kaydet', newName:'Yeni Ad',
+        noFiles:'Dosya yok', loading:'Yükleniyor...' },
+  en: { appTitle:'My Files', allFiles:'All Files', uploadSuccess:'Uploaded',
+        uploadError:'Upload failed', deleteSuccess:'Deleted', deleteError:'Delete failed',
+        copied:'Copied', compressing:'Compressing...', download:'Download',
+        share:'Share', delete:'Delete', rename:'Rename', preview:'Preview',
+        moveToFolder:'Move to Folder', details:'Details', fileName:'Name',
+        fileSize:'Size', fileType:'Type', uploadDate:'Upload Date',
+        downloadDate:'Last Download', folder:'Folder', compressed:'Compressed',
+        spaceSaved:'Saved', newFolder:'New Folder', create:'Create',
+        cancel:'Cancel', save:'Save', newName:'New Name',
+        noFiles:'No files', loading:'Loading...' }
 };
 
 let currentLang = localStorage.getItem('mf_lang') || 'ar';
-
-function t(key) { return I18N[currentLang]?.[key] || I18N['ar'][key] || key; }
+function t(k) { return I18N[currentLang]?.[k] || I18N.ar[k] || k; }
 
 function setLang(lang) {
   currentLang = lang;
   localStorage.setItem('mf_lang', lang);
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const k = el.getAttribute('data-i18n');
-    if (k) el.textContent = t(k);
-  });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    const k = el.getAttribute('data-i18n-placeholder');
-    if (k) el.placeholder = t(k);
-  });
-  // تحديث placeholder حقول البحث
-  const gs = document.getElementById('globalSearch');
-  const ms = document.getElementById('mobileSearch');
-  if (gs) gs.placeholder = t('searchPlaceholder');
-  if (ms) ms.placeholder = t('searchPlaceholder');
-
-  // تحديث أزرار اللغة — هيدر وسايدبار
-  document.querySelectorAll('.lang-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent.trim() === lang.toUpperCase());
-  });
-
   document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;
-
-  document.querySelectorAll('#sortSelect option').forEach(opt => {
-    const k = opt.getAttribute('data-i18n');
-    if (k) opt.textContent = t(k);
+  // تحديث أزرار اللغة في الإعدادات
+  ['AR','TR','EN'].forEach(l => {
+    const btn = document.getElementById('lang'+l);
+    if (!btn) return;
+    const isActive = l === lang.toUpperCase();
+    btn.style.background     = isActive ? 'rgba(201,168,76,0.12)' : 'var(--surface)';
+    btn.style.borderColor    = isActive ? 'var(--gold)' : 'var(--border)';
+    btn.style.color          = isActive ? 'var(--gold)' : 'var(--text2)';
   });
+  showToast(lang === 'ar' ? 'العربية' : lang === 'tr' ? 'Türkçe' : 'English', 'info');
 }
 
 /* ============================================================
@@ -1515,6 +1544,16 @@ function initTheme() {
   }
 }
 
+function updateSettingsIcons() {
+  const icon = document.getElementById('settingsThemeIcon');
+  if (icon) icon.className = isDark ? 'fas fa-moon' : 'fas fa-sun';
+  const dot = document.getElementById('themeToggleDot');
+  if (dot) {
+    dot.style.right = isDark ? '2px' : 'auto';
+    dot.style.left  = isDark ? 'auto' : '2px';
+  }
+}
+
 /* ============================================================
    STATE
 ============================================================ */
@@ -1532,96 +1571,76 @@ let totalSavedBytes = 0;
 const recentUploads = new Set();
 
 /* ============================================================
-   FILE TYPE DETECTION
+   FILE TYPE
 ============================================================ */
 function getFileType(name, mime) {
-  const ext = (name || '').split('.').pop().toLowerCase();
-  const m   = (mime || '').toLowerCase();
-  if (m.startsWith('video/') || ['mp4','mov','avi','mkv','webm','flv','wmv','m4v'].includes(ext)) return 'video';
-  if (m.startsWith('audio/') || ['mp3','wav','ogg','aac','flac','m4a','wma','opus'].includes(ext)) return 'audio';
-  if (m.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg','bmp','tiff','heic'].includes(ext)) return 'image';
-  if (ext === 'pdf' || m === 'application/pdf') return 'pdf';
+  const ext = (name||'').split('.').pop().toLowerCase();
+  const m   = (mime||'').toLowerCase();
+  if (m.startsWith('video/')  || ['mp4','mov','avi','mkv','webm','flv','wmv','m4v'].includes(ext)) return 'video';
+  if (m.startsWith('audio/')  || ['mp3','wav','ogg','aac','flac','m4a','wma','opus'].includes(ext)) return 'audio';
+  if (m.startsWith('image/')  || ['jpg','jpeg','png','gif','webp','svg','bmp','tiff','heic'].includes(ext)) return 'image';
+  if (ext==='pdf' || m==='application/pdf') return 'pdf';
   if (['doc','docx','xls','xlsx','ppt','pptx','odt','ods'].includes(ext)) return 'doc';
   if (['zip','rar','7z','tar','gz','bz2','xz'].includes(ext)) return 'archive';
   return 'other';
 }
-
 function getTypeIcon(type) {
-  const icons = { video:'fa-video', audio:'fa-music', image:'fa-image', pdf:'fa-file-pdf', doc:'fa-file-word', archive:'fa-file-archive', other:'fa-file' };
-  return icons[type] || 'fa-file';
+  return { video:'fa-video', audio:'fa-music', image:'fa-image', pdf:'fa-file-pdf',
+           doc:'fa-file-word', archive:'fa-file-archive', other:'fa-file' }[type] || 'fa-file';
 }
-
-function getTypeBadgeClass(type) { return `badge-${type}`; }
 
 /* ============================================================
-   FORMAT HELPERS
+   FORMAT
 ============================================================ */
-function fmtSize(bytes) {
-  if (!bytes) return '0 B';
-  if (bytes < 1024)       return bytes + ' B';
-  if (bytes < 1048576)    return (bytes/1024).toFixed(1) + ' KB';
-  if (bytes < 1073741824) return (bytes/1048576).toFixed(1) + ' MB';
-  return (bytes/1073741824).toFixed(2) + ' GB';
+function fmtSize(b) {
+  if (!b) return '0 B';
+  if (b<1024) return b+' B';
+  if (b<1048576) return (b/1024).toFixed(1)+' KB';
+  if (b<1073741824) return (b/1048576).toFixed(1)+' MB';
+  return (b/1073741824).toFixed(2)+' GB';
 }
-
-function fmtDate(dateStr) {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString(
-    currentLang === 'ar' ? 'ar-SA' : currentLang === 'tr' ? 'tr-TR' : 'en-US',
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString(
+    currentLang==='ar'?'ar-SA':currentLang==='tr'?'tr-TR':'en-US',
     { day:'2-digit', month:'short', year:'numeric' }
   );
 }
-
-function fmtDateTime(dateStr) {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleString(
-    currentLang === 'ar' ? 'ar-SA' : currentLang === 'tr' ? 'tr-TR' : 'en-US',
+function fmtDateTime(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleString(
+    currentLang==='ar'?'ar-SA':currentLang==='tr'?'tr-TR':'en-US',
     { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }
   );
 }
-
-/* ============================================================
-   AUTO FOLDER
-============================================================ */
-const AUTO_FOLDERS = {
-  video  : { name_ar:'فيديوهات',  name_tr:'Videolar',  name_en:'Videos',    icon:'fa-video',        color:'#f97316' },
-  audio  : { name_ar:'صوتيات',    name_tr:'Sesler',    name_en:'Audio',     icon:'fa-music',        color:'#a78bfa' },
-  image  : { name_ar:'صور',       name_tr:'Görseller', name_en:'Images',    icon:'fa-image',        color:'#4ade80' },
-  pdf    : { name_ar:'PDF',       name_tr:'PDF',       name_en:'PDF',       icon:'fa-file-pdf',     color:'#ef4444' },
-  doc    : { name_ar:'مستندات',   name_tr:'Belgeler',  name_en:'Documents', icon:'fa-file-word',    color:'#60a5fa' },
-  archive: { name_ar:'مضغوطات',   name_tr:'Arşivler',  name_en:'Archives',  icon:'fa-file-archive', color:'#fbbf24' },
-  other  : { name_ar:'أخرى',      name_tr:'Diğer',     name_en:'Other',     icon:'fa-file',         color:'#94a3b8' },
-};
-function getAutoFolderName(type) {
-  const f = AUTO_FOLDERS[type];
-  if (!f) return 'أخرى';
-  return f[`name_${currentLang}`] || f.name_ar;
+function escHtml(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 /* ============================================================
    COMPRESSION
 ============================================================ */
-async function compressImage(file, quality = 0.82) {
+async function compressImage(file, quality=0.82) {
   return new Promise(resolve => {
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        let { width, height } = img;
+        let {width,height} = img;
         const MAX = 2000;
-        if (width > MAX || height > MAX) {
-          if (width > height) { height = Math.round(height * MAX/width); width = MAX; }
-          else { width = Math.round(width * MAX/height); height = MAX; }
+        if (width>MAX||height>MAX) {
+          if (width>height) { height=Math.round(height*MAX/width); width=MAX; }
+          else { width=Math.round(width*MAX/height); height=MAX; }
         }
-        canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.width=width; canvas.height=height;
+        canvas.getContext('2d').drawImage(img,0,0,width,height);
         canvas.toBlob(blob => {
-          if (blob && blob.size < file.size)
-            resolve({ blob, saved: file.size - blob.size, compressed: true });
+          if (blob && blob.size<file.size)
+            resolve({blob, saved:file.size-blob.size, compressed:true});
           else
-            resolve({ blob: file, saved: 0, compressed: false });
-        }, file.type === 'image/png' ? 'image/png' : 'image/jpeg', quality);
+            resolve({blob:file, saved:0, compressed:false});
+        }, file.type==='image/png'?'image/png':'image/jpeg', quality);
       };
       img.src = e.target.result;
     };
@@ -1630,59 +1649,58 @@ async function compressImage(file, quality = 0.82) {
 }
 
 async function compressWithJSZip(file) {
-  if (typeof JSZip === 'undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  if (typeof JSZip==='undefined')
+    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
   const zip  = new JSZip();
   zip.file(file.name, file);
-  const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 } });
-  if (blob.size < file.size * 0.95)
-    return { blob, saved: file.size - blob.size, compressed: true, newName: file.name + '.zip' };
-  return { blob: file, saved: 0, compressed: false, newName: file.name };
+  const blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  if (blob.size < file.size*0.95)
+    return {blob, saved:file.size-blob.size, compressed:true, newName:file.name+'.zip'};
+  return {blob:file, saved:0, compressed:false, newName:file.name};
 }
 
 function loadScript(src) {
-  return new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = src; s.onload = res; s.onerror = rej;
+  return new Promise((res,rej) => {
+    const s=document.createElement('script');
+    s.src=src; s.onload=res; s.onerror=rej;
     document.head.appendChild(s);
   });
 }
 
 /* ============================================================
-   SUPABASE STORAGE
+   SUPABASE
 ============================================================ */
 async function uploadFileToSupabase(file, path) {
   const sb = await initSB();
-  const { data: buckets } = await sb.storage.listBuckets();
-  const exists = buckets?.some(b => b.name === FILES_BUCKET);
-  if (!exists) await sb.storage.createBucket(FILES_BUCKET, { public: true });
-
-  const { error } = await sb.storage.from(FILES_BUCKET).upload(path, file, {
-    cacheControl: '3600', upsert: false,
-    contentType: file.type || 'application/octet-stream',
+  const {data:buckets} = await sb.storage.listBuckets();
+  if (!buckets?.some(b=>b.name===FILES_BUCKET))
+    await sb.storage.createBucket(FILES_BUCKET,{public:true});
+  const {error} = await sb.storage.from(FILES_BUCKET).upload(path, file, {
+    cacheControl:'3600', upsert:false,
+    contentType:file.type||'application/octet-stream'
   });
   if (error) throw error;
-
-  const { data: urlData } = sb.storage.from(FILES_BUCKET).getPublicUrl(path);
+  const {data:urlData} = sb.storage.from(FILES_BUCKET).getPublicUrl(path);
   return urlData?.publicUrl;
 }
 
 async function saveFileMeta(meta) {
   const sb = await initSB();
-  const { data, error } = await sb.from(FILES_TABLE).insert([meta]).select().single();
+  const {data,error} = await sb.from(FILES_TABLE).insert([meta]).select().single();
   if (error) throw error;
   return data;
 }
 
 async function loadAllFiles() {
   const sb = await initSB();
-  const { data, error } = await sb.from(FILES_TABLE).select('*').order('uploaded_at', { ascending: false });
+  const {data,error} = await sb.from(FILES_TABLE).select('*').order('uploaded_at',{ascending:false});
   if (error) { console.error(error); return []; }
-  return data || [];
+  return data||[];
 }
 
 async function deleteFileMeta(id) {
   const sb = await initSB();
-  const { error } = await sb.from(FILES_TABLE).delete().eq('id', id);
+  const {error} = await sb.from(FILES_TABLE).delete().eq('id',id);
   if (error) throw error;
 }
 
@@ -1693,172 +1711,182 @@ async function deleteFileStorage(path) {
 
 async function updateFileMeta(id, patch) {
   const sb = await initSB();
-  const { error } = await sb.from(FILES_TABLE).update(patch).eq('id', id);
+  const {error} = await sb.from(FILES_TABLE).update(patch).eq('id',id);
   if (error) throw error;
 }
 
 /* ============================================================
-   STORAGE SIZE
+   STORAGE
 ============================================================ */
 async function calcStorageUsed() {
   try {
     const sb = await initSB();
-    const { data } = await sb.from(FILES_TABLE).select('file_size');
-    const used  = (data || []).reduce((s, r) => s + (r.file_size || 0), 0);
-    const limit = 1073741824; // 1GB
-    const pct   = Math.min((used / limit) * 100, 100);
-
+    const {data} = await sb.from(FILES_TABLE).select('file_size');
+    const used  = (data||[]).reduce((s,r)=>s+(r.file_size||0),0);
+    const limit = 1073741824;
+    const pct   = Math.min((used/limit)*100,100);
     document.getElementById('storageUsed').textContent  = fmtSize(used);
     document.getElementById('storageTotal').textContent = fmtSize(limit);
-
     const bar = document.getElementById('storageBar');
-    bar.style.width = pct + '%';
-    bar.className   = 'storage-bar-fill' + (pct > 80 ? ' danger' : pct > 60 ? ' warning' : '');
-    document.getElementById('storageStatus').textContent = `Supabase Free · ${pct.toFixed(1)}% ${t('storageUsed')}`;
-  } catch(e) { console.warn('Storage calc error:', e); }
+    bar.style.width = pct+'%';
+    bar.className   = 'storage-bar-fill'+(pct>80?' danger':pct>60?' warning':'');
+    document.getElementById('storageStatus').textContent = `Supabase Free · ${pct.toFixed(1)}%`;
+  } catch(e) { console.warn(e); }
 }
 
 /* ============================================================
-   CUSTOM FOLDERS
+   FOLDERS
 ============================================================ */
 function loadFolders() {
-  try { customFolders = JSON.parse(localStorage.getItem('mf_folders') || '[]'); }
-  catch(e) { customFolders = []; }
-  renderFoldersList();
+  try { customFolders = JSON.parse(localStorage.getItem('mf_folders')||'[]'); }
+  catch(e) { customFolders=[]; }
+  renderFoldersSheet();
+  document.getElementById('statFolders').textContent = customFolders.length;
 }
 
-function saveFolders() { localStorage.setItem('mf_folders', JSON.stringify(customFolders)); }
+function saveFolders() {
+  localStorage.setItem('mf_folders', JSON.stringify(customFolders));
+}
 
-function renderFoldersList() {
-  const el = document.getElementById('foldersList');
+function renderFoldersSheet() {
+  const el = document.getElementById('foldersListSheet');
+  if (!el) return;
   document.getElementById('statFolders').textContent = customFolders.length;
-  if (!customFolders.length) { el.innerHTML = ''; return; }
 
-  el.innerHTML = customFolders.map(f => `
-    <div class="folder-item ${currentFolder === f.id ? 'active' : ''}"
-         onclick="filterByFolder('${f.id}')">
-      <i class="fas fa-folder" style="color:${f.color || 'var(--gold)'};"></i>
-      <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;
-                   text-overflow:ellipsis;font-size:13px;">${f.name}</span>
-      <div class="folder-actions">
-        <button class="folder-action-btn"
-                onclick="event.stopPropagation();openRenameFolder('${f.id}')"
-                title="${t('rename')}">
+  if (!customFolders.length) {
+    el.innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:12px;">
+      لا توجد مجلدات بعد</div>`;
+    return;
+  }
+
+  el.innerHTML = customFolders.map(f => {
+    const count = allFiles.filter(x=>x.folder_id===f.id).length;
+    return `
+    <div class="folder-chip ${currentFolder===f.id?'active':''}"
+         onclick="filterByFolder('${f.id}');closeModal('foldersModal')">
+      <i class="fas fa-folder" style="color:${f.color||'var(--gold)'};"></i>
+      <span class="folder-chip-name">${escHtml(f.name)}</span>
+      <span class="folder-chip-count">${count}</span>
+      <div class="folder-chip-actions" onclick="event.stopPropagation()">
+        <button class="folder-chip-btn"
+                onclick="openRenameFolder('${f.id}')">
           <i class="fas fa-pen"></i>
         </button>
-        <button class="folder-action-btn danger"
-                onclick="event.stopPropagation();deleteFolder('${f.id}')"
-                title="${t('delete')}">
+        <button class="folder-chip-btn danger"
+                onclick="deleteFolder('${f.id}')">
           <i class="fas fa-trash-alt"></i>
         </button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function openAddFolderModal() {
   document.getElementById('newFolderName').value = '';
   openModal('addFolderModal');
-  setTimeout(() => document.getElementById('newFolderName').focus(), 300);
+  setTimeout(()=>document.getElementById('newFolderName').focus(),350);
 }
 
 function saveNewFolder() {
   const name = document.getElementById('newFolderName').value.trim();
   if (!name) return;
-  const colors  = ['#c9a84c','#4ade80','#60a5fa','#f97316','#a78bfa','#ef4444','#fbbf24'];
-  const folder  = { id:'f_'+Date.now(), name, color:colors[customFolders.length % colors.length], created_at:new Date().toISOString() };
-  customFolders.push(folder);
-  saveFolders(); renderFoldersList();
+  const colors = ['#c9a84c','#4ade80','#60a5fa','#f97316','#a78bfa','#ef4444','#fbbf24'];
+  customFolders.push({
+    id:'f_'+Date.now(), name,
+    color:colors[customFolders.length%colors.length],
+    created_at:new Date().toISOString()
+  });
+  saveFolders(); renderFoldersSheet();
   closeModal('addFolderModal');
-  showToast(t('create') + ': ' + name, 'success');
+  showToast('تم إنشاء المجلد: '+name, 'success');
 }
 
 function deleteFolder(id) {
-  customFolders = customFolders.filter(f => f.id !== id);
+  if (!confirm('حذف المجلد؟')) return;
+  customFolders = customFolders.filter(f=>f.id!==id);
   saveFolders();
-  if (currentFolder === id) { currentFolder = null; filterByType('all'); }
-  renderFoldersList();
+  if (currentFolder===id) { currentFolder=null; filterByType('all'); }
+  renderFoldersSheet();
   showToast(t('deleteSuccess'), 'info');
 }
 
 function openRenameFolder(id) {
-  const f = customFolders.find(x => x.id === id);
+  const f = customFolders.find(x=>x.id===id);
   if (!f) return;
-  const newName = prompt(t('newName'), f.name);
-  if (newName && newName.trim()) { f.name = newName.trim(); saveFolders(); renderFoldersList(); }
+  const n = prompt(t('newName'), f.name);
+  if (n&&n.trim()) { f.name=n.trim(); saveFolders(); renderFoldersSheet(); }
 }
 
 function filterByFolder(id) {
-  currentFolder = id; currentFilter = 'all';
-  updateSidebarActive(); applyFiltersAndRender();
-  const f = customFolders.find(x => x.id === id);
-  document.getElementById('breadcrumb').innerHTML = `
-    <span class="breadcrumb-item" onclick="filterByType('all')">${t('allFiles')}</span>
-    <span class="breadcrumb-sep"><i class="fas fa-chevron-left"></i></span>
-    <span class="breadcrumb-item active">${f?.name || ''}</span>`;
+  currentFolder=id; currentFilter='all';
+  updateFilterTabs(); applyFiltersAndRender();
+  const f = customFolders.find(x=>x.id===id);
+  document.getElementById('breadcrumb').textContent = f?.name||'';
 }
 
 /* ============================================================
    FILTER & SORT
 ============================================================ */
 function filterByType(type) {
-  currentFilter = type; currentFolder = null;
-  updateSidebarActive(); applyFiltersAndRender();
-  document.getElementById('breadcrumb').innerHTML = `
-    <span class="breadcrumb-item active">${t(type === 'all' ? 'allFiles' : type + 's') || type}</span>`;
+  currentFilter=type; currentFolder=null;
+  updateFilterTabs(); applyFiltersAndRender();
+  document.getElementById('breadcrumb').textContent =
+    type==='all' ? t('allFiles') :
+    type==='image'?'صور':type==='video'?'فيديو':
+    type==='audio'?'صوت':type==='pdf'?'PDF':
+    type==='doc'?'مستندات':type==='archive'?'مضغوطات':'أخرى';
 }
 
-function updateSidebarActive() {
-  document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.folder-item').forEach(el  => el.classList.remove('active'));
-  if (currentFolder) {
-    document.querySelectorAll('.folder-item').forEach(el => {
-      if (el.getAttribute('onclick')?.includes(currentFolder)) el.classList.add('active');
-    });
-  } else {
-    document.getElementById(`cat-${currentFilter}`)?.classList.add('active');
+function updateFilterTabs() {
+  document.querySelectorAll('.filter-tab').forEach(el=>el.classList.remove('active'));
+  if (!currentFolder) {
+    document.getElementById(`tab-${currentFilter}`)?.classList.add('active');
   }
 }
 
 function applyFiltersAndRender() {
   let list = [...allFiles];
-  if (currentFilter !== 'all') list = list.filter(f => f.file_type === currentFilter);
-  if (currentFolder)           list = list.filter(f => f.folder_id === currentFolder);
+  if (currentFilter!=='all') list = list.filter(f=>f.file_type===currentFilter);
+  if (currentFolder)         list = list.filter(f=>f.folder_id===currentFolder);
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
-    list = list.filter(f => f.file_name?.toLowerCase().includes(q));
+    list = list.filter(f=>f.file_name?.toLowerCase().includes(q));
   }
   filteredFiles = sortFiles(list, currentSort);
   renderFiles();
 }
 
 function sortFiles(list, sort) {
-  return [...list].sort((a, b) => {
+  return [...list].sort((a,b)=>{
     switch(sort) {
-      case 'date_desc': return new Date(b.uploaded_at) - new Date(a.uploaded_at);
-      case 'date_asc':  return new Date(a.uploaded_at) - new Date(b.uploaded_at);
+      case 'date_desc': return new Date(b.uploaded_at)-new Date(a.uploaded_at);
+      case 'date_asc':  return new Date(a.uploaded_at)-new Date(b.uploaded_at);
       case 'name_asc':  return (a.file_name||'').localeCompare(b.file_name||'');
       case 'name_desc': return (b.file_name||'').localeCompare(a.file_name||'');
-      case 'size_desc': return (b.file_size||0) - (a.file_size||0);
-      case 'size_asc':  return (a.file_size||0) - (b.file_size||0);
+      case 'size_desc': return (b.file_size||0)-(a.file_size||0);
+      case 'size_asc':  return (a.file_size||0)-(b.file_size||0);
       default: return 0;
     }
   });
 }
 
-function onSortChange(val) { currentSort = val; applyFiltersAndRender(); }
+function onSortChange(val) { currentSort=val; applyFiltersAndRender(); }
 
 function onSearch(val) {
   searchQuery = val.trim();
+  const clearBtn = document.getElementById('searchClear');
+  if (clearBtn) clearBtn.classList.toggle('visible', val.length>0);
   applyFiltersAndRender();
 }
 
-function syncSearch(val) {
-  const gs = document.getElementById('globalSearch');
-  if (gs) gs.value = val;
+function clearSearch() {
+  document.getElementById('searchInp').value='';
+  document.getElementById('searchClear').classList.remove('visible');
+  onSearch('');
 }
 
 /* ============================================================
-   RENDER FILES
+   RENDER
 ============================================================ */
 function renderFiles() {
   const grid    = document.getElementById('filesGrid');
@@ -1872,45 +1900,41 @@ function renderFiles() {
     return;
   }
   empty.style.display = 'none';
-  grid.style.display  = currentView === 'list' ? 'flex' : 'grid';
-  grid.className      = currentView === 'list' ? 'files-list' :
-                        currentView === 'grid2' ? 'files-grid small' : 'files-grid';
+  grid.style.display  = currentView==='list' ? 'flex' : 'grid';
+  grid.className      = currentView==='list' ? 'files-list' :
+                        currentView==='grid3' ? 'files-grid grid3' : 'files-grid';
 
-  grid.innerHTML = filteredFiles.map((f, idx) =>
-    currentView === 'list' ? buildFileRow(f, idx) : buildFileCard(f, idx)
+  grid.innerHTML = filteredFiles.map((f,i) =>
+    currentView==='list' ? buildFileRow(f,i) : buildFileCard(f,i)
   ).join('');
 
-  grid.querySelectorAll('.file-card, .file-row').forEach((el, i) => {
-    el.style.animationDelay = (i * 0.03) + 's';
+  grid.querySelectorAll('.file-card,.file-row').forEach((el,i)=>{
+    el.style.animationDelay = Math.min(i,15)*0.03+'s';
   });
 }
 
 function buildFileCard(f, idx) {
-  const type     = f.file_type || 'other';
-  const isImg    = type === 'image';
+  const type     = f.file_type||'other';
   const selected = selectedIds.has(f.id);
-  const delay    = Math.min(idx, 12) * 0.03;
+  const isImg    = type==='image';
 
   const thumb = isImg
-    ? `<img src="${f.file_url}" alt="${escHtml(f.file_name)}" loading="lazy" draggable="false"
+    ? `<img src="${f.file_url}" alt="${escHtml(f.file_name)}" loading="lazy"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
        <div class="file-type-icon type-${type}" style="display:none;">
-         <i class="fas ${getTypeIcon(type)}"></i>
-       </div>`
+         <i class="fas ${getTypeIcon(type)}"></i></div>`
     : `<div class="file-type-icon type-${type}">
-         <i class="fas ${getTypeIcon(type)}" style="font-size:38px;"></i>
-       </div>`;
+         <i class="fas ${getTypeIcon(type)}"></i></div>`;
 
   return `
-    <div class="file-card ${selected ? 'selected' : ''}"
-         id="fc-${f.id}" style="animation-delay:${delay}s"
+    <div class="file-card ${selected?'selected':''}" id="fc-${f.id}"
          onclick="handleCardClick(event,'${f.id}')"
          oncontextmenu="openCtxMenu(event,'${f.id}');return false;"
          ondblclick="openPreview('${f.id}')">
       <div class="file-card-thumb">
         ${thumb}
-        <span class="file-type-badge ${getTypeBadgeClass(type)}">${type.toUpperCase()}</span>
-        ${f.compressed ? '<span class="compress-badge">ZIP</span>' : ''}
+        <span class="file-type-badge badge-${type}">${type.toUpperCase()}</span>
+        ${f.compressed?'<span class="compress-badge">ZIP</span>':''}
         <div class="select-check"><i class="fas fa-check"></i></div>
       </div>
       <div class="file-card-info">
@@ -1924,134 +1948,117 @@ function buildFileCard(f, idx) {
 }
 
 function buildFileRow(f, idx) {
-  const type     = f.file_type || 'other';
+  const type     = f.file_type||'other';
   const selected = selectedIds.has(f.id);
-  const delay    = Math.min(idx, 12) * 0.025;
-  const folder   = customFolders.find(x => x.id === f.folder_id);
-
   return `
-    <div class="file-row ${selected ? 'selected' : ''}"
-         id="fr-${f.id}" style="animation-delay:${delay}s"
+    <div class="file-row ${selected?'selected':''}" id="fr-${f.id}"
          onclick="handleCardClick(event,'${f.id}')"
          oncontextmenu="openCtxMenu(event,'${f.id}');return false;"
          ondblclick="openPreview('${f.id}')">
       <div class="file-row-icon type-${type}">
         <i class="fas ${getTypeIcon(type)}"></i>
       </div>
-      <div class="file-row-name" title="${escHtml(f.file_name)}">${escHtml(f.file_name)}</div>
-      <div class="file-row-meta">
-        <span>${fmtSize(f.file_size)}</span>
-        <span>${fmtDate(f.uploaded_at)}</span>
-        ${folder ? `<span style="color:var(--gold);font-size:10px;">
-          <i class="fas fa-folder"></i> ${escHtml(folder.name)}
-        </span>` : ''}
+      <div class="file-row-info">
+        <div class="file-row-name">${escHtml(f.file_name)}</div>
+        <div class="file-row-meta">${fmtSize(f.file_size)} · ${fmtDate(f.uploaded_at)}</div>
       </div>
       <div class="file-row-actions">
-        <button class="view-btn" onclick="event.stopPropagation();openPreview('${f.id}')" title="${t('preview')}">
+        <button class="row-action-btn" onclick="event.stopPropagation();openPreview('${f.id}')">
           <i class="fas fa-eye"></i>
         </button>
-        <button class="view-btn" onclick="event.stopPropagation();downloadFile('${f.id}')" title="${t('download')}">
-          <i class="fas fa-download"></i>
-        </button>
-        <button class="view-btn" onclick="event.stopPropagation();openShareModal('${f.id}')" title="${t('share')}">
-          <i class="fas fa-share-alt"></i>
-        </button>
-        <button class="view-btn" style="color:var(--danger);"
-                onclick="event.stopPropagation();deleteFile('${f.id}')" title="${t('delete')}">
-          <i class="fas fa-trash-alt"></i>
+        <button class="row-action-btn" onclick="event.stopPropagation();openCtxMenu(event,'${f.id}')">
+          <i class="fas fa-ellipsis-v"></i>
         </button>
       </div>
     </div>`;
 }
 
-/* XSS protection */
-function escHtml(str) {
-  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 /* ============================================================
-   VIEW MODES
+   VIEW
 ============================================================ */
 function setView(v) {
-  currentView = v;
-  ['viewGrid','viewGrid2','viewList'].forEach(id => document.getElementById(id)?.classList.remove('active'));
-  const map = { grid:'viewGrid', grid2:'viewGrid2', list:'viewList' };
-  document.getElementById(map[v])?.classList.add('active');
+  currentView=v;
+  ['viewGrid','viewGrid3','viewList'].forEach(id=>document.getElementById(id)?.classList.remove('active'));
+  document.getElementById(v==='grid'?'viewGrid':v==='grid3'?'viewGrid3':'viewList')?.classList.add('active');
   renderFiles();
 }
 
 /* ============================================================
    SELECTION
 ============================================================ */
-function handleCardClick(e, id) {
-  if (e.ctrlKey || e.metaKey || e.shiftKey || selectedIds.size > 0) toggleSelect(id);
+function handleCardClick(e,id) {
+  if (selectedIds.size>0) { toggleSelect(id); return; }
+  // long press للتحديد — single tap للمعاينة
 }
 
 function toggleSelect(id) {
   if (selectedIds.has(id)) selectedIds.delete(id);
   else selectedIds.add(id);
-  const card = document.getElementById(`fc-${id}`) || document.getElementById(`fr-${id}`);
-  if (card) card.classList.toggle('selected', selectedIds.has(id));
+  const el = document.getElementById(`fc-${id}`)||document.getElementById(`fr-${id}`);
+  if (el) el.classList.toggle('selected', selectedIds.has(id));
   updateBulkBar();
 }
 
 function toggleSelectAll() {
-  if (selectedIds.size === filteredFiles.length) {
-    clearSelection();
-  } else {
-    filteredFiles.forEach(f => selectedIds.add(f.id));
-    document.querySelectorAll('.file-card, .file-row').forEach(el => el.classList.add('selected'));
-    updateBulkBar();
-  }
+  if (selectedIds.size===filteredFiles.length) { clearSelection(); return; }
+  filteredFiles.forEach(f=>selectedIds.add(f.id));
+  document.querySelectorAll('.file-card,.file-row').forEach(el=>el.classList.add('selected'));
+  updateBulkBar();
 }
 
 function clearSelection() {
   selectedIds.clear();
-  document.querySelectorAll('.file-card.selected, .file-row.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('.file-card.selected,.file-row.selected').forEach(el=>el.classList.remove('selected'));
   updateBulkBar();
 }
 
 function updateBulkBar() {
   const bar = document.getElementById('bulkBar');
   const n   = selectedIds.size;
-  document.getElementById('bulkCount').innerHTML = `${n} <span>${t('selected')}</span>`;
-  n > 0 ? bar.classList.add('visible') : bar.classList.remove('visible');
+  document.getElementById('bulkCount').textContent = n+' محدد';
+  n>0 ? bar.classList.add('visible') : bar.classList.remove('visible');
 }
+
+/* Long Press للتحديد */
+let longPressTimer = null;
+document.addEventListener('touchstart', e => {
+  const card = e.target.closest('.file-card,.file-row');
+  if (!card) return;
+  const id = card.id.replace('fc-','').replace('fr-','');
+  longPressTimer = setTimeout(()=>{ toggleSelect(id); }, 500);
+}, {passive:true});
+document.addEventListener('touchend', ()=>{ clearTimeout(longPressTimer); }, {passive:true});
+document.addEventListener('touchmove', ()=>{ clearTimeout(longPressTimer); }, {passive:true});
 
 /* ============================================================
    STATS
 ============================================================ */
 function updateStats() {
   const total = allFiles.length;
-  const size  = allFiles.reduce((s, f) => s + (f.file_size || 0), 0);
+  const size  = allFiles.reduce((s,f)=>s+(f.file_size||0),0);
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statSize').textContent  = fmtSize(size);
   document.getElementById('statSaved').textContent = fmtSize(totalSavedBytes);
-
-  ['video','audio','image','pdf','doc','archive','other'].forEach(type => {
+  ['video','audio','image','pdf','doc','archive','other','all'].forEach(type=>{
     const el = document.getElementById(`cnt-${type}`);
-    if (el) el.textContent = allFiles.filter(f => f.file_type === type).length;
+    if (el) el.textContent = type==='all' ? total : allFiles.filter(f=>f.file_type===type).length;
   });
-  const allEl = document.getElementById('cnt-all');
-  if (allEl) allEl.textContent = total;
 }
 
 /* ============================================================
-   FILE UPLOAD
+   UPLOAD
 ============================================================ */
 async function handleFileSelect(files) {
   if (!files?.length) return;
+  document.getElementById('fileInput').value='';
   const arr = Array.from(files);
-  // reset input لإتاحة رفع نفس الملف مجدداً
-  document.getElementById('fileInput').value = '';
-
-  if (arr.length === 1) openSaveOptions(arr[0]);
-  else for (const file of arr) await uploadSingleFile(file, null, true);
+  if (arr.length===1) openSaveOptions(arr[0]);
+  else for (const f of arr) await uploadSingleFile(f,null,true);
 }
 
 function openSaveOptions(file) {
   document.getElementById('saveOptionsFileName').textContent = `📄 ${file.name} · ${fmtSize(file.size)}`;
-  document.getElementById('saveOptionsFolders').innerHTML = customFolders.map(f => `
+  document.getElementById('saveOptionsFolders').innerHTML = customFolders.map(f=>`
     <div class="save-option-card"
          onclick="uploadSingleFile(window._pendingFile,'${f.id}',false);closeModal('saveOptionsModal')">
       <div class="save-option-icon" style="background:${f.color}18;color:${f.color};">
@@ -2059,7 +2066,7 @@ function openSaveOptions(file) {
       </div>
       <div>
         <div class="save-option-title">${escHtml(f.name)}</div>
-        <div class="save-option-sub">${t('folder')}</div>
+        <div class="save-option-sub">مجلد مخصص</div>
       </div>
       <i class="fas fa-chevron-left" style="color:var(--text4);margin-right:auto;"></i>
     </div>`).join('');
@@ -2069,108 +2076,75 @@ function openSaveOptions(file) {
 
 function confirmSaveStandard() {
   if (!window._pendingFile) return;
-  uploadSingleFile(window._pendingFile, null, true);
+  uploadSingleFile(window._pendingFile,null,true);
   closeModal('saveOptionsModal');
 }
 
-async function uploadSingleFile(file, folderId = null, autoCategory = true) {
-  const type        = getFileType(file.name, file.type);
-  const tempId      = 'temp_' + Date.now();
+async function uploadSingleFile(file, folderId=null, autoCategory=true) {
+  const type   = getFileType(file.name, file.type);
+  const tempId = 'temp_'+Date.now();
   addTempCard(tempId, file, type);
 
   try {
     showToast(t('compressing'), 'info');
-    let uploadBlob = file, compressed = false, savedBytes = 0, finalName = file.name;
+    let uploadBlob=file, compressed=false, savedBytes=0, finalName=file.name;
 
-    if (type === 'image') {
-      const result = await compressImage(file, 0.82);
-      uploadBlob = result.blob;
-      compressed = result.compressed;
-      savedBytes = result.saved;
-    } else if (['doc','archive','other'].includes(type) && file.size > 100 * 1024) {
-      const result = await compressWithJSZip(file);
-      uploadBlob  = result.blob;
-      compressed  = result.compressed;
-      savedBytes  = result.saved;
-      if (result.newName) finalName = result.newName;
+    if (type==='image') {
+      const r = await compressImage(file, 0.82);
+      uploadBlob=r.blob; compressed=r.compressed; savedBytes=r.saved;
+    } else if (['doc','archive','other'].includes(type) && file.size>100*1024) {
+      const r = await compressWithJSZip(file);
+      uploadBlob=r.blob; compressed=r.compressed; savedBytes=r.saved;
+      if (r.newName) finalName=r.newName;
     }
-
     totalSavedBytes += savedBytes;
 
-    // رفع لـ Supabase Storage
-    const safeName  = finalName.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const path      = `${type}s/${Date.now()}_${safeName}`;
-
-    updateTempProgress(tempId, 30);
+    const safeName = finalName.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const path     = `${type}s/${Date.now()}_${safeName}`;
+    updateTempProgress(tempId,30);
     const publicUrl = await uploadFileToSupabase(uploadBlob, path);
-    updateTempProgress(tempId, 80);
+    updateTempProgress(tempId,80);
 
-    // حفظ البيانات في DB
     const meta = {
-      file_name     : finalName,
-      file_url      : publicUrl,
-      file_path     : path,
-      file_size     : uploadBlob.size,
-      original_size : file.size,
-      file_type     : type,
-      mime_type     : file.type,
-      folder_id     : folderId || null,
-      auto_folder   : autoCategory ? type : null,
-      compressed    : compressed,
-      saved_bytes   : savedBytes,
-      uploaded_at   : new Date().toISOString(),
-      download_count: 0,
+      file_name:finalName, file_url:publicUrl, file_path:path,
+      file_size:uploadBlob.size, original_size:file.size,
+      file_type:type, mime_type:file.type,
+      folder_id:folderId||null, auto_folder:autoCategory?type:null,
+      compressed, saved_bytes:savedBytes,
+      uploaded_at:new Date().toISOString(), download_count:0
     };
 
-    await saveToIDB({ ...meta, temp_id: tempId });
-
+    await saveToIDB({...meta, temp_id:tempId});
     const saved = await saveFileMeta(meta);
     recentUploads.add(saved.id);
-    setTimeout(() => recentUploads.delete(saved.id), 10000);
+    setTimeout(()=>recentUploads.delete(saved.id), 10000);
+    updateTempProgress(tempId,100);
 
-    updateTempProgress(tempId, 100);
-
-    setTimeout(() => {
+    setTimeout(()=>{
       removeTempCard(tempId);
       allFiles.unshift(saved);
-      applyFiltersAndRender();
-      updateStats();
-      calcStorageUsed();
-      showToast(t('uploadSuccess') + ': ' + finalName, 'success');
+      applyFiltersAndRender(); updateStats(); calcStorageUsed();
+      showToast(t('uploadSuccess')+': '+finalName, 'success');
     }, 500);
 
   } catch(err) {
-    console.error('Upload error:', err);
+    console.error(err);
     removeTempCard(tempId);
-    showToast(t('uploadError') + ': ' + (err.message || ''), 'error');
-    await saveToIDB({
-      file_name : file.name,
-      file_size : file.size,
-      file_type : type,
-      folder_id : folderId,
-      failed    : true,
-      error     : err.message,
-      saved_at  : new Date().toISOString()
-    });
+    showToast(t('uploadError')+': '+(err.message||''), 'error');
   }
 }
 
-/* بطاقة مؤقتة أثناء الرفع */
 function addTempCard(tempId, file, type) {
   const grid = document.getElementById('filesGrid');
-  grid.style.display = currentView === 'list' ? 'flex' : 'grid';
-  document.getElementById('emptyState').style.display = 'none';
-
-  const div     = document.createElement('div');
-  div.id        = `temp-${tempId}`;
-  div.className = 'file-card';
-  div.style.cssText = 'opacity:0.7;pointer-events:none;';
-  div.innerHTML = `
+  grid.style.display = currentView==='list'?'flex':'grid';
+  document.getElementById('emptyState').style.display='none';
+  const div = document.createElement('div');
+  div.id=`temp-${tempId}`; div.className='file-card';
+  div.style.cssText='opacity:0.65;pointer-events:none;';
+  div.innerHTML=`
     <div class="file-card-thumb" style="background:var(--bg3);">
-      <div class="file-type-icon type-${type}">
-        <i class="fas ${getTypeIcon(type)}" style="font-size:32px;"></i>
-      </div>
-      <div class="upload-progress-overlay" id="prog-${tempId}">
+      <div class="file-type-icon type-${type}"><i class="fas ${getTypeIcon(type)}"></i></div>
+      <div class="upload-progress-overlay">
         <div class="upload-progress-pct" id="pct-${tempId}">0%</div>
         <div class="upload-progress-bar">
           <div class="upload-progress-fill" id="bar-${tempId}" style="width:0%"></div>
@@ -2179,223 +2153,160 @@ function addTempCard(tempId, file, type) {
     </div>
     <div class="file-card-info">
       <div class="file-card-name">${escHtml(file.name)}</div>
-      <div class="file-card-meta">
-        <span>${fmtSize(file.size)}</span>
+      <div class="file-card-meta"><span>${fmtSize(file.size)}</span>
         <span style="color:var(--gold);"><i class="fas fa-spinner fa-spin"></i></span>
       </div>
     </div>`;
   grid.insertBefore(div, grid.firstChild);
 }
 
-function updateTempProgress(tempId, pct) {
-  const barEl = document.getElementById(`bar-${tempId}`);
-  const pctEl = document.getElementById(`pct-${tempId}`);
-  if (barEl) barEl.style.width = pct + '%';
-  if (pctEl) pctEl.textContent = pct + '%';
+function updateTempProgress(tempId,pct) {
+  const b=document.getElementById(`bar-${tempId}`);
+  const p=document.getElementById(`pct-${tempId}`);
+  if(b) b.style.width=pct+'%';
+  if(p) p.textContent=pct+'%';
 }
-
-function removeTempCard(tempId) {
-  document.getElementById(`temp-${tempId}`)?.remove();
-}
+function removeTempCard(tempId) { document.getElementById(`temp-${tempId}`)?.remove(); }
 
 /* ============================================================
    DOWNLOAD
 ============================================================ */
 async function downloadFile(id) {
-  const f = allFiles.find(x => x.id === id);
+  const f = allFiles.find(x=>x.id===id);
   if (!f) return;
-  showToast(t('download') + '...', 'info');
+  showToast(t('download')+'...','info');
   try {
-    const res  = await fetch(f.file_url);
-    const blob = await res.blob();
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = f.file_name;
+    const res=await fetch(f.file_url);
+    const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=f.file_name;
     document.body.appendChild(a); a.click();
     document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-
-    await updateFileMeta(id, {
-      download_count  : (f.download_count || 0) + 1,
-      last_downloaded : new Date().toISOString()
-    });
-    const idx = allFiles.findIndex(x => x.id === id);
-    if (idx !== -1) {
-      allFiles[idx].download_count  = (f.download_count || 0) + 1;
-      allFiles[idx].last_downloaded = new Date().toISOString();
-    }
-  } catch(e) {
-    window.open(f.file_url, '_blank');
-  }
+    setTimeout(()=>URL.revokeObjectURL(url),2000);
+    await updateFileMeta(id,{download_count:(f.download_count||0)+1,last_downloaded:new Date().toISOString()});
+    const idx=allFiles.findIndex(x=>x.id===id);
+    if(idx!==-1){allFiles[idx].download_count=(f.download_count||0)+1;allFiles[idx].last_downloaded=new Date().toISOString();}
+  } catch(e) { window.open(f.file_url,'_blank'); }
 }
 
 async function bulkDownload() {
-  const selected = allFiles.filter(f => selectedIds.has(f.id));
-  if (!selected.length) return;
-  if (typeof JSZip === 'undefined')
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-
-  showToast(t('download') + '...', 'info');
-  const zip = new JSZip();
-  for (const f of selected) {
-    try {
-      const res  = await fetch(f.file_url);
-      const blob = await res.blob();
-      zip.file(f.file_name, blob);
-    } catch(e) { console.warn('Skip:', f.file_name); }
-  }
-  const blob = await zip.generateAsync({ type:'blob', compression:'STORE' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href = url; a.download = `ملفاتي_${Date.now()}.zip`;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-  clearSelection();
-  showToast(t('download') + ' ✓', 'success');
+  const sel=allFiles.filter(f=>selectedIds.has(f.id));
+  if(!sel.length) return;
+  if(typeof JSZip==='undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  showToast(t('download')+'...','info');
+  const zip=new JSZip();
+  for(const f of sel){try{const r=await fetch(f.file_url);zip.file(f.file_name,await r.blob());}catch(e){}}
+  const blob=await zip.generateAsync({type:'blob',compression:'STORE'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`ملفاتي_${Date.now()}.zip`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+  clearSelection(); showToast(t('download')+' ✓','success');
 }
 
 /* ============================================================
    DELETE
 ============================================================ */
 async function deleteFile(id) {
-  const f = allFiles.find(x => x.id === id);
-  if (!f) return;
-  if (!confirm(`${t('delete')}: ${f.file_name}?`)) return;
+  const f=allFiles.find(x=>x.id===id);
+  if(!f||!confirm(`${t('delete')}: ${f.file_name}?`)) return;
   try {
     await deleteFileMeta(id);
-    if (f.file_path) await deleteFileStorage(f.file_path);
-    allFiles = allFiles.filter(x => x.id !== id);
+    if(f.file_path) await deleteFileStorage(f.file_path);
+    allFiles=allFiles.filter(x=>x.id!==id);
     applyFiltersAndRender(); updateStats(); calcStorageUsed();
-    showToast(t('deleteSuccess'), 'success');
-  } catch(e) {
-    showToast(t('deleteError'), 'error');
-  }
+    showToast(t('deleteSuccess'),'success');
+  } catch(e) { showToast(t('deleteError'),'error'); }
 }
 
 async function bulkDelete() {
-  const ids = [...selectedIds];
-  if (!ids.length) return;
-  if (!confirm(`${t('delete')} ${ids.length} ${t('selected')}?`)) return;
-  for (const id of ids) {
-    const f = allFiles.find(x => x.id === id);
-    if (!f) continue;
-    try {
-      await deleteFileMeta(id);
-      if (f.file_path) await deleteFileStorage(f.file_path);
-    } catch(e) { console.warn('Delete error:', id); }
+  const ids=[...selectedIds];
+  if(!ids.length||!confirm(`${t('delete')} ${ids.length}?`)) return;
+  for(const id of ids){
+    const f=allFiles.find(x=>x.id===id);
+    if(!f) continue;
+    try{await deleteFileMeta(id);if(f.file_path)await deleteFileStorage(f.file_path);}catch(e){}
   }
-  allFiles = allFiles.filter(f => !ids.includes(f.id));
+  allFiles=allFiles.filter(f=>!ids.includes(f.id));
   clearSelection(); applyFiltersAndRender(); updateStats(); calcStorageUsed();
-  showToast(t('deleteSuccess'), 'success');
+  showToast(t('deleteSuccess'),'success');
 }
 
 /* ============================================================
    SHARE
 ============================================================ */
 function openShareModal(id) {
-  const f = allFiles.find(x => x.id === id);
-  if (!f) return;
-  currentCtxFile = id;
-  document.getElementById('shareLinkInp').value = f.file_url;
+  const f=allFiles.find(x=>x.id===id);
+  if(!f) return;
+  currentCtxFile=id;
+  document.getElementById('shareLinkInp').value=f.file_url;
   openModal('shareModal');
 }
-
 function copyShareLink() {
-  const inp = document.getElementById('shareLinkInp');
+  const inp=document.getElementById('shareLinkInp');
   navigator.clipboard?.writeText(inp.value)
-    .then(() => showToast(t('copied'), 'success'))
-    .catch(() => { inp.select(); document.execCommand('copy'); showToast(t('copied'), 'success'); });
+    .then(()=>showToast(t('copied'),'success'))
+    .catch(()=>{inp.select();document.execCommand('copy');showToast(t('copied'),'success');});
 }
-
 function shareViaWhatsApp() {
-  const url = document.getElementById('shareLinkInp').value;
-  window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank');
+  window.open(`https://wa.me/?text=${encodeURIComponent(document.getElementById('shareLinkInp').value)}`,'_blank');
 }
-
 async function shareViaNative() {
-  const url = document.getElementById('shareLinkInp').value;
-  if (navigator.share) {
-    try { await navigator.share({ title:'ملفاتي', url }); } catch(e) {}
-  } else { copyShareLink(); }
+  const url=document.getElementById('shareLinkInp').value;
+  if(navigator.share){try{await navigator.share({title:'ملفاتي',url});}catch(e){}}
+  else copyShareLink();
 }
-
 async function bulkShare() {
-  const selected = allFiles.filter(f => selectedIds.has(f.id));
-  if (!selected.length) return;
-  const links = selected.map(f => f.file_url).join('\n');
-  if (navigator.share) {
-    try { await navigator.share({ title:'ملفاتي', text:links }); } catch(e) {}
-  } else {
-    navigator.clipboard?.writeText(links);
-    showToast(t('copied'), 'success');
-  }
+  const sel=allFiles.filter(f=>selectedIds.has(f.id));
+  if(!sel.length) return;
+  const links=sel.map(f=>f.file_url).join('\n');
+  if(navigator.share){try{await navigator.share({title:'ملفاتي',text:links});}catch(e){}}
+  else{navigator.clipboard?.writeText(links);showToast(t('copied'),'success');}
 }
 
 /* ============================================================
    PREVIEW
 ============================================================ */
 function openPreview(id) {
-  const f = allFiles.find(x => x.id === id);
-  if (!f) return;
-  currentCtxFile = id;
+  const f=allFiles.find(x=>x.id===id);
+  if(!f) return;
+  currentCtxFile=id;
+  const type=f.file_type||'other';
+  document.getElementById('previewTitle').textContent=f.file_name;
 
-  const type    = f.file_type || 'other';
-  const content = document.getElementById('previewContent');
-  const meta    = document.getElementById('previewMeta');
-  document.getElementById('previewTitle').textContent = f.file_name;
-
-  if (type === 'image') {
-    content.innerHTML = `
-      <img src="${f.file_url}" alt="${escHtml(f.file_name)}"
-           class="file-preview-img" draggable="false"
-           onerror="this.style.opacity='0.3'"/>`;
-  } else if (type === 'video') {
-    content.innerHTML = `
-      <video class="video-player" controls preload="metadata" playsinline>
-        <source src="${f.file_url}" type="${f.mime_type || 'video/mp4'}"/>
-      </video>`;
-  } else if (type === 'audio') {
-    content.innerHTML = `
-      <div style="text-align:center;padding:20px;">
-        <div style="font-size:52px;color:var(--purple);margin-bottom:16px;">
-          <i class="fas fa-music"></i>
-        </div>
-        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;">
-          ${escHtml(f.file_name)}
-        </div>
-        <audio class="audio-player" controls>
-          <source src="${f.file_url}" type="${f.mime_type || 'audio/mpeg'}"/>
-        </audio>
-      </div>`;
-  } else if (type === 'pdf') {
-    content.innerHTML = `
-      <div style="text-align:center;padding:20px;">
-        <div style="font-size:52px;color:var(--danger);margin-bottom:12px;">
-          <i class="fas fa-file-pdf"></i>
-        </div>
-        <a href="${f.file_url}" target="_blank" rel="noopener"
-           class="btn btn-gold" style="display:inline-flex;">
-          <i class="fas fa-external-link-alt"></i> فتح PDF
-        </a>
-      </div>`;
+  const content=document.getElementById('previewContent');
+  if(type==='image') {
+    content.innerHTML=`<img src="${f.file_url}" alt="${escHtml(f.file_name)}" class="file-preview-img" onerror="this.style.opacity='0.3'"/>`;
+  } else if(type==='video') {
+    content.innerHTML=`<video class="video-player" controls preload="metadata" playsinline><source src="${f.file_url}" type="${f.mime_type||'video/mp4'}"/></video>`;
+  } else if(type==='audio') {
+    content.innerHTML=`<div style="text-align:center;padding:20px;">
+      <div style="font-size:48px;color:var(--purple);margin-bottom:12px;"><i class="fas fa-music"></i></div>
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">${escHtml(f.file_name)}</div>
+      <audio class="audio-player" controls><source src="${f.file_url}" type="${f.mime_type||'audio/mpeg'}"/></audio>
+    </div>`;
+  } else if(type==='pdf') {
+    content.innerHTML=`<div style="text-align:center;padding:20px;">
+      <div style="font-size:48px;color:var(--danger);margin-bottom:12px;"><i class="fas fa-file-pdf"></i></div>
+      <a href="${f.file_url}" target="_blank" rel="noopener" class="btn btn-gold btn-full">
+        <i class="fas fa-external-link-alt"></i> فتح PDF
+      </a>
+    </div>`;
   } else {
-    content.innerHTML = `
-      <div style="text-align:center;padding:30px;">
-        <div class="file-type-icon type-${type}"
-             style="width:70px;height:70px;border-radius:16px;
-                    font-size:32px;margin:0 auto 14px;">
-          <i class="fas ${getTypeIcon(type)}"></i>
-        </div>
-        <div style="font-size:13px;color:var(--text3);">${escHtml(f.file_name)}</div>
-      </div>`;
+    content.innerHTML=`<div style="text-align:center;padding:24px;">
+      <div class="file-type-icon type-${type}" style="width:64px;height:64px;border-radius:16px;font-size:28px;margin:0 auto 12px;">
+        <i class="fas ${getTypeIcon(type)}"></i></div>
+      <div style="font-size:12px;color:var(--text3);">${escHtml(f.file_name)}</div>
+    </div>`;
   }
 
-  const folder = customFolders.find(x => x.id === f.folder_id);
-  meta.innerHTML = `
+  const folder=customFolders.find(x=>x.id===f.folder_id);
+  document.getElementById('previewMeta').innerHTML=`
     <div class="file-info-item">
       <div class="file-info-label">${t('fileName')}</div>
-      <div class="file-info-val" style="font-size:11px;word-break:break-all;">${escHtml(f.file_name)}</div>
+      <div class="file-info-val" style="font-size:10px;word-break:break-all;">${escHtml(f.file_name)}</div>
     </div>
     <div class="file-info-item">
       <div class="file-info-label">${t('fileSize')}</div>
@@ -2403,41 +2314,20 @@ function openPreview(id) {
     </div>
     <div class="file-info-item">
       <div class="file-info-label">${t('uploadDate')}</div>
-      <div class="file-info-val" style="font-size:11px;">${fmtDateTime(f.uploaded_at)}</div>
-    </div>
-    <div class="file-info-item">
-      <div class="file-info-label">${t('downloadDate')}</div>
-      <div class="file-info-val" style="font-size:11px;">
-        ${f.last_downloaded ? fmtDateTime(f.last_downloaded) : '—'}
-      </div>
-    </div>
-    <div class="file-info-item">
-      <div class="file-info-label">${t('fileType')}</div>
-      <div class="file-info-val">
-        <span class="file-type-badge ${getTypeBadgeClass(type)}"
-              style="position:static;display:inline-block;">
-          ${type.toUpperCase()}
-        </span>
-      </div>
+      <div class="file-info-val" style="font-size:10px;">${fmtDateTime(f.uploaded_at)}</div>
     </div>
     <div class="file-info-item">
       <div class="file-info-label">${t('folder')}</div>
-      <div class="file-info-val">
-        ${folder
-          ? `<span style="color:${folder.color};">
-               <i class="fas fa-folder"></i> ${escHtml(folder.name)}
-             </span>`
-          : getAutoFolderName(type)}
+      <div class="file-info-val" style="font-size:11px;">
+        ${folder?`<span style="color:${folder.color};"><i class="fas fa-folder"></i> ${escHtml(folder.name)}</span>`:type}
       </div>
     </div>
-    ${f.compressed ? `
-    <div class="file-info-item" style="grid-column:1/-1;">
+    ${f.compressed?`<div class="file-info-item" style="grid-column:1/-1;">
       <div class="file-info-label">${t('compressed')}</div>
-      <div class="file-info-val" style="color:var(--success);">
-        <i class="fas fa-check-circle"></i>
-        ${t('spaceSaved')}: ${fmtSize(f.saved_bytes || 0)}
+      <div class="file-info-val" style="color:var(--success);font-size:11px;">
+        <i class="fas fa-check-circle"></i> ${t('spaceSaved')}: ${fmtSize(f.saved_bytes||0)}
       </div>
-    </div>` : ''}`;
+    </div>`:''}`;
 
   openModal('previewModal');
 }
@@ -2446,50 +2336,36 @@ function openPreview(id) {
    CONTEXT MENU
 ============================================================ */
 function openCtxMenu(e, id) {
-  e.preventDefault();
-  e.stopPropagation();
-  currentCtxFile = id;
-
-  const menu = document.getElementById('ctxMenu');
-  menu.style.display = 'block';
-
-  // في الموبايل يظهر من الأسفل — لا نحتاج حساب موضع
-  if (window.innerWidth <= 600) {
-    // إضافة overlay لإغلاقه
-    setTimeout(() => {
-      document.addEventListener('click', closeCtxMenu, { once: true });
-    }, 50);
-    return;
+  if(e) { e.preventDefault(); e.stopPropagation(); }
+  currentCtxFile=id;
+  const f=allFiles.find(x=>x.id===id);
+  if(f){
+    const type=f.file_type||'other';
+    document.getElementById('ctxFileIcon').className=`ctx-file-icon type-${type}`;
+    document.getElementById('ctxFileIcon').innerHTML=`<i class="fas ${getTypeIcon(type)}"></i>`;
+    document.getElementById('ctxFileName').textContent=f.file_name;
+    document.getElementById('ctxFileSize').textContent=fmtSize(f.file_size)+' · '+fmtDate(f.uploaded_at);
   }
-
-  const x  = e.clientX, y = e.clientY;
-  const mw = menu.offsetWidth  || 180;
-  const mh = menu.offsetHeight || 280;
-  const ww = window.innerWidth, wh = window.innerHeight;
-  menu.style.left = (x + mw > ww ? x - mw : x) + 'px';
-  menu.style.top  = (y + mh > wh ? y - mh : y) + 'px';
-
-  setTimeout(() => {
-    document.addEventListener('click', closeCtxMenu, { once: true });
-  }, 50);
+  document.getElementById('ctxMenu').classList.add('active');
 }
 
 function closeCtxMenu() {
-  document.getElementById('ctxMenu').style.display = 'none';
+  document.getElementById('ctxMenu').classList.remove('active');
 }
 
 function ctxAction(action) {
   closeCtxMenu();
-  const id = currentCtxFile;
-  if (!id) return;
-  switch(action) {
-    case 'preview':  openPreview(id);     break;
-    case 'download': downloadFile(id);    break;
-    case 'share':    openShareModal(id);  break;
-    case 'delete':   deleteFile(id);      break;
-    case 'info':     openPreview(id);     break;
-    case 'rename':   openRenameModal(id); break;
-    case 'move':     openMoveModal(id);   break;
+  const id=currentCtxFile;
+  if(!id) return;
+  switch(action){
+    case 'preview':  openPreview(id);    break;
+    case 'download': downloadFile(id);   break;
+    case 'share':    openShareModal(id); break;
+    case 'delete':   deleteFile(id);     break;
+    case 'info':     openPreview(id);    break;
+    case 'rename':   openRenameModal(id);break;
+    case 'move':     openMoveModal(id);  break;
+    case 'select':   toggleSelect(id);   break;
   }
 }
 
@@ -2497,61 +2373,56 @@ function ctxAction(action) {
    RENAME
 ============================================================ */
 function openRenameModal(id) {
-  const f = allFiles.find(x => x.id === id);
-  if (!f) return;
-  currentCtxFile = id;
-  document.getElementById('renameInput').value = f.file_name;
+  const f=allFiles.find(x=>x.id===id);
+  if(!f) return;
+  currentCtxFile=id;
+  document.getElementById('renameInput').value=f.file_name;
   openModal('renameModal');
-  setTimeout(() => {
-    const inp    = document.getElementById('renameInput');
-    const dotIdx = f.file_name.lastIndexOf('.');
+  setTimeout(()=>{
+    const inp=document.getElementById('renameInput');
+    const dot=f.file_name.lastIndexOf('.');
     inp.focus();
-    if (dotIdx > 0) inp.setSelectionRange(0, dotIdx);
-    else inp.select();
-  }, 300);
+    if(dot>0) inp.setSelectionRange(0,dot); else inp.select();
+  },350);
 }
 
 async function confirmRename() {
-  const id      = currentCtxFile;
-  const newName = document.getElementById('renameInput').value.trim();
-  if (!id || !newName) return;
+  const id=currentCtxFile;
+  const newName=document.getElementById('renameInput').value.trim();
+  if(!id||!newName) return;
   try {
-    await updateFileMeta(id, { file_name: newName });
-    const idx = allFiles.findIndex(x => x.id === id);
-    if (idx !== -1) allFiles[idx].file_name = newName;
-    applyFiltersAndRender();
-    closeModal('renameModal');
-    showToast(t('save') + ' ✓', 'success');
-  } catch(e) {
-    showToast(t('deleteError'), 'error');
-  }
+    await updateFileMeta(id,{file_name:newName});
+    const idx=allFiles.findIndex(x=>x.id===id);
+    if(idx!==-1) allFiles[idx].file_name=newName;
+    applyFiltersAndRender(); closeModal('renameModal');
+    showToast(t('save')+' ✓','success');
+  } catch(e) { showToast(t('deleteError'),'error'); }
 }
 
 /* ============================================================
    MOVE TO FOLDER
 ============================================================ */
 function openMoveModal(id) {
-  currentCtxFile = id;
-  const list = document.getElementById('moveFoldersList');
+  currentCtxFile=id;
+  const list=document.getElementById('moveFoldersList');
 
-  if (!customFolders.length) {
-    list.innerHTML = `
+  if(!customFolders.length) {
+    list.innerHTML=`
       <div style="text-align:center;padding:30px;color:var(--text3);">
         <i class="fas fa-folder-open"
-           style="font-size:32px;margin-bottom:12px;display:block;
-                  color:rgba(201,168,76,0.15);"></i>
-        <div style="font-size:12px;">${t('newFolder')}</div>
+           style="font-size:36px;color:rgba(201,168,76,0.15);display:block;margin-bottom:12px;"></i>
+        <div style="font-size:12px;">لا توجد مجلدات — أنشئ مجلداً أولاً</div>
+        <button onclick="closeModal('moveModal');openAddFolderModal()"
+                class="btn btn-gold btn-full" style="margin-top:14px;">
+          <i class="fas fa-folder-plus"></i> مجلد جديد
+        </button>
       </div>`;
   } else {
-    list.innerHTML = customFolders.map(f => `
-      <div class="save-option-card" onclick="moveFileTo('${id}','${f.id}')">
-        <div class="save-option-icon" style="background:${f.color}18;color:${f.color};">
-          <i class="fas fa-folder"></i>
-        </div>
-        <div>
-          <div class="save-option-title">${escHtml(f.name)}</div>
-        </div>
-        <i class="fas fa-chevron-left" style="color:var(--text4);margin-right:auto;"></i>
+    list.innerHTML = customFolders.map(f=>`
+      <div class="folder-chip" onclick="moveFileTo('${id}','${f.id}')">
+        <i class="fas fa-folder" style="color:${f.color||'var(--gold)'};"></i>
+        <span class="folder-chip-name">${escHtml(f.name)}</span>
+        <i class="fas fa-chevron-left" style="color:var(--text4);margin-right:auto;font-size:11px;"></i>
       </div>`).join('');
   }
   openModal('moveModal');
@@ -2559,62 +2430,60 @@ function openMoveModal(id) {
 
 async function moveFileTo(fileId, folderId) {
   try {
-    await updateFileMeta(fileId, { folder_id: folderId });
-    const idx = allFiles.findIndex(x => x.id === fileId);
-    if (idx !== -1) allFiles[idx].folder_id = folderId;
-    applyFiltersAndRender();
-    closeModal('moveModal');
-    const f = customFolders.find(x => x.id === folderId);
-    showToast(`${t('moveToFolder')}: ${f?.name}`, 'success');
-  } catch(e) {
-    showToast(t('deleteError'), 'error');
-  }
+    await updateFileMeta(fileId,{folder_id:folderId});
+    const idx=allFiles.findIndex(x=>x.id===fileId);
+    if(idx!==-1) allFiles[idx].folder_id=folderId;
+    applyFiltersAndRender(); closeModal('moveModal');
+    renderFoldersSheet();
+    const f=customFolders.find(x=>x.id===folderId);
+    showToast(`${t('moveToFolder')}: ${f?.name}`,'success');
+  } catch(e) { showToast(t('deleteError'),'error'); }
 }
 
 /* ============================================================
    DRAG & DROP
 ============================================================ */
 function initDragDrop() {
-  const zone = document.getElementById('dropZone');
-
-  document.addEventListener('dragover', e => {
-    e.preventDefault();
-    zone.classList.add('active');
+  const zone=document.getElementById('dropZone');
+  document.addEventListener('dragover',e=>{
+    e.preventDefault(); zone.classList.add('active');
   });
-
-  document.addEventListener('dragleave', e => {
-    if (!e.relatedTarget || e.relatedTarget === document.documentElement)
+  document.addEventListener('dragleave',e=>{
+    if(!e.relatedTarget||e.relatedTarget===document.documentElement)
       zone.classList.remove('active');
   });
-
-  document.addEventListener('drop', e => {
-    e.preventDefault();
-    zone.classList.remove('active');
-    const files = e.dataTransfer?.files;
-    if (files?.length) handleFileSelect(files);
+  document.addEventListener('drop',e=>{
+    e.preventDefault(); zone.classList.remove('active');
+    const files=e.dataTransfer?.files;
+    if(files?.length) handleFileSelect(files);
   });
 }
 
 /* ============================================================
-   SIDEBAR TOGGLE
+   BOTTOM NAV
 ============================================================ */
-function toggleSidebar() {
-  const sb   = document.getElementById('sidebar');
-  const ov   = document.getElementById('sidebarOverlay');
-  const btn  = document.getElementById('mobFilterBtn');
-  const open = sb.classList.toggle('open');
-  ov.classList.toggle('active', open);
-  if (btn) btn.classList.toggle('active', open);
-}
+function navTo(tab) {
+  // تحديث الأزرار
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(`nav-${tab}`)?.classList.add('active');
 
-function closeSidebarMobile() {
-  if (window.innerWidth <= 900) {
-    const sb  = document.getElementById('sidebar');
-    const ov  = document.getElementById('sidebarOverlay');
-    const btn = document.getElementById('mobFilterBtn');
-    sb.classList.remove('open');
-    ov.classList.remove('active');
-    if (btn) btn.classList.remove('active');
+  switch(tab) {
+    case 'home':
+      filterByType('all');
+      break;
+    case 'folders':
+      renderFoldersSheet();
+      openModal('foldersModal');
+      break;
+    case 'search':
+      document.getElementById('searchInp')?.focus();
+      // scroll to top لإظهار البحث
+      window.scrollTo({top:0, behavior:'smooth'});
+      break;
+    case 'settings':
+      updateSettingsIcons();
+      openModal('settingsModal');
+      break;
   }
 }
 
@@ -2623,140 +2492,142 @@ function closeSidebarMobile() {
 ============================================================ */
 function openModal(id) {
   document.getElementById(id)?.classList.add('active');
-  document.body.style.overflow = 'hidden';
+  document.body.style.overflow='hidden';
 }
 
 function closeModal(id) {
-  // إيقاف الفيديو/الصوت عند الإغلاق
-  if (id === 'previewModal') {
-    document.querySelectorAll('#previewContent video, #previewContent audio').forEach(el => {
-      el.pause(); el.src = '';
+  // إيقاف الوسائط عند الإغلاق
+  if(id==='previewModal') {
+    document.querySelectorAll('#previewContent video,#previewContent audio').forEach(el=>{
+      el.pause(); el.src='';
     });
   }
   document.getElementById(id)?.classList.remove('active');
-  document.body.style.overflow = '';
+  document.body.style.overflow='';
+  // إعادة تفعيل زر الهوم
+  if(['foldersModal','settingsModal'].includes(id)) {
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('nav-home')?.classList.add('active');
+  }
 }
 
-document.querySelectorAll('.modal-overlay').forEach(el => {
-  el.addEventListener('click', e => {
-    if (e.target === el) closeModal(el.id);
-  });
+// إغلاق عند الضغط على الخلفية
+document.querySelectorAll('.modal-overlay').forEach(el=>{
+  el.addEventListener('click',e=>{ if(e.target===el) closeModal(el.id); });
 });
 
 /* ============================================================
    TOAST
 ============================================================ */
-function showToast(msg, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  const toast     = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  const icons  = { success:'fa-check-circle', error:'fa-exclamation-circle', info:'fa-info-circle' };
-  const colors = { success:'#4ade80', error:'#ef4444', info:'#c9a84c' };
-  toast.innerHTML = `
-    <i class="fas ${icons[type]}" style="color:${colors[type]};font-size:14px;"></i>
-    ${escHtml(msg)}`;
+function showToast(msg, type='info') {
+  const container=document.getElementById('toastContainer');
+  const toast=document.createElement('div');
+  toast.className=`toast toast-${type}`;
+  const icons={success:'fa-check-circle',error:'fa-exclamation-circle',info:'fa-info-circle'};
+  const colors={success:'#4ade80',error:'#ef4444',info:'#c9a84c'};
+  toast.innerHTML=`
+    <i class="fas ${icons[type]}" style="color:${colors[type]};font-size:15px;flex-shrink:0;"></i>
+    <span style="flex:1;">${escHtml(msg)}</span>`;
   container.appendChild(toast);
-  setTimeout(() => {
-    toast.style.transition = 'all 0.3s ease';
-    toast.style.opacity    = '0';
-    toast.style.transform  = 'translateY(20px) scale(0.9)';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  setTimeout(()=>{
+    toast.style.transition='all 0.3s ease';
+    toast.style.opacity='0';
+    toast.style.transform='translateY(16px) scale(0.9)';
+    setTimeout(()=>toast.remove(),300);
+  },3000);
 }
 
 /* ============================================================
-   HISTORY API
+   HISTORY API — زر الرجوع
 ============================================================ */
-window.addEventListener('popstate', () => {
-  const openModalEl = document.querySelector('.modal-overlay.active');
-  if (openModalEl) {
+window.addEventListener('popstate',()=>{
+  // إغلاق context menu
+  const ctx=document.getElementById('ctxMenu');
+  if(ctx.classList.contains('active')) {
+    closeCtxMenu();
+    history.pushState(null,'');
+    return;
+  }
+  // إغلاق أي modal مفتوح
+  const openModalEl=document.querySelector('.modal-overlay.active');
+  if(openModalEl) {
     closeModal(openModalEl.id);
-    history.pushState(null, '');
+    history.pushState(null,'');
     return;
   }
-  const sb = document.getElementById('sidebar');
-  if (sb.classList.contains('open')) {
-    toggleSidebar();
-    history.pushState(null, '');
-    return;
-  }
-  window.location.href = './index.html';
+  // الرجوع للصفحة الرئيسية
+  window.location.href='./index.html';
 });
 
-history.pushState(null, '');
-
-/* ============================================================
-   RESPONSIVE CHECK
-============================================================ */
-function checkMobile() {
-  const isMobile = window.innerWidth <= 900;
-  document.getElementById('sidebarToggle').style.display = isMobile ? 'flex' : 'none';
-}
-
-window.addEventListener('resize', () => {
-  checkMobile();
-  // إغلاق السايدبار عند توسيع الشاشة
-  if (window.innerWidth > 900) {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebarOverlay').classList.remove('active');
-    const btn = document.getElementById('mobFilterBtn');
-    if (btn) btn.classList.remove('active');
-  }
-});
+history.pushState(null,'');
 
 /* ============================================================
    REALTIME
 ============================================================ */
 async function subscribeRealtime() {
-  const sb = await initSB();
-  sb.channel('user-files-live')
-    .on('postgres_changes', {
-      event : '*', schema: 'public', table: FILES_TABLE
-    }, payload => {
-      if (payload.eventType === 'INSERT' && payload.new) {
-        const exists = allFiles.some(f => f.id === payload.new.id);
-        if (!exists && !recentUploads.has(payload.new.id)) {
-          allFiles.unshift(payload.new);
+  try {
+    const sb=await initSB();
+    sb.channel('user-files-live')
+      .on('postgres_changes',{
+        event:'*', schema:'public', table:FILES_TABLE
+      }, payload=>{
+        if(payload.eventType==='INSERT'&&payload.new) {
+          const exists=allFiles.some(f=>f.id===payload.new.id);
+          if(!exists&&!recentUploads.has(payload.new.id)) {
+            allFiles.unshift(payload.new);
+            applyFiltersAndRender(); updateStats();
+          }
+        } else if(payload.eventType==='DELETE'&&payload.old) {
+          allFiles=allFiles.filter(f=>f.id!==payload.old.id);
+          applyFiltersAndRender(); updateStats();
+        } else if(payload.eventType==='UPDATE'&&payload.new) {
+          const idx=allFiles.findIndex(f=>f.id===payload.new.id);
+          if(idx!==-1) allFiles[idx]={...allFiles[idx],...payload.new};
           applyFiltersAndRender();
-          updateStats();
         }
-      } else if (payload.eventType === 'DELETE' && payload.old) {
-        allFiles = allFiles.filter(f => f.id !== payload.old.id);
-        applyFiltersAndRender();
-        updateStats();
-      } else if (payload.eventType === 'UPDATE' && payload.new) {
-        const idx = allFiles.findIndex(f => f.id === payload.new.id);
-        if (idx !== -1) allFiles[idx] = { ...allFiles[idx], ...payload.new };
-        applyFiltersAndRender();
-      }
-    })
-    .subscribe();
+      })
+      .subscribe();
+  } catch(e) { console.warn('Realtime error:',e); }
 }
 
 /* ============================================================
    INIT
 ============================================================ */
 async function init() {
-  setLang(currentLang);
+  // 1. ثيم ولغة
   initTheme();
-  checkMobile();
+  setLang(currentLang);
+
+  // 2. مجلدات
   loadFolders();
+
+  // 3. Drag & Drop
   initDragDrop();
 
+  // 4. تحميل الملفات
   try {
-    allFiles = await loadAllFiles();
+    allFiles=await loadAllFiles();
   } catch(e) {
-    console.error('Load files error:', e);
-    allFiles = [];
-    showToast('تعذّر الاتصال بالخادم', 'error');
+    console.error(e);
+    allFiles=[];
+    showToast('تعذّر الاتصال بالخادم','error');
   }
 
+  // 5. رسم
   applyFiltersAndRender();
   updateStats();
+
+  // 6. مساحة التخزين
   calcStorageUsed();
+
+  // 7. Realtime
   subscribeRealtime();
 
-  document.getElementById('loadingState').style.display = 'none';
+  // 8. إخفاء loading
+  document.getElementById('loadingState').style.display='none';
+
+  // 9. تفعيل زر الهوم
+  document.getElementById('nav-home')?.classList.add('active');
 }
 
 document.addEventListener('DOMContentLoaded', init);
