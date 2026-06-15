@@ -12,7 +12,7 @@
 
   <style>
     /* ============================================================
-       CSS VARIABLES — وضع ليلي/نهاري
+       CSS VARIABLES
     ============================================================ */
     :root {
       --gold: #c9a84c;
@@ -82,13 +82,8 @@
     ============================================================ */
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(201,168,76,0.25);
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(201,168,76,0.5);
-    }
+    ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.25); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(201,168,76,0.5); }
 
     /* ============================================================
        HEADER
@@ -105,7 +100,7 @@
       display: flex;
       align-items: center;
       padding: 0 16px;
-      gap: 12px;
+      gap: 10px;
     }
 
     .header-back-btn {
@@ -121,246 +116,111 @@
       flex-shrink: 0;
       text-decoration: none;
     }
-    .header-back-btn:hover {
-      background: var(--surface2);
-      color: var(--text);
-      border-color: var(--border-gold);
-    }
+    .header-back-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--border-gold); }
 
-    .header-logo {
-      display: flex; align-items: center; gap: 10px;
-      flex-shrink: 0;
-    }
+    .header-logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     .header-logo-icon {
       width: 36px; height: 36px;
       border-radius: 10px;
       background: linear-gradient(135deg, rgba(201,168,76,0.2), rgba(201,168,76,0.05));
       border: 1px solid var(--border-gold);
       display: flex; align-items: center; justify-content: center;
-      color: var(--gold);
-      font-size: 16px;
+      color: var(--gold); font-size: 16px;
     }
-    .header-title {
-      font-size: 17px;
-      font-weight: 900;
-      color: var(--text);
-      letter-spacing: 0.5px;
-    }
-    .header-subtitle {
-      font-size: 9px;
-      color: var(--text3);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-top: 1px;
-    }
-
+    .header-title { font-size: 17px; font-weight: 900; color: var(--text); letter-spacing: 0.5px; }
+    .header-subtitle { font-size: 9px; color: var(--text3); letter-spacing: 2px; text-transform: uppercase; margin-top: 1px; }
     .header-spacer { flex: 1; }
 
-    /* شريط البحث في الهيدر */
-    .header-search-wrap {
-      position: relative;
-      flex: 1;
-      max-width: 320px;
-    }
-    .header-search-wrap i {
-      position: absolute;
-      right: 12px; top: 50%;
-      transform: translateY(-50%);
-      color: var(--text3);
-      font-size: 13px;
-      pointer-events: none;
-    }
+    .header-search-wrap { position: relative; flex: 1; max-width: 320px; }
+    .header-search-wrap i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 13px; pointer-events: none; }
     .header-search-inp {
-      width: 100%;
-      padding: 9px 36px 9px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: var(--text);
-      font-family: 'Tajawal', sans-serif;
-      font-size: 13px;
-      outline: none;
-      transition: var(--transition);
-      -webkit-user-select: text;
-      user-select: text;
+      width: 100%; padding: 9px 36px 9px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: 'Tajawal', sans-serif; font-size: 13px;
+      outline: none; transition: var(--transition);
+      -webkit-user-select: text; user-select: text;
     }
-    .header-search-inp:focus {
-      border-color: var(--border-gold);
-      background: var(--surface2);
-    }
+    .header-search-inp:focus { border-color: var(--border-gold); background: var(--surface2); }
     .header-search-inp::placeholder { color: var(--text4); }
 
-    /* أزرار الهيدر */
     .header-btn {
-      width: 38px; height: 38px;
-      border-radius: 10px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text2);
-      font-size: 14px;
-      cursor: pointer;
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text2); font-size: 14px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: var(--transition);
-      flex-shrink: 0;
-      position: relative;
+      transition: var(--transition); flex-shrink: 0; position: relative;
     }
-    .header-btn:hover {
-      background: var(--surface2);
-      color: var(--gold);
-      border-color: var(--border-gold);
-    }
-    .header-btn.active {
-      background: rgba(201,168,76,0.12);
-      border-color: var(--border-gold);
-      color: var(--gold);
-    }
+    .header-btn:hover { background: var(--surface2); color: var(--gold); border-color: var(--border-gold); }
+    .header-btn.active { background: rgba(201,168,76,0.12); border-color: var(--border-gold); color: var(--gold); }
 
-    /* زر الرفع الرئيسي */
     .upload-trigger-btn {
       display: flex; align-items: center; gap: 8px;
       padding: 9px 18px;
       background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      border: none;
-      border-radius: 10px;
-      color: #0a0a0a;
-      font-family: 'Tajawal', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-      flex-shrink: 0;
-      white-space: nowrap;
+      border: none; border-radius: 10px;
+      color: #0a0a0a; font-family: 'Tajawal', sans-serif;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: var(--transition); flex-shrink: 0; white-space: nowrap;
     }
-    .upload-trigger-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(201,168,76,0.4);
-    }
+    .upload-trigger-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.4); }
 
     /* ============================================================
        LAYOUT
     ============================================================ */
-    #appLayout {
-      display: flex;
-      padding-top: var(--header-h);
-      min-height: 100vh;
-    }
+    #appLayout { display: flex; padding-top: var(--header-h); min-height: 100vh; }
 
     /* ============================================================
        SIDEBAR
     ============================================================ */
     #sidebar {
-      width: var(--sidebar-w);
-      flex-shrink: 0;
-      background: var(--bg2);
-      border-left: 1px solid var(--border);
-      position: fixed;
-      top: var(--header-h);
-      right: 0;
-      bottom: 0;
-      overflow-y: auto;
-      z-index: 100;
+      width: var(--sidebar-w); flex-shrink: 0;
+      background: var(--bg2); border-left: 1px solid var(--border);
+      position: fixed; top: var(--header-h); right: 0; bottom: 0;
+      overflow-y: auto; z-index: 100;
       transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
-      display: flex;
-      flex-direction: column;
-      gap: 0;
+      display: flex; flex-direction: column; gap: 0;
     }
 
-    .sidebar-section {
-      padding: 16px 12px 8px;
-    }
+    .sidebar-section { padding: 16px 12px 8px; }
     .sidebar-section-title {
-      font-size: 9px;
-      letter-spacing: 2.5px;
-      color: var(--text4);
-      text-transform: uppercase;
-      font-weight: 700;
-      padding: 0 8px;
-      margin-bottom: 6px;
+      font-size: 9px; letter-spacing: 2.5px; color: var(--text4);
+      text-transform: uppercase; font-weight: 700;
+      padding: 0 8px; margin-bottom: 6px;
     }
 
     .sidebar-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: var(--transition);
-      color: var(--text2);
-      font-size: 13px;
-      font-weight: 600;
-      position: relative;
-      border: 1px solid transparent;
-      margin-bottom: 2px;
-      text-decoration: none;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+      color: var(--text2); font-size: 13px; font-weight: 600;
+      position: relative; border: 1px solid transparent;
+      margin-bottom: 2px; text-decoration: none;
     }
-    .sidebar-item:hover {
-      background: var(--surface);
-      color: var(--text);
-    }
-    .sidebar-item.active {
-      background: rgba(201,168,76,0.08);
-      border-color: var(--border-gold);
-      color: var(--gold);
-    }
-    .sidebar-item i {
-      width: 18px;
-      text-align: center;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
+    .sidebar-item:hover { background: var(--surface); color: var(--text); }
+    .sidebar-item.active { background: rgba(201,168,76,0.08); border-color: var(--border-gold); color: var(--gold); }
+    .sidebar-item i { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
     .sidebar-item .item-count {
-      margin-right: auto;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 50px;
-      padding: 1px 8px;
-      font-size: 10px;
-      font-weight: 700;
-      color: var(--text3);
+      margin-right: auto; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 50px; padding: 1px 8px; font-size: 10px; font-weight: 700; color: var(--text3);
     }
-    .sidebar-item.active .item-count {
-      background: rgba(201,168,76,0.15);
-      border-color: var(--border-gold);
-      color: var(--gold);
-    }
+    .sidebar-item.active .item-count { background: rgba(201,168,76,0.15); border-color: var(--border-gold); color: var(--gold); }
 
-    /* مجلدات مخصصة */
     .folder-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 12px;
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: var(--transition);
-      color: var(--text2);
-      font-size: 13px;
-      font-weight: 600;
-      border: 1px solid transparent;
-      margin-bottom: 2px;
-      position: relative;
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 12px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+      color: var(--text2); font-size: 13px; font-weight: 600;
+      border: 1px solid transparent; margin-bottom: 2px; position: relative;
     }
     .folder-item:hover { background: var(--surface); color: var(--text); }
-    .folder-item.active {
-      background: rgba(201,168,76,0.08);
-      border-color: var(--border-gold);
-      color: var(--gold);
-    }
-    .folder-item .folder-actions {
-      margin-right: auto;
-      display: none;
-      gap: 4px;
-    }
+    .folder-item.active { background: rgba(201,168,76,0.08); border-color: var(--border-gold); color: var(--gold); }
+    .folder-item .folder-actions { margin-right: auto; display: none; gap: 4px; }
     .folder-item:hover .folder-actions { display: flex; }
     .folder-action-btn {
-      width: 22px; height: 22px;
-      border-radius: 5px;
-      background: var(--surface2);
-      border: none;
-      color: var(--text3);
-      font-size: 10px;
-      cursor: pointer;
+      width: 22px; height: 22px; border-radius: 5px;
+      background: var(--surface2); border: none; color: var(--text3);
+      font-size: 10px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: var(--transition);
     }
@@ -369,142 +229,135 @@
 
     .add-folder-btn {
       display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px;
-      border-radius: var(--radius-sm);
-      background: none;
-      border: 1px dashed var(--border);
-      color: var(--text4);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-      width: 100%;
-      font-family: 'Tajawal', sans-serif;
-      margin-top: 4px;
+      padding: 8px 12px; border-radius: var(--radius-sm);
+      background: none; border: 1px dashed var(--border);
+      color: var(--text4); font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: var(--transition);
+      width: 100%; font-family: 'Tajawal', sans-serif; margin-top: 4px;
     }
-    .add-folder-btn:hover {
-      border-color: var(--border-gold);
-      color: var(--gold);
-      background: rgba(201,168,76,0.04);
-    }
+    .add-folder-btn:hover { border-color: var(--border-gold); color: var(--gold); background: rgba(201,168,76,0.04); }
 
-    /* مساحة التخزين */
     .storage-info-card {
-      margin: 12px;
-      padding: 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      margin: 12px; padding: 14px;
+      background: var(--surface); border: 1px solid var(--border);
       border-radius: var(--radius);
     }
     .storage-info-title {
-      font-size: 10px;
-      letter-spacing: 2px;
-      color: var(--text3);
-      text-transform: uppercase;
-      font-weight: 700;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 10px; letter-spacing: 2px; color: var(--text3);
+      text-transform: uppercase; font-weight: 700; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 6px;
     }
-    .storage-bar-wrap {
-      height: 6px;
-      background: var(--surface2);
-      border-radius: 6px;
-      overflow: hidden;
-      margin-bottom: 8px;
-    }
-    .storage-bar-fill {
-      height: 100%;
-      border-radius: 6px;
-      background: linear-gradient(90deg, var(--gold), var(--gold-light));
-      transition: width 1s ease;
-    }
+    .storage-bar-wrap { height: 6px; background: var(--surface2); border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
+    .storage-bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--gold), var(--gold-light)); transition: width 1s ease; }
     .storage-bar-fill.warning { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
     .storage-bar-fill.danger  { background: linear-gradient(90deg, #ef4444, #f87171); }
-    .storage-nums {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--text3);
-    }
+    .storage-nums { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); }
     .storage-used { font-weight: 700; color: var(--text2); }
+
+    /* مبدّل اللغة في السايدبار (موبايل فقط) */
+    .sidebar-lang-row {
+      display: none;
+      padding: 10px 12px;
+      gap: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-lang-row .lang-btn {
+      flex: 1; text-align: center;
+      padding: 7px 4px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text3); font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+      font-family: 'Tajawal', sans-serif;
+    }
+    .sidebar-lang-row .lang-btn.active {
+      background: rgba(201,168,76,0.15);
+      border-color: var(--border-gold); color: var(--gold);
+    }
 
     /* ============================================================
        MAIN CONTENT
     ============================================================ */
     #mainContent {
-      flex: 1;
-      margin-left: 0;
-      margin-right: var(--sidebar-w);
-      padding: 20px;
-      min-height: calc(100vh - var(--header-h));
+      flex: 1; margin-left: 0; margin-right: var(--sidebar-w);
+      padding: 20px; min-height: calc(100vh - var(--header-h));
       transition: margin-right 0.3s;
+    }
+
+    /* ============================================================
+       MOBILE SEARCH BAR
+    ============================================================ */
+    #mobileSearchBar {
+      display: none;
+      position: sticky;
+      top: var(--header-h);
+      z-index: 199;
+      background: var(--bg);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      align-items: center;
+    }
+    #mobileSearchBar .mob-search-wrap { position: relative; flex: 1; }
+    #mobileSearchBar .mob-search-wrap i {
+      position: absolute; right: 11px; top: 50%;
+      transform: translateY(-50%); color: var(--text3);
+      font-size: 12px; pointer-events: none;
+    }
+    #mobileSearchBar .mob-search-inp {
+      width: 100%; padding: 9px 34px 9px 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: 'Tajawal', sans-serif; font-size: 13px; outline: none;
+      transition: var(--transition); -webkit-user-select: text; user-select: text;
+    }
+    #mobileSearchBar .mob-search-inp:focus { border-color: var(--border-gold); }
+    #mobileSearchBar .mob-search-inp::placeholder { color: var(--text4); }
+    #mobileSearchBar .mob-filter-btn {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text2); font-size: 13px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: var(--transition);
+    }
+    #mobileSearchBar .mob-filter-btn:hover,
+    #mobileSearchBar .mob-filter-btn.active {
+      background: rgba(201,168,76,0.12);
+      border-color: var(--border-gold); color: var(--gold);
     }
 
     /* ============================================================
        TOOLBAR
     ============================================================ */
     .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; flex-wrap: wrap;
     }
-    .toolbar-left {
-      display: flex; align-items: center; gap: 8px;
-      flex: 1; min-width: 0;
-    }
-    .toolbar-right {
-      display: flex; align-items: center; gap: 6px;
-      flex-shrink: 0;
-    }
+    .toolbar-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+    .toolbar-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 
-    .breadcrumb {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 13px; color: var(--text3);
-      flex-wrap: wrap;
-    }
-    .breadcrumb-item {
-      cursor: pointer;
-      transition: color 0.2s;
-    }
+    .breadcrumb { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text3); flex-wrap: wrap; }
+    .breadcrumb-item { cursor: pointer; transition: color 0.2s; }
     .breadcrumb-item:hover { color: var(--gold); }
     .breadcrumb-item.active { color: var(--text); font-weight: 700; }
     .breadcrumb-sep { font-size: 10px; color: var(--text4); }
 
     .sort-select {
-      padding: 7px 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text2);
-      font-family: 'Tajawal', sans-serif;
-      font-size: 12px;
-      outline: none;
-      cursor: pointer;
-      transition: var(--transition);
+      padding: 7px 12px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text2); font-family: 'Tajawal', sans-serif;
+      font-size: 12px; outline: none; cursor: pointer; transition: var(--transition);
     }
     .sort-select:focus { border-color: var(--border-gold); }
 
     .view-btn {
-      width: 34px; height: 34px;
-      border-radius: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text3);
-      font-size: 13px;
-      cursor: pointer;
+      width: 34px; height: 34px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text3); font-size: 13px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: var(--transition);
     }
     .view-btn:hover { color: var(--gold); border-color: var(--border-gold); }
-    .view-btn.active {
-      background: rgba(201,168,76,0.1);
-      border-color: var(--border-gold);
-      color: var(--gold);
-    }
+    .view-btn.active { background: rgba(201,168,76,0.1); border-color: var(--border-gold); color: var(--gold); }
 
     /* ============================================================
        STATS BAR
@@ -512,301 +365,137 @@
     .stats-bar {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 10px; margin-bottom: 20px;
     }
     .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      transition: var(--transition);
-      cursor: default;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+      display: flex; align-items: center; gap: 12px;
+      transition: var(--transition); cursor: default;
     }
-    .stat-card:hover {
-      border-color: var(--border-gold);
-      background: var(--surface2);
-    }
-    .stat-icon {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 17px;
-      flex-shrink: 0;
-    }
-    .stat-val {
-      font-size: 20px;
-      font-weight: 900;
-      color: var(--text);
-      line-height: 1;
-      margin-bottom: 3px;
-    }
-    .stat-lbl {
-      font-size: 10px;
-      color: var(--text3);
-      letter-spacing: 0.5px;
+    .stat-card:hover { border-color: var(--border-gold); background: var(--surface2); }
+    .stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+    .stat-val { font-size: 20px; font-weight: 900; color: var(--text); line-height: 1; margin-bottom: 3px; }
+    .stat-lbl { font-size: 10px; color: var(--text3); letter-spacing: 0.5px; }
+
+    /* ============================================================
+       STICKY UPLOAD BAR
+    ============================================================ */
+    .sticky-upload-bar {
+      position: sticky; top: var(--header-h);
+      z-index: 200; background: var(--bg);
+      padding: 10px 0 14px; margin-bottom: 4px;
     }
 
     /* ============================================================
-       FILES GRID
+       FILES GRID / LIST
     ============================================================ */
-    #filesContainer {
-      position: relative;
-      min-height: 300px;
-    }
+    #filesContainer { position: relative; min-height: 300px; }
 
-    /* Grid View */
-    .files-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-    }
-    .files-grid.large {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    }
-    .files-grid.small {
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    }
+    .files-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .files-grid.large { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+    .files-grid.small { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+    .files-list { display: flex; flex-direction: column; gap: 4px; }
 
-    /* List View */
-    .files-list {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    /* File Card — Grid */
     .file-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      cursor: pointer;
-      transition: var(--transition);
-      position: relative;
-      animation: cardFadeIn 0.3s ease forwards;
-      opacity: 0;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+      cursor: pointer; transition: var(--transition);
+      position: relative; animation: cardFadeIn 0.3s ease forwards; opacity: 0;
     }
     @keyframes cardFadeIn {
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .file-card:hover {
-      border-color: var(--border-gold);
-      transform: translateY(-3px);
-      box-shadow: var(--shadow);
-    }
-    .file-card.selected {
-      border-color: var(--gold) !important;
-      box-shadow: 0 0 0 2px rgba(201,168,76,0.25);
-    }
+    .file-card:hover { border-color: var(--border-gold); transform: translateY(-3px); box-shadow: var(--shadow); }
+    .file-card.selected { border-color: var(--gold) !important; box-shadow: 0 0 0 2px rgba(201,168,76,0.25); }
 
     .file-card-thumb {
-      width: 100%;
-      aspect-ratio: 4/3;
-      background: var(--bg3);
-      display: flex; align-items: center; justify-content: center;
-      position: relative;
-      overflow: hidden;
+      width: 100%; aspect-ratio: 4/3;
+      background: var(--bg3); display: flex; align-items: center;
+      justify-content: center; position: relative; overflow: hidden;
     }
-    .file-card-thumb img {
-      width: 100%; height: 100%;
-      object-fit: cover;
-      transition: transform 0.4s ease;
-    }
+    .file-card-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
     .file-card:hover .file-card-thumb img { transform: scale(1.05); }
-    .file-card-thumb .file-type-icon {
-      font-size: 36px;
-    }
+    .file-card-thumb .file-type-icon { font-size: 36px; }
 
-    .file-card-info {
-      padding: 10px 12px;
-    }
-    .file-card-name {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 4px;
-    }
-    .file-card-meta {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 10px;
-      color: var(--text3);
-    }
+    .file-card-info { padding: 10px 12px; }
+    .file-card-name { font-size: 12px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 4px; }
+    .file-card-meta { display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--text3); }
 
-    /* File Row — List */
     .file-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: var(--transition);
-      animation: cardFadeIn 0.25s ease forwards;
-      opacity: 0;
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+      animation: cardFadeIn 0.25s ease forwards; opacity: 0;
     }
-    .file-row:hover {
-      border-color: var(--border-gold);
-      background: var(--surface2);
-    }
-    .file-row.selected {
-      border-color: var(--gold);
-      background: rgba(201,168,76,0.05);
-    }
-    .file-row-icon {
-      width: 40px; height: 40px;
-      border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-    .file-row-name {
-      flex: 1; min-width: 0;
-      font-size: 13px; font-weight: 700; color: var(--text);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .file-row-meta {
-      font-size: 11px; color: var(--text3);
-      display: flex; gap: 16px; align-items: center;
-      flex-shrink: 0;
-    }
-    .file-row-actions {
-      display: flex; gap: 5px;
-      opacity: 0; transition: opacity 0.2s;
-    }
+    .file-row:hover { border-color: var(--border-gold); background: var(--surface2); }
+    .file-row.selected { border-color: var(--gold); background: rgba(201,168,76,0.05); }
+    .file-row-icon { width: 40px; height: 40px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+    .file-row-name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-row-meta { font-size: 11px; color: var(--text3); display: flex; gap: 16px; align-items: center; flex-shrink: 0; }
+    .file-row-actions { display: flex; gap: 5px; opacity: 0; transition: opacity 0.2s; }
     .file-row:hover .file-row-actions { opacity: 1; }
 
-    /* أيقونة الاختيار */
     .select-check {
-      position: absolute;
-      top: 8px; right: 8px;
-      width: 22px; height: 22px;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.5);
-      border: 2px solid rgba(255,255,255,0.3);
+      position: absolute; top: 8px; right: 8px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.3);
       display: flex; align-items: center; justify-content: center;
-      font-size: 10px;
-      color: transparent;
-      transition: var(--transition);
-      z-index: 5;
+      font-size: 10px; color: transparent; transition: var(--transition); z-index: 5;
     }
-    .file-card:hover .select-check,
-    .file-card.selected .select-check {
-      opacity: 1;
-    }
-    .file-card.selected .select-check {
-      background: var(--gold);
-      border-color: var(--gold);
-      color: #0a0a0a;
-    }
+    .file-card.selected .select-check { background: var(--gold); border-color: var(--gold); color: #0a0a0a; }
 
-    /* شارة النوع */
     .file-type-badge {
-      position: absolute;
-      bottom: 7px; left: 7px;
-      padding: 2px 7px;
-      border-radius: 5px;
-      font-size: 8px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      position: absolute; bottom: 7px; left: 7px;
+      padding: 2px 7px; border-radius: 5px;
+      font-size: 8px; font-weight: 800;
+      letter-spacing: 1px; text-transform: uppercase;
       backdrop-filter: blur(8px);
     }
 
-    /* شارة التقدم */
     .upload-progress-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      z-index: 10;
-      border-radius: var(--radius);
+      position: absolute; inset: 0; background: rgba(0,0,0,0.7);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; z-index: 10; border-radius: var(--radius);
     }
-    .upload-progress-bar {
-      width: 80%;
-      height: 4px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    .upload-progress-fill {
-      height: 100%;
-      background: linear-gradient(90deg, var(--gold), var(--gold-light));
-      border-radius: 4px;
-      transition: width 0.3s ease;
-    }
-    .upload-progress-pct {
-      font-size: 13px;
-      font-weight: 900;
-      color: var(--gold);
+    .upload-progress-bar { width: 80%; height: 4px; background: rgba(255,255,255,0.15); border-radius: 4px; overflow: hidden; }
+    .upload-progress-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 4px; transition: width 0.3s ease; }
+    .upload-progress-pct { font-size: 13px; font-weight: 900; color: var(--gold); }
+
+    .compress-badge {
+      position: absolute; top: 7px; left: 7px;
+      background: rgba(74,222,128,0.85); color: #0a0a0a;
+      font-size: 8px; font-weight: 800;
+      padding: 2px 6px; border-radius: 4px; letter-spacing: 0.5px;
     }
 
     /* ============================================================
        EMPTY STATE
     ============================================================ */
     .empty-state {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 80px 20px;
-      text-align: center;
-      color: var(--text3);
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 80px 20px;
+      text-align: center; color: var(--text3);
     }
-    .empty-state-icon {
-      font-size: 52px;
-      color: rgba(201,168,76,0.12);
-      margin-bottom: 16px;
-    }
-    .empty-state-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text2);
-      margin-bottom: 8px;
-    }
-    .empty-state-sub {
-      font-size: 12px;
-      color: var(--text3);
-      line-height: 1.7;
-      max-width: 280px;
-    }
+    .empty-state-icon { font-size: 52px; color: rgba(201,168,76,0.12); margin-bottom: 16px; }
+    .empty-state-title { font-size: 16px; font-weight: 700; color: var(--text2); margin-bottom: 8px; }
+    .empty-state-sub { font-size: 12px; color: var(--text3); line-height: 1.7; max-width: 280px; }
 
     /* ============================================================
-       DRAG & DROP ZONE
+       DROP ZONE
     ============================================================ */
     #dropZone {
-      position: fixed;
-      inset: 0;
-      z-index: 9000;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(12px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 16px;
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(12px);
+      display: none; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px;
     }
     #dropZone.active { display: flex; }
     .drop-zone-inner {
-      border: 3px dashed var(--gold);
-      border-radius: 24px;
-      padding: 60px 80px;
-      text-align: center;
+      border: 3px dashed var(--gold); border-radius: 24px;
+      padding: 60px 80px; text-align: center;
       animation: dropPulse 1.5s ease infinite;
     }
     @keyframes dropPulse {
@@ -818,286 +507,117 @@
     .drop-zone-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 8px; }
 
     /* ============================================================
-       UPLOAD AREA (inline)
-    ============================================================ */
-    .upload-area-inline {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 32px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: var(--transition);
-      margin-bottom: 20px;
-    }
-    .upload-area-inline:hover {
-      border-color: var(--border-gold);
-      background: rgba(201,168,76,0.03);
-    }
-
-    /* ============================================================
        BULK ACTION BAR
     ============================================================ */
     #bulkBar {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
+      position: fixed; bottom: 24px; left: 50%;
       transform: translateX(-50%) translateY(120px);
-      background: var(--bg2);
-      border: 1px solid var(--border-gold);
-      border-radius: 50px;
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      z-index: 500;
-      backdrop-filter: blur(20px);
+      background: var(--bg2); border: 1px solid var(--border-gold);
+      border-radius: 50px; padding: 10px 20px;
+      display: flex; align-items: center; gap: 12px;
+      z-index: 500; backdrop-filter: blur(20px);
       box-shadow: 0 10px 40px rgba(0,0,0,0.6);
       transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
       white-space: nowrap;
     }
-    #bulkBar.visible {
-      transform: translateX(-50%) translateY(0);
-    }
-    .bulk-count {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--gold);
-    }
+    #bulkBar.visible { transform: translateX(-50%) translateY(0); }
+    .bulk-count { font-size: 13px; font-weight: 700; color: var(--gold); }
     .bulk-btn {
-      padding: 7px 14px;
-      border-radius: 50px;
-      border: none;
-      font-family: 'Tajawal', sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      padding: 7px 14px; border-radius: 50px; border: none;
+      font-family: 'Tajawal', sans-serif; font-size: 12px; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+      display: flex; align-items: center; gap: 6px;
     }
-    .bulk-btn-dl {
-      background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      color: #0a0a0a;
-    }
+    .bulk-btn-dl { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #0a0a0a; }
     .bulk-btn-dl:hover { transform: scale(1.05); }
-    .bulk-btn-del {
-      background: rgba(239,68,68,0.12);
-      border: 1px solid rgba(239,68,68,0.25);
-      color: var(--danger);
-    }
+    .bulk-btn-del { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); }
     .bulk-btn-del:hover { background: rgba(239,68,68,0.22); }
-    .bulk-btn-share {
-      background: rgba(96,165,250,0.12);
-      border: 1px solid rgba(96,165,250,0.25);
-      color: var(--info);
-    }
-    .bulk-btn-clear {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text3);
-    }
+    .bulk-btn-share { background: rgba(96,165,250,0.12); border: 1px solid rgba(96,165,250,0.25); color: var(--info); }
+    .bulk-btn-clear { background: none; border: 1px solid var(--border); color: var(--text3); }
     .bulk-btn-clear:hover { color: var(--danger); border-color: rgba(239,68,68,0.3); }
 
     /* ============================================================
        MODALS
     ============================================================ */
     .modal-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 8000;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(16px);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
+      position: fixed; inset: 0; z-index: 8000;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(16px);
+      display: none; align-items: center; justify-content: center; padding: 16px;
     }
     .modal-overlay.active { display: flex; }
 
     .modal-box {
-      width: 100%;
-      max-width: 480px;
-      background: var(--bg2);
-      border: 1px solid var(--border-gold);
-      border-radius: 22px;
-      overflow: hidden;
+      width: 100%; max-width: 480px;
+      background: var(--bg2); border: 1px solid var(--border-gold);
+      border-radius: 22px; overflow: hidden;
       animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
       box-shadow: 0 40px 100px rgba(0,0,0,0.8);
-      max-height: 90vh;
-      overflow-y: auto;
+      max-height: 90vh; overflow-y: auto;
     }
     @keyframes modalIn {
       from { opacity: 0; transform: scale(0.88) translateY(20px); }
       to   { opacity: 1; transform: scale(1) translateY(0); }
     }
-    .modal-top-line {
-      height: 3px;
-      background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-light) 50%, var(--gold) 70%, transparent);
-    }
-    .modal-header {
-      padding: 18px 20px 14px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-    }
-    .modal-title {
-      font-size: 16px;
-      font-weight: 900;
-      color: var(--text);
-    }
+    .modal-top-line { height: 3px; background: linear-gradient(90deg, transparent, var(--gold) 30%, var(--gold-light) 50%, var(--gold) 70%, transparent); }
+    .modal-header { padding: 18px 20px 14px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .modal-title { font-size: 16px; font-weight: 900; color: var(--text); }
     .modal-close {
-      width: 30px; height: 30px;
-      border-radius: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text3);
-      font-size: 13px;
-      cursor: pointer;
+      width: 30px; height: 30px; border-radius: 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text3); font-size: 13px; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: var(--transition);
     }
-    .modal-close:hover {
-      background: rgba(239,68,68,0.1);
-      border-color: rgba(239,68,68,0.25);
-      color: var(--danger);
-      transform: rotate(90deg);
-    }
+    .modal-close:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: var(--danger); transform: rotate(90deg); }
     .modal-body { padding: 18px 20px 22px; }
 
-    /* نافذة تفاصيل الملف */
-    .file-preview-modal .modal-box {
-      max-width: 600px;
-    }
-    .file-preview-img {
-      width: 100%;
-      max-height: 300px;
-      object-fit: contain;
-      border-radius: var(--radius-sm);
-      background: var(--bg3);
-    }
-    .file-info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .file-info-item {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
-    }
-    .file-info-label {
-      font-size: 9px;
-      letter-spacing: 2px;
-      color: var(--text4);
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-    .file-info-val {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-    }
+    .file-preview-img { width: 100%; max-height: 300px; object-fit: contain; border-radius: var(--radius-sm); background: var(--bg3); }
+    .file-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .file-info-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+    .file-info-label { font-size: 9px; letter-spacing: 2px; color: var(--text4); text-transform: uppercase; margin-bottom: 4px; }
+    .file-info-val { font-size: 13px; font-weight: 700; color: var(--text); }
 
-    /* ============================================================
-       INPUT STYLES
-    ============================================================ */
     .modal-input {
-      width: 100%;
-      padding: 12px 14px;
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text);
-      font-family: 'Tajawal', sans-serif;
-      font-size: 13px;
-      outline: none;
-      transition: var(--transition);
-      -webkit-user-select: text;
-      user-select: text;
-      margin-bottom: 12px;
+      width: 100%; padding: 12px 14px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--text);
+      font-family: 'Tajawal', sans-serif; font-size: 13px;
+      outline: none; transition: var(--transition);
+      -webkit-user-select: text; user-select: text; margin-bottom: 12px;
     }
-    .modal-input:focus {
-      border-color: var(--gold);
-      background: var(--surface2);
-      box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
-    }
-    .modal-label {
-      font-size: 10px;
-      letter-spacing: 2px;
-      color: var(--text3);
-      text-transform: uppercase;
-      font-weight: 700;
-      margin-bottom: 6px;
-      display: block;
-    }
+    .modal-input:focus { border-color: var(--gold); background: var(--surface2); box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
+    .modal-label { font-size: 10px; letter-spacing: 2px; color: var(--text3); text-transform: uppercase; font-weight: 700; margin-bottom: 6px; display: block; }
 
     /* ============================================================
        BUTTONS
     ============================================================ */
     .btn {
-      padding: 11px 20px;
-      border-radius: var(--radius-sm);
-      border: none;
-      font-family: 'Tajawal', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
+      padding: 11px 20px; border-radius: var(--radius-sm); border: none;
+      font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+      display: inline-flex; align-items: center; gap: 7px;
     }
-    .btn-gold {
-      background: linear-gradient(135deg, var(--gold), var(--gold-light));
-      color: #0a0a0a;
-    }
-    .btn-gold:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(201,168,76,0.35);
-    }
-    .btn-ghost {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      color: var(--text2);
-    }
+    .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #0a0a0a; }
+    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.35); }
+    .btn-ghost { background: var(--surface); border: 1px solid var(--border); color: var(--text2); }
     .btn-ghost:hover { background: var(--surface2); }
-    .btn-danger {
-      background: rgba(239,68,68,0.1);
-      border: 1px solid rgba(239,68,68,0.25);
-      color: var(--danger);
-    }
+    .btn-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: var(--danger); }
     .btn-danger:hover { background: rgba(239,68,68,0.2); }
 
     /* ============================================================
        TOAST
     ============================================================ */
     #toastContainer {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 99999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-      pointer-events: none;
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%); z-index: 99999;
+      display: flex; flex-direction: column; gap: 8px;
+      align-items: center; pointer-events: none;
     }
     .toast {
-      padding: 12px 20px;
-      border-radius: 50px;
-      font-family: 'Tajawal', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      padding: 12px 20px; border-radius: 50px;
+      font-family: 'Tajawal', sans-serif; font-size: 13px; font-weight: 700;
+      display: flex; align-items: center; gap: 9px;
+      backdrop-filter: blur(20px); box-shadow: 0 8px 30px rgba(0,0,0,0.5);
       animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
       white-space: nowrap;
     }
@@ -1105,21 +625,9 @@
       from { opacity: 0; transform: translateY(20px) scale(0.9); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .toast-success {
-      background: rgba(10,10,10,0.97);
-      border: 1px solid rgba(74,222,128,0.4);
-      color: rgba(255,255,255,0.85);
-    }
-    .toast-error {
-      background: rgba(30,5,5,0.97);
-      border: 1px solid rgba(239,68,68,0.4);
-      color: rgba(255,255,255,0.85);
-    }
-    .toast-info {
-      background: rgba(10,10,10,0.97);
-      border: 1px solid rgba(201,168,76,0.4);
-      color: rgba(255,255,255,0.85);
-    }
+    .toast-success { background: rgba(10,10,10,0.97); border: 1px solid rgba(74,222,128,0.4); color: rgba(255,255,255,0.85); }
+    .toast-error   { background: rgba(30,5,5,0.97);   border: 1px solid rgba(239,68,68,0.4);  color: rgba(255,255,255,0.85); }
+    .toast-info    { background: rgba(10,10,10,0.97); border: 1px solid rgba(201,168,76,0.4); color: rgba(255,255,255,0.85); }
 
     /* ============================================================
        FILE TYPE COLORS
@@ -1132,193 +640,65 @@
     .type-archive { color: #fbbf24; background: rgba(251,191,36,0.1); }
     .type-other   { color: #94a3b8; background: rgba(148,163,184,0.1); }
 
-    .badge-video   { background: rgba(249,115,22,0.85); color: #fff; }
+    .badge-video   { background: rgba(249,115,22,0.85);  color: #fff; }
     .badge-audio   { background: rgba(167,139,250,0.85); color: #fff; }
-    .badge-image   { background: rgba(74,222,128,0.85); color: #0a0a0a; }
-    .badge-pdf     { background: rgba(239,68,68,0.85); color: #fff; }
-    .badge-doc     { background: rgba(96,165,250,0.85); color: #fff; }
-    .badge-archive { background: rgba(251,191,36,0.85); color: #0a0a0a; }
+    .badge-image   { background: rgba(74,222,128,0.85);  color: #0a0a0a; }
+    .badge-pdf     { background: rgba(239,68,68,0.85);   color: #fff; }
+    .badge-doc     { background: rgba(96,165,250,0.85);  color: #fff; }
+    .badge-archive { background: rgba(251,191,36,0.85);  color: #0a0a0a; }
     .badge-other   { background: rgba(148,163,184,0.85); color: #fff; }
 
     /* ============================================================
        LOADING SPINNER
     ============================================================ */
-    .spinner {
-      width: 36px; height: 36px;
-      border: 3px solid var(--border);
-      border-top-color: var(--gold);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ============================================================
-       LANGUAGE SWITCHER
+       LANGUAGE SWITCHER (desktop header)
     ============================================================ */
-    .lang-switcher {
-      display: flex;
-      gap: 4px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 3px;
-    }
-    .lang-btn {
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: none;
-      background: none;
-      color: var(--text3);
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: var(--transition);
-      font-family: 'Tajawal', sans-serif;
-    }
-    .lang-btn.active {
-      background: rgba(201,168,76,0.15);
-      color: var(--gold);
-    }
+    .lang-switcher { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+    .lang-btn { padding: 4px 10px; border-radius: 6px; border: none; background: none; color: var(--text3); font-size: 11px; font-weight: 700; cursor: pointer; transition: var(--transition); font-family: 'Tajawal', sans-serif; }
+    .lang-btn.active { background: rgba(201,168,76,0.15); color: var(--gold); }
 
     /* ============================================================
-       RESPONSIVE
+       SHARE / VIDEO / SAVE OPTIONS
     ============================================================ */
-    @media (max-width: 900px) {
-      :root { --sidebar-w: 0px; }
-      #sidebar {
-        transform: translateX(100%);
-        width: 260px;
-      }
-      #sidebar.open { transform: translateX(0); }
-      #mainContent { margin-right: 0; }
-      .header-search-wrap { display: none; }
-      .stats-bar { grid-template-columns: repeat(2, 1fr); }
-    }
-    @media (max-width: 600px) {
-      #mainContent { padding: 12px; }
-      .files-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-      .toolbar { gap: 7px; }
-    }
-    @media (max-width: 380px) {
-      .files-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
-    }
+    .share-link-box { display: flex; gap: 8px; margin-top: 12px; }
+    .share-link-inp { flex: 1; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-size: 12px; outline: none; font-family: 'Tajawal', sans-serif; -webkit-user-select: text; user-select: text; }
+    .video-player { width: 100%; border-radius: var(--radius-sm); background: #000; max-height: 400px; }
+    .audio-player { width: 100%; margin-top: 12px; }
 
-    /* ============================================================
-       STICKY UPLOAD BAR
-    ============================================================ */
-    .sticky-upload-bar {
-      position: sticky;
-      top: var(--header-h);
-      z-index: 200;
-      background: var(--bg);
-      padding: 10px 0 14px;
-      margin-bottom: 4px;
+    .save-option-card {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; transition: var(--transition); margin-bottom: 10px;
     }
-
-    /* ============================================================
-       FOLDER RENAME INLINE
-    ============================================================ */
-    .folder-rename-input {
-      background: var(--surface2);
-      border: 1px solid var(--border-gold);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: 'Tajawal', sans-serif;
-      font-size: 12px;
-      padding: 3px 8px;
-      outline: none;
-      width: 120px;
-      -webkit-user-select: text;
-      user-select: text;
-    }
-
-    /* ============================================================
-       SHARE MODAL
-    ============================================================ */
-    .share-link-box {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .share-link-inp {
-      flex: 1;
-      padding: 10px 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      color: var(--text2);
-      font-size: 12px;
-      outline: none;
-      font-family: 'Tajawal', sans-serif;
-      -webkit-user-select: text;
-      user-select: text;
-    }
-
-    /* ============================================================
-       VIDEO PLAYER MODAL
-    ============================================================ */
-    .video-modal .modal-box { max-width: 700px; }
-    .video-player {
-      width: 100%;
-      border-radius: var(--radius-sm);
-      background: #000;
-      max-height: 400px;
-    }
-
-    /* ============================================================
-       AUDIO PLAYER
-    ============================================================ */
-    .audio-player {
-      width: 100%;
-      margin-top: 12px;
-    }
-
-    /* ============================================================
-       COMPRESS INDICATOR
-    ============================================================ */
-    .compress-badge {
-      position: absolute;
-      top: 7px; left: 7px;
-      background: rgba(74,222,128,0.85);
-      color: #0a0a0a;
-      font-size: 8px;
-      font-weight: 800;
-      padding: 2px 6px;
-      border-radius: 4px;
-      letter-spacing: 0.5px;
-    }
+    .save-option-card:hover { border-color: var(--border-gold); background: var(--surface2); }
+    .save-option-icon { width: 44px; height: 44px; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .save-option-title { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .save-option-sub { font-size: 10px; color: var(--text3); line-height: 1.5; }
 
     /* ============================================================
        CONTEXT MENU
     ============================================================ */
     #ctxMenu {
-      position: fixed;
-      z-index: 9999;
-      background: var(--bg2);
-      border: 1px solid var(--border-gold);
-      border-radius: 12px;
-      overflow: hidden;
+      position: fixed; z-index: 9999;
+      background: var(--bg2); border: 1px solid var(--border-gold);
+      border-radius: 12px; overflow: hidden;
       box-shadow: 0 16px 48px rgba(0,0,0,0.7);
-      backdrop-filter: blur(20px);
-      min-width: 170px;
-      animation: ctxIn 0.18s ease forwards;
-      display: none;
+      backdrop-filter: blur(20px); min-width: 170px;
+      animation: ctxIn 0.18s ease forwards; display: none;
     }
     @keyframes ctxIn {
       from { opacity: 0; transform: scale(0.92); }
       to   { opacity: 1; transform: scale(1); }
     }
     .ctx-item {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      padding: 10px 14px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text2);
-      cursor: pointer;
-      transition: background 0.15s;
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 14px; font-size: 12px; font-weight: 700;
+      color: var(--text2); cursor: pointer; transition: background 0.15s;
       border-bottom: 1px solid var(--border);
       font-family: 'Tajawal', sans-serif;
     }
@@ -1329,82 +709,165 @@
     .ctx-item i { width: 14px; text-align: center; font-size: 12px; }
 
     /* ============================================================
-       SAVE OPTIONS MODAL
+       SIDEBAR OVERLAY
     ============================================================ */
-    .save-option-card {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 14px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      cursor: pointer;
-      transition: var(--transition);
-      margin-bottom: 10px;
-    }
-    .save-option-card:hover {
-      border-color: var(--border-gold);
-      background: var(--surface2);
-    }
-    .save-option-icon {
-      width: 44px; height: 44px;
-      border-radius: 11px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      flex-shrink: 0;
-    }
-    .save-option-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 3px;
-    }
-    .save-option-sub {
-      font-size: 10px;
-      color: var(--text3);
-      line-height: 1.5;
+    #sidebarOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
+
+    /* ============================================================
+       RESPONSIVE — TABLET
+    ============================================================ */
+    @media (max-width: 900px) {
+      :root { --sidebar-w: 0px; }
+
+      #sidebar { transform: translateX(100%); width: 280px; }
+      #sidebar.open { transform: translateX(0); }
+      #sidebarOverlay.active { display: block; }
+
+      #mainContent { margin-right: 0; }
+      .header-search-wrap { display: none; }
+      .stats-bar { grid-template-columns: repeat(2, 1fr); }
+
+      /* هيدر الموبايل */
+      #appHeader { padding: 0 10px; gap: 7px; height: 56px; }
+      :root { --header-h: 56px; }
+      .header-subtitle { display: none; }
+      .header-logo-icon { width: 32px; height: 32px; font-size: 14px; }
+      .header-title { font-size: 15px; }
+      .lang-switcher { display: none; }
+      .upload-trigger-btn { padding: 8px 12px; font-size: 12px; gap: 5px; }
+      .upload-trigger-btn span { display: none; }
+      .header-btn { width: 34px; height: 34px; font-size: 13px; }
+      .header-back-btn { width: 34px; height: 34px; }
+
+      /* شريط البحث الموبايل */
+      #mobileSearchBar { display: flex; }
+
+      /* السايدبار لغة */
+      .sidebar-lang-row { display: flex; }
+
+      /* sticky bar */
+      .sticky-upload-bar { top: 56px; padding: 8px 0 10px; }
+
+      /* main padding */
+      #mainContent { padding: 10px 10px 90px; }
     }
 
     /* ============================================================
-       SIDEBAR OVERLAY (mobile)
+       RESPONSIVE — MOBILE
     ============================================================ */
-    #sidebarOverlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 99;
+    @media (max-width: 600px) {
+      .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 7px; margin-bottom: 12px; }
+      .stat-card { padding: 10px 12px; gap: 9px; }
+      .stat-icon { width: 34px; height: 34px; font-size: 14px; }
+      .stat-val { font-size: 17px; }
+      .stat-lbl { font-size: 9px; }
+
+      .toolbar { flex-wrap: nowrap; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+      .toolbar::-webkit-scrollbar { display: none; }
+      .toolbar-left { flex-shrink: 0; }
+      .toolbar-right { flex-shrink: 0; gap: 5px; }
+      .sort-select { padding: 6px 8px; font-size: 11px; max-width: 105px; }
+      .view-btn { width: 30px; height: 30px; font-size: 11px; }
+      .breadcrumb { font-size: 12px; }
+
+      .files-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .files-grid.small { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+      .file-card-info { padding: 8px 10px; }
+      .file-card-name { font-size: 11px; }
+      .file-card-meta { font-size: 9px; }
+
+      /* list view موبايل */
+      .file-row { padding: 9px 10px; gap: 9px; }
+      .file-row-icon { width: 36px; height: 36px; font-size: 15px; }
+      .file-row-name { font-size: 12px; }
+      .file-row-meta { font-size: 10px; gap: 8px; }
+      .file-row-actions { opacity: 1; }
+      .file-row-actions .view-btn { width: 28px; height: 28px; font-size: 11px; }
+
+      /* bulk bar */
+      #bulkBar { bottom: 16px; padding: 8px 14px; gap: 8px; border-radius: 40px; max-width: calc(100vw - 24px); }
+      .bulk-btn { padding: 6px 10px; font-size: 11px; gap: 4px; }
+      .bulk-btn span { display: none; }
+      .bulk-count { font-size: 12px; }
+
+      /* modals → bottom sheet */
+      .modal-overlay { padding: 0; align-items: flex-end; }
+      .modal-box {
+        border-radius: 22px 22px 0 0;
+        max-height: 88vh; width: 100%; max-width: 100%;
+        animation: modalInMobile 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      }
+      @keyframes modalInMobile {
+        from { transform: translateY(100%); opacity: 0.8; }
+        to   { transform: translateY(0);    opacity: 1; }
+      }
+      .file-info-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+      .file-preview-img { max-height: 220px; }
+      .video-player { max-height: 240px; }
+
+      /* context menu → bottom sheet */
+      #ctxMenu {
+        position: fixed !important;
+        bottom: 0 !important; left: 0 !important;
+        right: 0 !important; top: auto !important;
+        width: 100% !important; min-width: unset;
+        border-radius: 20px 20px 0 0; border-bottom: none;
+        padding-bottom: env(safe-area-inset-bottom, 16px);
+        animation: ctxInMobile 0.25s ease forwards;
+      }
+      @keyframes ctxInMobile {
+        from { transform: translateY(100%); }
+        to   { transform: translateY(0); }
+      }
+      #ctxMenu::before {
+        content: ''; display: block;
+        width: 40px; height: 4px;
+        background: var(--border); border-radius: 4px;
+        margin: 10px auto 6px;
+      }
+      .ctx-item { padding: 14px 18px; font-size: 14px; }
+
+      .empty-state { padding: 50px 16px; }
+      .empty-state-icon { font-size: 42px; }
+      .empty-state-title { font-size: 15px; }
     }
-    @media (max-width: 900px) {
-      #sidebarOverlay.active { display: block; }
+
+    @media (max-width: 380px) {
+      .files-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+      .files-grid.small { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Safe Area — Notch / Home Indicator */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      @media (max-width: 900px) {
+        #appHeader {
+          padding-top: env(safe-area-inset-top);
+          height: calc(56px + env(safe-area-inset-top));
+        }
+        #bulkBar { bottom: calc(16px + env(safe-area-inset-bottom)); }
+        #toastContainer { bottom: calc(28px + env(safe-area-inset-bottom)); }
+      }
     }
 
   </style>
 </head>
 <body>
 
-<!-- ============================================================
-     DROP ZONE
-============================================================ -->
+<!-- DROP ZONE -->
 <div id="dropZone">
   <div class="drop-zone-inner">
     <div class="drop-zone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
     <div class="drop-zone-title" data-i18n="dropTitle">اسحب الملفات هنا</div>
-    <div class="drop-zone-sub" data-i18n="dropSub">يدعم جميع أنواع الملفات</div>
+    <div class="drop-zone-sub"  data-i18n="dropSub">يدعم جميع أنواع الملفات</div>
   </div>
 </div>
 
-<!-- ============================================================
-     HEADER
-============================================================ -->
+<!-- HEADER -->
 <header id="appHeader">
-  <!-- زر الرجوع -->
   <a href="./index.html" class="header-back-btn" title="الرجوع">
     <i class="fas fa-arrow-right"></i>
   </a>
 
-  <!-- اللوجو والعنوان -->
   <div class="header-logo">
     <div class="header-logo-icon"><i class="fas fa-folder-open"></i></div>
     <div>
@@ -1413,39 +876,29 @@
     </div>
   </div>
 
-  <!-- بحث -->
   <div class="header-search-wrap">
     <i class="fas fa-search"></i>
-    <input type="text" class="header-search-inp"
-           id="globalSearch"
-           data-i18n-placeholder="searchPlaceholder"
+    <input type="text" class="header-search-inp" id="globalSearch"
            placeholder="ابحث في الملفات..."
-           oninput="onSearch(this.value)"
-           autocomplete="off"/>
+           oninput="onSearch(this.value)" autocomplete="off"/>
   </div>
 
   <div class="header-spacer"></div>
 
-  <!-- تبديل اللغة -->
   <div class="lang-switcher">
     <button class="lang-btn active" onclick="setLang('ar')">AR</button>
     <button class="lang-btn" onclick="setLang('tr')">TR</button>
     <button class="lang-btn" onclick="setLang('en')">EN</button>
   </div>
 
-  <!-- وضع ليلي/نهاري -->
   <button class="header-btn" id="themeBtn" onclick="toggleTheme()" title="تبديل الوضع">
     <i class="fas fa-moon" id="themeIcon"></i>
   </button>
 
-  <!-- زر الشريط الجانبي (موبايل) -->
-  <button class="header-btn" id="sidebarToggle"
-          onclick="toggleSidebar()"
-          style="display:none;">
+  <button class="header-btn" id="sidebarToggle" onclick="toggleSidebar()" style="display:none;">
     <i class="fas fa-bars"></i>
   </button>
 
-  <!-- زر الرفع الرئيسي -->
   <label class="upload-trigger-btn" style="cursor:pointer;">
     <input type="file" id="fileInput" multiple style="display:none;"
            onchange="handleFileSelect(this.files)"/>
@@ -1454,61 +907,76 @@
   </label>
 </header>
 
-<!-- ============================================================
-     SIDEBAR OVERLAY
-============================================================ -->
+<!-- شريط بحث الموبايل -->
+<div id="mobileSearchBar">
+  <div class="mob-search-wrap">
+    <i class="fas fa-search"></i>
+    <input type="text" class="mob-search-inp"
+           id="mobileSearch"
+           placeholder="ابحث في الملفات..."
+           oninput="onSearch(this.value);syncSearch(this.value)"
+           autocomplete="off"/>
+  </div>
+  <button class="mob-filter-btn" id="mobFilterBtn" onclick="toggleSidebar()" title="الفئات">
+    <i class="fas fa-sliders-h"></i>
+  </button>
+</div>
+
+<!-- SIDEBAR OVERLAY -->
 <div id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-<!-- ============================================================
-     LAYOUT
-============================================================ -->
+<!-- LAYOUT -->
 <div id="appLayout">
 
-  <!-- ============================================================
-       SIDEBAR
-  ============================================================ -->
+  <!-- SIDEBAR -->
   <aside id="sidebar">
 
-    <!-- الفئات الرئيسية -->
+    <!-- مبدّل اللغة (موبايل فقط) -->
+    <div class="sidebar-lang-row">
+      <button class="lang-btn active" onclick="setLang('ar');toggleSidebar()">AR</button>
+      <button class="lang-btn" onclick="setLang('tr');toggleSidebar()">TR</button>
+      <button class="lang-btn" onclick="setLang('en');toggleSidebar()">EN</button>
+    </div>
+
+    <!-- الفئات -->
     <div class="sidebar-section">
       <div class="sidebar-section-title" data-i18n="categories">الفئات</div>
-
-      <div class="sidebar-item active" onclick="filterByType('all')" id="cat-all">
+      <div class="sidebar-item active" onclick="filterByType('all');closeSidebarMobile()" id="cat-all">
         <i class="fas fa-th-large"></i>
         <span data-i18n="allFiles">جميع الملفات</span>
         <span class="item-count" id="cnt-all">0</span>
       </div>
-      <div class="sidebar-item" onclick="filterByType('video')" id="cat-video">
+      <div class="sidebar-item" onclick="filterByType('video');closeSidebarMobile()" id="cat-video">
         <i class="fas fa-video type-video" style="background:none;"></i>
         <span data-i18n="videos">فيديوهات</span>
         <span class="item-count" id="cnt-video">0</span>
       </div>
-      <div class="sidebar-item" onclick="filterByType('audio')" id="cat-audio">
+      <div class="sidebar-item" onclick="filterByType('audio');closeSidebarMobile()" id="cat-audio">
         <i class="fas fa-music type-audio" style="background:none;"></i>
         <span data-i18n="audios">صوتيات</span>
         <span class="item-count" id="cnt-audio">0</span>
       </div>
-      <div class="sidebar-item" onclick="filterByType('image')" id="cat-image">
+      <div class="sidebar-item" onclick="filterByType('image');closeSidebarMobile()" id="cat-image">
         <i class="fas fa-image type-image" style="background:none;"></i>
         <span data-i18n="images">صور</span>
         <span class="item-count" id="cnt-image">0</span>
       </div>
-      <div class="sidebar-item" onclick="filterByType('pdf')" id="cat-pdf">
+      <div class="sidebar-item" onclick="filterByType('pdf');closeSidebarMobile()" id="cat-pdf">
         <i class="fas fa-file-pdf type-pdf" style="background:none;"></i>
-        <span data-i18n="pdfs">PDF</span>
+        <span>PDF</span>
         <span class="item-count" id="cnt-pdf">0</span>
       </div>
-      <div class="sidebar-item" onclick="filterByType('doc')" id="cat-doc">
+      <div class="sidebar-item" onclick="filterByType('doc');closeSidebarMobile()" id="cat-doc">
         <i class="fas fa-file-word type-doc" style="background:none;"></i>
         <span data-i18n="docs">مستندات</span>
         <span class="item-count" id="cnt-doc">0</span>
       </div>
-      <div class="sidebar-item" onclick="filterByType('archive')" id="cat-archive">
+      <div class="sidebar-item" onclick="filterByType('archive');closeSidebarMobile()" id="cat-archive">
         <i class="fas fa-file-archive type-archive" style="background:none;"></i>
         <span data-i18n="archives">مضغوطات</span>
         <span class="item-count" id="cnt-archive">0</span>
       </div>
-      <div class="sidebar-item" onclick="filterByType('other')" id="cat-other">
+      <div class="sidebar-item" onclick="filterByType('other');closeSidebarMobile()" id="cat-other">
         <i class="fas fa-file type-other" style="background:none;"></i>
         <span data-i18n="others">أخرى</span>
         <span class="item-count" id="cnt-other">0</span>
@@ -1540,24 +1008,21 @@
       </div>
       <div style="margin-top:8px;font-size:10px;color:var(--text4);
                   display:flex;align-items:center;gap:5px;">
-        <div style="width:6px;height:6px;border-radius:50%;
-                    background:var(--success);animation:iconPulse 2s infinite;"></div>
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--success);
+                    animation:iconPulse 2s infinite;"></div>
         <span id="storageStatus">Supabase Free · 1GB</span>
       </div>
     </div>
 
-  </aside><!-- /sidebar -->
+  </aside>
 
-  <!-- ============================================================
-       MAIN CONTENT
-  ============================================================ -->
+  <!-- MAIN CONTENT -->
   <main id="mainContent">
 
-    <!-- شريط الرفع الثابت عند التمرير -->
+    <!-- شريط الأدوات الثابت -->
     <div class="sticky-upload-bar">
       <div class="toolbar">
         <div class="toolbar-left">
-          <!-- Breadcrumb -->
           <div class="breadcrumb" id="breadcrumb">
             <span class="breadcrumb-item active" onclick="filterByType('all')" data-i18n="allFiles">
               جميع الملفات
@@ -1565,7 +1030,6 @@
           </div>
         </div>
         <div class="toolbar-right">
-          <!-- ترتيب -->
           <select class="sort-select" id="sortSelect" onchange="onSortChange(this.value)">
             <option value="date_desc" data-i18n="sortNewest">الأحدث أولاً</option>
             <option value="date_asc"  data-i18n="sortOldest">الأقدم أولاً</option>
@@ -1574,31 +1038,17 @@
             <option value="size_desc" data-i18n="sortSizeBig">الأكبر حجماً</option>
             <option value="size_asc"  data-i18n="sortSizeSmall">الأصغر حجماً</option>
           </select>
-
-          <!-- طريقة العرض -->
-          <button class="view-btn active" id="viewGrid"
-                  onclick="setView('grid')" title="شبكة كبيرة">
-            <i class="fas fa-th-large"></i>
-          </button>
-          <button class="view-btn" id="viewGrid2"
-                  onclick="setView('grid2')" title="شبكة صغيرة">
-            <i class="fas fa-th"></i>
-          </button>
-          <button class="view-btn" id="viewList"
-                  onclick="setView('list')" title="قائمة">
-            <i class="fas fa-list"></i>
-          </button>
-
-          <!-- تحديد الكل -->
-          <button class="header-btn" onclick="toggleSelectAll()"
-                  id="selectAllBtn" title="تحديد الكل">
+          <button class="view-btn active" id="viewGrid"  onclick="setView('grid')"  title="شبكة كبيرة"><i class="fas fa-th-large"></i></button>
+          <button class="view-btn"        id="viewGrid2" onclick="setView('grid2')" title="شبكة صغيرة"><i class="fas fa-th"></i></button>
+          <button class="view-btn"        id="viewList"  onclick="setView('list')"  title="قائمة"><i class="fas fa-list"></i></button>
+          <button class="header-btn" onclick="toggleSelectAll()" id="selectAllBtn" title="تحديد الكل">
             <i class="fas fa-check-double"></i>
           </button>
         </div>
       </div>
     </div>
 
-    <!-- إحصائيات سريعة -->
+    <!-- إحصائيات -->
     <div class="stats-bar" id="statsBar">
       <div class="stat-card">
         <div class="stat-icon" style="background:rgba(201,168,76,0.1);color:var(--gold);">
@@ -1640,103 +1090,81 @@
 
     <!-- منطقة الملفات -->
     <div id="filesContainer">
-      <!-- Loading -->
       <div id="loadingState" style="display:flex;align-items:center;
            justify-content:center;padding:80px 20px;flex-direction:column;gap:14px;">
         <div class="spinner"></div>
-        <div style="font-size:13px;color:var(--text3);" data-i18n="loading">
-          جاري التحميل...
-        </div>
+        <div style="font-size:13px;color:var(--text3);" data-i18n="loading">جاري التحميل...</div>
       </div>
-
-      <!-- Files Grid/List -->
       <div id="filesGrid" class="files-grid" style="display:none;"></div>
-
-      <!-- Empty State -->
       <div id="emptyState" class="empty-state" style="display:none;">
         <div class="empty-state-icon"><i class="fas fa-folder-open"></i></div>
         <div class="empty-state-title" data-i18n="noFiles">لا توجد ملفات</div>
-        <div class="empty-state-sub" data-i18n="noFilesSub">
-          اسحب الملفات هنا أو اضغط "رفع ملف" للبدء
-        </div>
+        <div class="empty-state-sub"   data-i18n="noFilesSub">اسحب الملفات هنا أو اضغط "رفع ملف" للبدء</div>
       </div>
     </div>
 
   </main>
-</div><!-- /appLayout -->
+</div>
 
-<!-- ============================================================
-     BULK ACTION BAR
-============================================================ -->
+<!-- BULK ACTION BAR -->
 <div id="bulkBar">
   <span class="bulk-count" id="bulkCount">0 <span data-i18n="selected">محدد</span></span>
-  <button class="bulk-btn bulk-btn-dl" onclick="bulkDownload()">
-    <i class="fas fa-download"></i>
-    <span data-i18n="download">تنزيل</span>
+  <button class="bulk-btn bulk-btn-dl"    onclick="bulkDownload()">
+    <i class="fas fa-download"></i><span data-i18n="download">تنزيل</span>
   </button>
   <button class="bulk-btn bulk-btn-share" onclick="bulkShare()">
-    <i class="fas fa-share-alt"></i>
-    <span data-i18n="share">مشاركة</span>
+    <i class="fas fa-share-alt"></i><span data-i18n="share">مشاركة</span>
   </button>
-  <button class="bulk-btn bulk-btn-del" onclick="bulkDelete()">
-    <i class="fas fa-trash-alt"></i>
-    <span data-i18n="delete">حذف</span>
+  <button class="bulk-btn bulk-btn-del"   onclick="bulkDelete()">
+    <i class="fas fa-trash-alt"></i><span data-i18n="delete">حذف</span>
   </button>
   <button class="bulk-btn bulk-btn-clear" onclick="clearSelection()">
     <i class="fas fa-times"></i>
   </button>
 </div>
 
-<!-- ============================================================
-     CONTEXT MENU
-============================================================ -->
+<!-- CONTEXT MENU -->
 <div id="ctxMenu">
   <div class="ctx-item" onclick="ctxAction('preview')">
-    <i class="fas fa-eye"></i> <span data-i18n="preview">معاينة</span>
+    <i class="fas fa-eye"></i><span data-i18n="preview">معاينة</span>
   </div>
   <div class="ctx-item" onclick="ctxAction('download')">
-    <i class="fas fa-download"></i> <span data-i18n="download">تنزيل</span>
+    <i class="fas fa-download"></i><span data-i18n="download">تنزيل</span>
   </div>
   <div class="ctx-item" onclick="ctxAction('share')">
-    <i class="fas fa-share-alt"></i> <span data-i18n="share">مشاركة</span>
+    <i class="fas fa-share-alt"></i><span data-i18n="share">مشاركة</span>
   </div>
   <div class="ctx-item" onclick="ctxAction('move')">
-    <i class="fas fa-folder-open"></i> <span data-i18n="moveToFolder">نقل لمجلد</span>
+    <i class="fas fa-folder-open"></i><span data-i18n="moveToFolder">نقل لمجلد</span>
   </div>
   <div class="ctx-item" onclick="ctxAction('rename')">
-    <i class="fas fa-pen"></i> <span data-i18n="rename">إعادة تسمية</span>
+    <i class="fas fa-pen"></i><span data-i18n="rename">إعادة تسمية</span>
   </div>
   <div class="ctx-item" onclick="ctxAction('info')">
-    <i class="fas fa-info-circle"></i> <span data-i18n="details">التفاصيل</span>
+    <i class="fas fa-info-circle"></i><span data-i18n="details">التفاصيل</span>
   </div>
   <div class="ctx-item danger" onclick="ctxAction('delete')">
-    <i class="fas fa-trash-alt"></i> <span data-i18n="delete">حذف</span>
+    <i class="fas fa-trash-alt"></i><span data-i18n="delete">حذف</span>
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: تفاصيل الملف / معاينة
-============================================================ -->
+<!-- MODAL: معاينة الملف -->
 <div class="modal-overlay file-preview-modal" id="previewModal">
   <div class="modal-box" style="max-width:600px;">
     <div class="modal-top-line"></div>
     <div class="modal-header">
       <div class="modal-title" id="previewTitle">معاينة الملف</div>
-      <button class="modal-close" onclick="closeModal('previewModal')">
-        <i class="fas fa-times"></i>
-      </button>
+      <button class="modal-close" onclick="closeModal('previewModal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
       <div id="previewContent"></div>
       <div class="file-info-grid" id="previewMeta"></div>
       <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-        <button class="btn btn-gold" onclick="downloadFile(currentCtxFile)" style="flex:1;">
-          <i class="fas fa-download"></i>
-          <span data-i18n="download">تنزيل</span>
+        <button class="btn btn-gold"   onclick="downloadFile(currentCtxFile)" style="flex:1;">
+          <i class="fas fa-download"></i><span data-i18n="download">تنزيل</span>
         </button>
-        <button class="btn btn-ghost" onclick="openShareModal(currentCtxFile)" style="flex:1;">
-          <i class="fas fa-share-alt"></i>
-          <span data-i18n="share">مشاركة</span>
+        <button class="btn btn-ghost"  onclick="openShareModal(currentCtxFile)" style="flex:1;">
+          <i class="fas fa-share-alt"></i><span data-i18n="share">مشاركة</span>
         </button>
         <button class="btn btn-danger" onclick="deleteFile(currentCtxFile);closeModal('previewModal')">
           <i class="fas fa-trash-alt"></i>
@@ -1746,21 +1174,16 @@
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: مشاركة
-============================================================ -->
+<!-- MODAL: مشاركة -->
 <div class="modal-overlay" id="shareModal">
   <div class="modal-box">
     <div class="modal-top-line"></div>
     <div class="modal-header">
       <div class="modal-title" data-i18n="shareFile">مشاركة الملف</div>
-      <button class="modal-close" onclick="closeModal('shareModal')">
-        <i class="fas fa-times"></i>
-      </button>
+      <button class="modal-close" onclick="closeModal('shareModal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
-      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;"
-           data-i18n="shareSub">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px;" data-i18n="shareSub">
         انسخ الرابط أو شارك مباشرة
       </div>
       <div class="share-link-box">
@@ -1771,61 +1194,48 @@
       </div>
       <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
         <button class="btn btn-ghost" onclick="shareViaWhatsApp()" style="flex:1;">
-          <i class="fab fa-whatsapp" style="color:#25d366;"></i>
-          WhatsApp
+          <i class="fab fa-whatsapp" style="color:#25d366;"></i> WhatsApp
         </button>
         <button class="btn btn-ghost" onclick="shareViaNative()" style="flex:1;">
-          <i class="fas fa-share-alt"></i>
-          <span data-i18n="moreOptions">خيارات</span>
+          <i class="fas fa-share-alt"></i><span data-i18n="moreOptions">خيارات</span>
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: إضافة مجلد
-============================================================ -->
+<!-- MODAL: إضافة مجلد -->
 <div class="modal-overlay" id="addFolderModal">
   <div class="modal-box" style="max-width:400px;">
     <div class="modal-top-line"></div>
     <div class="modal-header">
       <div class="modal-title" data-i18n="newFolder">مجلد جديد</div>
-      <button class="modal-close" onclick="closeModal('addFolderModal')">
-        <i class="fas fa-times"></i>
-      </button>
+      <button class="modal-close" onclick="closeModal('addFolderModal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
       <label class="modal-label" data-i18n="folderName">اسم المجلد</label>
       <input type="text" class="modal-input" id="newFolderName"
-             data-i18n-placeholder="folderNamePh"
-             placeholder="مثال: مشاريع 2026"
-             maxlength="40"
+             placeholder="مثال: مشاريع 2026" maxlength="40"
              onkeydown="if(event.key==='Enter')saveNewFolder()"/>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-ghost" onclick="closeModal('addFolderModal')" style="flex:1;">
           <span data-i18n="cancel">إلغاء</span>
         </button>
         <button class="btn btn-gold" onclick="saveNewFolder()" style="flex:2;">
-          <i class="fas fa-folder-plus"></i>
-          <span data-i18n="create">إنشاء</span>
+          <i class="fas fa-folder-plus"></i><span data-i18n="create">إنشاء</span>
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: نقل لمجلد
-============================================================ -->
+<!-- MODAL: نقل لمجلد -->
 <div class="modal-overlay" id="moveModal">
   <div class="modal-box" style="max-width:400px;">
     <div class="modal-top-line"></div>
     <div class="modal-header">
       <div class="modal-title" data-i18n="moveToFolder">نقل لمجلد</div>
-      <button class="modal-close" onclick="closeModal('moveModal')">
-        <i class="fas fa-times"></i>
-      </button>
+      <button class="modal-close" onclick="closeModal('moveModal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
       <div id="moveFoldersList" style="display:flex;flex-direction:column;gap:8px;
@@ -1834,76 +1244,56 @@
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: إعادة تسمية
-============================================================ -->
+<!-- MODAL: إعادة تسمية -->
 <div class="modal-overlay" id="renameModal">
   <div class="modal-box" style="max-width:400px;">
     <div class="modal-top-line"></div>
     <div class="modal-header">
       <div class="modal-title" data-i18n="rename">إعادة تسمية</div>
-      <button class="modal-close" onclick="closeModal('renameModal')">
-        <i class="fas fa-times"></i>
-      </button>
+      <button class="modal-close" onclick="closeModal('renameModal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
       <label class="modal-label" data-i18n="newName">الاسم الجديد</label>
       <input type="text" class="modal-input" id="renameInput"
-             maxlength="100"
-             onkeydown="if(event.key==='Enter')confirmRename()"/>
+             maxlength="100" onkeydown="if(event.key==='Enter')confirmRename()"/>
       <div style="display:flex;gap:10px;">
         <button class="btn btn-ghost" onclick="closeModal('renameModal')" style="flex:1;">
           <span data-i18n="cancel">إلغاء</span>
         </button>
         <button class="btn btn-gold" onclick="confirmRename()" style="flex:2;">
-          <i class="fas fa-check"></i>
-          <span data-i18n="save">حفظ</span>
+          <i class="fas fa-check"></i><span data-i18n="save">حفظ</span>
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     MODAL: خيارات الحفظ (Standard / مجلد)
-============================================================ -->
+<!-- MODAL: خيارات الحفظ -->
 <div class="modal-overlay" id="saveOptionsModal">
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-top-line"></div>
     <div class="modal-header">
       <div class="modal-title" data-i18n="saveWhere">أين تحفظ؟</div>
-      <button class="modal-close" onclick="closeModal('saveOptionsModal')">
-        <i class="fas fa-times"></i>
-      </button>
+      <button class="modal-close" onclick="closeModal('saveOptionsModal')"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body">
-      <div style="font-size:12px;color:var(--text3);margin-bottom:14px;"
-           id="saveOptionsFileName"></div>
-
-      <!-- Standard -->
+      <div style="font-size:12px;color:var(--text3);margin-bottom:14px;" id="saveOptionsFileName"></div>
       <div class="save-option-card" onclick="confirmSaveStandard()">
-        <div class="save-option-icon"
-             style="background:rgba(201,168,76,0.1);color:var(--gold);">
+        <div class="save-option-icon" style="background:rgba(201,168,76,0.1);color:var(--gold);">
           <i class="fas fa-magic"></i>
         </div>
         <div>
           <div class="save-option-title" data-i18n="autoCategory">تصنيف تلقائي</div>
-          <div class="save-option-sub" data-i18n="autoCategorySub">
-            يُحفظ في المجلد المناسب حسب نوع الملف تلقائياً
-          </div>
+          <div class="save-option-sub"   data-i18n="autoCategorySub">يُحفظ في المجلد المناسب حسب نوع الملف تلقائياً</div>
         </div>
         <i class="fas fa-chevron-left" style="color:var(--text4);margin-right:auto;"></i>
       </div>
-
-      <!-- مجلد محدد -->
       <div id="saveOptionsFolders"></div>
     </div>
   </div>
 </div>
 
-<!-- ============================================================
-     TOAST CONTAINER
-============================================================ -->
+<!-- TOAST -->
 <div id="toastContainer"></div>
 
 <!-- ============================================================
@@ -1913,13 +1303,12 @@
 /* ============================================================
    SUPABASE CONFIG
 ============================================================ */
-const SUPABASE_URL = 'https://sldthbnigivpsqixccah.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
-const FILES_BUCKET = 'user-files';
-const FILES_TABLE  = 'user_files';
+const SUPABASE_URL  = 'https://sldthbnigivpsqixccah.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsZHRoYm5pZ2l2cHNxaXhjY2FoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc1MjM3NzcsImV4cCI6MjA5MzA5OTc3N30.Ll_Fb7jVEm5eesb6JolygdPlzhwlTTKyhABh0few_xc';
+const FILES_BUCKET  = 'user-files';
+const FILES_TABLE   = 'user_files';
 
 let _sb = null;
-
 async function initSB() {
   if (_sb) return _sb;
   if (typeof supabase === 'undefined') {
@@ -1934,7 +1323,7 @@ async function initSB() {
 }
 
 /* ============================================================
-   INDEXEDDB — مساحة مؤقتة ضخمة
+   INDEXEDDB
 ============================================================ */
 const IDB_NAME  = 'wow_files_db';
 const IDB_STORE = 'pending_uploads';
@@ -1951,7 +1340,6 @@ function openIDB() {
     req.onerror   = e => rej(e.target.error);
   });
 }
-
 async function saveToIDB(fileObj) {
   const db  = await openIDB();
   return new Promise((res, rej) => {
@@ -1961,7 +1349,6 @@ async function saveToIDB(fileObj) {
     req.onerror   = () => rej(req.error);
   });
 }
-
 async function getAllFromIDB() {
   const db = await openIDB();
   return new Promise((res, rej) => {
@@ -1971,7 +1358,6 @@ async function getAllFromIDB() {
     req.onerror   = () => rej(req.error);
   });
 }
-
 async function deleteFromIDB(id) {
   const db = await openIDB();
   return new Promise((res, rej) => {
@@ -1983,7 +1369,7 @@ async function deleteFromIDB(id) {
 }
 
 /* ============================================================
-   i18n — 3 لغات
+   i18n
 ============================================================ */
 const I18N = {
   ar: {
@@ -2090,13 +1476,20 @@ function setLang(lang) {
     const k = el.getAttribute('data-i18n-placeholder');
     if (k) el.placeholder = t(k);
   });
+  // تحديث placeholder حقول البحث
+  const gs = document.getElementById('globalSearch');
+  const ms = document.getElementById('mobileSearch');
+  if (gs) gs.placeholder = t('searchPlaceholder');
+  if (ms) ms.placeholder = t('searchPlaceholder');
+
+  // تحديث أزرار اللغة — هيدر وسايدبار
   document.querySelectorAll('.lang-btn').forEach(b => {
-    b.classList.toggle('active', b.textContent === lang.toUpperCase());
+    b.classList.toggle('active', b.textContent.trim() === lang.toUpperCase());
   });
-  // اتجاه الصفحة
-  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  document.documentElement.dir  = lang === 'ar' ? 'rtl' : 'ltr';
   document.documentElement.lang = lang;
-  // تحديث select options
+
   document.querySelectorAll('#sortSelect option').forEach(opt => {
     const k = opt.getAttribute('data-i18n');
     if (k) opt.textContent = t(k);
@@ -2125,53 +1518,40 @@ function initTheme() {
 /* ============================================================
    STATE
 ============================================================ */
-let allFiles       = [];   // كل الملفات من Supabase
-let filteredFiles  = [];   // بعد الفلترة
-let selectedIds    = new Set();
-let currentFilter  = 'all';
-let currentFolder  = null; // null = كل الملفات
-let currentSort    = 'date_desc';
-let currentView    = 'grid';
-let customFolders  = [];   // مجلدات مخصصة
-let currentCtxFile = null; // الملف المحدد في قائمة السياق
-let searchQuery    = '';
+let allFiles        = [];
+let filteredFiles   = [];
+let selectedIds     = new Set();
+let currentFilter   = 'all';
+let currentFolder   = null;
+let currentSort     = 'date_desc';
+let currentView     = 'grid';
+let customFolders   = [];
+let currentCtxFile  = null;
+let searchQuery     = '';
 let totalSavedBytes = 0;
-const recentUploads = new Set(); // لمنع التكرار من Realtime
+const recentUploads = new Set();
 
 /* ============================================================
    FILE TYPE DETECTION
 ============================================================ */
 function getFileType(name, mime) {
-  const ext  = (name || '').split('.').pop().toLowerCase();
-  const m    = (mime || '').toLowerCase();
-
-  if (m.startsWith('video/') || ['mp4','mov','avi','mkv','webm','flv','wmv','m4v'].includes(ext))
-    return 'video';
-  if (m.startsWith('audio/') || ['mp3','wav','ogg','aac','flac','m4a','wma','opus'].includes(ext))
-    return 'audio';
-  if (m.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg','bmp','tiff','heic'].includes(ext))
-    return 'image';
-  if (ext === 'pdf' || m === 'application/pdf')
-    return 'pdf';
-  if (['doc','docx','xls','xlsx','ppt','pptx','odt','ods'].includes(ext))
-    return 'doc';
-  if (['zip','rar','7z','tar','gz','bz2','xz'].includes(ext))
-    return 'archive';
+  const ext = (name || '').split('.').pop().toLowerCase();
+  const m   = (mime || '').toLowerCase();
+  if (m.startsWith('video/') || ['mp4','mov','avi','mkv','webm','flv','wmv','m4v'].includes(ext)) return 'video';
+  if (m.startsWith('audio/') || ['mp3','wav','ogg','aac','flac','m4a','wma','opus'].includes(ext)) return 'audio';
+  if (m.startsWith('image/') || ['jpg','jpeg','png','gif','webp','svg','bmp','tiff','heic'].includes(ext)) return 'image';
+  if (ext === 'pdf' || m === 'application/pdf') return 'pdf';
+  if (['doc','docx','xls','xlsx','ppt','pptx','odt','ods'].includes(ext)) return 'doc';
+  if (['zip','rar','7z','tar','gz','bz2','xz'].includes(ext)) return 'archive';
   return 'other';
 }
 
 function getTypeIcon(type) {
-  const icons = {
-    video:'fa-video', audio:'fa-music', image:'fa-image',
-    pdf:'fa-file-pdf', doc:'fa-file-word', archive:'fa-file-archive',
-    other:'fa-file'
-  };
+  const icons = { video:'fa-video', audio:'fa-music', image:'fa-image', pdf:'fa-file-pdf', doc:'fa-file-word', archive:'fa-file-archive', other:'fa-file' };
   return icons[type] || 'fa-file';
 }
 
-function getTypeBadgeClass(type) {
-  return `badge-${type}`;
-}
+function getTypeBadgeClass(type) { return `badge-${type}`; }
 
 /* ============================================================
    FORMAT HELPERS
@@ -2186,8 +1566,7 @@ function fmtSize(bytes) {
 
 function fmtDate(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr);
-  return d.toLocaleDateString(
+  return new Date(dateStr).toLocaleDateString(
     currentLang === 'ar' ? 'ar-SA' : currentLang === 'tr' ? 'tr-TR' : 'en-US',
     { day:'2-digit', month:'short', year:'numeric' }
   );
@@ -2195,15 +1574,14 @@ function fmtDate(dateStr) {
 
 function fmtDateTime(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr);
-  return d.toLocaleString(
+  return new Date(dateStr).toLocaleString(
     currentLang === 'ar' ? 'ar-SA' : currentLang === 'tr' ? 'tr-TR' : 'en-US',
     { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }
   );
 }
 
 /* ============================================================
-   AUTO FOLDER BY TYPE
+   AUTO FOLDER
 ============================================================ */
 const AUTO_FOLDERS = {
   video  : { name_ar:'فيديوهات',  name_tr:'Videolar',  name_en:'Videos',    icon:'fa-video',        color:'#f97316' },
@@ -2214,7 +1592,6 @@ const AUTO_FOLDERS = {
   archive: { name_ar:'مضغوطات',   name_tr:'Arşivler',  name_en:'Archives',  icon:'fa-file-archive', color:'#fbbf24' },
   other  : { name_ar:'أخرى',      name_tr:'Diğer',     name_en:'Other',     icon:'fa-file',         color:'#94a3b8' },
 };
-
 function getAutoFolderName(type) {
   const f = AUTO_FOLDERS[type];
   if (!f) return 'أخرى';
@@ -2222,7 +1599,7 @@ function getAutoFolderName(type) {
 }
 
 /* ============================================================
-   COMPRESSION — ضغط ذكي بدون تأثير على الجودة
+   COMPRESSION
 ============================================================ */
 async function compressImage(file, quality = 0.82) {
   return new Promise(resolve => {
@@ -2232,25 +1609,18 @@ async function compressImage(file, quality = 0.82) {
       img.onload = () => {
         const canvas = document.createElement('canvas');
         let { width, height } = img;
-
-        // تقليل الأبعاد إذا كانت كبيرة جداً (أكثر من 2000px)
         const MAX = 2000;
         if (width > MAX || height > MAX) {
           if (width > height) { height = Math.round(height * MAX/width); width = MAX; }
           else { width = Math.round(width * MAX/height); height = MAX; }
         }
-
-        canvas.width  = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
+        canvas.width = width; canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
         canvas.toBlob(blob => {
-          if (blob && blob.size < file.size) {
+          if (blob && blob.size < file.size)
             resolve({ blob, saved: file.size - blob.size, compressed: true });
-          } else {
+          else
             resolve({ blob: file, saved: 0, compressed: false });
-          }
         }, file.type === 'image/png' ? 'image/png' : 'image/jpeg', quality);
       };
       img.src = e.target.result;
@@ -2260,20 +1630,12 @@ async function compressImage(file, quality = 0.82) {
 }
 
 async function compressWithJSZip(file) {
-  // للملفات غير الصور — نضغطها في ZIP
-  if (typeof JSZip === 'undefined') {
-    await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-  }
+  if (typeof JSZip === 'undefined') await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
   const zip  = new JSZip();
   zip.file(file.name, file);
-  const blob = await zip.generateAsync({
-    type: 'blob',
-    compression: 'DEFLATE',
-    compressionOptions: { level: 6 }
-  });
-  if (blob.size < file.size * 0.95) {
+  const blob = await zip.generateAsync({ type:'blob', compression:'DEFLATE', compressionOptions:{ level:6 } });
+  if (blob.size < file.size * 0.95)
     return { blob, saved: file.size - blob.size, compressed: true, newName: file.name + '.zip' };
-  }
   return { blob: file, saved: 0, compressed: false, newName: file.name };
 }
 
@@ -2286,37 +1648,24 @@ function loadScript(src) {
 }
 
 /* ============================================================
-   SUPABASE STORAGE — رفع الملفات
+   SUPABASE STORAGE
 ============================================================ */
-async function uploadFileToSupabase(file, path, onProgress) {
+async function uploadFileToSupabase(file, path) {
   const sb = await initSB();
-
-  // تأكد من وجود الـ bucket
   const { data: buckets } = await sb.storage.listBuckets();
   const exists = buckets?.some(b => b.name === FILES_BUCKET);
-  if (!exists) {
-    await sb.storage.createBucket(FILES_BUCKET, { public: true });
-  }
+  if (!exists) await sb.storage.createBucket(FILES_BUCKET, { public: true });
 
-  // رفع الملف
-  const { data, error } = await sb.storage
-    .from(FILES_BUCKET)
-    .upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
-      contentType: file.type || 'application/octet-stream',
-    });
-
+  const { error } = await sb.storage.from(FILES_BUCKET).upload(path, file, {
+    cacheControl: '3600', upsert: false,
+    contentType: file.type || 'application/octet-stream',
+  });
   if (error) throw error;
 
-  // الرابط العام
   const { data: urlData } = sb.storage.from(FILES_BUCKET).getPublicUrl(path);
   return urlData?.publicUrl;
 }
 
-/* ============================================================
-   SUPABASE DB — حفظ بيانات الملف
-============================================================ */
 async function saveFileMeta(meta) {
   const sb = await initSB();
   const { data, error } = await sb.from(FILES_TABLE).insert([meta]).select().single();
@@ -2326,10 +1675,7 @@ async function saveFileMeta(meta) {
 
 async function loadAllFiles() {
   const sb = await initSB();
-  const { data, error } = await sb
-    .from(FILES_TABLE)
-    .select('*')
-    .order('uploaded_at', { ascending: false });
+  const { data, error } = await sb.from(FILES_TABLE).select('*').order('uploaded_at', { ascending: false });
   if (error) { console.error(error); return []; }
   return data || [];
 }
@@ -2352,58 +1698,41 @@ async function updateFileMeta(id, patch) {
 }
 
 /* ============================================================
-   STORAGE SIZE — حساب المساحة
+   STORAGE SIZE
 ============================================================ */
 async function calcStorageUsed() {
   try {
     const sb = await initSB();
-    // نحسب من الـ DB مباشرة
-    const { data } = await sb
-      .from(FILES_TABLE)
-      .select('file_size');
-
-    const used = (data || []).reduce((s, r) => s + (r.file_size || 0), 0);
-    const limit = 1 * 1024 * 1024 * 1024; // 1GB Free Plan
+    const { data } = await sb.from(FILES_TABLE).select('file_size');
+    const used  = (data || []).reduce((s, r) => s + (r.file_size || 0), 0);
+    const limit = 1073741824; // 1GB
     const pct   = Math.min((used / limit) * 100, 100);
 
-    document.getElementById('storageUsed').textContent = fmtSize(used);
+    document.getElementById('storageUsed').textContent  = fmtSize(used);
     document.getElementById('storageTotal').textContent = fmtSize(limit);
 
     const bar = document.getElementById('storageBar');
     bar.style.width = pct + '%';
-    bar.className   = 'storage-bar-fill' +
-      (pct > 80 ? ' danger' : pct > 60 ? ' warning' : '');
-
-    document.getElementById('storageStatus').textContent =
-      `Supabase Free · ${pct.toFixed(1)}% ${t('storageUsed')}`;
-
-  } catch(e) {
-    console.warn('Storage calc error:', e);
-  }
+    bar.className   = 'storage-bar-fill' + (pct > 80 ? ' danger' : pct > 60 ? ' warning' : '');
+    document.getElementById('storageStatus').textContent = `Supabase Free · ${pct.toFixed(1)}% ${t('storageUsed')}`;
+  } catch(e) { console.warn('Storage calc error:', e); }
 }
 
 /* ============================================================
-   CUSTOM FOLDERS — مجلدات مخصصة
+   CUSTOM FOLDERS
 ============================================================ */
 function loadFolders() {
-  try {
-    customFolders = JSON.parse(localStorage.getItem('mf_folders') || '[]');
-  } catch(e) { customFolders = []; }
+  try { customFolders = JSON.parse(localStorage.getItem('mf_folders') || '[]'); }
+  catch(e) { customFolders = []; }
   renderFoldersList();
 }
 
-function saveFolders() {
-  localStorage.setItem('mf_folders', JSON.stringify(customFolders));
-}
+function saveFolders() { localStorage.setItem('mf_folders', JSON.stringify(customFolders)); }
 
 function renderFoldersList() {
   const el = document.getElementById('foldersList');
   document.getElementById('statFolders').textContent = customFolders.length;
-
-  if (!customFolders.length) {
-    el.innerHTML = '';
-    return;
-  }
+  if (!customFolders.length) { el.innerHTML = ''; return; }
 
   el.innerHTML = customFolders.map(f => `
     <div class="folder-item ${currentFolder === f.id ? 'active' : ''}"
@@ -2412,7 +1741,8 @@ function renderFoldersList() {
       <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;
                    text-overflow:ellipsis;font-size:13px;">${f.name}</span>
       <div class="folder-actions">
-        <button class="folder-action-btn" onclick="event.stopPropagation();openRenameFolder('${f.id}')"
+        <button class="folder-action-btn"
+                onclick="event.stopPropagation();openRenameFolder('${f.id}')"
                 title="${t('rename')}">
           <i class="fas fa-pen"></i>
         </button>
@@ -2434,18 +1764,10 @@ function openAddFolderModal() {
 function saveNewFolder() {
   const name = document.getElementById('newFolderName').value.trim();
   if (!name) return;
-
-  const colors = ['#c9a84c','#4ade80','#60a5fa','#f97316','#a78bfa','#ef4444','#fbbf24'];
-  const folder = {
-    id    : 'f_' + Date.now(),
-    name  : name,
-    color : colors[customFolders.length % colors.length],
-    created_at: new Date().toISOString()
-  };
-
+  const colors  = ['#c9a84c','#4ade80','#60a5fa','#f97316','#a78bfa','#ef4444','#fbbf24'];
+  const folder  = { id:'f_'+Date.now(), name, color:colors[customFolders.length % colors.length], created_at:new Date().toISOString() };
   customFolders.push(folder);
-  saveFolders();
-  renderFoldersList();
+  saveFolders(); renderFoldersList();
   closeModal('addFolderModal');
   showToast(t('create') + ': ' + name, 'success');
 }
@@ -2453,10 +1775,7 @@ function saveNewFolder() {
 function deleteFolder(id) {
   customFolders = customFolders.filter(f => f.id !== id);
   saveFolders();
-  if (currentFolder === id) {
-    currentFolder = null;
-    filterByType('all');
-  }
+  if (currentFolder === id) { currentFolder = null; filterByType('all'); }
   renderFoldersList();
   showToast(t('deleteSuccess'), 'info');
 }
@@ -2465,19 +1784,12 @@ function openRenameFolder(id) {
   const f = customFolders.find(x => x.id === id);
   if (!f) return;
   const newName = prompt(t('newName'), f.name);
-  if (newName && newName.trim()) {
-    f.name = newName.trim();
-    saveFolders();
-    renderFoldersList();
-  }
+  if (newName && newName.trim()) { f.name = newName.trim(); saveFolders(); renderFoldersList(); }
 }
 
 function filterByFolder(id) {
-  currentFolder = id;
-  currentFilter = 'all';
-  updateSidebarActive();
-  applyFiltersAndRender();
-
+  currentFolder = id; currentFilter = 'all';
+  updateSidebarActive(); applyFiltersAndRender();
   const f = customFolders.find(x => x.id === id);
   document.getElementById('breadcrumb').innerHTML = `
     <span class="breadcrumb-item" onclick="filterByType('all')">${t('allFiles')}</span>
@@ -2489,53 +1801,33 @@ function filterByFolder(id) {
    FILTER & SORT
 ============================================================ */
 function filterByType(type) {
-  currentFilter = type;
-  currentFolder = null;
-  updateSidebarActive();
-  applyFiltersAndRender();
-
+  currentFilter = type; currentFolder = null;
+  updateSidebarActive(); applyFiltersAndRender();
   document.getElementById('breadcrumb').innerHTML = `
     <span class="breadcrumb-item active">${t(type === 'all' ? 'allFiles' : type + 's') || type}</span>`;
 }
 
 function updateSidebarActive() {
   document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-  document.querySelectorAll('.folder-item').forEach(el => el.classList.remove('active'));
-
+  document.querySelectorAll('.folder-item').forEach(el  => el.classList.remove('active'));
   if (currentFolder) {
     document.querySelectorAll('.folder-item').forEach(el => {
-      if (el.getAttribute('onclick')?.includes(currentFolder))
-        el.classList.add('active');
+      if (el.getAttribute('onclick')?.includes(currentFolder)) el.classList.add('active');
     });
   } else {
-    const el = document.getElementById(`cat-${currentFilter}`);
-    if (el) el.classList.add('active');
+    document.getElementById(`cat-${currentFilter}`)?.classList.add('active');
   }
 }
 
 function applyFiltersAndRender() {
   let list = [...allFiles];
-
-  // فلتر النوع
-  if (currentFilter !== 'all') {
-    list = list.filter(f => f.file_type === currentFilter);
-  }
-
-  // فلتر المجلد
-  if (currentFolder) {
-    list = list.filter(f => f.folder_id === currentFolder);
-  }
-
-  // بحث
+  if (currentFilter !== 'all') list = list.filter(f => f.file_type === currentFilter);
+  if (currentFolder)           list = list.filter(f => f.folder_id === currentFolder);
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     list = list.filter(f => f.file_name?.toLowerCase().includes(q));
   }
-
-  // ترتيب
-  list = sortFiles(list, currentSort);
-
-  filteredFiles = list;
+  filteredFiles = sortFiles(list, currentSort);
   renderFiles();
 }
 
@@ -2553,14 +1845,16 @@ function sortFiles(list, sort) {
   });
 }
 
-function onSortChange(val) {
-  currentSort = val;
-  applyFiltersAndRender();
-}
+function onSortChange(val) { currentSort = val; applyFiltersAndRender(); }
 
 function onSearch(val) {
   searchQuery = val.trim();
   applyFiltersAndRender();
+}
+
+function syncSearch(val) {
+  const gs = document.getElementById('globalSearch');
+  if (gs) gs.value = val;
 }
 
 /* ============================================================
@@ -2570,7 +1864,6 @@ function renderFiles() {
   const grid    = document.getElementById('filesGrid');
   const empty   = document.getElementById('emptyState');
   const loading = document.getElementById('loadingState');
-
   loading.style.display = 'none';
 
   if (!filteredFiles.length) {
@@ -2578,17 +1871,15 @@ function renderFiles() {
     empty.style.display = 'flex';
     return;
   }
-
   empty.style.display = 'none';
   grid.style.display  = currentView === 'list' ? 'flex' : 'grid';
-  grid.className       = currentView === 'list' ? 'files-list' :
-                         currentView === 'grid2' ? 'files-grid small' : 'files-grid';
+  grid.className      = currentView === 'list' ? 'files-list' :
+                        currentView === 'grid2' ? 'files-grid small' : 'files-grid';
 
   grid.innerHTML = filteredFiles.map((f, idx) =>
     currentView === 'list' ? buildFileRow(f, idx) : buildFileCard(f, idx)
   ).join('');
 
-  // تأخير الأنيميشن
   grid.querySelectorAll('.file-card, .file-row').forEach((el, i) => {
     el.style.animationDelay = (i * 0.03) + 's';
   });
@@ -2597,13 +1888,11 @@ function renderFiles() {
 function buildFileCard(f, idx) {
   const type     = f.file_type || 'other';
   const isImg    = type === 'image';
-  const isVid    = type === 'video';
   const selected = selectedIds.has(f.id);
   const delay    = Math.min(idx, 12) * 0.03;
 
   const thumb = isImg
-    ? `<img src="${f.file_url}" alt="${f.file_name}"
-            loading="lazy" draggable="false"
+    ? `<img src="${f.file_url}" alt="${escHtml(f.file_name)}" loading="lazy" draggable="false"
             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"/>
        <div class="file-type-icon type-${type}" style="display:none;">
          <i class="fas ${getTypeIcon(type)}"></i>
@@ -2614,25 +1903,18 @@ function buildFileCard(f, idx) {
 
   return `
     <div class="file-card ${selected ? 'selected' : ''}"
-         id="fc-${f.id}"
-         style="animation-delay:${delay}s"
+         id="fc-${f.id}" style="animation-delay:${delay}s"
          onclick="handleCardClick(event,'${f.id}')"
          oncontextmenu="openCtxMenu(event,'${f.id}');return false;"
          ondblclick="openPreview('${f.id}')">
-
       <div class="file-card-thumb">
         ${thumb}
-        <span class="file-type-badge ${getTypeBadgeClass(type)}">
-          ${type.toUpperCase()}
-        </span>
+        <span class="file-type-badge ${getTypeBadgeClass(type)}">${type.toUpperCase()}</span>
         ${f.compressed ? '<span class="compress-badge">ZIP</span>' : ''}
-        <div class="select-check">
-          <i class="fas fa-check"></i>
-        </div>
+        <div class="select-check"><i class="fas fa-check"></i></div>
       </div>
-
       <div class="file-card-info">
-        <div class="file-card-name" title="${f.file_name}">${f.file_name}</div>
+        <div class="file-card-name" title="${escHtml(f.file_name)}">${escHtml(f.file_name)}</div>
         <div class="file-card-meta">
           <span>${fmtSize(f.file_size)}</span>
           <span>${fmtDate(f.uploaded_at)}</span>
@@ -2645,50 +1927,46 @@ function buildFileRow(f, idx) {
   const type     = f.file_type || 'other';
   const selected = selectedIds.has(f.id);
   const delay    = Math.min(idx, 12) * 0.025;
+  const folder   = customFolders.find(x => x.id === f.folder_id);
 
   return `
     <div class="file-row ${selected ? 'selected' : ''}"
-         id="fr-${f.id}"
-         style="animation-delay:${delay}s"
+         id="fr-${f.id}" style="animation-delay:${delay}s"
          onclick="handleCardClick(event,'${f.id}')"
          oncontextmenu="openCtxMenu(event,'${f.id}');return false;"
          ondblclick="openPreview('${f.id}')">
-
       <div class="file-row-icon type-${type}">
         <i class="fas ${getTypeIcon(type)}"></i>
       </div>
-
-      <div class="file-row-name" title="${f.file_name}">${f.file_name}</div>
-
+      <div class="file-row-name" title="${escHtml(f.file_name)}">${escHtml(f.file_name)}</div>
       <div class="file-row-meta">
         <span>${fmtSize(f.file_size)}</span>
         <span>${fmtDate(f.uploaded_at)}</span>
-        ${f.folder_id ? `<span style="color:var(--gold);font-size:10px;">
-          <i class="fas fa-folder"></i>
-          ${customFolders.find(x=>x.id===f.folder_id)?.name || ''}
+        ${folder ? `<span style="color:var(--gold);font-size:10px;">
+          <i class="fas fa-folder"></i> ${escHtml(folder.name)}
         </span>` : ''}
       </div>
-
       <div class="file-row-actions">
-        <button class="view-btn" onclick="event.stopPropagation();openPreview('${f.id}')"
-                title="${t('preview')}">
+        <button class="view-btn" onclick="event.stopPropagation();openPreview('${f.id}')" title="${t('preview')}">
           <i class="fas fa-eye"></i>
         </button>
-        <button class="view-btn" onclick="event.stopPropagation();downloadFile('${f.id}')"
-                title="${t('download')}">
+        <button class="view-btn" onclick="event.stopPropagation();downloadFile('${f.id}')" title="${t('download')}">
           <i class="fas fa-download"></i>
         </button>
-        <button class="view-btn" onclick="event.stopPropagation();openShareModal('${f.id}')"
-                title="${t('share')}">
+        <button class="view-btn" onclick="event.stopPropagation();openShareModal('${f.id}')" title="${t('share')}">
           <i class="fas fa-share-alt"></i>
         </button>
         <button class="view-btn" style="color:var(--danger);"
-                onclick="event.stopPropagation();deleteFile('${f.id}')"
-                title="${t('delete')}">
+                onclick="event.stopPropagation();deleteFile('${f.id}')" title="${t('delete')}">
           <i class="fas fa-trash-alt"></i>
         </button>
       </div>
     </div>`;
+}
+
+/* XSS protection */
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 /* ============================================================
@@ -2696,9 +1974,7 @@ function buildFileRow(f, idx) {
 ============================================================ */
 function setView(v) {
   currentView = v;
-  ['viewGrid','viewGrid2','viewList'].forEach(id =>
-    document.getElementById(id)?.classList.remove('active')
-  );
+  ['viewGrid','viewGrid2','viewList'].forEach(id => document.getElementById(id)?.classList.remove('active'));
   const map = { grid:'viewGrid', grid2:'viewGrid2', list:'viewList' };
   document.getElementById(map[v])?.classList.add('active');
   renderFiles();
@@ -2708,19 +1984,14 @@ function setView(v) {
    SELECTION
 ============================================================ */
 function handleCardClick(e, id) {
-  if (e.ctrlKey || e.metaKey || e.shiftKey || selectedIds.size > 0) {
-    toggleSelect(id);
-  }
+  if (e.ctrlKey || e.metaKey || e.shiftKey || selectedIds.size > 0) toggleSelect(id);
 }
 
 function toggleSelect(id) {
   if (selectedIds.has(id)) selectedIds.delete(id);
   else selectedIds.add(id);
-
-  // تحديث المظهر
   const card = document.getElementById(`fc-${id}`) || document.getElementById(`fr-${id}`);
   if (card) card.classList.toggle('selected', selectedIds.has(id));
-
   updateBulkBar();
 }
 
@@ -2729,26 +2000,21 @@ function toggleSelectAll() {
     clearSelection();
   } else {
     filteredFiles.forEach(f => selectedIds.add(f.id));
-    document.querySelectorAll('.file-card, .file-row').forEach(el =>
-      el.classList.add('selected')
-    );
+    document.querySelectorAll('.file-card, .file-row').forEach(el => el.classList.add('selected'));
     updateBulkBar();
   }
 }
 
 function clearSelection() {
   selectedIds.clear();
-  document.querySelectorAll('.file-card.selected, .file-row.selected').forEach(el =>
-    el.classList.remove('selected')
-  );
+  document.querySelectorAll('.file-card.selected, .file-row.selected').forEach(el => el.classList.remove('selected'));
   updateBulkBar();
 }
 
 function updateBulkBar() {
   const bar = document.getElementById('bulkBar');
-  const cnt = document.getElementById('bulkCount');
   const n   = selectedIds.size;
-  cnt.innerHTML = `${n} <span data-i18n="selected">${t('selected')}</span>`;
+  document.getElementById('bulkCount').innerHTML = `${n} <span>${t('selected')}</span>`;
   n > 0 ? bar.classList.add('visible') : bar.classList.remove('visible');
 }
 
@@ -2758,59 +2024,45 @@ function updateBulkBar() {
 function updateStats() {
   const total = allFiles.length;
   const size  = allFiles.reduce((s, f) => s + (f.file_size || 0), 0);
-
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statSize').textContent  = fmtSize(size);
   document.getElementById('statSaved').textContent = fmtSize(totalSavedBytes);
 
-  // counts per type
-  const types = ['video','audio','image','pdf','doc','archive','other'];
-  types.forEach(type => {
-    const cnt = allFiles.filter(f => f.file_type === type).length;
-    const el  = document.getElementById(`cnt-${type}`);
-    if (el) el.textContent = cnt;
+  ['video','audio','image','pdf','doc','archive','other'].forEach(type => {
+    const el = document.getElementById(`cnt-${type}`);
+    if (el) el.textContent = allFiles.filter(f => f.file_type === type).length;
   });
   const allEl = document.getElementById('cnt-all');
   if (allEl) allEl.textContent = total;
 }
 
 /* ============================================================
-   FILE UPLOAD — الرفع الكامل
+   FILE UPLOAD
 ============================================================ */
 async function handleFileSelect(files) {
   if (!files?.length) return;
   const arr = Array.from(files);
+  // reset input لإتاحة رفع نفس الملف مجدداً
+  document.getElementById('fileInput').value = '';
 
-  // إذا ملف واحد فقط — اعرض خيارات الحفظ
-  if (arr.length === 1) {
-    openSaveOptions(arr[0]);
-  } else {
-    // رفع متعدد — تصنيف تلقائي
-    for (const file of arr) {
-      await uploadSingleFile(file, null, true);
-    }
-  }
+  if (arr.length === 1) openSaveOptions(arr[0]);
+  else for (const file of arr) await uploadSingleFile(file, null, true);
 }
 
 function openSaveOptions(file) {
-  const type = getFileType(file.name, file.type);
-  document.getElementById('saveOptionsFileName').textContent =
-    `📄 ${file.name} · ${fmtSize(file.size)}`;
-
-  // أزرار المجلدات المخصصة
-  const foldersHtml = customFolders.map(f => `
-    <div class="save-option-card" onclick="uploadSingleFile(window._pendingFile,'${f.id}',false);closeModal('saveOptionsModal')">
+  document.getElementById('saveOptionsFileName').textContent = `📄 ${file.name} · ${fmtSize(file.size)}`;
+  document.getElementById('saveOptionsFolders').innerHTML = customFolders.map(f => `
+    <div class="save-option-card"
+         onclick="uploadSingleFile(window._pendingFile,'${f.id}',false);closeModal('saveOptionsModal')">
       <div class="save-option-icon" style="background:${f.color}18;color:${f.color};">
         <i class="fas fa-folder"></i>
       </div>
       <div>
-        <div class="save-option-title">${f.name}</div>
+        <div class="save-option-title">${escHtml(f.name)}</div>
         <div class="save-option-sub">${t('folder')}</div>
       </div>
       <i class="fas fa-chevron-left" style="color:var(--text4);margin-right:auto;"></i>
     </div>`).join('');
-
-  document.getElementById('saveOptionsFolders').innerHTML = foldersHtml;
   window._pendingFile = file;
   openModal('saveOptionsModal');
 }
@@ -2822,20 +2074,13 @@ function confirmSaveStandard() {
 }
 
 async function uploadSingleFile(file, folderId = null, autoCategory = true) {
-  const type      = getFileType(file.name, file.type);
-  const finalFolder = folderId || (autoCategory ? type : null);
-
-  // إنشاء بطاقة مؤقتة في الـ UI
-  const tempId  = 'temp_' + Date.now();
+  const type        = getFileType(file.name, file.type);
+  const tempId      = 'temp_' + Date.now();
   addTempCard(tempId, file, type);
 
   try {
-    // ── 1. ضغط الملف ──────────────────────────────
     showToast(t('compressing'), 'info');
-    let uploadBlob = file;
-    let compressed = false;
-    let savedBytes = 0;
-    let finalName  = file.name;
+    let uploadBlob = file, compressed = false, savedBytes = 0, finalName = file.name;
 
     if (type === 'image') {
       const result = await compressImage(file, 0.82);
@@ -2844,56 +2089,47 @@ async function uploadSingleFile(file, folderId = null, autoCategory = true) {
       savedBytes = result.saved;
     } else if (['doc','archive','other'].includes(type) && file.size > 100 * 1024) {
       const result = await compressWithJSZip(file);
-      uploadBlob = result.blob;
-      compressed = result.compressed;
-      savedBytes = result.saved;
+      uploadBlob  = result.blob;
+      compressed  = result.compressed;
+      savedBytes  = result.saved;
       if (result.newName) finalName = result.newName;
     }
 
     totalSavedBytes += savedBytes;
 
-    // ── 2. رفع لـ Supabase Storage ─────────────────
-    const ext      = finalName.split('.').pop();
-    const safeName = finalName.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const path     = `${type}s/${Date.now()}_${safeName}`;
+    // رفع لـ Supabase Storage
+    const safeName  = finalName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path      = `${type}s/${Date.now()}_${safeName}`;
 
     updateTempProgress(tempId, 30);
-
-    const publicUrl = await uploadFileToSupabase(
-      uploadBlob,
-      path,
-      pct => updateTempProgress(tempId, pct)
-    );
-
+    const publicUrl = await uploadFileToSupabase(uploadBlob, path);
     updateTempProgress(tempId, 80);
 
-    // ── 3. حفظ البيانات في Supabase DB ─────────────
+    // حفظ البيانات في DB
     const meta = {
-      file_name    : finalName,
-      file_url     : publicUrl,
-      file_path    : path,
-      file_size    : uploadBlob.size,
-      original_size: file.size,
-      file_type    : type,
-      mime_type    : file.type,
-      folder_id    : folderId || null,
-      auto_folder  : autoCategory ? type : null,
-      compressed   : compressed,
-      saved_bytes  : savedBytes,
-      uploaded_at  : new Date().toISOString(),
+      file_name     : finalName,
+      file_url      : publicUrl,
+      file_path     : path,
+      file_size     : uploadBlob.size,
+      original_size : file.size,
+      file_type     : type,
+      mime_type     : file.type,
+      folder_id     : folderId || null,
+      auto_folder   : autoCategory ? type : null,
+      compressed    : compressed,
+      saved_bytes   : savedBytes,
+      uploaded_at   : new Date().toISOString(),
       download_count: 0,
     };
 
-    // حفظ في IndexedDB أولاً كنسخة احتياطية
     await saveToIDB({ ...meta, temp_id: tempId });
 
     const saved = await saveFileMeta(meta);
-recentUploads.add(saved.id);
-setTimeout(() => recentUploads.delete(saved.id), 10000);
+    recentUploads.add(saved.id);
+    setTimeout(() => recentUploads.delete(saved.id), 10000);
 
     updateTempProgress(tempId, 100);
 
-    // ── 4. تحديث الـ UI ────────────────────────────
     setTimeout(() => {
       removeTempCard(tempId);
       allFiles.unshift(saved);
@@ -2907,8 +2143,6 @@ setTimeout(() => recentUploads.delete(saved.id), 10000);
     console.error('Upload error:', err);
     removeTempCard(tempId);
     showToast(t('uploadError') + ': ' + (err.message || ''), 'error');
-
-    // احفظ في IndexedDB للمحاولة لاحقاً
     await saveToIDB({
       file_name : file.name,
       file_size : file.size,
@@ -2921,16 +2155,14 @@ setTimeout(() => recentUploads.delete(saved.id), 10000);
   }
 }
 
-/* ── بطاقة مؤقتة أثناء الرفع ── */
+/* بطاقة مؤقتة أثناء الرفع */
 function addTempCard(tempId, file, type) {
   const grid = document.getElementById('filesGrid');
-  if (!grid || grid.style.display === 'none') {
-    grid.style.display = currentView === 'list' ? 'flex' : 'grid';
-    document.getElementById('emptyState').style.display = 'none';
-  }
+  grid.style.display = currentView === 'list' ? 'flex' : 'grid';
+  document.getElementById('emptyState').style.display = 'none';
 
-  const div = document.createElement('div');
-  div.id    = `temp-${tempId}`;
+  const div     = document.createElement('div');
+  div.id        = `temp-${tempId}`;
   div.className = 'file-card';
   div.style.cssText = 'opacity:0.7;pointer-events:none;';
   div.innerHTML = `
@@ -2946,15 +2178,12 @@ function addTempCard(tempId, file, type) {
       </div>
     </div>
     <div class="file-card-info">
-      <div class="file-card-name">${file.name}</div>
+      <div class="file-card-name">${escHtml(file.name)}</div>
       <div class="file-card-meta">
         <span>${fmtSize(file.size)}</span>
-        <span style="color:var(--gold);">
-          <i class="fas fa-spinner fa-spin"></i>
-        </span>
+        <span style="color:var(--gold);"><i class="fas fa-spinner fa-spin"></i></span>
       </div>
     </div>`;
-
   grid.insertBefore(div, grid.firstChild);
 }
 
@@ -2973,52 +2202,41 @@ function removeTempCard(tempId) {
    DOWNLOAD
 ============================================================ */
 async function downloadFile(id) {
-  const f = allFiles.find(x => x.id === id) || filteredFiles.find(x => x.id === id);
+  const f = allFiles.find(x => x.id === id);
   if (!f) return;
-
   showToast(t('download') + '...', 'info');
-
   try {
     const res  = await fetch(f.file_url);
     const blob = await res.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
-    a.href     = url;
-    a.download = f.file_name;
-    document.body.appendChild(a);
-    a.click();
+    a.href = url; a.download = f.file_name;
+    document.body.appendChild(a); a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 2000);
 
-    // تحديث عداد التنزيل + تاريخه
     await updateFileMeta(id, {
-      download_count: (f.download_count || 0) + 1,
-      last_downloaded: new Date().toISOString()
+      download_count  : (f.download_count || 0) + 1,
+      last_downloaded : new Date().toISOString()
     });
     const idx = allFiles.findIndex(x => x.id === id);
     if (idx !== -1) {
       allFiles[idx].download_count  = (f.download_count || 0) + 1;
       allFiles[idx].last_downloaded = new Date().toISOString();
     }
-
   } catch(e) {
-    // fallback — فتح في تبويب جديد
     window.open(f.file_url, '_blank');
   }
 }
 
-/* ── تنزيل جماعي ZIP ── */
 async function bulkDownload() {
   const selected = allFiles.filter(f => selectedIds.has(f.id));
   if (!selected.length) return;
-
-  if (typeof JSZip === 'undefined') {
+  if (typeof JSZip === 'undefined')
     await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
-  }
 
   showToast(t('download') + '...', 'info');
   const zip = new JSZip();
-
   for (const f of selected) {
     try {
       const res  = await fetch(f.file_url);
@@ -3026,17 +2244,13 @@ async function bulkDownload() {
       zip.file(f.file_name, blob);
     } catch(e) { console.warn('Skip:', f.file_name); }
   }
-
   const blob = await zip.generateAsync({ type:'blob', compression:'STORE' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href     = url;
-  a.download = `ملفاتي_${Date.now()}.zip`;
-  document.body.appendChild(a);
-  a.click();
+  a.href = url; a.download = `ملفاتي_${Date.now()}.zip`;
+  document.body.appendChild(a); a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 2000);
-
   clearSelection();
   showToast(t('download') + ' ✓', 'success');
 }
@@ -3047,17 +2261,12 @@ async function bulkDownload() {
 async function deleteFile(id) {
   const f = allFiles.find(x => x.id === id);
   if (!f) return;
-
   if (!confirm(`${t('delete')}: ${f.file_name}?`)) return;
-
   try {
     await deleteFileMeta(id);
     if (f.file_path) await deleteFileStorage(f.file_path);
-
     allFiles = allFiles.filter(x => x.id !== id);
-    applyFiltersAndRender();
-    updateStats();
-    calcStorageUsed();
+    applyFiltersAndRender(); updateStats(); calcStorageUsed();
     showToast(t('deleteSuccess'), 'success');
   } catch(e) {
     showToast(t('deleteError'), 'error');
@@ -3068,7 +2277,6 @@ async function bulkDelete() {
   const ids = [...selectedIds];
   if (!ids.length) return;
   if (!confirm(`${t('delete')} ${ids.length} ${t('selected')}?`)) return;
-
   for (const id of ids) {
     const f = allFiles.find(x => x.id === id);
     if (!f) continue;
@@ -3077,12 +2285,8 @@ async function bulkDelete() {
       if (f.file_path) await deleteFileStorage(f.file_path);
     } catch(e) { console.warn('Delete error:', id); }
   }
-
   allFiles = allFiles.filter(f => !ids.includes(f.id));
-  clearSelection();
-  applyFiltersAndRender();
-  updateStats();
-  calcStorageUsed();
+  clearSelection(); applyFiltersAndRender(); updateStats(); calcStorageUsed();
   showToast(t('deleteSuccess'), 'success');
 }
 
@@ -3090,10 +2294,9 @@ async function bulkDelete() {
    SHARE
 ============================================================ */
 function openShareModal(id) {
-  const f = allFiles.find(x => x.id === id) || filteredFiles.find(x => x.id === id);
+  const f = allFiles.find(x => x.id === id);
   if (!f) return;
   currentCtxFile = id;
-
   document.getElementById('shareLinkInp').value = f.file_url;
   openModal('shareModal');
 }
@@ -3102,39 +2305,27 @@ function copyShareLink() {
   const inp = document.getElementById('shareLinkInp');
   navigator.clipboard?.writeText(inp.value)
     .then(() => showToast(t('copied'), 'success'))
-    .catch(() => {
-      inp.select();
-      document.execCommand('copy');
-      showToast(t('copied'), 'success');
-    });
+    .catch(() => { inp.select(); document.execCommand('copy'); showToast(t('copied'), 'success'); });
 }
 
 function shareViaWhatsApp() {
-  const url  = document.getElementById('shareLinkInp').value;
-  const text = encodeURIComponent(url);
-  window.open(`https://wa.me/?text=${text}`, '_blank');
+  const url = document.getElementById('shareLinkInp').value;
+  window.open(`https://wa.me/?text=${encodeURIComponent(url)}`, '_blank');
 }
 
 async function shareViaNative() {
   const url = document.getElementById('shareLinkInp').value;
   if (navigator.share) {
-    try {
-      await navigator.share({ title: 'ملفاتي', url });
-    } catch(e) {}
-  } else {
-    copyShareLink();
-  }
+    try { await navigator.share({ title:'ملفاتي', url }); } catch(e) {}
+  } else { copyShareLink(); }
 }
 
 async function bulkShare() {
   const selected = allFiles.filter(f => selectedIds.has(f.id));
   if (!selected.length) return;
-
   const links = selected.map(f => f.file_url).join('\n');
   if (navigator.share) {
-    try {
-      await navigator.share({ title: 'ملفاتي', text: links });
-    } catch(e) {}
+    try { await navigator.share({ title:'ملفاتي', text:links }); } catch(e) {}
   } else {
     navigator.clipboard?.writeText(links);
     showToast(t('copied'), 'success');
@@ -3145,7 +2336,7 @@ async function bulkShare() {
    PREVIEW
 ============================================================ */
 function openPreview(id) {
-  const f = allFiles.find(x => x.id === id) || filteredFiles.find(x => x.id === id);
+  const f = allFiles.find(x => x.id === id);
   if (!f) return;
   currentCtxFile = id;
 
@@ -3154,10 +2345,9 @@ function openPreview(id) {
   const meta    = document.getElementById('previewMeta');
   document.getElementById('previewTitle').textContent = f.file_name;
 
-  // محتوى المعاينة
   if (type === 'image') {
     content.innerHTML = `
-      <img src="${f.file_url}" alt="${f.file_name}"
+      <img src="${f.file_url}" alt="${escHtml(f.file_name)}"
            class="file-preview-img" draggable="false"
            onerror="this.style.opacity='0.3'"/>`;
   } else if (type === 'video') {
@@ -3172,7 +2362,7 @@ function openPreview(id) {
           <i class="fas fa-music"></i>
         </div>
         <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:12px;">
-          ${f.file_name}
+          ${escHtml(f.file_name)}
         </div>
         <audio class="audio-player" controls>
           <source src="${f.file_url}" type="${f.mime_type || 'audio/mpeg'}"/>
@@ -3186,8 +2376,7 @@ function openPreview(id) {
         </div>
         <a href="${f.file_url}" target="_blank" rel="noopener"
            class="btn btn-gold" style="display:inline-flex;">
-          <i class="fas fa-external-link-alt"></i>
-          فتح PDF
+          <i class="fas fa-external-link-alt"></i> فتح PDF
         </a>
       </div>`;
   } else {
@@ -3198,16 +2387,15 @@ function openPreview(id) {
                     font-size:32px;margin:0 auto 14px;">
           <i class="fas ${getTypeIcon(type)}"></i>
         </div>
-        <div style="font-size:13px;color:var(--text3);">${f.file_name}</div>
+        <div style="font-size:13px;color:var(--text3);">${escHtml(f.file_name)}</div>
       </div>`;
   }
 
-  // معلومات الملف
   const folder = customFolders.find(x => x.id === f.folder_id);
   meta.innerHTML = `
     <div class="file-info-item">
       <div class="file-info-label">${t('fileName')}</div>
-      <div class="file-info-val" style="font-size:11px;word-break:break-all;">${f.file_name}</div>
+      <div class="file-info-val" style="font-size:11px;word-break:break-all;">${escHtml(f.file_name)}</div>
     </div>
     <div class="file-info-item">
       <div class="file-info-label">${t('fileSize')}</div>
@@ -3237,7 +2425,7 @@ function openPreview(id) {
       <div class="file-info-val">
         ${folder
           ? `<span style="color:${folder.color};">
-               <i class="fas fa-folder"></i> ${folder.name}
+               <i class="fas fa-folder"></i> ${escHtml(folder.name)}
              </span>`
           : getAutoFolderName(type)}
       </div>
@@ -3265,12 +2453,19 @@ function openCtxMenu(e, id) {
   const menu = document.getElementById('ctxMenu');
   menu.style.display = 'block';
 
-  // حساب الموضع
-  const x = e.clientX, y = e.clientY;
+  // في الموبايل يظهر من الأسفل — لا نحتاج حساب موضع
+  if (window.innerWidth <= 600) {
+    // إضافة overlay لإغلاقه
+    setTimeout(() => {
+      document.addEventListener('click', closeCtxMenu, { once: true });
+    }, 50);
+    return;
+  }
+
+  const x  = e.clientX, y = e.clientY;
   const mw = menu.offsetWidth  || 180;
   const mh = menu.offsetHeight || 280;
   const ww = window.innerWidth, wh = window.innerHeight;
-
   menu.style.left = (x + mw > ww ? x - mw : x) + 'px';
   menu.style.top  = (y + mh > wh ? y - mh : y) + 'px';
 
@@ -3287,7 +2482,6 @@ function ctxAction(action) {
   closeCtxMenu();
   const id = currentCtxFile;
   if (!id) return;
-
   switch(action) {
     case 'preview':  openPreview(id);     break;
     case 'download': downloadFile(id);    break;
@@ -3306,14 +2500,12 @@ function openRenameModal(id) {
   const f = allFiles.find(x => x.id === id);
   if (!f) return;
   currentCtxFile = id;
-
   document.getElementById('renameInput').value = f.file_name;
   openModal('renameModal');
   setTimeout(() => {
-    const inp = document.getElementById('renameInput');
-    inp.focus();
-    // تحديد الاسم بدون الامتداد
+    const inp    = document.getElementById('renameInput');
     const dotIdx = f.file_name.lastIndexOf('.');
+    inp.focus();
     if (dotIdx > 0) inp.setSelectionRange(0, dotIdx);
     else inp.select();
   }, 300);
@@ -3323,7 +2515,6 @@ async function confirmRename() {
   const id      = currentCtxFile;
   const newName = document.getElementById('renameInput').value.trim();
   if (!id || !newName) return;
-
   try {
     await updateFileMeta(id, { file_name: newName });
     const idx = allFiles.findIndex(x => x.id === id);
@@ -3346,8 +2537,9 @@ function openMoveModal(id) {
   if (!customFolders.length) {
     list.innerHTML = `
       <div style="text-align:center;padding:30px;color:var(--text3);">
-        <i class="fas fa-folder-open" style="font-size:32px;margin-bottom:12px;display:block;
-           color:rgba(201,168,76,0.15);"></i>
+        <i class="fas fa-folder-open"
+           style="font-size:32px;margin-bottom:12px;display:block;
+                  color:rgba(201,168,76,0.15);"></i>
         <div style="font-size:12px;">${t('newFolder')}</div>
       </div>`;
   } else {
@@ -3357,12 +2549,11 @@ function openMoveModal(id) {
           <i class="fas fa-folder"></i>
         </div>
         <div>
-          <div class="save-option-title">${f.name}</div>
+          <div class="save-option-title">${escHtml(f.name)}</div>
         </div>
         <i class="fas fa-chevron-left" style="color:var(--text4);margin-right:auto;"></i>
       </div>`).join('');
   }
-
   openModal('moveModal');
 }
 
@@ -3392,9 +2583,8 @@ function initDragDrop() {
   });
 
   document.addEventListener('dragleave', e => {
-    if (!e.relatedTarget || e.relatedTarget === document.documentElement) {
+    if (!e.relatedTarget || e.relatedTarget === document.documentElement)
       zone.classList.remove('active');
-    }
   });
 
   document.addEventListener('drop', e => {
@@ -3406,13 +2596,26 @@ function initDragDrop() {
 }
 
 /* ============================================================
-   SIDEBAR TOGGLE (mobile)
+   SIDEBAR TOGGLE
 ============================================================ */
 function toggleSidebar() {
-  const sb  = document.getElementById('sidebar');
-  const ov  = document.getElementById('sidebarOverlay');
+  const sb   = document.getElementById('sidebar');
+  const ov   = document.getElementById('sidebarOverlay');
+  const btn  = document.getElementById('mobFilterBtn');
   const open = sb.classList.toggle('open');
   ov.classList.toggle('active', open);
+  if (btn) btn.classList.toggle('active', open);
+}
+
+function closeSidebarMobile() {
+  if (window.innerWidth <= 900) {
+    const sb  = document.getElementById('sidebar');
+    const ov  = document.getElementById('sidebarOverlay');
+    const btn = document.getElementById('mobFilterBtn');
+    sb.classList.remove('open');
+    ov.classList.remove('active');
+    if (btn) btn.classList.remove('active');
+  }
 }
 
 /* ============================================================
@@ -3424,11 +2627,16 @@ function openModal(id) {
 }
 
 function closeModal(id) {
+  // إيقاف الفيديو/الصوت عند الإغلاق
+  if (id === 'previewModal') {
+    document.querySelectorAll('#previewContent video, #previewContent audio').forEach(el => {
+      el.pause(); el.src = '';
+    });
+  }
   document.getElementById(id)?.classList.remove('active');
   document.body.style.overflow = '';
 }
 
-// إغلاق عند الضغط على الخلفية
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => {
     if (e.target === el) closeModal(el.id);
@@ -3442,14 +2650,11 @@ function showToast(msg, type = 'info') {
   const container = document.getElementById('toastContainer');
   const toast     = document.createElement('div');
   toast.className = `toast toast-${type}`;
-
-  const icons = { success:'fa-check-circle', error:'fa-exclamation-circle', info:'fa-info-circle' };
+  const icons  = { success:'fa-check-circle', error:'fa-exclamation-circle', info:'fa-info-circle' };
   const colors = { success:'#4ade80', error:'#ef4444', info:'#c9a84c' };
-
   toast.innerHTML = `
     <i class="fas ${icons[type]}" style="color:${colors[type]};font-size:14px;"></i>
-    ${msg}`;
-
+    ${escHtml(msg)}`;
   container.appendChild(toast);
   setTimeout(() => {
     toast.style.transition = 'all 0.3s ease';
@@ -3460,52 +2665,53 @@ function showToast(msg, type = 'info') {
 }
 
 /* ============================================================
-   HISTORY API — رجوع للخلف
+   HISTORY API
 ============================================================ */
 window.addEventListener('popstate', () => {
-  // إغلاق أي modal مفتوح
-  const openModal = document.querySelector('.modal-overlay.active');
-  if (openModal) {
-    closeModal(openModal.id);
+  const openModalEl = document.querySelector('.modal-overlay.active');
+  if (openModalEl) {
+    closeModal(openModalEl.id);
     history.pushState(null, '');
     return;
   }
-
-  // إغلاق السايدبار في الموبايل
   const sb = document.getElementById('sidebar');
   if (sb.classList.contains('open')) {
     toggleSidebar();
     history.pushState(null, '');
     return;
   }
-
-  // الرجوع لـ index.html
   window.location.href = './index.html';
 });
 
 history.pushState(null, '');
 
 /* ============================================================
-   RESPONSIVE — إظهار زر السايدبار في الموبايل
+   RESPONSIVE CHECK
 ============================================================ */
 function checkMobile() {
   const isMobile = window.innerWidth <= 900;
   document.getElementById('sidebarToggle').style.display = isMobile ? 'flex' : 'none';
-  document.querySelector('.header-search-wrap').style.display = isMobile ? 'none' : 'block';
 }
 
-window.addEventListener('resize', checkMobile);
+window.addEventListener('resize', () => {
+  checkMobile();
+  // إغلاق السايدبار عند توسيع الشاشة
+  if (window.innerWidth > 900) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+    const btn = document.getElementById('mobFilterBtn');
+    if (btn) btn.classList.remove('active');
+  }
+});
 
 /* ============================================================
-   REALTIME — اشتراك Supabase
+   REALTIME
 ============================================================ */
 async function subscribeRealtime() {
   const sb = await initSB();
   sb.channel('user-files-live')
     .on('postgres_changes', {
-      event  : '*',
-      schema : 'public',
-      table  : FILES_TABLE
+      event : '*', schema: 'public', table: FILES_TABLE
     }, payload => {
       if (payload.eventType === 'INSERT' && payload.new) {
         const exists = allFiles.some(f => f.id === payload.new.id);
@@ -3514,8 +2720,6 @@ async function subscribeRealtime() {
           applyFiltersAndRender();
           updateStats();
         }
-
-
       } else if (payload.eventType === 'DELETE' && payload.old) {
         allFiles = allFiles.filter(f => f.id !== payload.old.id);
         applyFiltersAndRender();
@@ -3530,21 +2734,15 @@ async function subscribeRealtime() {
 }
 
 /* ============================================================
-   INIT — التهيئة الرئيسية
+   INIT
 ============================================================ */
 async function init() {
-  // 1. اللغة والثيم
   setLang(currentLang);
   initTheme();
   checkMobile();
-
-  // 2. تحميل المجلدات
   loadFolders();
-
-  // 3. Drag & Drop
   initDragDrop();
 
-  // 4. تحميل الملفات من Supabase
   try {
     allFiles = await loadAllFiles();
   } catch(e) {
@@ -3553,25 +2751,16 @@ async function init() {
     showToast('تعذّر الاتصال بالخادم', 'error');
   }
 
-  // 5. رسم الملفات
   applyFiltersAndRender();
   updateStats();
-
-  // 6. حساب المساحة
   calcStorageUsed();
-
-  // 7. Realtime
   subscribeRealtime();
 
-  // 8. إخفاء loading
   document.getElementById('loadingState').style.display = 'none';
 }
 
-// تشغيل عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', init);
-
 </script>
-
 
 </body>
 </html>
