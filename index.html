@@ -19568,16 +19568,28 @@ const controlPanels = [
     },
     // ★ أضف هذا هنا ★
     {
-      section_key : 'accounting_external',
-      title       : 'MUHASEBE',
-      subtitle    : 'SİSTEMİ',
-      description : 'Gelir · Gider · Raporlar',
-      count_label : 'FİNANS',
-      btn_text    : 'Muhasebeye Aç',
-      _icon       : 'fa-chart-line',
-      _color      : '#10b981',
-      _colorRgb   : '16,185,129',
-    },
+  section_key : 'accounting_external',
+  title       : 'MUHASEBE',
+  subtitle    : 'SİSTEMİ',
+  description : 'Gelir · Gider · Raporlar',
+  count_label : 'FİNANS',
+  btn_text    : 'Muhasebeye Aç',
+  _icon       : 'fa-chart-line',
+  _color      : '#10b981',
+  _colorRgb   : '16,185,129',
+},
+{
+  section_key : 'my_files',
+  title       : 'ملفاتي',
+  subtitle    : 'DOSYALARIM',
+  description : 'رفع · تنزيل · مشاركة · ضغط ذكي',
+  count_label : 'FILES',
+  btn_text    : 'Dosyalara Git',
+  _icon       : 'fa-folder-open',
+  _color      : '#60a5fa',
+  _colorRgb   : '96,165,250',
+},
+
   ];
 
   let html = '';
@@ -19864,6 +19876,11 @@ function handleAdminCardClick(sectionKey) {
 case 'accounting_external':
   enterSection('accounting');
   break;
+
+case 'my_files':
+  window.open('./ملفاتي.html', '_blank');
+  break;
+
 
 
     default:
