@@ -2136,6 +2136,7 @@ let customFolders  = [];   // مجلدات مخصصة
 let currentCtxFile = null; // الملف المحدد في قائمة السياق
 let searchQuery    = '';
 let totalSavedBytes = 0;
+const recentUploads = new Set(); // لمنع التكرار من Realtime
 
 /* ============================================================
    FILE TYPE DETECTION
@@ -2887,6 +2888,8 @@ async function uploadSingleFile(file, folderId = null, autoCategory = true) {
     await saveToIDB({ ...meta, temp_id: tempId });
 
     const saved = await saveFileMeta(meta);
+recentUploads.add(saved.id);
+setTimeout(() => recentUploads.delete(saved.id), 10000);
 
     updateTempProgress(tempId, 100);
 
@@ -3505,13 +3508,14 @@ async function subscribeRealtime() {
       table  : FILES_TABLE
     }, payload => {
       if (payload.eventType === 'INSERT' && payload.new) {
-        // تجنب التكرار إذا كان الرفع من نفس الجهاز
         const exists = allFiles.some(f => f.id === payload.new.id);
-        if (!exists) {
+        if (!exists && !recentUploads.has(payload.new.id)) {
           allFiles.unshift(payload.new);
           applyFiltersAndRender();
           updateStats();
         }
+
+
       } else if (payload.eventType === 'DELETE' && payload.old) {
         allFiles = allFiles.filter(f => f.id !== payload.old.id);
         applyFiltersAndRender();
