@@ -19590,6 +19590,7 @@ const controlPanels = [
   _colorRgb   : '96,165,250',
 },
 
+
   ];
 
   let html = '';
@@ -19878,7 +19879,7 @@ case 'accounting_external':
   break;
 
 case 'my_files':
-  window.open('./ملفاتي.html', '_blank');
+window.open('./my-files.html', '_blank');
   break;
 
 
@@ -38595,6 +38596,140 @@ window.hsHandleUpload = hsHandleUpload;
 
 
 
+
+
+
+
+
+  /* ============================================================
+   ★ صفحة ملفاتي — داخل التطبيق ★
+============================================================ */
+
+/* ── 1. ربط showPage ── */
+const _origShowPage_files = showPage;
+showPage = function(cat) {
+  if (cat === 'my_files_page') {
+    currentPage = 'my_files_page';
+    document.querySelectorAll('.nav-link').forEach(a => a.classList.remove('active'));
+    filteredImages = [];
+    buildMyFilesPage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    appState = 'section';
+    pushState('section', { cat: 'my_files_page' });
+    return;
+  }
+  _origShowPage_files(cat);
+};
+
+/* ── 2. ربط enterSection ── */
+const _origEnterSection_files = enterSection;
+enterSection = function(cat) {
+  if (cat === 'my_files_page') {
+    const hs = document.getElementById('homeScreen');
+    hs.style.transition = 'opacity 0.4s ease';
+    hs.style.opacity    = '0';
+    setTimeout(() => {
+      hs.style.display = 'none';
+      document.getElementById('mainSite').style.display = 'block';
+      document.body.classList.add('wow-mode');
+      showPage('my_files_page');
+    }, 400);
+    return;
+  }
+  _origEnterSection_files(cat);
+};
+
+/* ── 3. بناء الصفحة ── */
+function buildMyFilesPage() {
+  document.getElementById('pageContent').innerHTML = `
+    <div style="
+      position:fixed;inset:0;
+      display:flex;flex-direction:column;
+      background:#0a0a0a;z-index:500;">
+
+      <!-- شريط العودة -->
+      <div style="
+        flex-shrink:0;height:46px;padding:0 14px;
+        background:rgba(10,10,10,0.98);
+        border-bottom:1px solid rgba(96,165,250,0.2);
+        display:flex;align-items:center;gap:10px;">
+
+        <button class="section-back-btn"
+                onclick="goHome()"
+                style="width:32px;height:32px;">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+
+        <div style="
+          width:28px;height:28px;border-radius:8px;
+          background:rgba(96,165,250,0.12);
+          border:1px solid rgba(96,165,250,0.3);
+          display:flex;align-items:center;justify-content:center;
+          color:#60a5fa;font-size:13px;flex-shrink:0;">
+          <i class="fas fa-folder-open"></i>
+        </div>
+
+        <div style="flex:1;min-width:0;">
+          <div style="
+            font-size:12px;font-weight:900;color:#fff;
+            font-family:'Montserrat',sans-serif;">
+            ملفاتي
+          </div>
+          <div style="
+            font-size:8px;color:rgba(255,255,255,0.3);
+            letter-spacing:1px;font-family:'Montserrat',sans-serif;">
+            رفع · تنزيل · مشاركة · ضغط ذكي
+          </div>
+        </div>
+
+        <div style="
+          display:flex;align-items:center;gap:5px;
+          padding:3px 10px;border-radius:50px;
+          background:rgba(96,165,250,0.08);
+          border:1px solid rgba(96,165,250,0.2);
+          flex-shrink:0;">
+          <div style="
+            width:6px;height:6px;border-radius:50%;
+            background:#60a5fa;
+            animation:iconPulse 2s infinite;"></div>
+          <span style="
+            font-size:9px;font-weight:700;color:#60a5fa;
+            font-family:'Montserrat',sans-serif;letter-spacing:1px;">
+            CANLI
+          </span>
+        </div>
+      </div>
+
+      <!-- iframe -->
+      <iframe
+        src="./my-files.html"
+        style="
+          flex:1;width:100%;
+          min-height:0;
+          border:none;
+          background:#0a0a0a;
+          display:block;"
+        scrolling="yes"
+        loading="lazy">
+      </iframe>
+    </div>`;
+
+  /* إخفاء header و footer */
+  const header = document.getElementById('header');
+  const footer = document.querySelector('footer');
+  if (header) header.style.display = 'none';
+  if (footer) footer.style.display = 'none';
+}
+
+/* ── 4. تحديث handleAdminCardClick ── */
+const _origHandleAdminCardClick_files = handleAdminCardClick;
+handleAdminCardClick = function(sectionKey) {
+  if (sectionKey === 'my_files') {
+    enterSection('my_files_page');
+    return;
+  }
+  _origHandleAdminCardClick_files(sectionKey);
+};
 
 
 
